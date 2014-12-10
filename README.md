@@ -15,6 +15,7 @@ If your system needs other binary formats, you should put the following librarie
 Note: asmlib is free only for non commercial purposes. If needed, you can contact the author of asmlib or compile KMC without asmlib.
 
 If needed, you can also redefine maximal length of k-mer, which is 256 in the current version.
+
 Note: KMC is highly optimized and spends only as many bytes for k-mer (rounded up to 8) as
 necessary, so using large values of MAX_K does not affect the KMC performance for short k-mers.
 
@@ -28,12 +29,12 @@ make DISABLE_ASMLIB=true
 
 Directory structure
 =
-bin           - main directory of KMC (programs after compilation will be stored here)
-kmer_counter  - source code of kmc program
-kmer_counter/libs - compiled binary versions of libraries used by KMC
-kmc_api       - C++ source codes implementing API; must be used by any program that
-                wants to process databases produced by kmc
-kmc_dump      - source codes of kmc_dump program listing k-mers in databases produced by kmc
+ * bin           - main directory of KMC (programs after compilation will be stored here) 
+ * kmer_counter  - source code of kmc program
+ * kmer_counter/libs - compiled binary versions of libraries used by KMC
+ * kmc_api       - C++ source codes implementing API; must be used by any program that wants to process databases produced by kmc
+ * kmc_dump      - source codes of kmc_dump program listing k-mers in databases produced by kmc
+
 
 
 Binaries
