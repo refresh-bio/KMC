@@ -8,6 +8,7 @@
   Date   : 2014-07-04
 */
 
+#include "stdafx.h"
 #include "bkb_reader.h"
 #include "asmlib_wrapper.h"
 

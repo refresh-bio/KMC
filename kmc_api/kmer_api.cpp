@@ -9,6 +9,7 @@
 */
 
 
+#include "stdafx.h"
 #include "kmer_api.h"
 #include <vector>
 #include <math.h>

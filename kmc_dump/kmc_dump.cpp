@@ -11,6 +11,7 @@
   Date   : 2014-07-04
 */
 
+#include "stdafx.h"
 #include <iostream>
 #include "../kmc_api/kmc_file.h"
 #include "nc_utils.h"
