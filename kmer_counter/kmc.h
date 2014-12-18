@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.0
-  Date   : 2014-07-04
+  Version: 2.1
+  Date   : 2014-12-18
 */
 
 #ifndef _KMC_H
@@ -892,9 +892,6 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 
 	// ***** End of Stage 2 *****
 	w_completer->GetTotal(n_unique, n_cutoff_min, n_cutoff_max, n_total);
-
-	
-
 	
 	uint64 stat_n_plus_x_recs, stat_n_recs, stat_n_recs_tmp, stat_n_plus_x_recs_tmp;
 	stat_n_plus_x_recs = stat_n_recs = stat_n_recs_tmp = stat_n_plus_x_recs_tmp = 0;
@@ -918,10 +915,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 		delete Queues.tlbq;
 	});
 
-	
-
-
-	// ***** Removing temporary files ***** //KMC_2 moved to kb_readed and bkb_reader
+	// ***** Getting disk usage statistics ***** 
 
 	tmp_size = 0;
 	n_total_super_kmers = 0;
@@ -929,9 +923,6 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	while((bin_id = Queues.bd->get_next_bin()) >= 0)
 	{
 		Queues.bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs, n_super_kmers);		
-#ifndef DEVELOP_MODE
-//		remove(name.c_str()); //KMC_2 removing in kb_readed (and bkb_reader)
-#endif // DEVELOP_MODE
 		tmp_size += size;
 		n_total_super_kmers += n_super_kmers;
 	}
@@ -966,9 +957,6 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 		delete release_thr_sm;
 	}
 	release_thr_st2_2->join();
-
-	//KMC_2
-	//cout << "n_recs: " << stat_n_recs << ", n_plus_x_recs: " << stat_n_plus_x_recs << "(" << (float)(stat_n_plus_x_recs) / stat_n_recs << ")\n";
 
 	delete release_thr_st2_1;
 	delete release_thr_st2_2;

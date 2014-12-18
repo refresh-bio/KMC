@@ -4,8 +4,8 @@
 
   Authors: Sebastian Deorowicz and Agnieszka Debudaj-Grabysz
 
-  Version: 2.0
-  Date   : 2014-07-04
+  Version: 2.1
+  Date   : 2014-12-18
 */
 
 #ifndef _KMER_API_H
@@ -73,6 +73,7 @@ public:
 		{
 			kmer_data = NULL;
 			no_of_rows = 0;
+			byte_alignment = 0;
 		}
 		kmer_length = length;
 	};

@@ -4,8 +4,8 @@
 
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-  Version: 2.0
-  Date   : 2014-07-04
+  Version: 2.1
+  Date   : 2014-12-18
 */
 
 #include "stdafx.h"
@@ -434,8 +434,12 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, float &count)
 //-------------------------------------------------------------------------------
 void CKMCFile::Reload_sufix_file_buf()
 {
-		fread (sufix_file_buf, 1, (size_t) part_size, file_suf);
-		index_in_partial_buf = 0;
+	if (part_size != fread(sufix_file_buf, 1, (size_t)part_size, file_suf))
+	{
+		std::cout << "Error while reading *.kmc_suf file\n";
+		exit(1);
+	}
+	index_in_partial_buf = 0;
 };
 //-------------------------------------------------------------------------------
 // Release memory and close files in case they were opened 
@@ -480,7 +484,11 @@ bool CKMCFile::RestartListing(void)
 	{
 		
 		my_fseek ( file_suf , 4 , SEEK_SET );
-		fread (sufix_file_buf, 1, (size_t) part_size, file_suf);
+		if (part_size != fread(sufix_file_buf, 1, (size_t)part_size, file_suf))
+		{
+			std::cout << "Error while reading *.kmc_suf file\n";
+			exit(1);
+		}
 
 		prefix_index = 0;
 		sufix_number = 0;

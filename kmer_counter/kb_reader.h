@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.0
-  Date   : 2014-07-04
+  Version: 2.1
+  Date   : 2014-12-18
 */
 
 #ifndef _KB_READER_H
@@ -188,9 +188,9 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 		
 		//Remove temporary file
 #ifndef DEVELOP_MODE
-		file->Remove(); //KMC_2 
-		disk_logger->log_remove(size);
+		file->Remove();		
 #endif
+		disk_logger->log_remove(size);
 	}
 
 

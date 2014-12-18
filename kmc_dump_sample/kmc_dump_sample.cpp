@@ -7,10 +7,11 @@
 
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-  Version: 2.0
-  Date   : 2014-07-04
+  Version: 2.1
+  Date   : 2014-12-18
 */
 
+#include "stdafx.h"
 #include <iostream>
 #include "../kmc_api/kmc_file.h"
 
