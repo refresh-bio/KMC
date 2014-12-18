@@ -26,8 +26,8 @@ After that, you can run make to compile kmc and kmc_dump applications.
 If you want to compile kmc without asmlib run:
 make DISABLE_ASMLIB=true
 
-Additional infromation for MAC OS installation
-=
+######Additional infromation for MAC OS installation
+
 For compilation under MAC OS there is makefile_mac.
 Usage:
 make -f makefile_mac
