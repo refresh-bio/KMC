@@ -24,15 +24,23 @@ or higher.
 
 After that, you can run make to compile kmc and kmc_dump applications.
 If you want to compile kmc without asmlib run:
-make DISABLE_ASMLIB=true
 
-######Additional infromation for MAC OS installation
+    make DISABLE_ASMLIB=true
+
+#####Additional infromation for MAC OS installation
 
 For compilation under MAC OS there is makefile_mac.
 Usage:
-make -f makefile_mac
+
+    make -f makefile_mac
+
 There might be a need to change g++ path in makefile_mac. 
 If needed we recommend install g++ with brew (http://brew.sh/). 
+
+Note that KMC creates a hundreds of temporary files, while default limit for opened files is small for under MAC OS platform.
+To increase this number use following command before running KMC:
+
+    ulimit -n 2048
 
 Directory structure
 =
