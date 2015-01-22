@@ -4,16 +4,16 @@
 
   Authors: Sebastian Deorowicz and Agnieszka Debudaj-Grabysz
 
-  Version: 2.1
-  Date   : 2014-12-18
+  Version: 2.1.1
+  Date   : 2015-01-22
 */
 
 
 #ifndef _KMER_DEFS_H
 #define _KMER_DEFS_H
 
-#define KMC_VER		"2.0"
-#define KMC_DATE	"2014-07-04"
+#define KMC_VER		"2.1.1"
+#define KMC_DATE	"2015-01-22"
 
 #define MIN(x,y)	((x) < (y) ? (x) : (y))
 

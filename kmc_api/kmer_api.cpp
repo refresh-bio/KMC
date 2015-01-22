@@ -4,8 +4,8 @@
 
   Authors: Sebastian Deorowicz and Agnieszka Debudaj-Grabysz
 
-  Version: 2.1
-  Date   : 2014-12-18
+  Version: 2.1.1
+  Date   : 2015-01-22
 */
 
 

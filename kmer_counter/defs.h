@@ -4,15 +4,15 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.1
-  Date   : 2014-12-18
+  Version: 2.1.1
+  Date   : 2015-01-22
 */
 
 #ifndef _DEFS_H
 #define _DEFS_H
 
-#define KMC_VER		"2.1"
-#define KMC_DATE	"2014-12-18"
+#define KMC_VER		"2.1.1"
+#define KMC_DATE	"2015-01-22"
 
 #define _CRT_SECURE_NO_WARNINGS
 

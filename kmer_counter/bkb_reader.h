@@ -5,8 +5,8 @@ The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
 
 Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-Version: 2.1
-Date   : 2014-12-18
+Version: 2.1.1
+Date   : 2015-01-22
 */
 
 #ifndef _BKB_READER_H_

@@ -4,8 +4,8 @@
 
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-  Version: 2.11
-  Date   : 2015-01-21
+  Version: 2.1.1
+  Date   : 2015-01-22
 */
 
 #ifndef _KMC_FILE_H
