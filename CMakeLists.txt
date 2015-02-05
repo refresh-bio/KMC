@@ -1,10 +1,7 @@
 cmake_minimum_required (VERSION 2.8 FATAL_ERROR)
 
 project (KMC)
-set (CMAKE_C_COMPILER "gcc-4.9")
-set (CMAKE_CXX_COMPILER "g++-4.9")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
 
 option (ASMLIB "Use ASM library" OFF)
 
