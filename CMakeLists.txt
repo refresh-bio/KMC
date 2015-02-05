@@ -6,10 +6,10 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
 option (ASMLIB "Use ASM library" ON)
 
 set (KMC_BIN_DIR bin)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${KMC_BIN_DIR})
 set (KMC_MAIN_DIR kmer_counter)
 set (KMC_API_DIR kmc_api)
 set (KMC_DUMP_DIR kmc_dump)
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${KMC_BIN_DIR})
 
 set (KMC_SOURCES
 	${KMC_MAIN_DIR}/kmer_counter.cpp
@@ -24,13 +24,6 @@ set (KMC_SOURCES
 	${KMC_MAIN_DIR}/kb_completer.cpp
 	${KMC_MAIN_DIR}/kb_storer.cpp
 	${KMC_MAIN_DIR}/kmer.cpp
-	)
-set (KMC_DUMP_OBJECTS
-	${KMC_DUMP_DIR}/nc_utils.cpp
-	${KMC_API_DIR}/mmer.cpp
-	${KMC_DUMP_DIR}/kmc_dump.cpp
-	${KMC_API_DIR}/kmc_file.cpp
-	${KMC_API_DIR}/kmer_api.cpp
 	)
 if (APPLE OR WIN32)
 	set (KMC_LIBRARIES
@@ -56,3 +49,13 @@ endif ()
 
 add_executable (KMC ${KMC_SOURCES})
 target_link_libraries (KMC ${KMC_LIBRARIES})
+
+set (KMC_DUMP_SOURCES
+	${KMC_DUMP_DIR}/nc_utils.cpp
+	${KMC_API_DIR}/mmer.cpp
+	${KMC_DUMP_DIR}/kmc_dump.cpp
+	${KMC_API_DIR}/kmc_file.cpp
+	${KMC_API_DIR}/kmer_api.cpp
+)
+
+add_executable (KMC_DUMP ${KMC_DUMP_SOURCES})
