@@ -40,8 +40,8 @@ set (KMC_DUMP_OBJS
 if (${ASMLIB})
 	set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB)
 else ()
-	set ( KMC_LIBRARIES ${KMC_LIBRARIES} $(KMC_MAIN_DIR)/libs/alibelf64.a)
+	set (KMC_LIBRARIES ${KMC_LIBRARIES} ${KMC_MAIN_DIR}/libs/alibelf64.a)
 endif ()
 
 add_executable (KMC ${KMC_SOURCES})
-target_link_libraries (KMC KMC_LIBRARIES)
+target_link_libraries (KMC ${KMC_LIBRARIES})
