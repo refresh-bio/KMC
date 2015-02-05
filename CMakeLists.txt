@@ -2,15 +2,42 @@ cmake_minimum_required (VERSION 2.8 FATAL_ERROR)
 
 project (KMC)
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-option (ASMLIB "Use ASM library" ON)
+set (KMC_API_DIR ${CMAKE_SOURCE_DIR}/kmc_api)
+set (KMC_MAIN_DIR ${CMAKE_SOURCE_DIR}/kmer_counter)
+set (KMC_DUMP_DIR ${CMAKE_SOURCE_DIR}/kmc_dump)
 
-set (KMC_BIN_DIR bin)
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${KMC_BIN_DIR})
-set (KMC_MAIN_DIR kmer_counter)
-set (KMC_API_DIR kmc_api)
-set (KMC_DUMP_DIR kmc_dump)
-
+set (INCLUDES
+	${KMC_MAIN_DIR}/asmlib_wrapper.h
+	${KMC_MAIN_DIR}/bkb_merger.h
+	${KMC_MAIN_DIR}/bkb_reader.h
+	${KMC_MAIN_DIR}/bkb_sorter.h
+	${KMC_MAIN_DIR}/bkb_subbin.h
+	${KMC_MAIN_DIR}/bkb_uncompactor.h
+	${KMC_MAIN_DIR}/bkb_writer.h
+	${KMC_MAIN_DIR}/fastq_reader.h
+	${KMC_MAIN_DIR}/kb_collector.h
+	${KMC_MAIN_DIR}/kb_completer.h
+	${KMC_MAIN_DIR}/kb_reader.h
+	${KMC_MAIN_DIR}/kb_sorter.h
+	${KMC_MAIN_DIR}/kb_storer.h
+	${KMC_MAIN_DIR}/kmc.h
+	${KMC_MAIN_DIR}/kmer.h
+	${KMC_MAIN_DIR}/kxmer_set.h
+	${KMC_MAIN_DIR}/mem_disk_file.h
+	${KMC_MAIN_DIR}/meta_oper.h
+	${KMC_MAIN_DIR}/mmer.h
+	${KMC_MAIN_DIR}/params.h
+	${KMC_MAIN_DIR}/queues.h
+	${KMC_MAIN_DIR}/radix.h
+	${KMC_MAIN_DIR}/rev_byte.h
+	${KMC_MAIN_DIR}/s_mapper.h
+	${KMC_MAIN_DIR}/splitter.h
+	${KMC_MAIN_DIR}/stdafx.h
+	${KMC_MAIN_DIR}/targetver.h
+	${KMC_MAIN_DIR}/timer.h
+	)
 set (KMC_SOURCES
 	${KMC_MAIN_DIR}/kmer_counter.cpp
 	${KMC_MAIN_DIR}/mmer.cpp
@@ -25,37 +52,42 @@ set (KMC_SOURCES
 	${KMC_MAIN_DIR}/kb_storer.cpp
 	${KMC_MAIN_DIR}/kmer.cpp
 	)
-if (APPLE OR WIN32)
+
+option (ASMLIB "Use ASM library" ON)
+if (${ASMLIB} AND APPLE OR WIN32)
 	set (KMC_LIBRARIES
-		${CMAKE_SOURCE_DIR}/${KMC_MAIN_DIR}/libs/libz.1.2.5.dylib
-		${CMAKE_SOURCE_DIR}/${KMC_MAIN_DIR}/libs/libbz2.1.0.5.dylib
+		${KMC_MAIN_DIR}/libs/libz.1.2.5.dylib
+		${KMC_MAIN_DIR}/libs/libbz2.1.0.5.dylib
+		${KMC_MAIN_DIR}/libs/libamac64.a)
+elseif (APPLE OR WIN32)
+	set (KMC_LIBRARIES
+		${KMC_MAIN_DIR}/libs/libz.1.2.5.dylib
+		${KMC_MAIN_DIR}/libs/libbz2.1.0.5.dylib
 		)
-	if (${ASMLIB})
-		set (KMC_LIBARIES ${KMC_LIBRARIES} ${CMAKE_SOURCE_DIR}/${KMC_MAIN_DIR}/libs/libamac64.a)
-	else ()
-		set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB)
-	endif ()
+	set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB)
+elseif (${ASMLIB})
+	set (KMC_LIBRARIES
+		${KMC_MAIN_DIR}/libs/libz.a
+		${KMC_MAIN_DIR}/libs/libbz2.a
+		${KMC_MAIN_DIR}/libs/alibelf64.a)
 else ()
 	set (KMC_LIBRARIES
-		${CMAKE_SOURCE_DIR}/${KMC_MAIN_DIR}/libs/libz.a
-		${CMAKE_SOURCE_DIR}/${KMC_MAIN_DIR}/libs/libbz2.a
+		${KMC_MAIN_DIR}/libs/libz.a
+		${KMC_MAIN_DIR}/libs/libbz2.a
 		)
-	if (${ASMLIB})
-		set (KMC_LIBRARIES ${KMC_LIBRARIES} ${CMAKE_SOURCE_DIR}/${KMC_MAIN_DIR}/libs/alibelf64.a)
-	else ()
-		set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB)
-	endif ()
+	set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB)
+
 endif ()
 
-add_executable (KMC ${KMC_SOURCES})
+add_executable (KMC ${KMC_SOURCES} ${INCLUDES})
 target_link_libraries (KMC ${KMC_LIBRARIES})
 
 set (KMC_DUMP_SOURCES
 	${KMC_DUMP_DIR}/nc_utils.cpp
-	${KMC_API_DIR}/mmer.cpp
 	${KMC_DUMP_DIR}/kmc_dump.cpp
+	${KMC_API_DIR}/mmer.cpp
 	${KMC_API_DIR}/kmc_file.cpp
 	${KMC_API_DIR}/kmer_api.cpp
-)
+	)
 
 add_executable (KMC_DUMP ${KMC_DUMP_SOURCES})
