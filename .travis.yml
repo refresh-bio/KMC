@@ -4,7 +4,7 @@ compiler:
         - clang
         - gcc
 
-env: - BUILD_TYPE=Debug
+env: BUILD_TYPE=Debug
 
 before_install:
         - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
