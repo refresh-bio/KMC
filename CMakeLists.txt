@@ -61,15 +61,19 @@ if (WIN32 OR APPLE)
 	set (KMC_LIBRARIES ${KMC_MAIN_DIR}/libs/libz.1.2.5.dylib ${KMC_MAIN_DIR}/libs/libbz2.1.0.5.dylib)
 	if (${ADD_ASM_LIB})
 		set (KMC_LIBRARIES ${KMC_LIBRARIES} ${KMC_MAIN_DIR}/libs/libamac64.a)
+	else ()
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB")
 	endif()
 else ()
 	set (KMC_LIBRARIES ${KMC_MAIN_DIR}/libs/libz.a ${KMC_MAIN_DIR}/libs/libbz2.a)
 	if (${ADD_ASM_LIB})
 		set (KMC_LIBRARIES ${KMC_LIBRARIES} ${KMC_MAIN_DIR}/libs/alibelf64.a)
+	else ()
+		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB")
 	endif ()
 endif ()
 
-add_executable (KMC ${KMC_SOURCES} ${KMC_INCLUDES})
+add_executable (kmc ${KMC_SOURCES} ${KMC_INCLUDES})
 target_link_libraries (KMC ${KMC_LIBRARIES})
 
 ### KMC DUMP
@@ -81,4 +85,4 @@ set (KMC_DUMP_SOURCES
 	${KMC_API_DIR}/kmer_api.cpp
 	)
 
-add_executable (KMC_DUMP ${KMC_DUMP_SOURCES})
+add_executable (kmc_dump ${KMC_DUMP_SOURCES})
