@@ -5,7 +5,7 @@ KMC_MAIN_DIR = kmer_counter
 KMC_API_DIR = kmc_api
 KMC_DUMP_DIR = kmc_dump
 
-CC 	= /usr/local/Cellar/gcc49/4.9.2/bin/g++-4.9
+CC 	= /usr/local/Cellar/gcc49/4.9.2_1/bin/g++-4.9
 CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -fopenmp -pthread -std=c++11 
 CLINK	= -lm -fopenmp -static-libgcc -static-libstdc++ -O3 -pthread -std=c++11 
 
