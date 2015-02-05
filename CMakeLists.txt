@@ -74,7 +74,7 @@ else ()
 endif ()
 
 add_executable (kmc ${KMC_SOURCES} ${KMC_INCLUDES})
-target_link_libraries (KMC ${KMC_LIBRARIES})
+target_link_libraries (kmc ${KMC_LIBRARIES})
 
 ### KMC DUMP
 set (KMC_DUMP_SOURCES
