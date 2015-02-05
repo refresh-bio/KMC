@@ -1,4 +1,4 @@
-[![Build Status][]][]
+[![Build Status](https://travis-ci.org/marekkokot/KMC.svg?branch=develop)](https://travis-ci.org/marekkokot/KMC)
 
 KMC
 ===
@@ -12,7 +12,7 @@ Requirements
 -   cmake
 -   make
 
-Note that on Mac OSX, gcc defaults to clang which does not currently support OpenMP. OpenMP is an essential part of KMC so you will need to install gcc-4.7 (check out [homebrew][]). Once gcc is installed, make sure you export it before you attempt to build KMC.
+Note that on Mac OSX, gcc defaults to clang which does not currently support OpenMP. OpenMP is an essential part of KMC so you will need to install gcc-4.7 (check out [homebrew](http://brew.sh)). Once gcc is installed, make sure you export it before you attempt to build KMC.
 
     export CC=/usr/local/bin/gcc-4.9 && export CXX=/usr/local/bin/g++-4.9
 
@@ -71,7 +71,3 @@ Warranty
 ========
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR ANYONE DISTRIBUTING THE SOFTWARE BE LIABLE FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-  [Build Status]: https://travis-ci.org/marekkokot/KMC.svg?branch=develop
-  [![Build Status][]]: https://travis-ci.org/marekkokot/KMC
-  [homebrew]: http://brew.sh
