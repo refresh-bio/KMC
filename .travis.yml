@@ -1,7 +1,8 @@
 language: cpp
 
 compiler:
-        - clang
+        # Unfortunately, clang does not support OpenMP yet - see OpenMP/Clang on github for alternative
+        #- clang
         - gcc
 
 env: BUILD_TYPE=Debug
