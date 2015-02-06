@@ -11,7 +11,7 @@ set (KMC_DUMP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_dump)
 ### KMC can't use clang since it doesn't include OpenMP at the moment
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	message (FATAL_ERROR "KMC requires OpenMP which is not part of clang. Please see documents.")
-endif ()
+endif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 
 
 ### KMC
@@ -70,14 +70,14 @@ if (WIN32 OR APPLE)
 	else ()
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB")
 	endif()
-else ()
+else (WIN32 OR APPLE)
 	set (KMC_LIBRARIES ${KMC_MAIN_DIR}/libs/libz.a ${KMC_MAIN_DIR}/libs/libbz2.a)
 	if (${ADD_ASM_LIB})
 		set (KMC_LIBRARIES ${KMC_LIBRARIES} ${KMC_MAIN_DIR}/libs/alibelf64.a)
 	else ()
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB")
 	endif ()
-endif ()
+endif (WIN32 OR APPLE)
 
 add_executable (kmc ${KMC_SOURCES} ${KMC_INCLUDES})
 target_link_libraries (kmc ${KMC_LIBRARIES})
