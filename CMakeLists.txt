@@ -15,7 +15,7 @@ endif ()
 
 
 ### KMC
-option (ADD_ASM_LIB "Use ASM library" ON)
+option (KMC_ADD_ASM_LIB "Use ASM library" ON)
 
 include_directories (${KMC_MAIN_DIR})
 set (KMC_INCLUDES
@@ -65,14 +65,14 @@ set (KMC_SOURCES
 
 if (WIN32 OR APPLE)
 	set (KMC_LIBRARIES ${KMC_MAIN_DIR}/libs/libz.1.2.5.dylib ${KMC_MAIN_DIR}/libs/libbz2.1.0.5.dylib)
-	if (${ADD_ASM_LIB})
+	if (${KMC_ADD_ASM_LIB})
 		set (KMC_LIBRARIES ${KMC_LIBRARIES} ${KMC_MAIN_DIR}/libs/libamac64.a)
 	else ()
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB")
 	endif()
 else ()
 	set (KMC_LIBRARIES ${KMC_MAIN_DIR}/libs/libz.a ${KMC_MAIN_DIR}/libs/libbz2.a)
-	if (${ADD_ASM_LIB})
+	if (${KMC_ADD_ASM_LIB})
 		set (KMC_LIBRARIES ${KMC_LIBRARIES} ${KMC_MAIN_DIR}/libs/alibelf64.a)
 	else ()
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB")
