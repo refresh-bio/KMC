@@ -4,9 +4,9 @@ project (KMC)
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set (KMC_API_DIR ${CMAKE_SOURCE_DIR}/kmc_api)
-set (KMC_MAIN_DIR ${CMAKE_SOURCE_DIR}/kmer_counter)
-set (KMC_DUMP_DIR ${CMAKE_SOURCE_DIR}/kmc_dump)
+set (KMC_API_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_api)
+set (KMC_MAIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmer_counter)
+set (KMC_DUMP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_dump)
 
 ### KMC
 option (ADD_ASM_LIB "Use ASM library" ON)
