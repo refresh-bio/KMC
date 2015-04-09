@@ -7,8 +7,8 @@
 
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-  Version: 2.1.1
-  Date   : 2015-01-22
+  Version: 2.2.0
+  Date   : 2015-04-15
 */
 
 #include "stdafx.h"
@@ -90,7 +90,7 @@ int _tmain(int argc, char* argv[])
 
 		kmer_data_base.Info(_kmer_length, _mode, _counter_size, _lut_prefix_length, _signature_len, _min_count, _max_count, _total_kmers);
 
-		float counter;
+		
 		//std::string str;
 		char str[1024];
 		uint32 counter_len;
@@ -104,24 +104,31 @@ int _tmain(int argc, char* argv[])
 		if (!(kmer_data_base.SetMaxCount(max_count_to_set)))
 				return EXIT_FAILURE;	
 
-		while (kmer_data_base.ReadNextKmer(kmer_object, counter))
+		if (_mode) //quake compatible mode
 		{
-			kmer_object.to_string(str);
-
-			str[_kmer_length] = '\t';
-			if (_mode)
-				counter_len = CNumericConversions::Double2PChar(counter, 6, (uchar*)str + _kmer_length + 1);
-			else
-				counter_len = CNumericConversions::Int2PChar((uint64)counter, (uchar*)str + _kmer_length + 1);
-
-			str[_kmer_length + 1 + counter_len] = '\n';
-			fwrite(str, 1, _kmer_length + counter_len + 2, out_file);
-
-			/*if(_mode)		
-				fprintf(out_file, "%s\t%f\n", str.c_str(), counter);
-			else
-				fprintf(out_file, "%s\t%d\n", str.c_str(), (int)counter);*/
+			float counter;
+			while (kmer_data_base.ReadNextKmer(kmer_object, counter))
+			{
+				kmer_object.to_string(str);
+				str[_kmer_length] = '\t';				
+				counter_len = CNumericConversions::Double2PChar(counter, 6, (uchar*)str + _kmer_length + 1);				
+				str[_kmer_length + 1 + counter_len] = '\n';
+				fwrite(str, 1, _kmer_length + counter_len + 2, out_file);			
+			}
 		}
+		else
+		{
+			uint32 counter;
+			while (kmer_data_base.ReadNextKmer(kmer_object, counter))
+			{
+				kmer_object.to_string(str);
+				str[_kmer_length] = '\t';
+				counter_len = CNumericConversions::Int2PChar(counter, (uchar*)str + _kmer_length + 1);
+				str[_kmer_length + 1 + counter_len] = '\n';
+				fwrite(str, 1, _kmer_length + counter_len + 2, out_file);
+			}
+		}
+		
 	
 		fclose(out_file);
 		kmer_data_base.Close();

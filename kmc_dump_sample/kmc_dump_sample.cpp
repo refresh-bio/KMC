@@ -7,8 +7,8 @@
 
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-  Version: 2.1.1
-  Date   : 2015-01-22
+  Version: 2.2.0
+  Date   : 2015-04-15
 */
 
 #include "stdafx.h"
@@ -88,9 +88,6 @@ int _tmain(int argc, char* argv[])
 
 		kmer_data_base.Info(_kmer_length, _mode, _counter_size, _lut_prefix_length, _signature_len, _min_count, _max_count, _total_kmers);
 
-		float counter;
-		std::string str;
-		
 		CKmerAPI kmer_object(_kmer_length);
 		
 		if(min_count_to_set)
@@ -100,15 +97,27 @@ int _tmain(int argc, char* argv[])
 		if (!(kmer_data_base.SetMaxCount(max_count_to_set)))
 				return EXIT_FAILURE;	
 
-		while (kmer_data_base.ReadNextKmer(kmer_object, counter))
+		
+		std::string str;
+		if (_mode) //quake compatible mode
 		{
-			kmer_object.to_string(str);
-
-			if(_mode)		
-				fprintf(out_file, "%s\t%f\n", str.c_str(), counter);
-			else
-				fprintf(out_file, "%s\t%d\n", str.c_str(), (int)counter);
+			float counter;			
+			while (kmer_data_base.ReadNextKmer(kmer_object, counter))
+			{
+				kmer_object.to_string(str);	
+				fprintf(out_file, "%s\t%f\n", str.c_str(), counter);			
+			}
 		}
+		else 
+		{
+			uint32 counter;			
+			while (kmer_data_base.ReadNextKmer(kmer_object, counter))
+			{
+				kmer_object.to_string(str);
+				fprintf(out_file, "%s\t%u\n", str.c_str(), counter);
+			}
+		}
+		
 	
 		fclose(out_file);
 		kmer_data_base.Close();
