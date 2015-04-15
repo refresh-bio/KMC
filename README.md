@@ -3,6 +3,7 @@ KMC
 KMC is a disk-based programm for counting k-mers from (possibly gzipped) FASTQ/FASTA files.
 The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
 
+For accessing k-mers stored in database produced by KMC there is an API (kmc_api directory). Note that for KMC versions 0.x and 1.x dababase format differs from produced by KMC version 2.x. From version 2.2.0 API is unified for both formats and all new features/bug fixes are present only for 2.x branch (standalone API for older KMC version is not longer under development, so new version of API  should be used even for databases produced by older KMC version).
 
 Installation
 =
