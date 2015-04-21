@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.1.1
-  Date   : 2015-01-22
+  Version: 2.2.0
+  Date   : 2015-04-15
 */
 
 #ifndef _MMER_H
@@ -101,7 +101,7 @@ public:
 	inline void clear();
 	inline bool operator<=(const CMmer& x);
 	inline void set(const CMmer& x);
-	inline void insert(char* seq);
+	inline void insert(const char* seq);
 	
 };
 
@@ -155,7 +155,7 @@ inline void CMmer::set(const CMmer& x)
 }
 
 //--------------------------------------------------------------------------
-inline void CMmer::insert(char* seq)
+inline void CMmer::insert(const char* seq)
 {
 	switch (len)
 	{

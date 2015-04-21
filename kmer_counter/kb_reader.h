@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.1.1
-  Date   : 2015-01-22
+  Version: 2.2.0
+  Date   : 2015-04-15
 */
 
 #ifndef _KB_READER_H

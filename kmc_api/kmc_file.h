@@ -4,8 +4,8 @@
 
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-  Version: 2.1.1
-  Date   : 2015-01-22
+  Version: 2.2.0
+  Date   : 2015-04-15
 */
 
 #ifndef _KMC_FILE_H
@@ -14,6 +14,7 @@
 #include "kmer_defs.h"
 #include "kmer_api.h"
 #include <string>
+#include <vector>
 
 class CKMCFile
 {
@@ -46,6 +47,7 @@ class CKMCFile
 	uint32 max_count;
 	uint64 total_kmers;
 
+	uint32 kmc_version;
 	uint32 sufix_size;		// sufix's size in bytes 
 	uint32 sufix_rec_size;  // sufix_size + counter_size
 
@@ -54,6 +56,8 @@ class CKMCFile
 
 	static uint64 part_size; // the size of a block readed to sufix_file_buf, in listing mode 
 	
+	bool BinarySearch(int64 index_start, int64 index_stop, const CKmerAPI& kmer, uint32& counter, uint32 pattern_offset);
+
 	// Open a file, recognize its size and check its marker. Auxiliary function.
 	bool OpenASingleFile(const std::string &file_name, FILE *&file_handler, uint64 &size, char marker[]);	
 
@@ -63,6 +67,11 @@ class CKMCFile
 	// Reload a contents of an array "sufix_file_buf" for listing mode. Auxiliary function. 
 	void Reload_sufix_file_buf();
 
+	// Implementation of GetCountersForRead for kmc1 database format
+	bool GetCountersForRead_kmc1(const std::string& read, std::vector<uint32>& counters);
+
+	// Implementation of GetCountersForRead for kmc2 database format
+	bool GetCountersForRead_kmc2(const std::string& read, std::vector<uint32>& counters);
 public:
 		
 	CKMCFile();
@@ -77,6 +86,7 @@ public:
 	// Return next kmer in CKmerAPI &kmer. Return its counter in float &count. Return true if not EOF
 	bool ReadNextKmer(CKmerAPI &kmer, float &count);
 
+	bool ReadNextKmer(CKmerAPI &kmer, uint32 &count);
 	// Release memory and close files in case they were opened 
 	bool Close();
 
@@ -107,6 +117,8 @@ public:
 	// Return true if kmer exists. In this case return kmer's counter in count
 	bool CheckKmer(CKmerAPI &kmer, float &count);
 
+	bool CheckKmer(CKmerAPI &kmer, uint32 &count);
+
 	// Return true if kmer exists
 	bool IsKmer(CKmerAPI &kmer);
 
@@ -115,6 +127,13 @@ public:
 
 	// Get current parameters from kmer_database
 	bool Info(uint32 &_kmer_length, uint32 &_mode, uint32 &_counter_size, uint32 &_lut_prefix_length, uint32 &_signature_len, uint32 &_min_count, uint32 &_max_count, uint64 &_total_kmers);
+	
+	// Get counters for all k-mers in read
+	bool GetCountersForRead(const std::string& read, std::vector<uint32>& counters);
+	bool GetCountersForRead(const std::string& read, std::vector<float>& counters);
+	private:
+		uint32 count_for_kmer_kmc1(CKmerAPI& kmer);
+		uint32 count_for_kmer_kmc2(CKmerAPI& kmer, uint32 bin_start_pos);
 };
 
 #endif

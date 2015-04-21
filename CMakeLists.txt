@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.0 FATAL_ERROR)
 
 project (KMC)
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
@@ -8,10 +8,10 @@ set (KMC_API_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_api)
 set (KMC_MAIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmer_counter)
 set (KMC_DUMP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_dump)
 
-### KMC can't use clang since it doesn't include OpenMP at the moment
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	message (FATAL_ERROR "KMC requires OpenMP which is not part of clang. Please see documents.")
-endif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+find_package (OpenMP QUIET)
+if (NOT OPENMP_FOUND)
+	message (FATAL_ERROR "KMC requires OpenMP. Please install an OpenMP compatible compiler.")
+endif (NOT OPENMP_FOUND)
 
 
 ### KMC

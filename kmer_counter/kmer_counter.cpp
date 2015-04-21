@@ -5,8 +5,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.1.1
-  Date   : 2015-01-22
+  Version: 2.2.0
+  Date   : 2015-04-15
 */
 
 #include <fstream>
@@ -137,7 +137,7 @@ void usage()
 	cout << "Options:\n";
 	cout << "  -v - verbose mode (shows all parameter settings); default: false\n";
 	cout << "  -k<len> - k-mer length (k from " << MIN_K << " to " << MAX_K << "; default: 25)\n";
-	cout << "  -m<size> - max amount of RAM in GB (from 4 to 1024); default: 12\n";
+	cout << "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 12\n";
 	cout << "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n";
 	cout << "  -p<par> - signature length (5, 6, 7, 8); default: 7\n";
 	cout << "  -f<a/q/m> - input in FASTA format (-fa), FASTQ format (-fq) or mulit FASTA (-fm); default: FASTQ\n";
