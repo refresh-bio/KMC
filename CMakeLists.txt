@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 3.0 FATAL_ERROR)
 
 project (KMC C CXX)
 find_package (OpenMP REQUIRED)
+find_package (Threads REQUIRED)
 
 add_definitions(-std=c++11)
 add_definitions(${OpenMP_CXX_FLAGS})
@@ -77,7 +78,7 @@ else (WIN32 OR APPLE)
 endif (WIN32 OR APPLE)
 
 add_executable (kmc ${KMC_SOURCES} ${KMC_INCLUDES})
-target_link_libraries (kmc ${KMC_LIBRARIES})
+target_link_libraries (kmc ${KMC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 ### KMC DUMP
 set (KMC_DUMP_SOURCES
