@@ -5,7 +5,7 @@ find_package (OpenMP REQUIRED)
 find_package (Threads REQUIRED)
 
 add_definitions(-std=c++11)
-add_definitions(${OpenMP_CXX_FLAGS})
+add_definitions(${OpenMP_CXX_FLAGS} ${OpenMP_C_FLAGS})
 
 set (KMC_API_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_api)
 set (KMC_MAIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmer_counter)
