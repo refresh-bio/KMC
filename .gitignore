@@ -32,6 +32,7 @@
 
 
 ### CMake ###
+build/
 CMakeCache.txt
 CMakeFiles
 Makefile
