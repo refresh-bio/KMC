@@ -1,17 +1,14 @@
 cmake_minimum_required (VERSION 3.0 FATAL_ERROR)
 
-project (KMC)
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+project (KMC C CXX)
+find_package (OpenMP REQUIRED)
+
+add_definitions(-std=c++11)
+add_definitions(${OpenMP_CXX_FLAGS})
 
 set (KMC_API_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_api)
 set (KMC_MAIN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmer_counter)
 set (KMC_DUMP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_dump)
-
-find_package (OpenMP QUIET)
-if (NOT OPENMP_FOUND)
-	message (FATAL_ERROR "KMC requires OpenMP. Please install an OpenMP compatible compiler.")
-endif (NOT OPENMP_FOUND)
 
 
 ### KMC
