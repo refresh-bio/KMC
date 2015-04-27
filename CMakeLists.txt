@@ -45,8 +45,7 @@ set (KMC_COUNTER_INCLUDES
 	${KMC_COUNTER_DIR}/splitter.h
 	${KMC_COUNTER_DIR}/stdafx.h
 	${KMC_COUNTER_DIR}/targetver.h
-	${KMC_COUNTER_DIR}/timer.h
-	)
+	${KMC_COUNTER_DIR}/timer.h)
 set (KMC_COUNTER_SOURCES
 	${KMC_COUNTER_DIR}/bkb_writer.cpp
 	${KMC_COUNTER_DIR}/bkb_reader.cpp
@@ -60,8 +59,7 @@ set (KMC_COUNTER_SOURCES
 	${KMC_COUNTER_DIR}/radix.cpp
 	${KMC_COUNTER_DIR}/rev_byte.cpp
 	${KMC_COUNTER_DIR}/stdafx.cpp
-	${KMC_COUNTER_DIR}/timer.cpp
-	)
+	${KMC_COUNTER_DIR}/timer.cpp)
 
 if (KMC_ADD_DEVELOP)
 	set (KMC_COUNTER_INCLUDES ${KMC_COUNTER_INCLUDES} ${KMC_COUNTER_DIR}/develop.h)
