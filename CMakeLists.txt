@@ -80,13 +80,26 @@ endif (WIN32 OR APPLE)
 add_executable (kmc ${KMC_SOURCES} ${KMC_INCLUDES})
 target_link_libraries (kmc ${KMC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
+### KMC API
+set (KMC_API_INCLUDES
+	${KMC_API_DIR}/mc_file.h
+	${KMC_API_DIR}/mer_api.h
+	${KMC_API_DIR}/mer_defs.h
+	${KMC_API_DIR}/mer.h
+	${KMC_API_DIR}/tdafx.h)
+set (KMC_API_SOURCES
+	${KMC_API_DIR}/mmer.cpp
+	${KMC_API_DIR}/kmc_file.cpp
+	${KMC_API_DIR}/kmer_api.cpp)
+add_library (kmc_api ${KMC_API_INCLUDES} ${KMC_API_SOURCES})
+
 ### KMC DUMP
 set (KMC_DUMP_SOURCES
 	${KMC_DUMP_DIR}/nc_utils.cpp
-	${KMC_DUMP_DIR}/kmc_dump.cpp
-	${KMC_API_DIR}/mmer.cpp
-	${KMC_API_DIR}/kmc_file.cpp
-	${KMC_API_DIR}/kmer_api.cpp
-	)
+	${KMC_DUMP_DIR}/kmc_dump.cpp)
+set (KMC_DUMP_INCLUDES
+	${KMC_DUMP_DIR}/c_utils.h
+	${KMC_DUMP_DIR}/tdafx.h
+	${KMC_DUMP_DIR}/argetver.h)
 
-add_executable (kmc_dump ${KMC_DUMP_SOURCES})
+add_executable (kmc_dump ${KMC_DUMP_INCLUDES} ${KMC_DUMP_SOURCES})
