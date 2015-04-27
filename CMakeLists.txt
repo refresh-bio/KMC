@@ -12,10 +12,10 @@ set (KMC_COUNTER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmer_counter)
 set (KMC_DUMP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_dump)
 set (KMC_DUMP_SAMPLE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_dump_sample)
 
-### KMC
 option (KMC_ADD_ASM_LIB "Use ASM library" ON)
 option (KMC_ADD_DEVELOP "Add KMC developer tools" OFF)
 
+### KMC COUNTER
 set (KMC_COUNTER_INCLUDES
 	${KMC_COUNTER_DIR}/asmlib_wrapper.h
 	${KMC_COUNTER_DIR}/bkb_merger.h
