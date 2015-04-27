@@ -109,6 +109,7 @@ set (KMC_DUMP_SOURCES
 	${KMC_DUMP_DIR}/stdafx.cpp)
 
 add_executable (kmc_dump ${KMC_DUMP_INCLUDES} ${KMC_DUMP_SOURCES})
+target_link_libraries (kmc_dump kmc_api)
 
 ### KMC DUMP SAMPLE
 set (KMC_DUMP_SAMPLE_INCLUDES
@@ -119,3 +120,4 @@ set (KMC_DUMP_SAMPLE_SOURCES
 	${KMC_DUMP_SAMPLE_DIR}/stdafx.cpp)
 
 add_executable (kmc_dump_sample ${KMC_DUMP_SAMPLE_INCLUDES} ${KMC_DUMP_SAMPLE_SOURCES})
+target_link_libraries (kmc_dump_sample kmc_api)
