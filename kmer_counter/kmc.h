@@ -98,10 +98,7 @@ public:
 //----------------------------------------------------------------------------------
 template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> CKMC<KMER_T, SIZE, QUAKE_MODE>::CKMC()
 {
-// OpenMP support is a must, so do not compile if it is not supported
-#if !defined(_OPENMP)	
-	static_assert(false, "You need to use OpenMP");
-#endif
+// OpenMP support is a must, so do not compile if it is not supported - checked in cmake
 
 	initialized   = false;
 	Params.kmer_len      = 0;
