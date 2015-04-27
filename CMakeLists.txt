@@ -10,7 +10,7 @@ set (CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 set (KMC_API_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_api)
 set (KMC_COUNTER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmer_counter)
 set (KMC_DUMP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_dump)
-
+set (KMC_DUMP_SAMPLE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/kmc_sample_dump)
 
 ### KMC
 option (KMC_ADD_ASM_LIB "Use ASM library" ON)
@@ -95,9 +95,9 @@ set (KMC_API_INCLUDES
 	${KMC_API_DIR}/mmer.h
 	${KMC_API_DIR}/stdafx.h)
 set (KMC_API_SOURCES
-	${KMC_API_DIR}/mmer.cpp
 	${KMC_API_DIR}/kmc_file.cpp
-	${KMC_API_DIR}/kmer_api.cpp)
+	${KMC_API_DIR}/kmer_api.cpp
+	${KMC_API_DIR}/mmer.cpp)
 add_library (kmc_api ${KMC_API_INCLUDES} ${KMC_API_SOURCES})
 
 ### KMC DUMP
@@ -106,7 +106,18 @@ set (KMC_DUMP_INCLUDES
 	${KMC_DUMP_DIR}/stdafx.h
 	${KMC_DUMP_DIR}/targetver.h)
 set (KMC_DUMP_SOURCES
+	${KMC_DUMP_DIR}/kmc_dump.cpp
 	${KMC_DUMP_DIR}/nc_utils.cpp
-	${KMC_DUMP_DIR}/kmc_dump.cpp)
+	${KMC_DUMP_DIR}/stdafx.cpp)
 
 add_executable (kmc_dump ${KMC_DUMP_INCLUDES} ${KMC_DUMP_SOURCES})
+
+### KMC DUMP SAMPLE
+set (KMC_DUMP_SAMPLE_INCLUDES
+	${KMC_DUMP_SAMPLE_DIR}/stdafx.h
+	${KMC_DUMP_SAMPLE_DIR}/targetver.h)
+set (KMC_DUMP_SAMPLE_SOURCES
+	${KMC_DUMP_SAMPLE_DIR}/kmc_dump_sample.cpp
+	${KMC_DUMP_SAMPLE_DIR}/stdafx.cpp)
+
+add_executable (kmc_dump ${KMC_DUMP_SAMPLE_INCLUDES} ${KMC_DUMP_SAMPLE_SOURCES})
