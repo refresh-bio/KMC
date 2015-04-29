@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.0 FATAL_ERROR)
+cmake_minimum_required (VERSION 2.8 FATAL_ERROR)
 
 project (KMC VERSION 2.2.0.20150415 LANGUAGES C CXX)
 find_package (OpenMP REQUIRED)
