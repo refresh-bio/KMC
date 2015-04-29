@@ -11,7 +11,7 @@
 #ifndef _FASTQ_READER_H
 #define _FASTQ_READER_H
 
-#include "defs.h"
+#include <definitions.h>
 #include "params.h"
 #include <stdio.h>
 #include <iostream>

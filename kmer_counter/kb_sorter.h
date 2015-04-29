@@ -13,7 +13,7 @@
 
 #define DEBUGG_INFO
 
-#include "defs.h"
+#include <definitions.h>
 #include "params.h"
 #include "kmer.h"
 #include "radix.h"

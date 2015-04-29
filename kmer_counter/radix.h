@@ -17,7 +17,7 @@
 #include <omp.h>
 #include <algorithm>
 #include "asmlib_wrapper.h"
-#include "defs.h"
+#include <definitions.h>
 #include "queues.h"
 
 #ifdef WIN32

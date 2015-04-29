@@ -11,7 +11,7 @@
 #ifndef _KMC_H
 #define _KMC_H
 
-#include "defs.h"
+#include <definitions.h>
 #include "params.h"
 #include "kmer.h"
 #include <iostream>

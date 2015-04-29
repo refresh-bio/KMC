@@ -10,7 +10,7 @@
 #ifndef _KB_COMPLETER_H
 #define _KB_COMPLETER_H
 
-#include "defs.h"
+#include <definitions.h>
 #include "params.h"
 #include "kmer.h"
 #include "radix.h"

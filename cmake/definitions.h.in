@@ -4,8 +4,8 @@
 
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-  Version: 
-  Date   : 
+  Version: ${KMC_VERSION_MAJOR}${KMC_VERSION_MINOR}${KMC_VERSION_PATCH}
+  Date   : ${KMC_VERSION_TWEAK}
 */
 
 #ifndef _DEFS_H

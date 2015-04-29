@@ -11,7 +11,7 @@
 #ifndef _KB_READER_H
 #define _KB_READER_H
 
-#include "defs.h"
+#include <definitions.h>
 #include "params.h"
 #include "kmer.h"
 #include "s_mapper.h"

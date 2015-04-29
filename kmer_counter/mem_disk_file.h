@@ -11,7 +11,7 @@
 #ifndef _MEM_DISK_FILE_H
 #define _MEM_DISK_FILE_H
 
-#include "defs.h"
+#include <definitions.h>
 #include <string>
 #include <stdio.h>
 #include <vector>

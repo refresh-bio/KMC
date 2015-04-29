@@ -10,7 +10,7 @@
 
 #ifndef _S_MAPPER_H
 #define _S_MAPPER_H
-#include "defs.h"
+#include <definitions.h>
 #include "mmer.h"
 #include "params.h"
 

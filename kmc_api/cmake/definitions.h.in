@@ -4,25 +4,26 @@
 
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-  Version: 
-  Date   : 
+  Version: ${KMC_MAJOR_VERSION}.${KMC_MINOR_VERSION}.${KMC_PATCH_VERSION}
+  Date   : ${KMC_TWEAK_VERSION}
 */
 
-#ifndef _DEFS_H
-#define _DEFS_H
+#ifndef _KMER_DEFS_H
+#define _KMER_DEFS_H
 
-#include <ctime>
+#include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cmath>
 #include <cstring>
 #include <algorithm>
 #include <iostream>
-typedef float			count_t;
 typedef unsigned char 		uchar;
 typedef int 			int32;
 typedef unsigned int 		uint32;
 typedef long long 		int64;
 typedef unsigned long long 	uint64;
+typedef unsigned char 		uchar;
 
 const int32 MAX_STR_LEN 	= 32768;
 

@@ -9,7 +9,7 @@
   Date   : 2015-04-15
 */
 
-#include "defs.h"
+#include <definitions.h>
 #include "kmer.h"
 
 uint32 CKmer<1>::QUALITY_SIZE      = 0;

@@ -11,7 +11,7 @@
 #ifndef _KB_STORER_H
 #define _KB_STORER_H
 
-#include "defs.h"
+#include <definitions.h>
 #include "params.h"
 #include "kmer.h"
 #include "radix.h"

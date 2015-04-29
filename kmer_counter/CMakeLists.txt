@@ -6,7 +6,6 @@ set (KMC_CORE_INCLUDES
 	bkb_subbin.h
 	bkb_uncompactor.h
 	bkb_writer.h
-	defs.h
 	fastq_reader.h
 	kb_collector.h
 	kb_completer.h
@@ -49,14 +48,14 @@ endif (KMC_ADD_DEVELOP)
 
 if (WIN32 OR APPLE)
 	set (KMC_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/libz.1.2.5.dylib ${CMAKE_CURRENT_SOURCE_DIR}/libs/libbz2.1.0.5.dylib)
-	if (${KMC_ADD_ASM_LIB})
+	if (${KMC_ENABLE_ASM_LIB})
 		set (KMC_LIBRARIES ${KMC_LIBRARIES} ${CMAKE_CURRENT_SOURCE_DIR}/libs/libamac64.a)
 	else ()
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB")
 	endif()
 else (WIN32 OR APPLE)
 	set (KMC_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/libz.a ${CMAKE_CURRENT_SOURCE_DIR}/libs/libbz2.a)
-	if (${KMC_ADD_ASM_LIB})
+	if (${KMC_ENABLE_ASM_LIB})
 		set (KMC_LIBRARIES ${KMC_LIBRARIES} ${CMAKE_CURRENT_SOURCE_DIR}/libs/alibelf64.a)
 	else ()
 		set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_ASMLIB")
@@ -66,8 +65,9 @@ endif (WIN32 OR APPLE)
 add_library (kmc_core
 	${KMC_CORE_INCLUDES}
 	${KMC_CORE_SOURCES}
+	${KMC_CORE_STANDARD_INCLUDES}
 	${CMAKE_THREAD_LIBS_INIT})
+if (${KMC_COUNTER})
 add_executable (kmer_counter kmer_counter.cpp)
-if (${KMC_ADD_COUNTER})
-	target_link_libraries (kmer_counter kmc_core ${KMC_LIBRARIES})
-endif (${KMC_ADD_COUNTER})
+target_link_libraries (kmer_counter kmc_core ${KMC_LIBRARIES})
+endif (${KMC_COUNTER})

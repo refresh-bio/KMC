@@ -11,7 +11,7 @@
 #ifndef _PARAMS_H
 #define _PARAMS_H
 
-#include "defs.h"
+#include <definitions.h>
 #include "queues.h"
 #include "s_mapper.h"
 #include <vector>

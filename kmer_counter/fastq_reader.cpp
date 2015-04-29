@@ -10,7 +10,7 @@
 */
 
 #include <algorithm>
-#include "defs.h"
+#include <definitions.h>
 #include "fastq_reader.h"
 
 //************************************************************************************************************

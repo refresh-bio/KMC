@@ -1,7 +1,6 @@
 set (KMC_API_INCLUDES
 	kmc_file.h
 	kmer_api.h
-	kmer_defs.h
 	mmer.h
 	stdafx.h)
 set (KMC_API_SOURCES

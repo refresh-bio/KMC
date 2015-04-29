@@ -9,10 +9,11 @@
   Date   : 2015-04-15
 */
 
+#include <definitions.h>
 #include <fstream>
 #include <string>
 #include <vector>
-#include <time.h>
+#include <ctime>
 #include <functional>
 #include "timer.h"
 #include "kmc.h"
