@@ -1,4 +1,3 @@
-#include "stdafx.h"
 /*
   This file is a part of KMC software distributed under GNU GPL 3 licence.
   The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
@@ -9,8 +8,8 @@
   Date   : 2015-04-15
 */
 
-#include <definitions.h>
-#include "kmer.h"
+#include "../../kmc/definitions.h"
+#include "../kmer.h"
 
 uint32 CKmer<1>::QUALITY_SIZE      = 0;
 uint32 CKmerQuake<1>::QUALITY_SIZE = 4;

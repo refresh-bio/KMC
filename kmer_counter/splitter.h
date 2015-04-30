@@ -11,7 +11,7 @@
 #ifndef _SPLITTER_H
 #define _SPLITTER_H
 
-#include <definitions.h>
+#include "../kmc/definitions.h"
 #include "kmer.h"
 #include "kb_storer.h"
 #include "kb_collector.h"

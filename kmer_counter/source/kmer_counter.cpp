@@ -1,4 +1,3 @@
-#include "stdafx.h"
 /*
   This file is a part of KMC software distributed under GNU GPL 3 licence.
   The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
@@ -9,15 +8,15 @@
   Date   : 2015-04-15
 */
 
-#include <definitions.h>
+#include "../../kmc/definitions.h"
 #include <fstream>
 #include <string>
 #include <vector>
 #include <ctime>
 #include <functional>
-#include "timer.h"
-#include "kmc.h"
-#include "meta_oper.h"
+#include "../timer.h"
+#include "../kmc.h"
+#include "../meta_oper.h"
 
 using namespace std;
 

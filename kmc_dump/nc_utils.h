@@ -12,7 +12,7 @@
 */
 
 #include <string>
-#include <definitions.h>
+#include "../kmc/definitions.h"
 
 #ifndef _NC_UTILS_H
 #define _NC_UTILS_H

@@ -10,7 +10,7 @@
 #ifndef _KB_COMPLETER_H
 #define _KB_COMPLETER_H
 
-#include <definitions.h>
+#include "../kmc/definitions.h"
 #include "params.h"
 #include "kmer.h"
 #include "radix.h"
@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <numeric>
 #include <array>
-#include <stdio.h>
+#include <cstdio>
 
 
 //************************************************************************************************************

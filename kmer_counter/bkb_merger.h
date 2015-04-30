@@ -10,8 +10,8 @@
 
 #ifndef _HBH_MERGER_H
 #define _HBH_MERGER_H
-#include "bkb_subbin.h"
 
+#include "bkb_subbin.h"
 
 //************************************************************************************************************
 // CBigKmerBinMerger - merger sorted k-mers from number of subbins 

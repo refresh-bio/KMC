@@ -11,10 +11,10 @@
 #ifndef _KMC_FILE_H
 #define _KMC_FILE_H
 
-#include <definitions.h>
-#include "kmer_api.h"
 #include <string>
 #include <vector>
+#include "../kmc/definitions.h"
+#include "kmer_api.h"
 
 class CKMCFile
 {

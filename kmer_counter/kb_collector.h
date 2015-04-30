@@ -11,7 +11,7 @@
 #ifndef _KB_COLLECTOR_H
 #define _KB_COLLECTOR_H
 
-#include <definitions.h>
+#include "../kmc/definitions.h"
 #include "params.h"
 #include "kmer.h"
 #include "queues.h"
@@ -22,7 +22,7 @@
 #include <numeric>
 #include <array>
 #include <vector>
-#include <stdio.h>
+#include <cstdio>
 
 using namespace std;
 

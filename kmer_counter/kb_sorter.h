@@ -13,7 +13,7 @@
 
 #define DEBUGG_INFO
 
-#include <definitions.h>
+#include "../kmc/definitions.h"
 #include "params.h"
 #include "kmer.h"
 #include "radix.h"
@@ -23,7 +23,7 @@
 #include <numeric>
 #include <array>
 #include <vector>
-#include <stdio.h>
+#include <cstdio>
 #include <cstddef>
 
 #include "kxmer_set.h"

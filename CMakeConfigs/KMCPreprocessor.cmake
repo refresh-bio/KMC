@@ -1,20 +1,18 @@
-configure_file (${PROJECT_SOURCE_DIR}/cmake/definitions.h.in definitions.h)
-
-### Debug
+# Toggle debug mode
 list (APPEND KMC_DEBUG_DEFINITIONS
 		"DEBUG_MODE"
 		"memcpy"
 		"memset")
 set_property (DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS_DEBUG "${KMC_DEBUG_DEFINITIONS}")
 
-### Develop
+# Toggle develop mode
 list (APPEND KMC_DEVELOP_DEFINITIONS "DEVELOP_MODE")
 set_property (DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS_DEVELOP "${KMC_DEBUG_DEFINITIONS}")
 
-### 
-if (${KMC_DISABLE_ASM_LIB})
+# Toggle inclusion of asm library
+if (NOT ${KMC_BUILD_WITH_ASM})
 	list (APPEND KMC_DEFINITIONS "DISABLE_ASMLIB")
-endif (${KMC_DISABLE_ASM_LIB})
+endif (NOT ${KMC_BUILD_WITH_ASM})
 
 ### Required
 list (APPEND KMC_DEFINITIONS "my_fopen=fopen")
@@ -31,8 +29,8 @@ else (MSVC)
 endif (MSVC)
 # Version information
 list (APPEND KMC_DEFINITIONS
-	"KMC_VER=${PROJECT_VERSION_MAJOR}${PROJECT_VERSION_MINOR}${PROJECT_VERSION_PATCH}"
-	"KMC_DATE=${PROJECT_VERSION_TWEAK}")
+	"KMC_VER=${KMC_VERSION_MAJOR}${KMC_VERSION_MINOR}${KMC_VERSION_PATCH}"
+	"KMC_DATE=${KMC_VERSION_TWEAK}")
 # Section needs heading
 list (APPEND KMC_DEFINITIONS
 	"_CRT_SECURE_NO_WARNINGS"

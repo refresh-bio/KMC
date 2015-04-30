@@ -8,11 +8,10 @@
   Date   : 2015-04-15
 */
 
-#include "stdafx.h"
-#include "mmer.h"
-#include "kmc_file.h"
 #include <iostream>
 #include <tuple>
+#include "mmer.h"
+#include "kmc_file.h"
 
 
 uint64 CKMCFile::part_size = 1 << 25;

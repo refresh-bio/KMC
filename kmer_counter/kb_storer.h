@@ -11,7 +11,7 @@
 #ifndef _KB_STORER_H
 #define _KB_STORER_H
 
-#include <definitions.h>
+#include "../kmc/definitions.h"
 #include "params.h"
 #include "kmer.h"
 #include "radix.h"
@@ -20,7 +20,7 @@
 #include <numeric>
 #include <array>
 #include <tuple>
-#include <stdio.h>
+#include <cstdio>
 
 using namespace std;
 

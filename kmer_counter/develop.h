@@ -1,7 +1,7 @@
 #ifndef _DEVELOP_H
 #define _DEVELOP_H
 
-#include <definitions.h>
+#include "../kmc/definitions.h"
 
 #define MAP_LOG_SRC "map.log"
 #define KMERS_PER_BIN_LOG_FILE "kmers_per_bin.log"

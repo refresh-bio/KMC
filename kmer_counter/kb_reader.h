@@ -11,7 +11,7 @@
 #ifndef _KB_READER_H
 #define _KB_READER_H
 
-#include <definitions.h>
+#include "../kmc/definitions.h"
 #include "params.h"
 #include "kmer.h"
 #include "s_mapper.h"
@@ -21,7 +21,7 @@
 #include <numeric>
 #include <array>
 #include <vector>
-#include <stdio.h>
+#include <cstdio>
 
 
 //************************************************************************************************************

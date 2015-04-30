@@ -9,10 +9,9 @@
 */
 
 
-#include "stdafx.h"
-#include "kmer_api.h"
 #include <vector>
-#include <math.h>
+#include <cmath>
+#include "kmer_api.h"
 
 using namespace std;
 

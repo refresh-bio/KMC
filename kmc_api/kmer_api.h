@@ -12,9 +12,9 @@ Date   : 2015-04-15
 #define _KMER_API_H
 
 
-#include <definitions.h>
 #include <string>
 #include <iostream>
+#include "../kmc/definitions.h"
 #include "mmer.h"
 class CKMCFile;
 

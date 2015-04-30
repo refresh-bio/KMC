@@ -11,7 +11,6 @@
   Date   : 2015-04-15
 */
 
-#include "stdafx.h"
 #include "nc_utils.h"
 
 

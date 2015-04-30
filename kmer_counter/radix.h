@@ -16,14 +16,14 @@
 #include <iostream>
 #include <omp.h>
 #include <algorithm>
+#include "../kmc/definitions.h"
 #include "asmlib_wrapper.h"
-#include <definitions.h>
 #include "queues.h"
 
 #ifdef WIN32
 typedef unsigned __int8 uint8_t;
 #else
-#include <stdint.h>
+#include <cstdint>
 #endif
 
 #define MAX_NUM_THREADS 32

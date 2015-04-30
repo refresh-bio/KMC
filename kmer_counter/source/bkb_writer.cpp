@@ -8,8 +8,7 @@
   Date   : 2015-04-15
 */
 
-#include "stdafx.h"
-#include "bkb_writer.h"
+#include "../bkb_writer.h"
 
 //************************************************************************************************************
 // CBigKmerBinWriter

@@ -11,12 +11,13 @@
 #ifndef _ASMLIB_WRAPPER_H
 #define _ASMLIB_WRAPPER_H
 
-#include <definitions.h>
+#include "../kmc/definitions.h"
+
 #ifdef DISABLE_ASMLIB
 #define A_memcpy memcpy
 #define SetMemcpyCacheLimit(X) 
 #else
-#include "libs/asmlib.h"
+#include "external/asmlib.h"
 #endif
 
 #endif

@@ -11,9 +11,8 @@
   Date   : 2015-04-15
 */
 
-#include <definitions.h>
-#include "stdafx.h"
 #include <iostream>
+#include "../kmc/definitions.h"
 #include "../kmc_api/kmc_file.h"
 #include "nc_utils.h"
 

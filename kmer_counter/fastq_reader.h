@@ -11,13 +11,13 @@
 #ifndef _FASTQ_READER_H
 #define _FASTQ_READER_H
 
-#include <definitions.h>
+#include "../kmc/definitions.h"
 #include "params.h"
-#include <stdio.h>
+#include <cstdio>
 #include <iostream>
 
-#include "libs/zlib.h"
-#include "libs/bzlib.h"
+#include "external/zlib.h"
+#include "external/bzlib.h"
 
 
 using namespace std;

@@ -1,4 +1,3 @@
-#include "stdafx.h"
 /*
   This file is a part of KMC software distributed under GNU GPL 3 licence.
   The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
@@ -11,7 +10,7 @@
 #include <algorithm>
 #include <numeric>
 #include <iostream>
-#include "kb_completer.h"
+#include "../kb_completer.h"
 
 using namespace std;
 

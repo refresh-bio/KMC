@@ -1,4 +1,3 @@
-#include "stdafx.h"
 /*
   This file is a part of KMC software distributed under GNU GPL 3 licence.
   The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
@@ -10,8 +9,8 @@
 */
 
 #include <algorithm>
-#include <definitions.h>
-#include "fastq_reader.h"
+#include "../../kmc/definitions.h"
+#include "../fastq_reader.h"
 
 //************************************************************************************************************
 // CFastqReader	- reader class

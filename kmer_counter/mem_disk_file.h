@@ -11,9 +11,9 @@
 #ifndef _MEM_DISK_FILE_H
 #define _MEM_DISK_FILE_H
 
-#include <definitions.h>
+#include "../kmc/definitions.h"
 #include <string>
-#include <stdio.h>
+#include <cstdio>
 #include <vector>
 using namespace std;
 
