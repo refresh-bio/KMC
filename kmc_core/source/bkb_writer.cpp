@@ -10,7 +10,10 @@
 
 #include <string>
 #include <iostream>
+#include <cstdio>
 #include "../bkb_writer.h"
+#include "../params.h"
+#include "../queues.h"
 using std::string;
 using std::cout;
 

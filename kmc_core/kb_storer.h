@@ -11,16 +11,23 @@
 #ifndef _KB_STORER_H
 #define _KB_STORER_H
 
-#include "../kmc/definitions.h"
-#include "params.h"
-#include "kmer.h"
-#include "radix.h"
 #include <string>
 #include <algorithm>
 #include <numeric>
 #include <array>
 #include <tuple>
+#include <list>
 #include <cstdio>
+#include "../kmc/definitions.h"
+class CBinDesc;
+class CBinPartQueue;
+class CDiskLogger;
+class CMemDiskFile;
+class CMemoryMonitor;
+class CMemoryPool;
+class CSignatureMapper;
+struct CKMCParams;
+struct CKMCQueues;
 
 
 //************************************************************************************************************

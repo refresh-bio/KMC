@@ -11,10 +11,10 @@
 #ifndef _MEM_DISK_FILE_H
 #define _MEM_DISK_FILE_H
 
-#include "../kmc/definitions.h"
 #include <string>
 #include <cstdio>
 #include <vector>
+#include "../kmc/definitions.h"
 
 
 //************************************************************************************************************

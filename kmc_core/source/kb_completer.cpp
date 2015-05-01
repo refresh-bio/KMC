@@ -10,7 +10,12 @@
 #include <algorithm>
 #include <numeric>
 #include <iostream>
+#include "../../kmc/definitions.h"
 #include "../kb_completer.h"
+#include "../params.h"
+#include "../queues.h"
+#include "../s_mapper.h"
+class CMemDiskFile;
 
 using namespace std;
 

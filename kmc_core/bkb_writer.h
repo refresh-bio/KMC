@@ -10,8 +10,14 @@
 
 #ifndef _BKB_WRITER_H
 #define _BKB_WRITER_H
-
-#include "params.h"
+#include "../kmc/definitions.h"
+class CBigBinDesc;
+class CBigBinSortedPartQueue;
+class CCompletedBinsCollector;
+class CDiskLogger;
+class CMemoryPool;
+struct CKMCParams;
+struct CKMCQueues;
 
 //************************************************************************************************************
 // CBigKmerBinWriter - Write sub bins to  HDD

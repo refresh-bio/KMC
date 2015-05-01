@@ -14,9 +14,11 @@
 #include <vector>
 #include <ctime>
 #include <functional>
+#include <cstddef>
+#include "../kmc_core/kmer.h"
+#include "../kmc_core/params.h"
 #include "../kmc_core/timer.h"
 #include "../kmc_core/kmc.h"
-#include "../kmc_core/meta_oper.h"
 
 using namespace std;
 

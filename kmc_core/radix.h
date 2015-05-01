@@ -17,8 +17,7 @@
 #include <omp.h>
 #include <algorithm>
 #include "../kmc/definitions.h"
-#include "asmlib_wrapper.h"
-#include "queues.h"
+class CMemoryPool;
 
 #ifdef WIN32
 typedef unsigned __int8 uint8_t;

@@ -9,7 +9,10 @@
 */
 
 #include <cstdio>
+#include "../../kmc/definitions.h"
+#include "../../external/asmlib.h"
 #include "../radix.h"
+#include "../queues.h"
 
 //----------------------------------------------------------------------------------
 /*  Parallel radix sort. The input data to be sorted are divided evenly among threads.

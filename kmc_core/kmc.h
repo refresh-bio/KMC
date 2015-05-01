@@ -30,7 +30,6 @@
 #include "kb_storer.h"
 #include "s_mapper.h"
 #include "splitter.h"
-#include "asmlib_wrapper.h"
 
 #ifdef DEVELOP_MODE
 #include "develop.h"

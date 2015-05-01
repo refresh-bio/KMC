@@ -8,9 +8,11 @@
     Date   : 2015-04-15
 */
 
-#include "../mem_disk_file.h"
-#include "../asmlib_wrapper.h"
 #include <iostream>
+#include "../mem_disk_file.h"
+#include <cstddef>                     // for size_t, NULL
+#include "../../external/asmlib.h"
+#include "../../kmc/definitions.h"
 using namespace std;
 
 //----------------------------------------------------------------------------------

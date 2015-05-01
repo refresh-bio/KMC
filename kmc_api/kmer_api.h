@@ -16,7 +16,6 @@
 #include <iostream>
 #include "../kmc/definitions.h"
 #include "mmer.h"
-class CKMCFile;
 
 class CKmerAPI {
   protected:

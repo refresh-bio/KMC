@@ -10,7 +10,14 @@
 #include <algorithm>
 #include <numeric>
 #include <iostream>
+#include <cstddef>
+#include <list>
 #include "../kb_storer.h"
+#include "../../external/asmlib.h"
+#include "../../kmc/definitions.h"
+#include "../mem_disk_file.h"
+#include "../params.h"
+#include "../queues.h"
 
 using namespace std;
 

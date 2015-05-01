@@ -12,7 +12,14 @@
 #ifndef _BKB_READER_H_
 #define  _BKB_READER_H_
 
-#include "params.h"
+#include "../kmc/definitions.h"
+class CBigBinPartQueue;
+class CBinDesc;
+class CDiskLogger;
+class CMemoryPool;
+class CTooLargeBinsQueue;
+struct CKMCParams;
+struct CKMCQueues;
 
 //************************************************************************************************************
 // CBigKmerBinReader - reader of bins from distribution phase. Only in strict memory mode

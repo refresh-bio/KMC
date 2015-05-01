@@ -10,15 +10,22 @@
 #ifndef _KB_COMPLETER_H
 #define _KB_COMPLETER_H
 
-#include "../kmc/definitions.h"
-#include "params.h"
-#include "kmer.h"
-#include "radix.h"
 #include <string>
 #include <algorithm>
 #include <numeric>
 #include <array>
 #include <cstdio>
+#include <cstdio>
+#include "../kmc/definitions.h"
+class CBigBinKmerPartQueue;
+class CBinDesc;
+class CKmerQueue;
+class CMemoryBins;
+class CMemoryMonitor;
+class CMemoryPool;
+class CSignatureMapper;
+struct CKMCParams;
+struct CKMCQueues;
 
 
 //************************************************************************************************************

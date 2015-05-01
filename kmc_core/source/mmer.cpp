@@ -9,6 +9,7 @@
 */
 
 #include "../mmer.h"
+#include "../../kmc/definitions.h"
 
 
 uint32 CMmer::norm5[];

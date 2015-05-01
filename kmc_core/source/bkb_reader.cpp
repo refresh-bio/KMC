@@ -11,8 +11,10 @@
 #include <string>
 #include <iostream>
 #include "../bkb_reader.h"
-#include "../asmlib_wrapper.h"
-
+#include "../../external/asmlib.h"
+#include "../mem_disk_file.h"
+#include "../params.h"
+#include "../queues.h"
 using std::string;
 using std::cout;
 

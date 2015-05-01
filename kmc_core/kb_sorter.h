@@ -14,6 +14,7 @@
 #define DEBUGG_INFO
 
 #include "../kmc/definitions.h"
+#include "../external/asmlib.h"
 #include "params.h"
 #include "kmer.h"
 #include "radix.h"

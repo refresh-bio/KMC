@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <cmath>
+#include "../kmc/definitions.h"
 #include "kmer_api.h"
 
 using namespace std;

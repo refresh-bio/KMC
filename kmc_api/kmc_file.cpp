@@ -10,8 +10,10 @@
 
 #include <iostream>
 #include <tuple>
+#include "../kmc/definitions.h"
 #include "mmer.h"
 #include "kmc_file.h"
+#include "kmer_api.h"
 
 
 uint64 CKMCFile::part_size = 1 << 25;
