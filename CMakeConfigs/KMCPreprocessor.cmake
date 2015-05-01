@@ -1,3 +1,5 @@
+configure_file (${CMAKE_SOURCE_DIR}/CMakeConfigs/definitions.h.in ${CMAKE_SOURCE_DIR}/kmc/definitions.h)
+
 # Toggle debug mode
 list (APPEND KMC_DEBUG_DEFINITIONS
 		"DEBUG_MODE"

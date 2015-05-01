@@ -31,30 +31,11 @@ set (INSTALL_PACKAGE_DIR lib${LIBRARY_SUFFIX}/cmake CACHE PATH "Installation dir
 mark_as_advanced (INSTALL_INCLUDE_DIR INSTALL_RUNTIME_DIR INSTALL_ARCHIVE_DIR)
 
 include (CMakeConfigs/KMCPreprocessor.cmake)
-configure_file (${CMAKE_SOURCE_DIR}/CMakeConfigs/definitions.h.in ${CMAKE_SOURCE_DIR}/kmc/definitions.h)
-if (KMC_INSTALL_ARCHIVE)
-	install (FILES ${KMC_SOURCE_DIR}/kmc/definitions.h DESTINATION ${INSTALL_INCLUDE_DIR}/kmc)
-	export (KMC ${INSTALL_INCLUDE_DIR}/kmc/definitions.h)
-endif (KMC_INSTALL_ARCHIVE)
+include (CMakeConfigs/KMCArchive.cmake)
+include (CMakeConfigs/KMCPackage.cmake)
 
 add_subdirectory (kmc_api)
 add_subdirectory (kmc_core)
 add_subdirectory (kmc_counter)
 add_subdirectory (kmc_dump)
 add_subdirectory (kmc_dump_sample)
-
-if (KMC_INSTALL_PACKAGE)
-	configure_package_config_file (
-		CMakeConfigs/KMCConfig.cmake.in CMakeConfigs/KMCConfig.cmake
-		INSTALL_DESTINATION ${INSTALL_PACKAGE_DIR}
-		PATH_VARS INCLUDE_INSTALL_DIR)
-	install (TARGETS KMC
-		DESTINATION ${CMAKE_INSTALL_LIBDIR}
-		EXPORT KMCTargets)
-	install (EXPORT KMCTargets
-		FILE KMCTargets.cmake
-		NAMESPACE KMC::
-		DESTINATION ${INSTALL_PACKAGE_DIR})
-	install (FILES "${CMAKE_CURRENT_BINARY_DIR}/CMakeConfigs/KMCConfig.cmake"
-		DESTINATION ${INSTALL_PACKAGE_DIR})
-endif (KMC_INSTALL_PACKAGE)
