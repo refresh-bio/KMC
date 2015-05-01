@@ -17,7 +17,7 @@
 #define A_memcpy memcpy
 #define SetMemcpyCacheLimit(X)
 #else
-#include "external/asmlib.h"
+#include "../external/asmlib.h"
 #endif
 
 #endif

@@ -10,12 +10,11 @@ set (KMC_VERSION_TWEAK 20150415)
 set (KMC_VERSION ${KMC_VERSION_MAJOR}.${KMC_VERSION_MINOR}.${KMC_VERSION_PATCH})
 message (STATUS "KMC Version: ${KMC_VERSION}")
 
-add_definitions (${OpenMP_C_FLAGS})
-add_definitions (${OpenMP_CXX_FLAGS})
-add_definitions ("-std=c++11")
-
 find_package (OpenMP REQUIRED)
 find_package (Threads REQUIRED)
+SET (CMAKE_CXX_FLAGS  "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
+SET (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" )
+SET (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11" )
 
 option (KMC_BUILD_WITH_ASM "Build KMC with ASM library included" ON)
 option (KMC_INSTALL_RUNTIME "Build and install KMC executables" ON)
