@@ -9,7 +9,7 @@ set (KMC_API_SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/mmer.cpp)
 
 add_library (kmc_api STATIC ${KMC_API_INCLUDES} ${KMC_API_SOURCES})
-set_target_properties (kmc_api PROPERTIES VERSION "${KMC_VERSION}")
+set_target_properties (kmc_api PROPERTIES VERSION "${PROJECT_VERSION}")
 
 if (${KMC_INSTALL_ARCHIVE})
 	install (TARGETS kmc_api EXPORT KMC

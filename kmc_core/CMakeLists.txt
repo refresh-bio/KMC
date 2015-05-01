@@ -46,7 +46,7 @@ if (KMC_ENABLE_DEVELOP)
 endif (KMC_ENABLE_DEVELOP)
 
 add_library (kmc_core STATIC ${KMC_CORE_INCLUDES} ${KMC_CORE_SOURCES})
-set_target_properties (kmc_core PROPERTIES VERSION ${KMC_VERSION})
+set_target_properties (kmc_core PROPERTIES VERSION ${PROJECT_VERSION})
 
 if (${KMC_INSTALL_ARCHIVE})
 	install (TARGETS kmc_core KMC
