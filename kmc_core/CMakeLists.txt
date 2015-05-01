@@ -1,3 +1,5 @@
+find_package (Threads REQUIRED)
+
 set (KMC_CORE_INCLUDES
 	${CMAKE_CURRENT_SOURCE_DIR}/asmlib_wrapper.h
 	${CMAKE_CURRENT_SOURCE_DIR}/bkb_merger.h
@@ -45,6 +47,7 @@ if (KMC_ENABLE_DEVELOP)
 	set (KMC_CORE_COUNTER_SOURCES ${KMC_CORE_COUNTER_SOURCES} develop.cpp)
 endif (KMC_ENABLE_DEVELOP)
 
+message (FATAL_ERROR "${CMAKE_THREAD_LIBS_INIT}")
 add_library (kmc_core STATIC ${KMC_CORE_INCLUDES} ${KMC_CORE_SOURCES} ${CMAKE_THREAD_LIBS_INIT})
 set_target_properties (kmc_core PROPERTIES VERSION ${KMC_VERSION})
 

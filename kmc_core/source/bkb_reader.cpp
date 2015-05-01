@@ -10,8 +10,9 @@
 
 #include <string>
 #include <iostream>
-#include "../bkb_reader.h"
+#include "../../kmc/definitions.h"
 #include "../../external/asmlib.h"
+#include "../bkb_reader.h"
 #include "../mem_disk_file.h"
 #include "../params.h"
 #include "../queues.h"
