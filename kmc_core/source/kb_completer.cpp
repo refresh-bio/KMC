@@ -1,11 +1,11 @@
 /*
-  This file is a part of KMC software distributed under GNU GPL 3 licence.
-  The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
-  
-  Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
-  
-  Version: 2.2.0
-  Date   : 2015-04-15
+    This file is a part of KMC software distributed under GNU GPL 3 licence.
+    The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
+
+    Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
+
+    Version: 2.2.0
+    Date   : 2015-04-15
 */
 #include <algorithm>
 #include <numeric>
@@ -24,43 +24,35 @@ extern uint64 total_reads;
 
 //----------------------------------------------------------------------------------
 // Assign queues and monitors
-CKmerBinCompleter::CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues) 
-{
+CKmerBinCompleter::CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues) {
 	mm		       = Queues.mm;
 	file_name      = Params.output_file_name;
 	kq             = Queues.kq;
 	bd		       = Queues.bd;
 	s_mapper	   = Queues.s_mapper;
 	memory_bins    = Queues.memory_bins;
-
 	bbkpq		   = Queues.bbkpq;
 	use_strict_mem = Params.use_strict_mem;
 	kmer_file_name = file_name + ".kmc_suf";
 	lut_file_name  = file_name + ".kmc_pre";
-
 	kmer_len       = Params.kmer_len;
 	signature_len  = Params.signature_len;
-
 	cutoff_min     = Params.cutoff_min;
 	cutoff_max     = Params.cutoff_max;
 	counter_max    = Params.counter_max;
 	lut_prefix_len = Params.lut_prefix_len;
-
 	kmer_t_size    = Params.KMER_T_size;
-	
 	use_quake      = Params.use_quake;
 }
 
 //----------------------------------------------------------------------------------
-CKmerBinCompleter::~CKmerBinCompleter()
-{
+CKmerBinCompleter::~CKmerBinCompleter() {
 }
 
 
 //----------------------------------------------------------------------------------
 // Store sorted and compacted bins to the output file (stage first)
-void CKmerBinCompleter::ProcessBinsFirstStage()
-{
+void CKmerBinCompleter::ProcessBinsFirstStage() {
 	int32 bin_id = 0;
 	uchar *data = NULL;
 	uint64 data_size = 0;
@@ -71,45 +63,41 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 	sig_map = new uint32[sig_map_size];
 	fill_n(sig_map, sig_map_size, 0);
 	lut_pos = 0;
+
 	if(use_quake)
 		counter_size = 4;
 	else
-		counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));	
-	
+		counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
+
 	// Open output file
 	out_kmer = fopen(kmer_file_name.c_str(), "wb");
-	if(!out_kmer)
-	{
+
+	if(!out_kmer) {
 		cout << "Error: Cannot create " << kmer_file_name << "\n";
 		exit(1);
 		return;
 	}
 
 	out_lut = fopen(lut_file_name.c_str(), "wb");
-	if(!out_lut)
-	{
+
+	if(!out_lut) {
 		cout << "Error: Cannot create " << lut_file_name << "\n";
 		fclose(out_kmer);
 		exit(1);
 		return;
 	}
 
-	
 	n_recs = 0;
-
 	_n_unique = _n_cutoff_min = _n_cutoff_max = _n_total = 0;
 	n_unique  = n_cutoff_min  = n_cutoff_max  = n_total  = 0;
-
 	char s_kmc_pre[] = "KMCP";
 	char s_kmc_suf[] = "KMCS";
-
 	// Markers at the beginning
 	fwrite(s_kmc_pre, 1, 4, out_lut);
 	fwrite(s_kmc_suf, 1, 4, out_kmer);
 
 	// Process priority queue of ready-to-output bins
-	while(!kq->empty())
-	{
+	while(!kq->empty()) {
 		// Get the next bin
 		if (!kq->pop(bin_id, data, data_size, lut, lut_size, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total))
 			continue;
@@ -121,100 +109,97 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		uint64 n_super_kmers;
 		uint64 raw_size;
 		CMemDiskFile *file;
-
 		bd->read(bin_id, file, name, raw_size, n_rec, n_plus_x_recs, n_super_kmers);
-
 		uint64 lut_recs        = lut_size / sizeof(uint64);
-		
 		// Write bin data to the output file
 #ifdef WIN32 //fwrite bug https://connect.microsoft.com/VisualStudio/feedback/details/755018/fwrite-hangs-with-large-size-count
 		uint64 write_offset = 0;
 		uint64 left_to_write = data_size;
-		while (left_to_write)
-		{
-			uint64 current_to_write = MIN(left_to_write, (4ull << 30) - 1);			
+
+		while (left_to_write) {
+			uint64 current_to_write = MIN(left_to_write, (4ull << 30) - 1);
 			fwrite(data + write_offset, 1, current_to_write, out_kmer);
 			write_offset += current_to_write;
 			left_to_write -= current_to_write;
 		}
+
 #else
 		fwrite(data, 1, data_size, out_kmer);
 #endif
 		memory_bins->free(bin_id, CMemoryBins::mba_suffix);
-
 		uint64 *ulut = (uint64*) lut;
-		for(uint64 i = 0; i < lut_recs; ++i)
-		{
+
+		for(uint64 i = 0; i < lut_recs; ++i) {
 			uint64 x  = ulut[i];
 			ulut[i]   = n_recs;
 			n_recs   += x;
 		}
+
 		fwrite(lut, lut_recs, sizeof(uint64), out_lut);
 		//fwrite(&n_rec, 1, sizeof(uint64), out_lut);
 		memory_bins->free(bin_id, CMemoryBins::mba_lut);
-
 		n_unique	 += _n_unique;
 		n_cutoff_min += _n_cutoff_min;
 		n_cutoff_max += _n_cutoff_max;
 		n_total      += _n_total;
-		for (uint32 i = 0; i < sig_map_size; ++i)
-		{
-			if (s_mapper->get_bin_id(i) == bin_id)
-			{
+
+		for (uint32 i = 0; i < sig_map_size; ++i) {
+			if (s_mapper->get_bin_id(i) == bin_id) {
 				sig_map[i] = lut_pos;
 			}
 		}
+
 		++lut_pos;
-	}		
+	}
 }
 
 //----------------------------------------------------------------------------------
 // Store sorted and compacted bins to the output file (stage second)
-void CKmerBinCompleter::ProcessBinsSecondStage()
-{
+void CKmerBinCompleter::ProcessBinsSecondStage() {
 	char s_kmc_pre[] = "KMCP";
 	char s_kmc_suf[] = "KMCS";
-	if (use_strict_mem)
-	{
+
+	if (use_strict_mem) {
 		int32 bin_id;
 		uchar *data = NULL;
 		uint64 data_size = 0;
 		uchar *lut = NULL;
-		uint64 lut_size = 0;		
+		uint64 lut_size = 0;
 		bool last_in_bin = false;
-		while (bbkpq->pop(bin_id, data, data_size, lut, lut_size, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total, last_in_bin))
-		{
-			if (data_size)
-			{
-				fwrite(data, 1, data_size, out_kmer);				
+
+		while (bbkpq->pop(bin_id, data, data_size, lut, lut_size, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total,
+						  last_in_bin)) {
+			if (data_size) {
+				fwrite(data, 1, data_size, out_kmer);
 				sm_pmm_merger_suff->free(data);
 			}
-			if (lut_size)
-			{
+
+			if (lut_size) {
 				uint64 lut_recs = lut_size / sizeof(uint64);
 				uint64* ulut = (uint64*)lut;
-				for (uint64 i = 0; i < lut_recs; ++i)
-				{
+
+				for (uint64 i = 0; i < lut_recs; ++i) {
 					uint64 x = ulut[i];
 					ulut[i] = n_recs;
 					n_recs += x;
 				}
-				fwrite(lut, lut_recs, sizeof(uint64), out_lut);				
+
+				fwrite(lut, lut_recs, sizeof(uint64), out_lut);
 				sm_pmm_merger_lut->free(lut);
 			}
-			if(last_in_bin)
-			{
+
+			if(last_in_bin) {
 				n_unique += _n_unique;
 				n_cutoff_min += _n_cutoff_min;
 				n_cutoff_max += _n_cutoff_max;
 				n_total += _n_total;
-				for (uint32 i = 0; i < sig_map_size; ++i)
-				{
-					if (s_mapper->get_bin_id(i) == bin_id)
-					{
+
+				for (uint32 i = 0; i < sig_map_size; ++i) {
+					if (s_mapper->get_bin_id(i) == bin_id) {
 						sig_map[i] = lut_pos;
 					}
 				}
+
 				++lut_pos;
 			}
 		}
@@ -223,48 +208,48 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 	// Marker at the end
 	fwrite(s_kmc_suf, 1, 4, out_kmer);
 	fclose(out_kmer);
-
 	fwrite(&n_recs, 1, sizeof(uint64), out_lut);
-
-	//store signature mapping 
+	//store signature mapping
 	fwrite(sig_map, sizeof(uint32), sig_map_size, out_lut);
-
 	// Store header
 	uint32 offset = 0;
-
-	store_uint(out_lut, kmer_len, 4);				offset += 4;
-	store_uint(out_lut, (uint32)use_quake, 4);		offset += 4;	// mode: 0 (counting), 1 (Quake-compatibile counting)
-	store_uint(out_lut, counter_size, 4);			offset += 4;
-	store_uint(out_lut, lut_prefix_len, 4);			offset += 4;
-	store_uint(out_lut, signature_len, 4);			offset += 4;
-	store_uint(out_lut, cutoff_min, 4);				offset += 4;
-	store_uint(out_lut, cutoff_max, 4);				offset += 4;
-	store_uint(out_lut, n_unique - n_cutoff_min - n_cutoff_max, 8);		offset += 8;
+	store_uint(out_lut, kmer_len, 4);
+	offset += 4;
+	store_uint(out_lut, (uint32)use_quake, 4);
+	offset += 4;	// mode: 0 (counting), 1 (Quake-compatibile counting)
+	store_uint(out_lut, counter_size, 4);
+	offset += 4;
+	store_uint(out_lut, lut_prefix_len, 4);
+	offset += 4;
+	store_uint(out_lut, signature_len, 4);
+	offset += 4;
+	store_uint(out_lut, cutoff_min, 4);
+	offset += 4;
+	store_uint(out_lut, cutoff_max, 4);
+	offset += 4;
+	store_uint(out_lut, n_unique - n_cutoff_min - n_cutoff_max, 8);
+	offset += 8;
 
 	// Space for future use
-	for (int32 i = 0; i < 7; ++i)
-	{
+	for (int32 i = 0; i < 7; ++i) {
 		store_uint(out_lut, 0, 4);
 		offset += 4;
 	}
 
 	store_uint(out_lut, 0x200, 4);
 	offset += 4;
-
 	store_uint(out_lut, offset, 4);
-
 	// Marker at the end
 	fwrite(s_kmc_pre, 1, 4, out_lut);
 	fclose(out_lut);
 	cout << "\n";
-
 	delete[] sig_map;
 }
 
 //----------------------------------------------------------------------------------
 // Return statistics
-void CKmerBinCompleter::GetTotal(uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total)
-{
+void CKmerBinCompleter::GetTotal(uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max,
+								 uint64 &_n_total) {
 	_n_unique	  = n_unique;
 	_n_cutoff_min = n_cutoff_min;
 	_n_cutoff_max = n_cutoff_max;
@@ -273,8 +258,7 @@ void CKmerBinCompleter::GetTotal(uint64 &_n_unique, uint64 &_n_cutoff_min, uint6
 
 //----------------------------------------------------------------------------------
 // Store single unsigned integer in LSB fashion
-bool CKmerBinCompleter::store_uint(FILE *out, uint64 x, uint32 size)
-{
+bool CKmerBinCompleter::store_uint(FILE *out, uint64 x, uint32 size) {
 	for(uint32 i = 0; i < size; ++i)
 		putc((x >> (i * 8)) & 0xFF, out);
 
@@ -283,8 +267,7 @@ bool CKmerBinCompleter::store_uint(FILE *out, uint64 x, uint32 size)
 
 //----------------------------------------------------------------------------------
 //Init memory pools for 2nd stage
-void CKmerBinCompleter::InitStage2(CKMCParams& Params, CKMCQueues& Queues)
-{
+void CKmerBinCompleter::InitStage2(CKMCParams& Params, CKMCQueues& Queues) {
 	sm_pmm_merger_lut = Queues.sm_pmm_merger_lut;
 	sm_pmm_merger_suff = Queues.sm_pmm_merger_suff;
 }
@@ -296,27 +279,23 @@ void CKmerBinCompleter::InitStage2(CKMCParams& Params, CKMCQueues& Queues)
 
 //----------------------------------------------------------------------------------
 // Constructor
-CWKmerBinCompleter::CWKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues)
-{
+CWKmerBinCompleter::CWKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues) {
 	kbc = new CKmerBinCompleter(Params, Queues);
 }
 
-void CWKmerBinCompleter::InitStage2(CKMCParams& Params, CKMCQueues& Queues)
-{
+void CWKmerBinCompleter::InitStage2(CKMCParams& Params, CKMCQueues& Queues) {
 	kbc->InitStage2(Params, Queues);
 }
 
 //----------------------------------------------------------------------------------
 // Destructor
-CWKmerBinCompleter::~CWKmerBinCompleter()
-{
+CWKmerBinCompleter::~CWKmerBinCompleter() {
 	delete kbc;
 }
 
 //----------------------------------------------------------------------------------
 // Execution
-void CWKmerBinCompleter::operator()(bool first_stage)
-{
+void CWKmerBinCompleter::operator()(bool first_stage) {
 	if(first_stage)
 		kbc->ProcessBinsFirstStage();
 	else
@@ -325,8 +304,8 @@ void CWKmerBinCompleter::operator()(bool first_stage)
 
 //----------------------------------------------------------------------------------
 // Return statistics
-void CWKmerBinCompleter::GetTotal(uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total)
-{
+void CWKmerBinCompleter::GetTotal(uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max,
+								  uint64 &_n_total) {
 	if(kbc)
 		kbc->GetTotal(_n_unique, _n_cutoff_min, _n_cutoff_max, _n_total);
 }

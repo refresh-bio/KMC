@@ -1,11 +1,11 @@
 /*
-  This file is a part of KMC software distributed under GNU GPL 3 licence.
-  The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
-  
-  Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
-  
-  Version: 2.2.0
-  Date   : 2015-04-15
+    This file is a part of KMC software distributed under GNU GPL 3 licence.
+    The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
+
+    Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
+
+    Version: 2.2.0
+    Date   : 2015-04-15
 */
 
 #ifndef _MEM_DISK_FILE_H
@@ -20,8 +20,7 @@
 //************************************************************************************************************
 // CMemDiskFile - wrapper for FILE* or memory equivalent
 //************************************************************************************************************
-class CMemDiskFile
-{
+class CMemDiskFile {
 	bool memory_mode;
 	FILE* file;
 	typedef std::pair<uchar*, uint64> elem_t;//buf,size
@@ -29,7 +28,7 @@ class CMemDiskFile
 
 	container_t container;
 	std::string name;
-public:
+  public:
 	CMemDiskFile(bool _memory_mode);
 	void Open(const std::string& f_name);
 	void Rewind();

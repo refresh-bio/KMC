@@ -1,12 +1,12 @@
 
 /*
-This file is a part of KMC software distributed under GNU GPL 3 licence.
-The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
+    This file is a part of KMC software distributed under GNU GPL 3 licence.
+    The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
 
-Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
+    Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-Version: 2.2.0
-Date   : 2015-04-15
+    Version: 2.2.0
+    Date   : 2015-04-15
 */
 
 #ifndef _BKB_READER_H_
@@ -18,8 +18,7 @@ Date   : 2015-04-15
 // CBigKmerBinReader - reader of bins from distribution phase. Only in strict memory mode
 //************************************************************************************************************
 
-class CBigKmerBinReader
-{
+class CBigKmerBinReader {
 	CTooLargeBinsQueue * tlbq;
 	CDiskLogger* disk_logger;
 	CBinDesc* bd;
@@ -27,7 +26,7 @@ class CBigKmerBinReader
 	CMemoryPool* sm_pmm_input_file;
 
 	uint64 sm_mem_part_input_file;
-public:
+  public:
 	CBigKmerBinReader(CKMCParams& Params, CKMCQueues& Queues);
 	~CBigKmerBinReader();
 	void ProcessBigBin();
@@ -37,15 +36,14 @@ public:
 //************************************************************************************************************
 // CWBigKmerBinReader - wrapper for multithreading purposes
 //************************************************************************************************************
-class CWBigKmerBinReader
-{
+class CWBigKmerBinReader {
 	CBigKmerBinReader* bkb_reader;
-public:
+  public:
 	CWBigKmerBinReader(CKMCParams& Params, CKMCQueues& Queues);
 	~CWBigKmerBinReader();
 	void operator()();
 };
 
-#endif 
+#endif
 
 // ***** EOF

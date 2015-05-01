@@ -1,11 +1,11 @@
 /*
-  This file is a part of KMC software distributed under GNU GPL 3 licence.
-  The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
-  
-  Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
-  
-  Version: 2.2.0
-  Date   : 2015-04-15
+    This file is a part of KMC software distributed under GNU GPL 3 licence.
+    The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
+
+    Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
+
+    Version: 2.2.0
+    Date   : 2015-04-15
 */
 #ifndef _KB_COMPLETER_H
 #define _KB_COMPLETER_H
@@ -54,9 +54,9 @@ class CKmerBinCompleter {
 	int32 signature_len;
 	bool use_quake;
 
-	bool store_uint(FILE *out, uint64 x, uint32 size);	
+	bool store_uint(FILE *out, uint64 x, uint32 size);
 
-public:
+  public:
 	CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues);
 	~CKmerBinCompleter();
 
@@ -73,7 +73,7 @@ public:
 class CWKmerBinCompleter {
 	CKmerBinCompleter *kbc;
 
-public:
+  public:
 	CWKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues);
 	~CWKmerBinCompleter();
 

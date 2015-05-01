@@ -1,11 +1,11 @@
 /*
-  This file is a part of KMC software distributed under GNU GPL 3 licence.
-  The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
-  
-  Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
-  
-  Version: 2.2.0
-  Date   : 2015-04-15
+    This file is a part of KMC software distributed under GNU GPL 3 licence.
+    The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
+
+    Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
+
+    Version: 2.2.0
+    Date   : 2015-04-15
 */
 
 #ifndef _PARAMS_H
@@ -21,7 +21,7 @@ typedef enum {fasta, fastq, multiline_fasta} input_type;
 
 // Structure for passing KMC parameters
 struct CKMCParams {
-	
+
 	// Input parameters
 	int p_m;							// max. total RAM usage
 	int p_k;							// k-mer length
@@ -29,7 +29,7 @@ struct CKMCParams {
 	int p_sf;							// no. of reading threads
 	int p_sp;							// no. of splitting threads
 	int p_so;							// no. of OpenMP threads for sorting
-	int p_sr;							// no. of sorting threads	
+	int p_sr;							// no. of sorting threads
 	int p_ci;							// do not count k-mers occurring less than
 	int p_cx;							// do not count k-mers occurring more than
 	int p_cs;							// maximal counter value
@@ -40,7 +40,7 @@ struct CKMCParams {
 	input_type p_file_type;				// input in FASTA format
 	bool p_verbose;						// verbose mode
 	bool p_both_strands;				// compute canonical k-mer representation
-	int p_p1;							// signature length	
+	int p_p1;							// signature length
 	int p_n_bins;						// no. of bins
 	int p_smso;							// no. of OpenMP threads for sorting in strict memory mode
 	int p_smun;							// no. of uncompacting threads in strict memory mode
@@ -51,7 +51,7 @@ struct CKMCParams {
 	std::string output_file_name;
 	std::string working_directory;
 	input_type file_type;
-	
+
 	uint32 lut_prefix_len;
 
 	uint32 KMER_T_size;
@@ -72,14 +72,14 @@ struct CKMCParams {
 	int64 mem_tot_pmm_radix_buf;
 	int64 mem_part_pmm_prob;
 	int64 mem_tot_pmm_prob;
-	int64 mem_part_pmm_cnts_sort;	
+	int64 mem_part_pmm_cnts_sort;
 	int64 mem_tot_pmm_stats;
 	int64 mem_part_pmm_stats;
-	
+
 	int64 mem_tot_pmm_epxand;
 	int64 mem_part_pmm_epxand;
 
-	bool verbose;	
+	bool verbose;
 
 	int kmer_len;			// kmer length
 	int signature_len;
@@ -88,7 +88,7 @@ struct CKMCParams {
 	int counter_max;		// maximal counter value
 	bool use_quake;			// use Quake's counting based on qualities
 	bool use_strict_mem;	// use strict memory limit mode
-	int lowest_quality;		// lowest quality value	    
+	int lowest_quality;		// lowest quality value
 	bool both_strands;		// find canonical representation of each k-mer
 	bool mem_mode;			// use RAM instead of disk
 
@@ -108,12 +108,12 @@ struct CKMCParams {
 
 	//params for strict memory mode
 	int sm_n_uncompactors;
-	int sm_n_omp_threads;	
+	int sm_n_omp_threads;
 	int sm_n_mergers;
 
 	int64 sm_mem_part_input_file;
-	int64 sm_mem_tot_input_file;	
-	int64 sm_mem_part_expand;	
+	int64 sm_mem_tot_input_file;
+	int64 sm_mem_part_expand;
 	int64 sm_mem_tot_expand;
 	int64 sm_mem_part_sort;
 	int64 sm_mem_tot_sort;
@@ -131,8 +131,7 @@ struct CKMCParams {
 	int64 sm_mem_part_merger_suff;
 	int64 sm_mem_tot_merger_suff;
 
-	CKMCParams()
-	{
+	CKMCParams() {
 		p_m = 12;
 		p_k = 25;
 		p_t = 0;
@@ -151,17 +150,15 @@ struct CKMCParams {
 		p_file_type = fastq;
 		p_verbose = false;
 		p_both_strands = true;
-		p_p1 = 7;	
+		p_p1 = 7;
 		p_n_bins = 512;
-
 		gzip_buffer_size  = 64 << 20;
 		bzip2_buffer_size = 64 << 20;
 	}
 };
 
 // Structure for passing KMC queues and monitors to threads
-struct CKMCQueues 
-{
+struct CKMCQueues {
 	//Signature mapper
 	CSignatureMapper* s_mapper;
 	// Memory monitors
@@ -190,8 +187,9 @@ struct CKMCQueues
 	CBigBinKmerPartQueue* bbkpq;
 	CBigBinSortedPartQueue* bbspq;
 	CKMCQueues() {}
-	CMemoryPool* sm_pmm_input_file, *sm_pmm_expand, *sm_pmm_sort, *sm_pmm_sorter_suffixes, *sm_pmm_sorter_lut, *sm_pmm_sub_bin_lut, *sm_pmm_sub_bin_suff, *sm_pmm_merger_lut, *sm_pmm_merger_suff;
-	
+	CMemoryPool* sm_pmm_input_file, *sm_pmm_expand, *sm_pmm_sort, *sm_pmm_sorter_suffixes, *sm_pmm_sorter_lut,
+				 *sm_pmm_sub_bin_lut, *sm_pmm_sub_bin_suff, *sm_pmm_merger_lut, *sm_pmm_merger_suff;
+
 	CCompletedBinsCollector* sm_cbc;
 };
 

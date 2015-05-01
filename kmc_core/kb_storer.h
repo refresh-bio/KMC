@@ -1,11 +1,11 @@
 /*
-  This file is a part of KMC software distributed under GNU GPL 3 licence.
-  The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
-  
-  Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
-  
-  Version: 2.2.0
-  Date   : 2015-04-15
+    This file is a part of KMC software distributed under GNU GPL 3 licence.
+    The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
+
+    Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
+
+    Version: 2.2.0
+    Date   : 2015-04-15
 */
 
 #ifndef _KB_STORER_H
@@ -29,7 +29,7 @@
 class CKmerBinStorer {
 	CMemoryMonitor *mm;
 
-	uint64 total_size; 
+	uint64 total_size;
 	CMemoryPool *pmm_bins;
 	std::string working_directory;
 	int n_bins;
@@ -48,7 +48,7 @@ class CKmerBinStorer {
 	uint32 max_buf_size_id;
 	bool mem_mode;
 
-	typedef std::list<std::tuple<uchar *, uint32, uint32>> elem_t; 
+	typedef std::list<std::tuple<uchar *, uint32, uint32>> elem_t;
 	elem_t** buffer;
 
 	void Release();
@@ -56,10 +56,9 @@ class CKmerBinStorer {
 	void CheckBuffer();
 	void ReleaseBuffer();
 	void PutBinToTmpFile(uint32 n);
-	
-public:
-	void GetTotal(uint64& _total)
-	{
+
+  public:
+	void GetTotal(uint64& _total) {
 		_total = total_size;
 	}
 	CKmerBinStorer(CKMCParams &Params, CKMCQueues &Queues);
@@ -75,9 +74,8 @@ public:
 class CWKmerBinStorer {
 	CKmerBinStorer *kbs;
 
-public:
-	void GetTotal(uint64& _total)
-	{
+  public:
+	void GetTotal(uint64& _total) {
 		kbs->GetTotal(_total);
 	}
 	CWKmerBinStorer(CKMCParams &Params, CKMCQueues &Queues);

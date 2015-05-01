@@ -10,7 +10,8 @@ void map_log(uint32 signature_len, uint32 map_size, int32* signature_map);
 
 struct CKMCQueues;
 struct CKMCParams;
-void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, uint32 quality_size, uint64 n_reads);
+void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, uint32 quality_size,
+					 uint64 n_reads);
 
 
 #endif

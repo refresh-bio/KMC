@@ -1,11 +1,11 @@
 /*
-  This file is a part of KMC software distributed under GNU GPL 3 licence.
-  The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
-  
-  Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
-  
-  Version: 2.2.0
-  Date   : 2015-04-15
+    This file is a part of KMC software distributed under GNU GPL 3 licence.
+    The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
+
+    Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
+
+    Version: 2.2.0
+    Date   : 2015-04-15
 */
 
 #ifndef _FASTQ_READER_H
@@ -39,10 +39,10 @@ class CFastqReader {
 	int bzerror;
 
 	uint64 part_size;
-	
+
 	uchar *part;
 	uint64 part_filled;
-	
+
 	uint32 gzip_buffer_size;
 	uint32 bzip2_buffer_size;
 
@@ -52,8 +52,9 @@ class CFastqReader {
 
 	bool IsEof();
 
-public:
-	CFastqReader(CMemoryMonitor *_mm, CMemoryPool *_pmm_fastq, input_type _file_type, uint32 _gzip_buffer_size, uint32 _bzip2_buffer_size, int _kmer_len);
+  public:
+	CFastqReader(CMemoryMonitor *_mm, CMemoryPool *_pmm_fastq, input_type _file_type, uint32 _gzip_buffer_size,
+				 uint32 _bzip2_buffer_size, int _kmer_len);
 	~CFastqReader();
 
 	static uint64 OVERHEAD_SIZE;
@@ -83,7 +84,7 @@ class CWFastqReader {
 	uint32 bzip2_buffer_size;
 	int kmer_len;
 
-public:
+  public:
 	CWFastqReader(CKMCParams &Params, CKMCQueues &Queues);
 	~CWFastqReader();
 
@@ -109,7 +110,7 @@ class CWStatsFastqReader {
 	uint32 bzip2_buffer_size;
 	int kmer_len;
 
-public:
+  public:
 	CWStatsFastqReader(CKMCParams &Params, CKMCQueues &Queues);
 	~CWStatsFastqReader();
 
