@@ -16,8 +16,8 @@
 #include <cstdio>
 #include <iostream>
 
-#include "external/zlib.h"
-#include "external/bzlib.h"
+#include "../external/zlib.h"
+#include "../external/bzlib.h"
 
 //************************************************************************************************************
 // FASTA/FASTQ reader class
