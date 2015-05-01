@@ -46,16 +46,16 @@ public:
 		pmm_stats->reserve(sorted);
 		for (uint32 i = 0; i < map_size ; ++i)
 			sorted[i] = i;
-		sort(sorted, sorted + map_size, Comp(stats));
+		std::sort(sorted, sorted + map_size, Comp(stats));
 
-		list<pair<uint32, uint64>> _stats;
+		std::list<std::pair<uint32, uint64>> _stats;
 		for (uint32 i = 0; i < map_size ; ++i)
 		{
 			if (CMmer::is_allowed(sorted[i], signature_len))
-				_stats.push_back(make_pair(sorted[i], stats[sorted[i]]));
+				_stats.push_back(std::make_pair(sorted[i], stats[sorted[i]]));
 		}
 
-		list<pair<uint32, uint64>> group;
+		std::list<std::pair<uint32, uint64>> group;
 		uint32 bin_no = 0;
 		//counting sum
 		double sum = 0.0;
@@ -71,7 +71,7 @@ public:
 		uint32 max_bins = n_bins - 1;
 		while (_stats.size() > n)
 		{
-			pair<uint32, uint64>& max = _stats.front();
+			std::pair<uint32, uint64>& max = _stats.front();
 
 			if (max.second > mean)
 			{
@@ -138,7 +138,7 @@ public:
 		special_signature = 1 << 2 * signature_len;
 		map_size = (1 << 2 * signature_len) + 1;
 		signature_map = new int32[map_size];		
-		fill_n(signature_map, map_size, -1);
+		std::fill_n(signature_map, map_size, -1);
 	}
 	inline int32 get_bin_id(uint32 signature)
 	{

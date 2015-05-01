@@ -8,9 +8,15 @@
   Date   : 2015-04-15
 */
 
+#include <string>
+#include <iostream>
 #include <algorithm>
 #include "../../kmc/definitions.h"
 #include "../fastq_reader.h"
+using std::string;
+using std::cout;
+using std::copy;
+using std::cerr;
 
 //************************************************************************************************************
 // CFastqReader	- reader class

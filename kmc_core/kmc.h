@@ -41,8 +41,6 @@
 #include "bkb_merger.h"
 #include "bkb_writer.h"
 
-using namespace std;
-
 
 template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> class CKMC {
 	bool initialized;
@@ -55,26 +53,26 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> class CKMC {
 	// Memory monitor and queues
 	CKMCQueues Queues;
 
-	// Thread groups
-	vector<thread> gr0_1, gr0_2;
-	vector<thread> gr1_1, gr1_2, gr1_3, gr1_4, gr1_5;		// thread groups for 1st stage
-	vector<thread> gr2_1, gr2_2, gr2_3;						// thread groups for 2nd stage
+	// std::thread groups
+	std::vector<std::thread> gr0_1, gr0_2;
+	std::vector<std::thread> gr1_1, gr1_2, gr1_3, gr1_4, gr1_5;		// std::thread groups for 1st stage
+	std::vector<std::thread> gr2_1, gr2_2, gr2_3;						// std::thread groups for 2nd stage
 
 	uint64 n_unique, n_cutoff_min, n_cutoff_max, n_total, n_reads, tmp_size, tmp_size_strict_mem, max_disk_usage, n_total_super_kmers;
 
 	// Threads
-	vector<CWStatsFastqReader*> w_stats_fastqs;
-	vector<CWStatsSplitter<false>*> w_stats_splitters;
-	vector<CWFastqReader*> w_fastqs;
-	vector<CWSplitter<QUAKE_MODE>*> w_splitters;
+	std::vector<CWStatsFastqReader*> w_stats_fastqs;
+	std::vector<CWStatsSplitter<false>*> w_stats_splitters;
+	std::vector<CWFastqReader*> w_fastqs;
+	std::vector<CWSplitter<QUAKE_MODE>*> w_splitters;
 	CWKmerBinStorer *w_storer;
 
 	CWKmerBinReader<KMER_T, SIZE>* w_reader;
-	vector<CWKmerBinSorter<KMER_T, SIZE>*> w_sorters;
+	std::vector<CWKmerBinSorter<KMER_T, SIZE>*> w_sorters;
 	CWKmerBinCompleter *w_completer;
 
 	void SetThreads1Stage();
-	void SetThreads2Stage(vector<int64>& sorted_sizes);
+	void SetThreads2Stage(std::vector<int64>& sorted_sizes);
 	void SetThreadsStrictMemoryMode();
 
 	void AdjustMemoryLimitsStrictMemoryMode();
@@ -161,7 +159,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 		// Adjust the number of threads according to the current hardware
 		Params.n_threads = Params.p_t;
 		if (!Params.n_threads)
-			Params.n_threads = thread::hardware_concurrency();
+			Params.n_threads = std::thread::hardware_concurrency();
 		SetThreads1Stage();
 	}
 
@@ -184,11 +182,11 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	{
 		int cores = Params.n_threads;
 		bool gz_bz2 = false;
-		vector<uint64> file_sizes;
+		std::vector<uint64> file_sizes;
 		
 		for (auto& p : Params.input_file_names)
 		{
-			string ext(p.end() - 3, p.end());
+			std::string ext(p.end() - 3, p.end());
 			if (ext == ".gz" || ext == ".bz2")
 			{
 				gz_bz2 = true;
@@ -197,7 +195,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 			FILE* tmp = my_fopen(p.c_str(), "rb");
 			if (!tmp)
 			{
-				cout << "Cannot open file: " << p.c_str();
+				std::cout << "Cannot open file: " << p.c_str();
 				exit(1);
 			}
 			my_fseek(tmp, 0, SEEK_END);
@@ -206,7 +204,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 		}
 		if (gz_bz2)
 		{
-			sort(file_sizes.begin(), file_sizes.end(), greater<uint64>());
+			std::sort(file_sizes.begin(), file_sizes.end(), std::greater<uint64>());
 			uint64 file_size_threshold = (uint64)(file_sizes.front() * 0.05);
 			int32 n_allowed_files = 0;
 			for(auto& p : file_sizes)
@@ -220,7 +218,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	}
 }
 //----------------------------------------------------------------------------------
-template<typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SetThreads2Stage(vector<int64>& sorted_sizes)
+template<typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SetThreads2Stage(std::vector<int64>& sorted_sizes)
 {	
 	if (!Params.p_sf || !Params.p_sp || !Params.p_sr || !Params.p_so)
 	{
@@ -404,58 +402,58 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	if(!Params.verbose)
 		return;
 
-	cout << "\n********** Used parameters: **********\n";
+	std::cout << "\n********** Used parameters: **********\n";
 
-	cout << "No. of input files           : " << Params.input_file_names.size() << "\n";
-	cout << "Output file name             : " << Params.output_file_name << "\n";
-	cout << "No. of working directories   : " << 1 << "\n";
-	cout << "Input format                 : "; 
+	std::cout << "No. of input files           : " << Params.input_file_names.size() << "\n";
+	std::cout << "Output file name             : " << Params.output_file_name << "\n";
+	std::cout << "No. of working directories   : " << 1 << "\n";
+	std::cout << "Input format                 : "; 
 	switch (Params.file_type)
 	{
 	case fasta:
-		cout << "FASTA\n";
+		std::cout << "FASTA\n";
 		break;
 	case fastq:
-		cout << "FASTQ\n";
+		std::cout << "FASTQ\n";
 		break;
 	case multiline_fasta:
-		cout << "MULTI LINE FASTA\n";
+		std::cout << "MULTI LINE FASTA\n";
 		break;
 	}
-	cout << "\n";
-	cout << "k-mer length                 : " << Params.kmer_len << "\n";
-	cout << "Max. k-mer length            : " << MAX_K << "\n";
-	cout << "Signature length             : " << Params.signature_len << "\n"; 
-	cout << "Min. count threshold         : " << Params.cutoff_min << "\n";
-	cout << "Max. count threshold         : " << Params.cutoff_max << "\n";
-	cout << "Max. counter value           : " << Params.counter_max << "\n";
-	cout << "Type of counters             : " << (Params.use_quake ? "Quake-compatibile\n" : "direct\n");
+	std::cout << "\n";
+	std::cout << "k-mer length                 : " << Params.kmer_len << "\n";
+	std::cout << "Max. k-mer length            : " << MAX_K << "\n";
+	std::cout << "Signature length             : " << Params.signature_len << "\n"; 
+	std::cout << "Min. count threshold         : " << Params.cutoff_min << "\n";
+	std::cout << "Max. count threshold         : " << Params.cutoff_max << "\n";
+	std::cout << "Max. counter value           : " << Params.counter_max << "\n";
+	std::cout << "Type of counters             : " << (Params.use_quake ? "Quake-compatibile\n" : "direct\n");
 	if(Params.use_quake)
-		cout << "Lowest quality value         : " << Params.lowest_quality << "\n";
-	cout << "Both strands                 : " << (Params.both_strands ? "true\n" : "false\n");	
-	cout << "RAM olny mode                : " << (Params.mem_mode ? "true\n" : "false\n");
+		std::cout << "Lowest quality value         : " << Params.lowest_quality << "\n";
+	std::cout << "Both strands                 : " << (Params.both_strands ? "true\n" : "false\n");	
+	std::cout << "RAM olny mode                : " << (Params.mem_mode ? "true\n" : "false\n");
 
-	cout << "\n******* Stage 1 configuration: *******\n";
-	cout << "\n";
-	cout << "No. of bins                  : " << Params.n_bins << "\n";
-	cout << "Bin part size                : " << Params.bin_part_size << "\n";
-	cout << "Input buffer size            : " << Params.fastq_buffer_size << "\n";
-	cout << "\n";
+	std::cout << "\n******* Stage 1 configuration: *******\n";
+	std::cout << "\n";
+	std::cout << "No. of bins                  : " << Params.n_bins << "\n";
+	std::cout << "Bin part size                : " << Params.bin_part_size << "\n";
+	std::cout << "Input buffer size            : " << Params.fastq_buffer_size << "\n";
+	std::cout << "\n";
 
-	cout << "No. of readers               : " << Params.n_readers << "\n";
-	cout << "No. of splitters             : " << Params.n_splitters << "\n";
-	cout << "\n";
+	std::cout << "No. of readers               : " << Params.n_readers << "\n";
+	std::cout << "No. of splitters             : " << Params.n_splitters << "\n";
+	std::cout << "\n";
 
-	cout << "Max. mem. size               : " << setw(5) << (Params.max_mem_size / 1000000) << "MB\n";
-	cout << "Max. mem. per storer         : " << setw(5) << (Params.max_mem_storer / 1000000) << "MB\n";
-	cout << "Max. mem. for single package : " << setw(5) << (Params.max_mem_storer_pkg / 1000000) << "MB\n";
-	cout << "\n";
+	std::cout << "Max. mem. size               : " << std::setw(5) << (Params.max_mem_size / 1000000) << "MB\n";
+	std::cout << "Max. mem. per storer         : " << std::setw(5) << (Params.max_mem_storer / 1000000) << "MB\n";
+	std::cout << "Max. mem. for single package : " << std::setw(5) << (Params.max_mem_storer_pkg / 1000000) << "MB\n";
+	std::cout << "\n";
 
-	cout << "Max. mem. for PMM (bin parts): " << setw(5) << (Params.mem_tot_pmm_bins / 1000000) << "MB\n";
-	cout << "Max. mem. for PMM (FASTQ)    : " << setw(5) << (Params.mem_tot_pmm_fastq / 1000000) << "MB\n";
-	cout << "Max. mem. for PMM (reads)    : " << setw(5) << (Params.mem_tot_pmm_reads / 1000000) << "MB\n";
+	std::cout << "Max. mem. for PMM (bin parts): " << std::setw(5) << (Params.mem_tot_pmm_bins / 1000000) << "MB\n";
+	std::cout << "Max. mem. for PMM (FASTQ)    : " << std::setw(5) << (Params.mem_tot_pmm_fastq / 1000000) << "MB\n";
+	std::cout << "Max. mem. for PMM (reads)    : " << std::setw(5) << (Params.mem_tot_pmm_reads / 1000000) << "MB\n";
 
-	cout << "\n";
+	std::cout << "\n";
 }
 
 //----------------------------------------------------------------------------------
@@ -465,18 +463,18 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	if (!Params.verbose)
 		return;
 
-	cout << "\n******* Stage 2 configuration: *******\n";
+	std::cout << "\n******* Stage 2 configuration: *******\n";
 
-	cout << "No. of sorters               : " << Params.n_sorters << "\n";
-	cout << "No. of sort. threads         : ";
+	std::cout << "No. of sorters               : " << Params.n_sorters << "\n";
+	std::cout << "No. of sort. threads         : ";
 	for (uint32 i = 0; i < Params.n_omp_threads.size() - 1; ++i)
-		cout << Params.n_omp_threads[i] << ", ";
-	cout << Params.n_omp_threads.back() << "\n";
+		std::cout << Params.n_omp_threads[i] << ", ";
+	std::cout << Params.n_omp_threads.back() << "\n";
 
-	cout << "\n";
+	std::cout << "\n";
 
-	cout << "Max. mem. for 2nd stage      : " << setw(5) << (Params.max_mem_stage2 / 1000000) << "MB\n";
-	cout << "\n";	
+	std::cout << "Max. mem. for 2nd stage      : " << std::setw(5) << (Params.max_mem_stage2 / 1000000) << "MB\n";
+	std::cout << "\n";	
 }
 
 //----------------------------------------------------------------------------------
@@ -485,7 +483,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 {
 	int32 bin_id;
 	CMemDiskFile *file;
-	string name;
+	std::string name;
 	uint64 size;
 	uint64 n_rec;
 	uint64 n_plus_x_recs;
@@ -531,7 +529,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	for (int i = 0; i < Params.n_splitters; ++i)
 	{
 		w_stats_splitters[i] = new CWStatsSplitter<false>(Params, Queues);
-		gr0_2.push_back(thread(std::ref(*w_stats_splitters[i])));
+		gr0_2.push_back(std::thread(std::ref(*w_stats_splitters[i])));
 	}
 
 	w_stats_fastqs.resize(Params.n_readers);
@@ -539,7 +537,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	for (int i = 0; i < Params.n_readers; ++i)
 	{
 		w_stats_fastqs[i] = new CWStatsFastqReader(Params, Queues);
-		gr0_1.push_back(thread(std::ref(*w_stats_fastqs[i])));
+		gr0_1.push_back(std::thread(std::ref(*w_stats_fastqs[i])));
 	}
 	for (auto p = gr0_1.begin(); p != gr0_1.end(); ++p)
 		p->join();
@@ -549,7 +547,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 
 	uint32 *stats;
 	Queues.pmm_stats->reserve(stats);
-	fill_n(stats, (1 << Params.signature_len * 2) + 1, 0);
+	std::fill_n(stats, (1 << Params.signature_len * 2) + 1, 0);
 
 
 	for (int i = 0; i < Params.n_readers; ++i)
@@ -570,7 +568,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	Queues.s_mapper->Init(stats);
 	heuristic_time.stopTimer();
 
-	cout << "\n";
+	std::cout << "\n";
 	
 	w0.stopTimer();
 
@@ -588,17 +586,17 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	for(int i = 0; i < Params.n_splitters; ++i)
 	{
 		w_splitters[i] = new CWSplitter<QUAKE_MODE>(Params, Queues);
-		gr1_2.push_back(thread(std::ref(*w_splitters[i])));
+		gr1_2.push_back(std::thread(std::ref(*w_splitters[i])));
 	}
 	
 	w_storer = new CWKmerBinStorer(Params, Queues);
-	gr1_3.push_back(thread(std::ref(*w_storer)));
+	gr1_3.push_back(std::thread(std::ref(*w_storer)));
 
 	w_fastqs.resize(Params.n_readers);
 	for(int i = 0; i < Params.n_readers; ++i)
 	{
 		w_fastqs[i] = new CWFastqReader(Params, Queues);
-		gr1_1.push_back(thread(std::ref(*w_fastqs[i])));
+		gr1_1.push_back(std::thread(std::ref(*w_fastqs[i])));
 	}
 
 	for(auto p = gr1_1.begin(); p != gr1_1.end(); ++p)
@@ -617,7 +615,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 
 	n_reads = 0;
 
-	thread *release_thr_st1_1 = new thread([&]{
+	std::thread *release_thr_st1_1 = new std::thread([&]{
 		for(int i = 0; i < Params.n_readers; ++i)
 			delete w_fastqs[i];
 
@@ -632,7 +630,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 		delete w_storer;
 	});
 
-	thread *release_thr_st1_2 = new thread([&]{
+	std::thread *release_thr_st1_2 = new std::thread([&]{
 		Queues.pmm_bins->release();
 		delete Queues.pmm_bins;
 	});
@@ -679,7 +677,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 #endif
 
 	Queues.bd->reset_reading();
-	vector<int64> bin_sizes;
+	std::vector<int64> bin_sizes;
 
 	while((bin_id = Queues.bd->get_next_bin()) >= 0)
 	{
@@ -690,7 +688,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 			bin_sizes.push_back(n_rec * 2 * sizeof(KMER_T));
 	}
 	
-	sort(bin_sizes.begin(), bin_sizes.end(), greater<int64>());
+	std::sort(bin_sizes.begin(), bin_sizes.end(), std::greater<int64>());
 	
 	SetThreads2Stage(bin_sizes);
 	AdjustMemoryLimitsStage2();
@@ -729,18 +727,18 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	else
 		Queues.pmm_prob = NULL;
 	w_reader = new CWKmerBinReader<KMER_T, SIZE>(Params, Queues);
-	gr2_1.push_back(thread(std::ref(*w_reader)));
+	gr2_1.push_back(std::thread(std::ref(*w_reader)));
 
 	w_sorters.resize(Params.n_sorters);
 	
 	for(int i = 0; i < Params.n_sorters; ++i)
 	{
 		w_sorters[i] = new CWKmerBinSorter<KMER_T, SIZE>(Params, Queues, i);
-		gr2_2.push_back(thread(std::ref(*w_sorters[i])));
+		gr2_2.push_back(std::thread(std::ref(*w_sorters[i])));
 	}
 
 	w_completer = new CWKmerBinCompleter(Params, Queues);
-	gr2_3.push_back(thread(std::ref(*w_completer), true));
+	gr2_3.push_back(std::thread(std::ref(*w_completer), true));
 
 	for(auto p = gr2_1.begin(); p != gr2_1.end(); ++p)
 		p->join();
@@ -754,7 +752,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	gr2_3.clear();
 	
 
-	thread *release_thr_st2_1 = new thread([&]{
+	std::thread *release_thr_st2_1 = new std::thread([&]{
 		delete Queues.mm;
 		if (Queues.pmm_expand)
 		{
@@ -768,7 +766,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	});
 
 	//process big bins if necessary (only in strict memory limit mode)
-	thread* release_thr_sm = NULL;
+	std::thread* release_thr_sm = NULL;
 
 	if (Params.use_strict_mem)
 	{
@@ -777,7 +775,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 		release_thr_st2_1->join(); //need to be sure that memory_bins is released		
 		AdjustMemoryLimitsStrictMemoryMode();
 
-		cout << "\n";
+		std::cout << "\n";
 
 		Queues.sm_pmm_input_file = new CMemoryPool(Params.sm_mem_tot_input_file, Params.sm_mem_part_input_file);
 		Queues.sm_pmm_expand = new CMemoryPool(Params.sm_mem_tot_expand, Params.sm_mem_part_expand);
@@ -799,32 +797,32 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 
 		
 		CWBigKmerBinReader* w_bkb_reader = new CWBigKmerBinReader(Params, Queues);
-		thread bkb_reader(std::ref(*w_bkb_reader));
+		std::thread bkb_reader(std::ref(*w_bkb_reader));
 
-		vector<CWBigKmerBinUncompactor<KMER_T, SIZE>*> w_bkb_uncompactors(Params.sm_n_uncompactors);
-		vector<thread> bkb_uncompactors;
+		std::vector<CWBigKmerBinUncompactor<KMER_T, SIZE>*> w_bkb_uncompactors(Params.sm_n_uncompactors);
+		std::vector<std::thread> bkb_uncompactors;
 		for (int32 i = 0; i < Params.sm_n_uncompactors; ++i)
 		{
 			w_bkb_uncompactors[i] = new CWBigKmerBinUncompactor<KMER_T, SIZE>(Params, Queues);
-			bkb_uncompactors.push_back(thread(std::ref(*w_bkb_uncompactors[i])));
+			bkb_uncompactors.push_back(std::thread(std::ref(*w_bkb_uncompactors[i])));
 		}
 
 		CWBigKmerBinSorter<KMER_T, SIZE>* w_bkb_sorter = new CWBigKmerBinSorter<KMER_T, SIZE>(Params, Queues);
-		thread bkb_sorter(std::ref(*w_bkb_sorter));
+		std::thread bkb_sorter(std::ref(*w_bkb_sorter));
 		
 		CWBigKmerBinWriter* w_bkb_writer = new CWBigKmerBinWriter(Params, Queues);
-		thread bkb_writer(std::ref(*w_bkb_writer));
+		std::thread bkb_writer(std::ref(*w_bkb_writer));
 		
-		vector<CWBigKmerBinMerger<KMER_T, SIZE>*> w_bkb_mergers(Params.sm_n_mergers);
-		vector<thread> bkb_mergers;
+		std::vector<CWBigKmerBinMerger<KMER_T, SIZE>*> w_bkb_mergers(Params.sm_n_mergers);
+		std::vector<std::thread> bkb_mergers;
 		for (int32 i = 0; i < Params.sm_n_mergers; ++i)
 		{
 			w_bkb_mergers[i] = new CWBigKmerBinMerger<KMER_T, SIZE>(Params, Queues);
-			bkb_mergers.push_back(thread(std::ref(*w_bkb_mergers[i])));
+			bkb_mergers.push_back(std::thread(std::ref(*w_bkb_mergers[i])));
 		}
 
 		w_completer->InitStage2(Params, Queues);
-		gr2_3.push_back(thread(std::ref(*w_completer), false));
+		gr2_3.push_back(std::thread(std::ref(*w_completer), false));
 		for (auto& m : bkb_mergers)
 			m.join();
 		
@@ -844,7 +842,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 		for (auto& m : w_bkb_mergers)
 			delete m;
 
-		release_thr_sm = new thread([&]{
+		release_thr_sm = new std::thread([&]{
 			delete Queues.bbpq;
 			delete Queues.bbkq;			
 			delete Queues.sm_cbc;	
@@ -853,7 +851,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	}	
 	else
 	{
-		gr2_3.push_back(thread(std::ref(*w_completer), false));
+		gr2_3.push_back(std::thread(std::ref(*w_completer), false));
 	}
 	Queues.pmm_radix_buf->release();
 	delete Queues.pmm_radix_buf;
@@ -892,7 +890,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	
 	uint64 stat_n_plus_x_recs, stat_n_recs, stat_n_recs_tmp, stat_n_plus_x_recs_tmp;
 	stat_n_plus_x_recs = stat_n_recs = stat_n_recs_tmp = stat_n_plus_x_recs_tmp = 0;
-	thread *release_thr_st2_2 = new thread([&]{
+	std::thread *release_thr_st2_2 = new std::thread([&]{
 		
 		delete w_reader;
 		for(int i = 0; i < Params.n_sorters; ++i)

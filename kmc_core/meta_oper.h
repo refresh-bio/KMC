@@ -11,8 +11,7 @@
 #ifndef _META_OPER_H
 #define _META_OPER_H
 
-//#include <functional>
-
+#include <cstdlib>
 
 template <size_t N> struct uint_{ };
 

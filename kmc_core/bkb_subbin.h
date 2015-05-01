@@ -11,6 +11,8 @@
 #ifndef _BKB_SUBBIN_H
 #define _BKB_SUBBIN_H
 
+#include "queues.h"
+
 //************************************************************************************************************
 // CSubBin - sorted k-mers (part of some bin), used in strict memory mode 
 //************************************************************************************************************
@@ -24,7 +26,7 @@ class CSubBin
 	uchar* suff_buff;
 	uint64 suff_buff_size, max_in_suff_buff, lut_start_pos_in_file;	
 	uint32 kmer_len, lut_size, lut_buff_recs, lut_offset, cur_in_suff_buff, left_to_read, n_kmers, suff_buff_pos, in_current_prefix;
-	string name;
+	std::string name;
 	FILE* file;		
 	uint32 suff_rec_len, lut_prefix_len, counter_size, suffix_bytes;	
 	uint64 size;
@@ -36,7 +38,7 @@ public:
 		lut_size = 0;
 		disk_logger = _disk_logger;
 	}
-	void init(FILE* _file, uint64 _size, uint32 _lut_prefix_len, uint32 _n_kmers, string _name, uint32 _kmer_len, uchar* _lut_buff, uint32 _lut_buff_size, uchar* _suff_buff, uint64 _suff_buff_size);	
+	void init(FILE* _file, uint64 _size, uint32 _lut_prefix_len, uint32 _n_kmers, std::string _name, uint32 _kmer_len, uchar* _lut_buff, uint32 _lut_buff_size, uchar* _suff_buff, uint64 _suff_buff_size);	
 };
 
 //--------------------------------------------------------------------------
@@ -51,7 +53,7 @@ void CSubBin<KMER_T, SIZE>::read_next_lut_part()
 		my_fseek(file, lut_start_pos_in_file + (lut_offset - lut_buff_recs) * sizeof(uint64), SEEK_SET);
 		if (fread(lut, sizeof(uint64), to_read, file) != to_read)
 		{
-			cout << "Error while reading file : " << name << "\n";
+			std::cout << "Error while reading file : " << name << "\n";
 			exit(1);
 		}
 		my_fseek(file, prev_pos, SEEK_SET);
@@ -114,7 +116,7 @@ bool CSubBin<KMER_T, SIZE>::get_min(KMER_T& kmer, uint32& count)
 
 //--------------------------------------------------------------------------
 template<typename KMER_T, unsigned SIZE>
-void CSubBin<KMER_T, SIZE>::init(FILE* _file, uint64 _size, uint32 _lut_prefix_len, uint32 _n_kmers, string _name, uint32 _kmer_len, uchar* _lut_buff, uint32 _lut_buff_size, uchar* _suff_buff, uint64 _suff_buff_size)
+void CSubBin<KMER_T, SIZE>::init(FILE* _file, uint64 _size, uint32 _lut_prefix_len, uint32 _n_kmers, std::string _name, uint32 _kmer_len, uchar* _lut_buff, uint32 _lut_buff_size, uchar* _suff_buff, uint64 _suff_buff_size)
 {
 	size = _size;
 	lut = (uint64*)_lut_buff;

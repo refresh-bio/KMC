@@ -1,0 +1,55 @@
+set (KMC_CORE_INCLUDES
+	${CMAKE_CURRENT_SOURCE_DIR}/asmlib_wrapper.h
+	${CMAKE_CURRENT_SOURCE_DIR}/bkb_merger.h
+	${CMAKE_CURRENT_SOURCE_DIR}/bkb_reader.h
+	${CMAKE_CURRENT_SOURCE_DIR}/bkb_sorter.h
+	${CMAKE_CURRENT_SOURCE_DIR}/bkb_subbin.h
+	${CMAKE_CURRENT_SOURCE_DIR}/bkb_uncompactor.h
+	${CMAKE_CURRENT_SOURCE_DIR}/bkb_writer.h
+	${CMAKE_CURRENT_SOURCE_DIR}/fastq_reader.h
+	${CMAKE_CURRENT_SOURCE_DIR}/kb_collector.h
+	${CMAKE_CURRENT_SOURCE_DIR}/kb_completer.h
+	${CMAKE_CURRENT_SOURCE_DIR}/kb_reader.h
+	${CMAKE_CURRENT_SOURCE_DIR}/kb_sorter.h
+	${CMAKE_CURRENT_SOURCE_DIR}/kb_storer.h
+	${CMAKE_CURRENT_SOURCE_DIR}/kmc.h
+	${CMAKE_CURRENT_SOURCE_DIR}/kmer.h
+	${CMAKE_CURRENT_SOURCE_DIR}/kxmer_set.h
+	${CMAKE_CURRENT_SOURCE_DIR}/mem_disk_file.h
+	${CMAKE_CURRENT_SOURCE_DIR}/meta_oper.h
+	${CMAKE_CURRENT_SOURCE_DIR}/mmer.h
+	${CMAKE_CURRENT_SOURCE_DIR}/params.h
+	${CMAKE_CURRENT_SOURCE_DIR}/queues.h
+	${CMAKE_CURRENT_SOURCE_DIR}/radix.h
+	${CMAKE_CURRENT_SOURCE_DIR}/rev_byte.h
+	${CMAKE_CURRENT_SOURCE_DIR}/s_mapper.h
+	${CMAKE_CURRENT_SOURCE_DIR}/splitter.h
+	${CMAKE_CURRENT_SOURCE_DIR}/timer.h)
+
+set (KMC_CORE_SOURCE_DIR source)
+set (KMC_CORE_SOURCES
+	${KMC_CORE_SOURCE_DIR}/bkb_reader.cpp
+	${KMC_CORE_SOURCE_DIR}/bkb_writer.cpp
+	${KMC_CORE_SOURCE_DIR}/fastq_reader.cpp
+	${KMC_CORE_SOURCE_DIR}/kb_completer.cpp
+	${KMC_CORE_SOURCE_DIR}/kb_storer.cpp
+	${KMC_CORE_SOURCE_DIR}/kmer.cpp
+	${KMC_CORE_SOURCE_DIR}/mem_disk_file.cpp
+	${KMC_CORE_SOURCE_DIR}/mmer.cpp
+	${KMC_CORE_SOURCE_DIR}/radix.cpp
+	${KMC_CORE_SOURCE_DIR}/rev_byte.cpp
+	${KMC_CORE_SOURCE_DIR}/timer.cpp)
+
+if (KMC_ENABLE_DEVELOP)
+	set (KMC_CORE_INCLUDES ${KMC_CORE_COUNTER_INCLUDES} develop.h)
+	set (KMC_CORE_COUNTER_SOURCES ${KMC_CORE_COUNTER_SOURCES} develop.cpp)
+endif (KMC_ENABLE_DEVELOP)
+
+add_library (kmc_core STATIC ${KMC_CORE_INCLUDES} ${KMC_CORE_SOURCES} ${CMAKE_THREAD_LIBS_INIT})
+set_target_properties (kmc_core PROPERTIES VERSION ${KMC_VERSION})
+
+if (${KMC_INSTALL_ARCHIVE})
+	install (TARGETS kmc_core KMC
+		INCLUDES DESTINATION ${INSTALL_INCLUDE_DIR}
+		ARCHIVE DESTINATION ${INSTALL_ARCHIVE_DIR})
+endif (${KMC_INSTALL_ARCHIVE})

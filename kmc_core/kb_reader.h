@@ -99,7 +99,7 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 
 	int32 bin_id;
 	CMemDiskFile *file;
-	string name;
+	std::string name;
 	uint64 size;
 	uint64 n_rec;
 	uint64 n_plus_x_recs;
@@ -129,9 +129,9 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 			kxmer_counter_size = 0;
 			kxmer_symbols = kmer_len;
 		}
-		uint64 max_out_recs    = (n_rec+1) / max(cutoff_min, 1);	
+		uint64 max_out_recs    = (n_rec+1) / std::max(cutoff_min, 1);	
 		
-		uint64 counter_size    = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
+		uint64 counter_size    = std::min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
 		if(KMER_T::QUALITY_SIZE > counter_size)
 			counter_size = KMER_T::QUALITY_SIZE;
 
@@ -151,9 +151,9 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 		}
 
 #ifdef DEBUG_MODE
-		cout << bin_id << ":  " << name << "  " << c_disk << "  " << size << "  " << n_rec << "\n";
+		std::cout << bin_id << ":  " << name << "  " << c_disk << "  " << size << "  " << n_rec << "\n";
 #else
-		cout << "*";
+		std::cout << "*";
 #endif
 
 		// Process the bin if it is not empty
@@ -161,7 +161,7 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 		{
 			if (file == NULL)
 			{
-				cout << "Error: Cannot open temporary file: " << name << "\n"; fflush(stdout);
+				std::cout << "Error: Cannot open temporary file: " << name << "\n"; fflush(stdout);
 				exit(1);
 			}
 			else
@@ -172,7 +172,7 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 			readed = file->Read(data, 1, size);
 			if(readed != size)
 			{
-				cout << "Error: Corrupted file: " << name << "   " << "Real size : " << readed << "   " << "Should be : " << size << "\n";
+				std::cout << "Error: Corrupted file: " << name << "   " << "Real size : " << readed << "   " << "Should be : " << size << "\n";
 				fflush(stdout);
 				exit(1);
 			}

@@ -8,8 +8,13 @@
   Date   : 2015-04-15
 */
 
+#include <string>
+#include <iostream>
 #include "../bkb_reader.h"
 #include "../asmlib_wrapper.h"
+
+using std::string;
+using std::cout;
 
 
 //************************************************************************************************************

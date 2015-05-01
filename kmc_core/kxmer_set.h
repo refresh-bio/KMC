@@ -12,7 +12,6 @@
 #include "../kmc/definitions.h"
 #include <tuple>
 
-using namespace std;
 
 #define KXMER_SET_SIZE 1024 
 
@@ -21,8 +20,8 @@ using namespace std;
 template <typename KMER_T, unsigned SIZE>
 class CKXmerSet
 {
-	typedef tuple<uint64, uint64, uint32> elem_desc_t; //start_pos, end_pos, shr
-	typedef pair<KMER_T, uint32> heap_elem_t; //kxmer val, desc_id
+	typedef std::tuple<uint64, uint64, uint32> elem_desc_t; //start_pos, end_pos, shr
+	typedef std::pair<KMER_T, uint32> heap_elem_t; //kxmer val, desc_id
 	elem_desc_t data_desc[KXMER_SET_SIZE];
 	heap_elem_t data[KXMER_SET_SIZE];
 	uint32 pos;
@@ -35,9 +34,9 @@ class CKXmerSet
 	{
 		uint32 desc_id = data[1].second;
 		KMER_T kmer;
-		if (++get<0>(data_desc[desc_id]) < get<1>(data_desc[desc_id]))
+		if (++std::get<0>(data_desc[desc_id]) < std::get<1>(data_desc[desc_id]))
 		{
-			kmer.from_kxmer(buffer[get<0>(data_desc[desc_id])], get<2>(data_desc[desc_id]), mask);
+			kmer.from_kxmer(buffer[std::get<0>(data_desc[desc_id])], std::get<2>(data_desc[desc_id]), mask);
 		}
 		else
 		{
@@ -65,7 +64,7 @@ class CKXmerSet
 			else
 				break;
 		}
-		data[parent] = make_pair(kmer, desc_id);
+		data[parent] = std::make_pair(kmer, desc_id);
 	}
 
 public:
@@ -77,7 +76,7 @@ public:
 	}
 	inline void init_add(uint64 start_pos, uint64 end_pos, uint32 shr)
 	{
-		data_desc[desc_pos] = make_tuple(start_pos, end_pos, shr);
+		data_desc[desc_pos] = std::make_tuple(start_pos, end_pos, shr);
 		data[pos].first.from_kxmer(buffer[start_pos], shr, mask);
 		data[pos].second = desc_pos;
 		uint32 child_pos = pos++;
@@ -105,7 +104,7 @@ public:
 			return false;
 
 		kmer = data[1].first;
-		_pos = get<0>(data_desc[data[1].second]);
+		_pos = std::get<0>(data_desc[data[1].second]);
 		update_heap();
 		
 	

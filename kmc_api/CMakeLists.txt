@@ -1,12 +1,12 @@
 set (KMC_API_INCLUDES
-	kmc_file.h
-	kmer_api.h
-	mmer.h)
+	${CMAKE_CURRENT_SOURCE_DIR}/kmc_file.h
+	${CMAKE_CURRENT_SOURCE_DIR}/kmer_api.h
+	${CMAKE_CURRENT_SOURCE_DIR}/mmer.h)
 
 set (KMC_API_SOURCES
-	kmc_file.cpp
-	kmer_api.cpp
-	mmer.cpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/kmc_file.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/kmer_api.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/mmer.cpp)
 
 add_library (kmc_api STATIC ${KMC_API_INCLUDES} ${KMC_API_SOURCES})
 set_target_properties (kmc_api PROPERTIES VERSION "${KMC_VERSION}")

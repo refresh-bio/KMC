@@ -8,7 +8,11 @@
   Date   : 2015-04-15
 */
 
+#include <string>
+#include <iostream>
 #include "../bkb_writer.h"
+using std::string;
+using std::cout;
 
 //************************************************************************************************************
 // CBigKmerBinWriter

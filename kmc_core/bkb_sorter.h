@@ -293,7 +293,7 @@ template<unsigned SIZE> void CBigKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::PostProc
 	uchar* _raw_lut;
 	ptr.sm_pmm_sorter_lut->reserve(_raw_lut);
 	uint64* lut = (uint64*)_raw_lut;
-	fill_n(lut, lut_recs, 0);
+	std::fill_n(lut, lut_recs, 0);
 
 	uint64 suff_buff_size = ptr.sm_mem_part_suffixes / suffix_rec_bytes * suffix_rec_bytes;
 
@@ -448,7 +448,7 @@ template<unsigned SIZE> void CBigKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::PostProc
 	uchar* _raw_lut;
 	ptr.sm_pmm_sorter_lut->reserve(_raw_lut);
 	uint64* lut = (uint64*)_raw_lut;
-	fill_n(lut, lut_recs, 0);
+	std::fill_n(lut, lut_recs, 0);
 
 	uint64 suff_buff_size = ptr.sm_mem_part_suffixes / suffix_rec_bytes * suffix_rec_bytes;
 	

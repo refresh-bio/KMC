@@ -26,7 +26,7 @@
 //************************************************************************************************************
 class CKmerBinCompleter {
 	CMemoryMonitor *mm;
-	string file_name, kmer_file_name, lut_file_name;
+	std::string file_name, kmer_file_name, lut_file_name;
 	CKmerQueue *kq;
 	CBinDesc *bd;
 	CSignatureMapper *s_mapper;

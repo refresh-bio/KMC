@@ -19,9 +19,6 @@
 #include "external/zlib.h"
 #include "external/bzlib.h"
 
-
-using namespace std;
-
 //************************************************************************************************************
 // FASTA/FASTQ reader class
 //************************************************************************************************************
@@ -31,7 +28,7 @@ class CFastqReader {
 	CMemoryMonitor *mm;
 	CMemoryPool *pmm_fastq;
 
-	string input_file_name;
+	std::string input_file_name;
 	input_type file_type;
 	int kmer_len;
 	t_mode mode;
@@ -61,7 +58,7 @@ public:
 
 	static uint64 OVERHEAD_SIZE;
 
-	bool SetNames(string _input_file_name);
+	bool SetNames(std::string _input_file_name);
 	bool SetPartSize(uint64 _part_size);
 	bool OpenFiles();
 
@@ -77,7 +74,7 @@ class CWFastqReader {
 	CMemoryPool *pmm_fastq;
 
 	CFastqReader *fqr;
-	string file_name;
+	std::string file_name;
 	uint64 part_size;
 	CInputFilesQueue *input_files_queue;
 	CPartQueue *part_queue;
@@ -103,7 +100,7 @@ class CWStatsFastqReader {
 	CMemoryPool *pmm_fastq;
 
 	CFastqReader *fqr;
-	string file_name;
+	std::string file_name;
 	uint64 part_size;
 	CInputFilesQueue *input_files_queue;
 	CStatsPartQueue *stats_part_queue;

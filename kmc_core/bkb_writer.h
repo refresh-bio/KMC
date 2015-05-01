@@ -25,9 +25,9 @@ class CBigKmerBinWriter
 	CMemoryPool * sm_pmm_sorter_suffixes;
 	CMemoryPool * sm_pmm_sorter_lut;
 	
-	string working_directory;
+	std::string working_directory;
 	CBigBinDesc* bbd;
-	string GetName();
+	std::string GetName();
 public:
 	CBigKmerBinWriter(CKMCParams& Params, CKMCQueues& Queues);
 	void Process();	

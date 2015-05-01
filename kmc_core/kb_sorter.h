@@ -37,7 +37,7 @@ template <typename KMER_T, unsigned SIZE> class CKmerBinSorter_Impl;
 // CKmerBinSorter - sorting of k-mers in a bin
 //************************************************************************************************************
 template <typename KMER_T, unsigned SIZE> class CKmerBinSorter {
-	mutable mutex expander_mtx;
+	mutable std::mutex expander_mtx;
 	uint64 input_pos;
 	CMemoryMonitor *mm;
 	CBinDesc *bd;
@@ -55,7 +55,7 @@ template <typename KMER_T, unsigned SIZE> class CKmerBinSorter {
 	uint64 size;
 	uint64 n_rec;
 	uint64 n_plus_x_recs;
-	string desc;
+	std::string desc;
 	uint32 buffer_size;
 	uint32 kmer_len;
 	uint32 max_x;
@@ -402,7 +402,7 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::ExpandKmer
 
 template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::FromChildThread(CKmerBinSorter<CKmer<SIZE>, SIZE>& ptr, CKmer<SIZE>* thread_buffer, uint64 size)
 {
-	lock_guard<mutex> lcx(ptr.expander_mtx);
+std::lock_guard<std::mutex> lcx(ptr.expander_mtx);
 	A_memcpy(ptr.buffer_input + ptr.input_pos, thread_buffer, size * sizeof(CKmer<SIZE>));
 	ptr.input_pos += size;
 }
@@ -590,21 +590,21 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::ExpandKxme
 
 	uint64 bytes_per_thread = (tmp_size + threads - 1) / threads;
 	uint32 thread_no = 0;
-	vector<thread> exp_threads;
+	std::vector<std::thread> exp_threads;
 	uint64 start = 0;
 	uint64 pos = 0;
 	for (; pos < tmp_size; pos += 1 + (ptr.data[pos] + ptr.kmer_len + 3) / 4)
 	{
 		if ((thread_no + 1) * bytes_per_thread <= pos)
 		{
-			exp_threads.push_back(thread(ExpandKxmerBothParaller, std::ref(ptr), start, pos));
+			exp_threads.push_back(std::thread(ExpandKxmerBothParaller, std::ref(ptr), start, pos));
 			start = pos;
 			++thread_no;
 		}
 	}
 	if (start < pos)
 	{
-		exp_threads.push_back(thread(ExpandKxmerBothParaller, std::ref(ptr), start, tmp_size));
+		exp_threads.push_back(std::thread(ExpandKxmerBothParaller, std::ref(ptr), start, tmp_size));
 	}
 
 	for (auto& p : exp_threads)
@@ -649,7 +649,7 @@ template<unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::ExpandKxmer
 			kxmer.SHR(kmer_shr);
 
 		kxmer.mask(kmer_mask);
-		uint32 tmp = MIN(ptr.max_x, additional_symbols);
+		uint32 tmp = std::min(ptr.max_x, additional_symbols);
 
 		for (uint32 i = 0; i < tmp; ++i)
 		{
@@ -974,7 +974,7 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::CompactKxm
 	ptr.memory_bins->reserve(ptr.bin_id, raw_lut, CMemoryBins::mba_lut);
 
 	uint64 *lut = (uint64*)raw_lut;
-	fill_n(lut, lut_recs, 0);
+	std::fill_n(lut, lut_recs, 0);
 
 	uint64 out_pos = 0;
 
@@ -997,7 +997,7 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::CompactKxm
 		
 		uint64 counter_pos = 0;
 
-		uint64 counter_size = min(BYTE_LOG(ptr.cutoff_max), BYTE_LOG(ptr.counter_max));
+		uint64 counter_size = std::min(BYTE_LOG(ptr.cutoff_max), BYTE_LOG(ptr.counter_max));
 
 		CKmer<SIZE> kmer, next_kmer;
 		kmer.clear();
@@ -1089,7 +1089,7 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::CompactKme
 	uint64 lut_recs = 1 << (2 * (ptr.lut_prefix_len));
 	uint64 lut_size = lut_recs * sizeof(uint64);
 
-	uint64 counter_size = min(BYTE_LOG(ptr.cutoff_max), BYTE_LOG(ptr.counter_max));
+	uint64 counter_size = std::min(BYTE_LOG(ptr.cutoff_max), BYTE_LOG(ptr.counter_max));
 
 	uchar *out_buffer;
 	uchar *raw_lut;
@@ -1097,7 +1097,7 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::CompactKme
 	ptr.memory_bins->reserve(ptr.bin_id, out_buffer, CMemoryBins::mba_suffix);
 	ptr.memory_bins->reserve(ptr.bin_id, raw_lut, CMemoryBins::mba_lut);
 	uint64 *lut = (uint64*)raw_lut;
-	fill_n(lut, lut_recs, 0);
+	std::fill_n(lut, lut_recs, 0);
 
 	uint64 out_pos = 0;
 	uint32 count;
@@ -1217,7 +1217,7 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmerQuake<SIZE>, SIZE>::Compa
 		ptr.memory_bins->reserve(ptr.bin_id, out_buffer, CMemoryBins::mba_suffix);
 		ptr.memory_bins->reserve(ptr.bin_id, raw_lut, CMemoryBins::mba_lut);
 		uint64 *lut = (uint64*)raw_lut;
-		fill_n(lut, lut_recs, 0);
+		std::fill_n(lut, lut_recs, 0);
 
 		uint64 out_pos = 0;
 		double count;

@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <iostream>
 #include <vector>
-using namespace std;
 
 
 //************************************************************************************************************
@@ -329,7 +328,7 @@ template <bool QUAKE_MODE> bool CSplitter<QUAKE_MODE>::GetSeq(char *seq, char *q
 			return false;
 
 		// Quality
-		copy(part+part_pos, part+part_pos+pos, quals);
+		std::copy(part+part_pos, part+part_pos+pos, quals);
 
 		part_pos += pos;
 		if(part_pos >= part_size)
@@ -897,7 +896,7 @@ template <bool QUAKE_MODE> CWStatsSplitter<QUAKE_MODE>::CWStatsSplitter(CKMCPara
 	
 	signature_len = Params.signature_len;
 	pmm_stats->reserve(stats);
-	fill_n(stats, (1 << signature_len * 2) + 1, 0);
+	std::fill_n(stats, (1 << signature_len * 2) + 1, 0);
 }
 
 //----------------------------------------------------------------------------------

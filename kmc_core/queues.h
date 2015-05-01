@@ -21,30 +21,26 @@
 #include <string>
 #include "mem_disk_file.h"
 
-using namespace std;
-
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 
-using std::thread;
-
 
 //************************************************************************************************************
 class CInputFilesQueue {
-	typedef string elem_t;
-	typedef queue<elem_t, list<elem_t>> queue_t;
+	typedef std::string elem_t;
+	typedef std::queue<elem_t, std::list<elem_t>> queue_t;
 
 	queue_t q;
 	bool is_completed;
 
-	mutable mutex mtx;								// The mutex to synchronise on
+	mutable std::mutex mtx;								// The std::mutex to synchronise on
 
 public:
-	CInputFilesQueue(const vector<string> &file_names) {
-		unique_lock<mutex> lck(mtx);
+	CInputFilesQueue(const std::vector<std::string> &file_names) {
+		std::unique_lock<std::mutex> lck(mtx);
 
-		for(vector<string>::const_iterator p = file_names.begin(); p != file_names.end(); ++p)
+		for(std::vector<std::string>::const_iterator p = file_names.begin(); p != file_names.end(); ++p)
 			q.push(*p);
 
 		is_completed = false;
@@ -52,19 +48,19 @@ public:
 	~CInputFilesQueue() {};
 
 	bool empty() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return q.empty();
 	}
 	bool completed() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return q.empty() && is_completed;
 	}
 	void mark_completed() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		is_completed = true;
 	}
-	bool pop(string &file_name) {
-		lock_guard<mutex> lck(mtx);
+	bool pop(std::string &file_name) {
+		std::lock_guard<std::mutex> lck(mtx);
 
 		if(q.empty())
 			return false;
@@ -78,49 +74,49 @@ public:
 
 //************************************************************************************************************
 class CPartQueue {
-	typedef pair<uchar *, uint64> elem_t;
-	typedef queue<elem_t, list<elem_t>> queue_t;
+	typedef std::pair<uchar *, uint64> elem_t;
+	typedef std::queue<elem_t, std::list<elem_t>> queue_t;
 
 	queue_t q;
 	bool is_completed;
 	int n_readers;
 
-	mutable mutex mtx;								// The mutex to synchronise on
-	condition_variable cv_queue_empty;
+	mutable std::mutex mtx;								// The std::mutex to synchronise on
+	std::condition_variable cv_queue_empty;
 
 public:
 	CPartQueue(int _n_readers) {
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		is_completed    = false;
 		n_readers       = _n_readers;
 	};
 	~CPartQueue() {};
 
 	bool empty() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return q.empty();
 	}
 	bool completed() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return q.empty() && !n_readers;
 	}
 	void mark_completed() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		n_readers--;
 		if(!n_readers)
 			cv_queue_empty.notify_all();
 	}
 	void push(uchar *part, uint64 size) {
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		
 		bool was_empty = q.empty();
-		q.push(make_pair(part, size));
+		q.push(std::make_pair(part, size));
 
 		if(was_empty)
 			cv_queue_empty.notify_all();
 	}
 	bool pop(uchar *&part, uint64 &size) {
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv_queue_empty.wait(lck, [this]{return !this->q.empty() || !this->n_readers;}); 
 
 		if(q.empty())
@@ -137,19 +133,19 @@ public:
 //************************************************************************************************************
 class CStatsPartQueue
 {
-	typedef pair<uchar *, uint64> elem_t;
-	typedef queue<elem_t, list<elem_t>> queue_t;
+	typedef std::pair<uchar *, uint64> elem_t;
+	typedef std::queue<elem_t, std::list<elem_t>> queue_t;
 
 	queue_t q;
 
-	mutable mutex mtx;
-	condition_variable cv_queue_empty;
+	mutable std::mutex mtx;
+	std::condition_variable cv_queue_empty;
 	int n_readers;
 	int64 bytes_to_read;
 public:
 	CStatsPartQueue(int _n_readers, int64 _bytes_to_read)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		n_readers = _n_readers;
 		bytes_to_read = _bytes_to_read;
 	}
@@ -157,25 +153,25 @@ public:
 	~CStatsPartQueue() {};
 
 	void mark_completed() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		n_readers--;
 		if (!n_readers)
 			cv_queue_empty.notify_all();
 	}
 
 	bool completed() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return q.empty() && !n_readers;
 	}
 
 	bool push(uchar *part, uint64 size) {
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 
 		if (bytes_to_read <= 0)
 			return false;
 
 		bool was_empty = q.empty();
-		q.push(make_pair(part, size));
+		q.push(std::make_pair(part, size));
 		bytes_to_read -= size;
 		if (was_empty)
 			cv_queue_empty.notify_one();
@@ -184,7 +180,7 @@ public:
 	}
 
 	bool pop(uchar *&part, uint64 &size) {
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv_queue_empty.wait(lck, [this]{return !this->q.empty() || !this->n_readers; });
 
 		if (q.empty())
@@ -202,19 +198,19 @@ public:
 
 //************************************************************************************************************
 class CBinPartQueue {
-	typedef tuple<int32, uchar *, uint32, uint32> elem_t;
-	typedef queue<elem_t, list<elem_t>> queue_t;
+	typedef std::tuple<int32, uchar *, uint32, uint32> elem_t;
+	typedef std::queue<elem_t, std::list<elem_t>> queue_t;
 	queue_t q;
 
 	int n_writers;
 	bool is_completed;
 
-	mutable mutex mtx;						// The mutex to synchronise on
-	condition_variable cv_queue_empty;
+	mutable std::mutex mtx;						// The std::mutex to synchronise on
+	std::condition_variable cv_queue_empty;
 
 public:
 	CBinPartQueue(int _n_writers) {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 
 		n_writers       = _n_writers;
 		is_completed    = false;
@@ -222,21 +218,21 @@ public:
 	~CBinPartQueue() {}
 
 	bool empty() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return q.empty();
 	}
 	bool completed() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return q.empty() && !n_writers;
 	}
 	void mark_completed() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		n_writers--;
 		if(!n_writers)
 			cv_queue_empty.notify_all();
 	}
 	void push(int32 bin_id, uchar *part, uint32 true_size, uint32 alloc_size) {
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 
 		bool was_empty = q.empty();
 		q.push(std::make_tuple(bin_id, part, true_size, alloc_size));
@@ -244,16 +240,16 @@ public:
 			cv_queue_empty.notify_all();
 	}
 	bool pop(int32 &bin_id, uchar *&part, uint32 &true_size, uint32 &alloc_size) {
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv_queue_empty.wait(lck, [this]{return !q.empty() || !n_writers;}); 
 
 		if(q.empty())
 			return false;
 
-		bin_id     = get<0>(q.front());
-		part       = get<1>(q.front());
-		true_size  = get<2>(q.front());
-		alloc_size = get<3>(q.front());
+		bin_id     = std::get<0>(q.front());
+		part       = std::get<1>(q.front());
+		true_size  = std::get<2>(q.front());
+		alloc_size = std::get<3>(q.front());
 		q.pop();
 
 		return true;
@@ -262,42 +258,42 @@ public:
 
 //************************************************************************************************************
 class CBinDesc {
-	typedef tuple<string, int64, uint64, uint32, uint32, CMemDiskFile*, uint64, uint64> desc_t;
-	typedef map<int32, desc_t> map_t;
+	typedef std::tuple<std::string, int64, uint64, uint32, uint32, CMemDiskFile*, uint64, uint64> desc_t;
+	typedef std::map<int32, desc_t> map_t;
 
 	map_t m;
 	int32 bin_id;
 
-	vector<int32> random_bins;
+	std::vector<int32> random_bins;
 
-	mutable mutex mtx;
+	mutable std::mutex mtx;
 
 public:
 	CBinDesc() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		bin_id = -1;
 	}
 	~CBinDesc() {}
 
 	void reset_reading() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		bin_id = -1;
 	}
 
 	bool empty() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return m.empty();
 	}
 
 	void init_random()
 	{
-		lock_guard<mutex> lck(mtx);
-		vector<pair<int32, int64>> bin_sizes;
+		std::lock_guard<std::mutex> lck(mtx);
+		std::vector<std::pair<int32, int64>> bin_sizes;
 
 		for (auto& p : m)
-			bin_sizes.push_back(make_pair(p.first, get<2>(p.second)));
+			bin_sizes.push_back(std::make_pair(p.first, std::get<2>(p.second)));
 
-		sort(bin_sizes.begin(), bin_sizes.end(), [](const pair<int32, int64>& l, const pair<int32, int64>& r){
+		sort(bin_sizes.begin(), bin_sizes.end(), [](const std::pair<int32, int64>& l, const std::pair<int32, int64>& r){
 			return l.second > r.second;
 		});
 
@@ -318,7 +314,7 @@ public:
 
 	int32 get_next_random_bin()
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		if (bin_id == -1)
 			bin_id = 0;
 		else
@@ -331,7 +327,7 @@ public:
 
 	int32 get_next_bin()
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		map_t::iterator p;
 		if(bin_id == -1)
 			p = m.begin();
@@ -349,104 +345,104 @@ public:
 
 		return bin_id;
 	}
-	void insert(int32 bin_id, CMemDiskFile *file, string desc, int64 size, uint64 n_rec, uint64 n_plus_x_recs, uint64 n_super_kmers, uint32 buffer_size = 0, uint32 kmer_len = 0) {
-		lock_guard<mutex> lck(mtx);
+	void insert(int32 bin_id, CMemDiskFile *file, std::string desc, int64 size, uint64 n_rec, uint64 n_plus_x_recs, uint64 n_super_kmers, uint32 buffer_size = 0, uint32 kmer_len = 0) {
+		std::lock_guard<std::mutex> lck(mtx);
 
 		map_t::iterator p = m.find(bin_id);
 		if(p != m.end())
 		{
 			if(desc != "")
 			{
-				get<0>(m[bin_id]) = desc;
-				get<5>(m[bin_id]) = file;
+				std::get<0>(m[bin_id]) = desc;
+				std::get<5>(m[bin_id]) = file;
 			}
-			get<1>(m[bin_id]) += size;
-			get<2>(m[bin_id]) += n_rec;
-			get<6>(m[bin_id]) += n_plus_x_recs;
-			get<7>(m[bin_id]) += n_super_kmers;
+			std::get<1>(m[bin_id]) += size;
+			std::get<2>(m[bin_id]) += n_rec;
+			std::get<6>(m[bin_id]) += n_plus_x_recs;
+			std::get<7>(m[bin_id]) += n_super_kmers;
 			if(buffer_size)
 			{
-				get<3>(m[bin_id]) = buffer_size;
-				get<4>(m[bin_id]) = kmer_len;
+				std::get<3>(m[bin_id]) = buffer_size;
+				std::get<4>(m[bin_id]) = kmer_len;
 			}
 		}
 		else
 			m[bin_id] = std::make_tuple(desc, size, n_rec, buffer_size, kmer_len, file, n_plus_x_recs, n_super_kmers);
 	}
-	void read(int32 bin_id, CMemDiskFile *&file, string &desc, uint64 &size, uint64 &n_rec, uint64 &n_plus_x_recs, uint32 &buffer_size, uint32 &kmer_len) {
-		lock_guard<mutex> lck(mtx);
+	void read(int32 bin_id, CMemDiskFile *&file, std::string &desc, uint64 &size, uint64 &n_rec, uint64 &n_plus_x_recs, uint32 &buffer_size, uint32 &kmer_len) {
+		std::lock_guard<std::mutex> lck(mtx);
 
-		desc			= get<0>(m[bin_id]);
-		file			= get<5>(m[bin_id]);
-		size			= (uint64) get<1>(m[bin_id]);
-		n_rec			= get<2>(m[bin_id]);
-		buffer_size		= get<3>(m[bin_id]);
-		kmer_len		= get<4>(m[bin_id]);
-		n_plus_x_recs	= get<6>(m[bin_id]);
+		desc			= std::get<0>(m[bin_id]);
+		file			= std::get<5>(m[bin_id]);
+		size			= (uint64) std::get<1>(m[bin_id]);
+		n_rec			= std::get<2>(m[bin_id]);
+		buffer_size		= std::get<3>(m[bin_id]);
+		kmer_len		= std::get<4>(m[bin_id]);
+		n_plus_x_recs	= std::get<6>(m[bin_id]);
 	}
-	void read(int32 bin_id, CMemDiskFile *&file, string &desc, uint64 &size, uint64 &n_rec, uint64 &n_plus_x_recs, uint64 &n_super_kmers) {
-		lock_guard<mutex> lck(mtx);
+	void read(int32 bin_id, CMemDiskFile *&file, std::string &desc, uint64 &size, uint64 &n_rec, uint64 &n_plus_x_recs, uint64 &n_super_kmers) {
+		std::lock_guard<std::mutex> lck(mtx);
 
-		desc			= get<0>(m[bin_id]);
-		file			= get<5>(m[bin_id]);
-		size			= (uint64) get<1>(m[bin_id]);
-		n_rec			= get<2>(m[bin_id]);
-		n_plus_x_recs	= get<6>(m[bin_id]);
-		n_super_kmers		= get<7>(m[bin_id]);
+		desc			= std::get<0>(m[bin_id]);
+		file			= std::get<5>(m[bin_id]);
+		size			= (uint64) std::get<1>(m[bin_id]);
+		n_rec			= std::get<2>(m[bin_id]);
+		n_plus_x_recs	= std::get<6>(m[bin_id]);
+		n_super_kmers		= std::get<7>(m[bin_id]);
 	}
 };
 
 //************************************************************************************************************
 class CBinQueue {
-	typedef tuple<int32, uchar *, uint64, uint64> elem_t;
-	typedef queue<elem_t, list<elem_t>> queue_t;
+	typedef std::tuple<int32, uchar *, uint64, uint64> elem_t;
+	typedef std::queue<elem_t, std::list<elem_t>> queue_t;
 	queue_t q;
 
 	int n_writers;
 
-	mutable mutex mtx;								// The mutex to synchronise on
-	condition_variable cv_queue_empty;
+	mutable std::mutex mtx;								// The std::mutex to synchronise on
+	std::condition_variable cv_queue_empty;
 
 public:
 	CBinQueue(int _n_writers) {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		n_writers = _n_writers;
 	}
 	~CBinQueue() {}
 
 	bool empty() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return q.empty();
 	}
 	bool completed() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return q.empty() && !n_writers;
 	}
 	void mark_completed() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		n_writers--;
 		if(n_writers == 0)
 			cv_queue_empty.notify_all();
 	}
 	void push(int32 bin_id, uchar *part, uint64 size, uint64 n_rec) {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		bool was_empty = q.empty();
 		q.push(std::make_tuple(bin_id, part, size, n_rec));
 		if(was_empty)
 			cv_queue_empty.notify_all();
 	}
 	bool pop(int32 &bin_id, uchar *&part, uint64 &size, uint64 &n_rec) {
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 
 		cv_queue_empty.wait(lck, [this]{return !q.empty() || !n_writers;}); 
 
 		if(q.empty())
 			return false;
 
-		bin_id = get<0>(q.front());
-		part   = get<1>(q.front());
-		size   = get<2>(q.front());
-		n_rec  = get<3>(q.front());
+		bin_id = std::get<0>(q.front());
+		part   = std::get<1>(q.front());
+		size   = std::get<2>(q.front());
+		n_rec  = std::get<3>(q.front());
 		q.pop();
 
 		return true;
@@ -455,18 +451,18 @@ public:
 
 //************************************************************************************************************
 class CKmerQueue {
-	typedef tuple<int32, uchar*, uint64, uchar*, uint64, uint64, uint64, uint64, uint64> data_t;
-	typedef list<data_t> list_t;
+	typedef std::tuple<int32, uchar*, uint64, uchar*, uint64, uint64, uint64, uint64, uint64> data_t;
+	typedef std::list<data_t> list_t;
 
 	int n_writers;
-	mutable mutex mtx;								// The mutex to synchronise on
-	condition_variable cv_queue_empty;
+	mutable std::mutex mtx;								// The std::mutex to synchronise on
+	std::condition_variable cv_queue_empty;
 
 	list_t l;
 	int32 n_bins;
 public:
 	CKmerQueue(int32 _n_bins, int _n_writers) {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		n_bins = _n_bins;
 		n_writers = _n_writers;
 	}
@@ -474,35 +470,35 @@ public:
 	}
 
 	bool empty() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return l.empty() && !n_writers;
 	}
 	void mark_completed() {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		n_writers--;
 		if (!n_writers)
 			cv_queue_empty.notify_all();
 	}
 	void push(int32 bin_id, uchar *data, uint64 data_size, uchar *lut, uint64 lut_size, uint64 n_unique, uint64 n_cutoff_min, uint64 n_cutoff_max, uint64 n_total) {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		l.push_back(std::make_tuple(bin_id, data, data_size, lut, lut_size, n_unique, n_cutoff_min, n_cutoff_max, n_total));
 		cv_queue_empty.notify_all();
 	}
 	bool pop(int32 &bin_id, uchar *&data, uint64 &data_size, uchar *&lut, uint64 &lut_size, uint64 &n_unique, uint64 &n_cutoff_min, uint64 &n_cutoff_max, uint64 &n_total) {
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv_queue_empty.wait(lck, [this]{return !l.empty() || !n_writers; });
 		if (l.empty())
 			return false;
 
-		bin_id = get<0>(l.front());
-		data = get<1>(l.front());
-		data_size = get<2>(l.front());
-		lut = get<3>(l.front());
-		lut_size = get<4>(l.front());
-		n_unique = get<5>(l.front());
-		n_cutoff_min = get<6>(l.front());
-		n_cutoff_max = get<7>(l.front());
-		n_total = get<8>(l.front());
+		bin_id = std::get<0>(l.front());
+		data = std::get<1>(l.front());
+		data_size = std::get<2>(l.front());
+		lut = std::get<3>(l.front());
+		lut_size = std::get<4>(l.front());
+		n_unique = std::get<5>(l.front());
+		n_cutoff_min = std::get<6>(l.front());
+		n_cutoff_max = std::get<7>(l.front());
+		n_total = std::get<8>(l.front());
 
 		l.pop_front();
 
@@ -521,12 +517,12 @@ class CMemoryMonitor {
 	uint64 max_memory;
 	uint64 memory_in_use;
 
-	mutable mutex mtx;								// The mutex to synchronise on
-	condition_variable cv_memory_full;				// The condition to wait for
+	mutable std::mutex mtx;								// The std::mutex to synchronise on
+	std::condition_variable cv_memory_full;				// The condition to wait for
 
 public:
 	CMemoryMonitor(uint64 _max_memory) {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		max_memory    = _max_memory;
 		memory_in_use = 0;
 	}
@@ -534,23 +530,23 @@ public:
 	}
 
 	void increase(uint64 n) {
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv_memory_full.wait(lck, [this, n]{return memory_in_use + n <= max_memory;});
 		memory_in_use += n;
 	}
 	void force_increase(uint64 n) {
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv_memory_full.wait(lck, [this, n]{return memory_in_use + n <= max_memory || memory_in_use == 0;});
 		memory_in_use += n;
 	}
 	void decrease(uint64 n) {
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		memory_in_use -= n;
 		cv_memory_full.notify_all();
 	}
 	void info(uint64 &_max_memory, uint64 &_memory_in_use)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		_max_memory    = max_memory;
 		_memory_in_use = memory_in_use;
 	}
@@ -566,8 +562,8 @@ class CMemoryPool {
 	uchar *buffer, *raw_buffer;
 	uint32 *stack;
 
-	mutable mutex mtx;							// The mutex to synchronise on
-	condition_variable cv;						// The condition to wait for
+	mutable std::mutex mtx;							// The std::mutex to synchronise on
+	std::condition_variable cv;						// The condition to wait for
 
 public:
 	CMemoryPool(int64 _total_size, int64 _part_size) {
@@ -584,7 +580,7 @@ public:
 		release();
 
 		n_parts_total = _total_size / _part_size;
-		part_size     = (_part_size + 15) / 16 * 16;			// to allow mapping pointer to int*
+		part_size     = (_part_size + 15) / 16 * 16;			// to allow std::mapping pointer to int*
 		n_parts_free  = n_parts_total;
 
 		total_size = n_parts_total * part_size;
@@ -613,7 +609,7 @@ public:
 	// Allocate memory buffer - uchar*
 	void reserve(uchar* &part)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv.wait(lck, [this]{return n_parts_free > 0;});
 
 		part = buffer + stack[--n_parts_free]*part_size;
@@ -621,7 +617,7 @@ public:
 	// Allocate memory buffer - char*
 	void reserve(char* &part)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv.wait(lck, [this]{return n_parts_free > 0;});
 
 		part = (char*) (buffer + stack[--n_parts_free]*part_size);
@@ -629,7 +625,7 @@ public:
 	// Allocate memory buffer - uint32*
 	void reserve(uint32* &part)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv.wait(lck, [this]{return n_parts_free > 0;});
 
 		part = (uint32*) (buffer + stack[--n_parts_free]*part_size);
@@ -637,7 +633,7 @@ public:
 	// Allocate memory buffer - uint64*
 	void reserve(uint64* &part)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv.wait(lck, [this]{return n_parts_free > 0;});
 
 		part = (uint64*) (buffer + stack[--n_parts_free]*part_size);
@@ -645,7 +641,7 @@ public:
 	// Allocate memory buffer - double*
 	void reserve(double* &part)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv.wait(lck, [this]{return n_parts_free > 0;});
 
 		part = (double*) (buffer + stack[--n_parts_free]*part_size);
@@ -654,7 +650,7 @@ public:
 	// Deallocate memory buffer - uchar*
 	void free(uchar* part)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 
 		stack[n_parts_free++] = (uint32) ((part - buffer) / part_size);
 		
@@ -663,7 +659,7 @@ public:
 	// Deallocate memory buffer - char*
 	void free(char* part)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 
 		stack[n_parts_free++] = (uint32) (((uchar*) part - buffer) / part_size);
 		cv.notify_all();
@@ -671,7 +667,7 @@ public:
 	// Deallocate memory buffer - uint32*
 	void free(uint32* part)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 
 		stack[n_parts_free++] = (uint32) ((((uchar *) part) - buffer) / part_size);
 		cv.notify_all();
@@ -679,7 +675,7 @@ public:
 	// Deallocate memory buffer - uint64*
 	void free(uint64* part)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 
 		stack[n_parts_free++] = (uint32) ((((uchar *) part) - buffer) / part_size);
 		cv.notify_all();
@@ -687,7 +683,7 @@ public:
 	// Deallocate memory buffer - double*
 	void free(double* part)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 
 		stack[n_parts_free++] = (uint32) ((((uchar *) part) - buffer) / part_size);
 		cv.notify_all();
@@ -711,11 +707,11 @@ private:
 	uchar *buffer, *raw_buffer;
 	bin_ptrs_t *bin_ptrs;
 
-	list<pair<uint64, uint64>> list_reserved;
-	list<pair<uint32, uint64>> list_insert_order;
+	std::list<std::pair<uint64, uint64>> list_reserved;
+	std::list<std::pair<uint32, uint64>> list_insert_order;
 
-	mutable mutex mtx;							// The mutex to synchronise on
-	condition_variable cv;						// The condition to wait for
+	mutable std::mutex mtx;							// The std::mutex to synchronise on
+	std::condition_variable cv;						// The condition to wait for
 
 public:
 	CMemoryBins(int64 _total_size, uint32 _n_bins, bool _use_strict_mem) {
@@ -750,7 +746,7 @@ public:
 
 		list_reserved.clear();
 		list_insert_order.clear();
-		list_reserved.push_back(make_pair(total_size, 0));		// guard
+		list_reserved.push_back(std::make_pair(total_size, 0));		// guard
 	}
 
 	void release(void) {
@@ -767,19 +763,19 @@ public:
 	// Prepare memory buffer for bin of given id
 	bool init(uint32 bin_id, uint32 sorting_phases, int64 file_size, int64 kxmers_size, int64 out_buffer_size, int64 kxmer_counter_size, int64 lut_size)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		int64 part1_size;
 		int64 part2_size;
 
 		if (sorting_phases % 2 == 0)
 		{
 			part1_size = kxmers_size + kxmer_counter_size;
-			part2_size = max(max(file_size, kxmers_size), out_buffer_size + lut_size);
+			part2_size = std::max(std::max(file_size, kxmers_size), out_buffer_size + lut_size);
 		}
 		else
 		{
-			part1_size = max(kxmers_size + kxmer_counter_size, file_size);
-			part2_size = max(kxmers_size, out_buffer_size + lut_size);
+			part1_size = std::max(kxmers_size + kxmer_counter_size, file_size);
+			part2_size = std::max(kxmers_size, out_buffer_size + lut_size);
 		}
 		int64 req_size = part1_size + part2_size;
 		if (use_strict_mem && req_size > total_size) 				
@@ -843,79 +839,79 @@ public:
 		});
 
 		// Reserve found free space
-		list_insert_order.push_back(make_pair(bin_id, found_pos));
+		list_insert_order.push_back(std::make_pair(bin_id, found_pos));
 		for (auto p = list_reserved.begin(); p != list_reserved.end(); ++p)
 			if (found_pos < p->first)
 			{
-				list_reserved.insert(p, make_pair(found_pos, req_size));
+				list_reserved.insert(p, std::make_pair(found_pos, req_size));
 				break;
 			}
 
-		uchar *base_ptr = get<0>(bin_ptrs[bin_id]) = buffer + found_pos;
+		uchar *base_ptr = std::get<0>(bin_ptrs[bin_id]) = buffer + found_pos;
 
 		if (sorting_phases % 2 == 0)				// the result of sorting is in the same place as input
 		{
-			get<1>(bin_ptrs[bin_id]) = base_ptr + part1_size;
-			get<2>(bin_ptrs[bin_id]) = base_ptr;
-			get<3>(bin_ptrs[bin_id]) = base_ptr + part1_size;
+			std::get<1>(bin_ptrs[bin_id]) = base_ptr + part1_size;
+			std::get<2>(bin_ptrs[bin_id]) = base_ptr;
+			std::get<3>(bin_ptrs[bin_id]) = base_ptr + part1_size;
 		}
 		else
 		{
-			get<1>(bin_ptrs[bin_id]) = base_ptr;
-			get<2>(bin_ptrs[bin_id]) = base_ptr + part1_size;
-			get<3>(bin_ptrs[bin_id]) = base_ptr;
+			std::get<1>(bin_ptrs[bin_id]) = base_ptr;
+			std::get<2>(bin_ptrs[bin_id]) = base_ptr + part1_size;
+			std::get<3>(bin_ptrs[bin_id]) = base_ptr;
 		}
-		get<4>(bin_ptrs[bin_id]) = base_ptr + part1_size;									// data
-		get<5>(bin_ptrs[bin_id]) = get<4>(bin_ptrs[bin_id]) + out_buffer_size;
+		std::get<4>(bin_ptrs[bin_id]) = base_ptr + part1_size;									// data
+		std::get<5>(bin_ptrs[bin_id]) = std::get<4>(bin_ptrs[bin_id]) + out_buffer_size;
 		if (kxmer_counter_size)
-			get<6>(bin_ptrs[bin_id]) = base_ptr + kxmers_size;								//kxmers counter
+			std::get<6>(bin_ptrs[bin_id]) = base_ptr + kxmers_size;								//kxmers counter
 		else
-			get<6>(bin_ptrs[bin_id]) = NULL;
+			std::get<6>(bin_ptrs[bin_id]) = NULL;
 		free_size -= req_size;
-		get<7>(bin_ptrs[bin_id]) = req_size;
+		std::get<7>(bin_ptrs[bin_id]) = req_size;
 
 		return true;
 	}
 
 	void reserve(uint32 bin_id, uchar* &part, mba_t t)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		if (t == mba_input_file)
-			part = get<1>(bin_ptrs[bin_id]);
+			part = std::get<1>(bin_ptrs[bin_id]);
 		else if (t == mba_input_array)
-			part = get<2>(bin_ptrs[bin_id]);
+			part = std::get<2>(bin_ptrs[bin_id]);
 		else if (t == mba_tmp_array)
-			part = get<3>(bin_ptrs[bin_id]);
+			part = std::get<3>(bin_ptrs[bin_id]);
 		else if (t == mba_suffix)
-			part = get<4>(bin_ptrs[bin_id]);
+			part = std::get<4>(bin_ptrs[bin_id]);
 		else if (t == mba_lut)
-			part = get<5>(bin_ptrs[bin_id]);
+			part = std::get<5>(bin_ptrs[bin_id]);
 		else if (t == mba_kxmer_counters)
-			part = get<6>(bin_ptrs[bin_id]);
+			part = std::get<6>(bin_ptrs[bin_id]);
 	}
 
 	// Deallocate memory buffer - uchar*
 	void free(uint32 bin_id, mba_t t)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		if (t == mba_input_file)
-			get<1>(bin_ptrs[bin_id]) = NULL;
+			std::get<1>(bin_ptrs[bin_id]) = NULL;
 		else if (t == mba_input_array)
-			get<2>(bin_ptrs[bin_id]) = NULL;
+			std::get<2>(bin_ptrs[bin_id]) = NULL;
 		else if (t == mba_tmp_array)
-			get<3>(bin_ptrs[bin_id]) = NULL;
+			std::get<3>(bin_ptrs[bin_id]) = NULL;
 		else if (t == mba_suffix)
-			get<4>(bin_ptrs[bin_id]) = NULL;
+			std::get<4>(bin_ptrs[bin_id]) = NULL;
 		else if (t == mba_lut)
-			get<5>(bin_ptrs[bin_id]) = NULL;
+			std::get<5>(bin_ptrs[bin_id]) = NULL;
 		else if (t == mba_kxmer_counters)
-			get<6>(bin_ptrs[bin_id]) = NULL;
+			std::get<6>(bin_ptrs[bin_id]) = NULL;
 
-		if (!get<1>(bin_ptrs[bin_id]) && !get<2>(bin_ptrs[bin_id]) && !get<3>(bin_ptrs[bin_id]) && !get<4>(bin_ptrs[bin_id]) && !get<5>(bin_ptrs[bin_id]) && !get<6>(bin_ptrs[bin_id]))
+		if (!std::get<1>(bin_ptrs[bin_id]) && !std::get<2>(bin_ptrs[bin_id]) && !std::get<3>(bin_ptrs[bin_id]) && !std::get<4>(bin_ptrs[bin_id]) && !std::get<5>(bin_ptrs[bin_id]) && !std::get<6>(bin_ptrs[bin_id]))
 		{
 			for (auto p = list_reserved.begin(); p != list_reserved.end() && p->second != 0; ++p)
 			{
-				if ((int64)p->first == get<0>(bin_ptrs[bin_id]) - buffer)
+				if ((int64)p->first == std::get<0>(bin_ptrs[bin_id]) - buffer)
 				{
 					list_reserved.erase(p);
 					break;
@@ -928,8 +924,8 @@ public:
 				break;
 			}
 
-			get<0>(bin_ptrs[bin_id]) = NULL;
-			free_size += get<7>(bin_ptrs[bin_id]);
+			std::get<0>(bin_ptrs[bin_id]) = NULL;
+			free_size += std::get<7>(bin_ptrs[bin_id]);
 			cv.notify_all();
 		}
 	}
@@ -938,7 +934,7 @@ public:
 
 class CTooLargeBinsQueue
 {
-	queue<int32, list<int32>> q;
+	std::queue<int32, std::list<int32>> q;
 	uint32 curr;
 public:
 	CTooLargeBinsQueue()
@@ -973,11 +969,11 @@ public:
 class CBigBinPartQueue
 {
 	typedef std::tuple<int32, uchar*, uint64> data_t;
-	typedef list<data_t> list_t;
+	typedef std::list<data_t> list_t;
 	list_t l;	
 	bool completed;
-	mutable mutex mtx;
-	condition_variable cv_pop;
+	mutable std::mutex mtx;
+	std::condition_variable cv_pop;
 public:
 	void init()
 	{
@@ -990,7 +986,7 @@ public:
 
 	void push(int32 bin_id, uchar* data, uint64 size)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		bool was_empty = l.empty();
 		l.push_back(std::make_tuple(bin_id, data, size));
 		if (was_empty)
@@ -999,21 +995,21 @@ public:
 
 	bool pop(int32& bin_id, uchar* &data, uint64& size)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv_pop.wait(lck, [this]{return !l.empty() || completed; });
 		if (completed && l.empty())
 			return false;
 		
-		bin_id = get<0>(l.front());
-		data = get<1>(l.front());
-		size = get<2>(l.front());
+		bin_id = std::get<0>(l.front());
+		data = std::get<1>(l.front());
+		size = std::get<2>(l.front());
 		l.pop_front();
 		return true;
 	}
 
 	void mark_completed()
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		completed = true;
 		cv_pop.notify_all();
 	}
@@ -1022,15 +1018,15 @@ public:
 class CBigBinKXmersQueue
 {
 	typedef std::tuple<int32, uchar*, uint64> data_t;
-	typedef list<data_t> list_t;
+	typedef std::list<data_t> list_t;
 	list_t l;
 	uint32 n_writers;
-	mutable mutex mtx;
-	condition_variable cv_pop;	
+	mutable std::mutex mtx;
+	std::condition_variable cv_pop;	
 
 	uint32 n_waiters;
 	int32 current_id;
-	condition_variable cv_push;	
+	std::condition_variable cv_push;	
 public:
 	CBigBinKXmersQueue(uint32 _n_writers)
 	{
@@ -1041,7 +1037,7 @@ public:
 
 	void push(int32 bin_id, uchar* data, uint64 size)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		++n_waiters;
 		if (current_id == -1)
 			current_id = bin_id;
@@ -1061,20 +1057,20 @@ public:
 
 	bool pop(int32& bin_id, uchar* &data, uint64& size)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv_pop.wait(lck, [this]{return !l.empty() || !n_writers; });
 		if (l.empty() && !n_writers)
 			return false;		
-		bin_id = get<0>(l.front());
-		data = get<1>(l.front());
-		size = get<2>(l.front());
+		bin_id = std::get<0>(l.front());
+		data = std::get<1>(l.front());
+		size = std::get<2>(l.front());
 		l.pop_front();
 		return true;
 	}
 
 	void mark_completed()
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		--n_writers;
 		if (!n_writers)
 			cv_pop.notify_all();
@@ -1092,11 +1088,11 @@ class CBigBinSortedPartQueue
 {
 	//bin_id, sub_bin_id,suff_buff, suff_buff_size, lut, lut_size, last_one_in_bin
 	typedef std::tuple<int32, int32, uchar*, uint64, uint64*, uint64, bool> data_t;
-	typedef list<data_t> list_t;
+	typedef std::list<data_t> list_t;
 	list_t l;
 	uint32 n_writers;
-	mutable mutex mtx;
-	condition_variable cv_pop;
+	mutable std::mutex mtx;
+	std::condition_variable cv_pop;
 public:
 	CBigBinSortedPartQueue(uint32 _n_writers)
 	{
@@ -1104,7 +1100,7 @@ public:
 	}
 	void push(int32 bin_id, int32 sub_bin_id, uchar* suff_buff, uint64 suff_buff_size, uint64* lut, uint64 lut_size, bool last_one_in_sub_bin)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		bool was_empty = l.empty();
 		l.push_back(std::make_tuple(bin_id, sub_bin_id, suff_buff, suff_buff_size, lut, lut_size, last_one_in_sub_bin));
 		if (was_empty)
@@ -1112,18 +1108,18 @@ public:
 	}
 	bool pop(int32& bin_id, int32& sub_bin_id, uchar* &suff_buff, uint64& suff_buff_size, uint64* &lut, uint64 &lut_size, bool &last_one_in_sub_bin)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv_pop.wait(lck, [this]{return !n_writers || !l.empty(); });
 		if (!n_writers && l.empty())
 			return false;
 
-		bin_id			= get<0>(l.front());
-		sub_bin_id		= get<1>(l.front());
-		suff_buff		= get<2>(l.front());
-		suff_buff_size	= get<3>(l.front());
-		lut				= get<4>(l.front());
-		lut_size		= get<5>(l.front());
-		last_one_in_sub_bin	= get<6>(l.front());
+		bin_id			= std::get<0>(l.front());
+		sub_bin_id		= std::get<1>(l.front());
+		suff_buff		= std::get<2>(l.front());
+		suff_buff_size	= std::get<3>(l.front());
+		lut				= std::get<4>(l.front());
+		lut_size		= std::get<5>(l.front());
+		last_one_in_sub_bin	= std::get<6>(l.front());
 
 		l.pop_front();
 		return true;
@@ -1139,12 +1135,12 @@ public:
 class CBigBinKmerPartQueue
 {
 	typedef std::tuple<int32, uchar*, uint64, uchar*, uint64, uint64, uint64, uint64, uint64, bool> data_t;
-	typedef list<data_t> list_t;
+	typedef std::list<data_t> list_t;
 	list_t l;
 	uint32 n_writers;
-	mutable mutex mtx;
-	condition_variable cv_pop;
-	condition_variable cv_push;
+	mutable std::mutex mtx;
+	std::condition_variable cv_pop;
+	std::condition_variable cv_push;
 	int32 curr_id;
 	bool allow_next;
 public:
@@ -1155,7 +1151,7 @@ public:
 	}
 	void push(int32 bin_id, uchar* suff_buff, uint64 suff_buff_size, uchar* lut, uint64 lut_size, uint64 n_unique, uint64 n_cutoff_min, uint64 n_cutoff_max, uint64 n_total, bool last_in_bin)
 	{
-		unique_lock<mutex> lck(mtx);	
+		std::unique_lock<std::mutex> lck(mtx);	
 		cv_push.wait(lck, [this, bin_id, lut_size]{return curr_id == bin_id || allow_next; });
 		allow_next = false;
 		if (last_in_bin)
@@ -1173,28 +1169,28 @@ public:
 	}
 	bool pop(int32& bin_id, uchar* &suff_buff, uint64& suff_buff_size, uchar* &lut, uint64& lut_size, uint64 &n_unique, uint64 &n_cutoff_min, uint64 &n_cutoff_max, uint64 &n_total, bool& last_in_bin)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 
 		cv_pop.wait(lck, [this]{return !l.empty() || !n_writers; });
 		if (!n_writers && l.empty())
 			return false;
-		bin_id = get<0>(l.front());
-		suff_buff = get<1>(l.front());
-		suff_buff_size = get<2>(l.front());
-		lut = get<3>(l.front());
-		lut_size = get<4>(l.front());
-		n_unique = get<5>(l.front());
-		n_cutoff_min = get<6>(l.front());
-		n_cutoff_max = get<7>(l.front());
-		n_total = get<8>(l.front());
-		last_in_bin = get<9>(l.front());
+		bin_id = std::get<0>(l.front());
+		suff_buff = std::get<1>(l.front());
+		suff_buff_size = std::get<2>(l.front());
+		lut = std::get<3>(l.front());
+		lut_size = std::get<4>(l.front());
+		n_unique = std::get<5>(l.front());
+		n_cutoff_min = std::get<6>(l.front());
+		n_cutoff_max = std::get<7>(l.front());
+		n_total = std::get<8>(l.front());
+		last_in_bin = std::get<9>(l.front());
 		l.pop_front();
 		return true;
 	}
 
 	void mark_completed()
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		--n_writers;
 		if(!n_writers)
 			cv_pop.notify_all();
@@ -1204,10 +1200,10 @@ public:
 
 class CBigBinDesc
 {
-	//lut_prefix_len, n_kmers, tmp_file_handle, string file_name, file_size
-	typedef std::tuple<uint32, uint32, FILE*, string, uint64> elem_t;
-	typedef map<int32, pair<int32, map<int32, elem_t>>> data_t;
-	mutable mutex mtx;
+	//lut_prefix_len, n_kmers, tmp_file_handle, std::string file_name, file_size
+	typedef std::tuple<uint32, uint32, FILE*, std::string, uint64> elem_t;
+	typedef std::map<int32, std::pair<int32, std::map<int32, elem_t>>> data_t;
+	mutable std::mutex mtx;
 	data_t m;
 	int32 curr_id;
 public:
@@ -1215,9 +1211,9 @@ public:
 	{
 		curr_id = -1;
 	}
-	void push(int32 bin_id, int32 sub_bin_id, uint32 lut_prefix_len, uint32 n_kmers, FILE* file, string desc, uint64 file_size)
+	void push(int32 bin_id, int32 sub_bin_id, uint32 lut_prefix_len, uint32 n_kmers, FILE* file, std::string desc, uint64 file_size)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		auto bin = m.find(bin_id);
 		if (bin == m.end())
 		{
@@ -1234,21 +1230,21 @@ public:
 			else
 			{				
 				if(lut_prefix_len)
-					get<0>(sub_bin->second) = lut_prefix_len;
-				get<1>(sub_bin->second) += n_kmers;
+					std::get<0>(sub_bin->second) = lut_prefix_len;
+				std::get<1>(sub_bin->second) += n_kmers;
 				if (file)
 				{
-					get<2>(sub_bin->second) = file;
-					get<3>(sub_bin->second) = desc;
+					std::get<2>(sub_bin->second) = file;
+					std::get<3>(sub_bin->second) = desc;
 				}
-				get<4>(sub_bin->second) += file_size;
+				std::get<4>(sub_bin->second) += file_size;
 			}
 		}		
 	}
 
 	bool get_n_sub_bins(int32 bin_id, uint32& size)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		auto e = m.find(bin_id);
 		if (e == m.end())
 			return false;
@@ -1260,7 +1256,7 @@ public:
 
 	bool next_bin(int32& bin_id, uint32& size)
 	{
-		lock_guard<mutex> lck(mtx);		
+		std::lock_guard<std::mutex> lck(mtx);		
 		if (m.empty())
 			return false;
 		if (curr_id == -1)
@@ -1284,19 +1280,19 @@ public:
 
 	void reset_reading()
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		curr_id = -1;
 		for (auto& e : m)
 			e.second.first = -1;			
 	}
 
-	bool next_sub_bin(int32 bin_id, int32& sub_bin_id, uint32& lut_prefix_len, uint32& n_kmers, FILE* &file, string& desc, uint64& file_size)
+	bool next_sub_bin(int32 bin_id, int32& sub_bin_id, uint32& lut_prefix_len, uint32& n_kmers, FILE* &file, std::string& desc, uint64& file_size)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		auto& sub_bin = m.find(bin_id)->second;
 		int32 curr_sub_bin_id = sub_bin.first;
 
-		map<int32, elem_t>::iterator e;
+		std::map<int32, elem_t>::iterator e;
 		if (curr_sub_bin_id == -1)
 			e = sub_bin.second.begin();
 		else
@@ -1307,20 +1303,20 @@ public:
 				return false;
 		}
 		sub_bin_id = sub_bin.first = e->first;
-		lut_prefix_len = get<0>(e->second);
-		n_kmers = get<1>(e->second);
-		file = get<2>(e->second);
-		desc = get<3>(e->second);		
-		file_size = get<4>(e->second);
+		lut_prefix_len = std::get<0>(e->second);
+		n_kmers = std::get<1>(e->second);
+		file = std::get<2>(e->second);
+		desc = std::get<3>(e->second);		
+		file_size = std::get<4>(e->second);
 		return true;		
 	}
 };
 
 class CCompletedBinsCollector
 {
-	list<int32> l;
-	mutable mutex mtx;
-	condition_variable cv_pop;
+	std::list<int32> l;
+	mutable std::mutex mtx;
+	std::condition_variable cv_pop;
 	uint32 n_writers;
 public:
 	CCompletedBinsCollector(uint32 _n_writers)
@@ -1329,7 +1325,7 @@ public:
 	}
 	void push(int32 bin_id)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		bool was_empty = l.empty();
 		l.push_back(bin_id);
 		if (was_empty)
@@ -1338,7 +1334,7 @@ public:
 
 	bool pop(int32& bin_id)
 	{
-		unique_lock<mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);
 		cv_pop.wait(lck, [this]{return !n_writers || !l.empty(); });
 		if (!n_writers && l.empty())
 			return false;
@@ -1360,7 +1356,7 @@ class CDiskLogger
 {
 	uint64 current;
 	uint64 max;
-	mutable mutex mtx;
+	mutable std::mutex mtx;
 	
 public:
 	CDiskLogger()
@@ -1369,24 +1365,24 @@ public:
 	}
 	void log_write(uint64 _size)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		current += _size;
 		if (current > max)
 			max = current;
 	}
 	void log_remove(uint64 _size)
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		current -= _size;
 	}
 	uint64 get_max()
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return max;
 	}
 	uint64 get_current()
 	{
-		lock_guard<mutex> lck(mtx);
+		std::lock_guard<std::mutex> lck(mtx);
 		return current;
 	}
 

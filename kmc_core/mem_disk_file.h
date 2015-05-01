@@ -15,7 +15,6 @@
 #include <string>
 #include <cstdio>
 #include <vector>
-using namespace std;
 
 
 //************************************************************************************************************
@@ -25,14 +24,14 @@ class CMemDiskFile
 {
 	bool memory_mode;
 	FILE* file;
-	typedef pair<uchar*, uint64> elem_t;//buf,size
-	typedef vector<elem_t> container_t;
+	typedef std::pair<uchar*, uint64> elem_t;//buf,size
+	typedef std::vector<elem_t> container_t;
 
 	container_t container;
-	string name;
+	std::string name;
 public:
 	CMemDiskFile(bool _memory_mode);
-	void Open(const string& f_name);
+	void Open(const std::string& f_name);
 	void Rewind();
 	int Close();
 	size_t Read(uchar * ptr, size_t size, size_t count);

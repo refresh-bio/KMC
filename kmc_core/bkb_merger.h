@@ -19,7 +19,7 @@
 template<typename KMER_T, unsigned SIZE>
 class CBigKmerBinMerger
 {
-	vector<CSubBin<KMER_T, SIZE>*> sub_bins;
+	std::vector<CSubBin<KMER_T, SIZE>*> sub_bins;
 	std::vector<std::tuple<KMER_T, uint32, uint32>> curr_min;
 	CDiskLogger* disk_logger;
 	uint32 size;
@@ -97,15 +97,15 @@ void CBigKmerBinMerger<KMER_T, SIZE>::init(int32 bin_id, uint32 _size)
 	uint32 n_kmers = 0;
 	uint64 file_size = 0;
 	FILE* file = NULL;
-	string name;
+	std::string name;
 	uint32 per_sub_bin_lut_size = (uint32)(sm_mem_part_sub_bin_lut / size);
 	uint32 per_sub_bin_suff_size = (uint32)(sm_mem_part_sub_bin_suff / size);
 	for (uint32 i = 0; i < size; ++i)
 	{
 		bbd->next_sub_bin(bin_id, sub_bin_id, lut_prefix_len, n_kmers, file, name, file_size);
 		sub_bins[i]->init(file, file_size, lut_prefix_len, n_kmers, name, kmer_len, sub_bin_lut_buff + i * per_sub_bin_lut_size, per_sub_bin_lut_size, sub_bin_suff_buff + i * per_sub_bin_suff_size, per_sub_bin_suff_size);
-		get<2>(curr_min[i]) = i;
-		sub_bins[i]->get_min(get<0>(curr_min[i]), get<1>(curr_min[i]));
+		std::get<2>(curr_min[i]) = i;
+		sub_bins[i]->get_min(std::get<0>(curr_min[i]), std::get<1>(curr_min[i]));
 	}
 }
 
@@ -117,12 +117,12 @@ bool CBigKmerBinMerger<KMER_T, SIZE>::get_min(KMER_T& kmer, uint32& count)
 		return false;
 	uint32 min = 0;
 	for (uint32 i = 1; i < size; ++i)
-		if (get<0>(curr_min[i]) < get<0>(curr_min[min]))
+		if (std::get<0>(curr_min[i]) < std::get<0>(curr_min[min]))
 			min = i;
 
-	kmer = get<0>(curr_min[min]);
-	count = get<1>(curr_min[min]);
-	if (sub_bins[get<2>(curr_min[min])]->get_min(get<0>(curr_min[min]), get<1>(curr_min[min])))
+	kmer = std::get<0>(curr_min[min]);
+	count = std::get<1>(curr_min[min]);
+	if (sub_bins[std::get<2>(curr_min[min])]->get_min(std::get<0>(curr_min[min]), std::get<1>(curr_min[min])))
 		;
 	else
 		curr_min[min] = curr_min[--size];
@@ -135,7 +135,7 @@ void CBigKmerBinMerger<KMER_T, SIZE>::Process()
 {
 	int32 bin_id;
 	uint32 size = 0;
-	uint32 counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
+	uint32 counter_size = std::min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
 	uint32 lut_recs = 1 << 2 * lut_prefix_len;
 	uint32 kmer_symbols = (kmer_len - lut_prefix_len);
 	uint32 kmer_bytes = kmer_symbols / 4;
@@ -159,7 +159,7 @@ void CBigKmerBinMerger<KMER_T, SIZE>::Process()
 		sm_pmm_merger_suff->reserve(suff_buff);
 		suff_buff_pos = 0;
 		n_unique = n_cutoff_min = n_cutoff_max = n_total = 0;
-		fill_n(lut, max_in_lut, 0);
+		std::fill_n(lut, max_in_lut, 0);
 		init(bin_id, size);
 
 		get_min(kmer, count_tmp);
@@ -191,7 +191,7 @@ void CBigKmerBinMerger<KMER_T, SIZE>::Process()
 						lut_offset += max_in_lut;
 						sm_pmm_merger_lut->reserve(raw_lut);
 						lut = (uint64*)raw_lut;
-						fill_n(lut, max_in_lut, 0);
+						std::fill_n(lut, max_in_lut, 0);
 					}
 
 					lut[prefix - lut_offset]++;

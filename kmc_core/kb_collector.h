@@ -24,9 +24,6 @@
 #include <vector>
 #include <cstdio>
 
-using namespace std;
-
-
 
 //----------------------------------------------------------------------------------
 // Class collecting kmers belonging to a single bin

@@ -10,8 +10,9 @@ set (KMC_VERSION_TWEAK 20150415)
 set (KMC_VERSION ${KMC_VERSION_MAJOR}.${KMC_VERSION_MINOR}.${KMC_VERSION_PATCH})
 message (STATUS "KMC Version: ${KMC_VERSION}")
 
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-set (CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+add_definitions (${OpenMP_C_FLAGS})
+add_definitions (${OpenMP_CXX_FLAGS})
+add_definitions ("-std=c++11")
 
 find_package (OpenMP REQUIRED)
 find_package (Threads REQUIRED)
@@ -32,29 +33,30 @@ set (INSTALL_PACKAGE_DIR lib${LIBRARY_SUFFIX}/cmake CACHE PATH "Installation dir
 mark_as_advanced (INSTALL_INCLUDE_DIR INSTALL_RUNTIME_DIR INSTALL_ARCHIVE_DIR)
 
 include (CMakeConfigs/KMCPreprocessor.cmake)
-configure_file (CMakeConfigs/definitions.h.in kmc/definitions.h)
+configure_file (${CMAKE_SOURCE_DIR}/CMakeConfigs/definitions.h.in ${CMAKE_SOURCE_DIR}/kmc/definitions.h)
 if (KMC_INSTALL_ARCHIVE)
 	install (FILES ${KMC_SOURCE_DIR}/kmc/definitions.h DESTINATION ${INSTALL_INCLUDE_DIR}/kmc)
-	export (EXPORT KMC ${INSTALL_INCLUDE_DIR}/kmc/definitions.h)
+	export (KMC ${INSTALL_INCLUDE_DIR}/kmc/definitions.h)
 endif (KMC_INSTALL_ARCHIVE)
 
 add_subdirectory (kmc_api)
-add_subdirectory (kmer_counter)
+add_subdirectory (kmc_core)
+add_subdirectory (kmc_counter)
 add_subdirectory (kmc_dump)
 add_subdirectory (kmc_dump_sample)
 
 if (KMC_INSTALL_PACKAGE)
-configure_package_config_file (
-	CMakeConfigs/KMCConfig.cmake.in CMakeConfigs/KMCConfig.cmake
-	INSTALL_DESTINATION ${INSTALL_PACKAGE_DIR}
-	PATH_VARS INCLUDE_INSTALL_DIR)
-install (TARGETS KMC
-	DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	EXPORT KMCTargets)
-install (EXPORT KMCTargets
-	FILE KMCTargets.cmake
-	NAMESPACE KMC::
-	DESTINATION ${INSTALL_PACKAGE_DIR})
-install (FILES "${CMAKE_CURRENT_BINARY_DIR}/CMakeConfigs/KMCConfig.cmake"
-	DESTINATION ${INSTALL_PACKAGE_DIR})
+	configure_package_config_file (
+		CMakeConfigs/KMCConfig.cmake.in CMakeConfigs/KMCConfig.cmake
+		INSTALL_DESTINATION ${INSTALL_PACKAGE_DIR}
+		PATH_VARS INCLUDE_INSTALL_DIR)
+	install (TARGETS KMC
+		DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		EXPORT KMCTargets)
+	install (EXPORT KMCTargets
+		FILE KMCTargets.cmake
+		NAMESPACE KMC::
+		DESTINATION ${INSTALL_PACKAGE_DIR})
+	install (FILES "${CMAKE_CURRENT_BINARY_DIR}/CMakeConfigs/KMCConfig.cmake"
+		DESTINATION ${INSTALL_PACKAGE_DIR})
 endif (KMC_INSTALL_PACKAGE)

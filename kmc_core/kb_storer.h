@@ -22,7 +22,6 @@
 #include <tuple>
 #include <cstdio>
 
-using namespace std;
 
 //************************************************************************************************************
 // CKmerBinStorer - storer of bins of k-mers
@@ -32,7 +31,7 @@ class CKmerBinStorer {
 
 	uint64 total_size; 
 	CMemoryPool *pmm_bins;
-	string working_directory;
+	std::string working_directory;
 	int n_bins;
 	CBinPartQueue *q_part;
 	CBinDesc *bd;
@@ -49,11 +48,11 @@ class CKmerBinStorer {
 	uint32 max_buf_size_id;
 	bool mem_mode;
 
-	typedef list<tuple<uchar *, uint32, uint32>> elem_t; 
+	typedef std::list<std::tuple<uchar *, uint32, uint32>> elem_t; 
 	elem_t** buffer;
 
 	void Release();
-	string GetName(int n);
+	std::string GetName(int n);
 	void CheckBuffer();
 	void ReleaseBuffer();
 	void PutBinToTmpFile(uint32 n);

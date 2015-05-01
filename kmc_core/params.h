@@ -19,8 +19,6 @@
 
 typedef enum {fasta, fastq, multiline_fasta} input_type;
 
-using namespace std;
-
 // Structure for passing KMC parameters
 struct CKMCParams {
 	
@@ -49,9 +47,9 @@ struct CKMCParams {
 	int p_smme;							// no. of merging threads in strict memory mode
 
 	// File names
-	vector<string> input_file_names;
-	string output_file_name;
-	string working_directory;
+	std::vector<std::string> input_file_names;
+	std::string output_file_name;
+	std::string working_directory;
 	input_type file_type;
 	
 	uint32 lut_prefix_len;
@@ -102,7 +100,7 @@ struct CKMCParams {
 	int n_readers;			// number of FASTQ readers; default: 1
 	int n_splitters;		// number of splitters; default: 1
 	int n_sorters;			// number of sorters; default: 1
-	vector<int> n_omp_threads;// number of OMP threads per sorters
+	std::vector<int> n_omp_threads;// number of OMP threads per sorters
 	uint32 max_x;					//k+x-mers will be counted
 
 	uint32 gzip_buffer_size;
