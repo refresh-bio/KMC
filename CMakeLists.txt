@@ -42,6 +42,6 @@ include (CMakeConfigs/KMCPackage.cmake)
 
 add_subdirectory (kmc_api)
 add_subdirectory (kmc_core)
-add_subdirectory (kmc_counter)
+add_subdirectory (kmc_count)
 add_subdirectory (kmc_dump)
 add_subdirectory (kmc_dump_sample)
