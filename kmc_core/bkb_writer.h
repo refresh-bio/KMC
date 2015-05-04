@@ -10,7 +10,7 @@
 
 #ifndef _BKB_WRITER_H
 #define _BKB_WRITER_H
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 class CBigBinDesc;
 class CBigBinSortedPartQueue;
 class CCompletedBinsCollector;

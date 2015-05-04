@@ -11,7 +11,7 @@
 #include <string>
 #include <iostream>
 #include <cstdio>
-#include "../../kmc/definitions.h"
+#include "../../definitions.h"
 #include "../bkb_writer.h"
 #include "../params.h"
 #include "../queues.h"

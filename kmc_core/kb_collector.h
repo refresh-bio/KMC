@@ -11,7 +11,7 @@
 #ifndef _KB_COLLECTOR_H
 #define _KB_COLLECTOR_H
 
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 #include "params.h"
 #include "kmer.h"
 #include "queues.h"

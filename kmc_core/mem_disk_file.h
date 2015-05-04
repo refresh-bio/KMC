@@ -14,7 +14,7 @@
 #include <string>
 #include <cstdio>
 #include <vector>
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 
 
 //************************************************************************************************************

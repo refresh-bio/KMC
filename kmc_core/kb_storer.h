@@ -18,7 +18,7 @@
 #include <tuple>
 #include <list>
 #include <cstdio>
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 class CBinDesc;
 class CBinPartQueue;
 class CDiskLogger;

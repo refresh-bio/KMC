@@ -12,7 +12,7 @@
 #include "../mem_disk_file.h"
 #include <cstddef>                     // for size_t, NULL
 #include "../../external/asmlib.h"
-#include "../../kmc/definitions.h"
+#include "../../definitions.h"
 using namespace std;
 
 //----------------------------------------------------------------------------------

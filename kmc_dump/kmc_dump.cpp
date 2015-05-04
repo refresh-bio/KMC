@@ -12,7 +12,7 @@
 */
 
 #include <iostream>
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 #include "../kmc_api/kmc_file.h"
 #include "nc_utils.h"
 

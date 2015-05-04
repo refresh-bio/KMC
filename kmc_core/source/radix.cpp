@@ -9,7 +9,7 @@
 */
 
 #include <cstdio>
-#include "../../kmc/definitions.h"
+#include "../../definitions.h"
 #include "../../external/asmlib.h"
 #include "../radix.h"
 #include "../queues.h"

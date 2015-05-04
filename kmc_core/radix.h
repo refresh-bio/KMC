@@ -16,7 +16,7 @@
 #include <iostream>
 #include <omp.h>
 #include <algorithm>
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 class CMemoryPool;
 
 #ifdef WIN32

@@ -11,7 +11,7 @@
 #ifndef _ASMLIB_WRAPPER_H
 #define _ASMLIB_WRAPPER_H
 
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 
 #ifdef DISABLE_ASMLIB
 #define A_memcpy memcpy

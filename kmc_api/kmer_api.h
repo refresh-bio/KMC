@@ -14,7 +14,7 @@
 
 #include <string>
 #include <iostream>
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 #include "mmer.h"
 
 class CKmerAPI {

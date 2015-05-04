@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include <tuple>
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 #include "mmer.h"
 #include "kmc_file.h"
 #include "kmer_api.h"

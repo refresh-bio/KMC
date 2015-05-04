@@ -9,7 +9,7 @@
 */
 #ifndef _KXMER_SET_
 #define _KXMER_SET_
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 #include <tuple>
 
 

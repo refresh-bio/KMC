@@ -10,7 +10,7 @@
 
 #include <string>
 #include <iostream>
-#include "../../kmc/definitions.h"
+#include "../../definitions.h"
 #include "../../external/asmlib.h"
 #include "../bkb_reader.h"
 #include "../mem_disk_file.h"

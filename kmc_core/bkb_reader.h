@@ -12,7 +12,7 @@
 #ifndef _BKB_READER_H_
 #define  _BKB_READER_H_
 
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 class CBigBinPartQueue;
 class CBinDesc;
 class CDiskLogger;

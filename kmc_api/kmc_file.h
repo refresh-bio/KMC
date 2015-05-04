@@ -13,7 +13,7 @@
 
 #include <string>
 #include <vector>
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 #include "kmer_api.h"
 
 class CKMCFile {

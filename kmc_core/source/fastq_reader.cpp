@@ -14,7 +14,7 @@
 #include <cstdio>
 #include "../../external/bzlib.h"
 #include "../../external/zlib.h"
-#include "../../kmc/definitions.h"
+#include "../../definitions.h"
 #include "../fastq_reader.h"
 #include "../params.h"
 #include "../queues.h"

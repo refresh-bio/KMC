@@ -11,7 +11,7 @@
 #ifndef _REV_BYTE_H
 #define _REV_BYTE_H
 
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 struct CRev_byte {
 	static uchar lut[256];
 	struct _si {

@@ -11,7 +11,7 @@
 #ifndef _QUEUES_H
 #define _QUEUES_H
 
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 #include <stdio.h>
 #include <iostream>
 #include <tuple>

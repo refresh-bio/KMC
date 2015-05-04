@@ -8,7 +8,7 @@
     Date   : 2015-04-15
 */
 
-#include "../../kmc/definitions.h"
+#include "../../definitions.h"
 #include <fstream>
 #include <string>
 #include <vector>

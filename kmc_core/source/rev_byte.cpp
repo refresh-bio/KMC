@@ -9,7 +9,7 @@
 */
 
 #include "../rev_byte.h"
-#include "../../kmc/definitions.h"
+#include "../../definitions.h"
 
 uchar CRev_byte::lut[256];
 CRev_byte::_si CRev_byte::_init;

@@ -16,7 +16,7 @@
 #include <array>
 #include <cstdio>
 #include <cstdio>
-#include "../kmc/definitions.h"
+#include "../definitions.h"
 class CBigBinKmerPartQueue;
 class CBinDesc;
 class CKmerQueue;
