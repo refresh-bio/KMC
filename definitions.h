@@ -4,7 +4,7 @@
 
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-  Version: 220
+  Version: 2.2.0
   Date   : 20150415
 */
 

@@ -15,10 +15,10 @@
 #include <ctime>
 #include <functional>
 #include <cstddef>
-#include "../kmc_core/kmer.h"
-#include "../kmc_core/params.h"
-#include "../kmc_core/timer.h"
-#include "../kmc_core/kmc.h"
+#include "../core/kmer.h"
+#include "../core/params.h"
+#include "../core/timer.h"
+#include "../core/kmc.h"
 
 using namespace std;
 

@@ -1,5 +1,4 @@
 set (KMC_CORE_INCLUDES
-	${CMAKE_CURRENT_SOURCE_DIR}/asmlib_wrapper.h
 	${CMAKE_CURRENT_SOURCE_DIR}/bkb_merger.h
 	${CMAKE_CURRENT_SOURCE_DIR}/bkb_reader.h
 	${CMAKE_CURRENT_SOURCE_DIR}/bkb_sorter.h
@@ -26,30 +25,32 @@ set (KMC_CORE_INCLUDES
 	${CMAKE_CURRENT_SOURCE_DIR}/splitter.h
 	${CMAKE_CURRENT_SOURCE_DIR}/timer.h)
 
-set (KMC_CORE_SOURCE_DIR source)
 set (KMC_CORE_SOURCES
-	${KMC_CORE_SOURCE_DIR}/bkb_reader.cpp
-	${KMC_CORE_SOURCE_DIR}/bkb_writer.cpp
-	${KMC_CORE_SOURCE_DIR}/fastq_reader.cpp
-	${KMC_CORE_SOURCE_DIR}/kb_completer.cpp
-	${KMC_CORE_SOURCE_DIR}/kb_storer.cpp
-	${KMC_CORE_SOURCE_DIR}/kmer.cpp
-	${KMC_CORE_SOURCE_DIR}/mem_disk_file.cpp
-	${KMC_CORE_SOURCE_DIR}/mmer.cpp
-	${KMC_CORE_SOURCE_DIR}/radix.cpp
-	${KMC_CORE_SOURCE_DIR}/rev_byte.cpp
-	${KMC_CORE_SOURCE_DIR}/timer.cpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/source/bkb_reader.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/source/bkb_writer.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/source/fastq_reader.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/source/kb_completer.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/source/kb_storer.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/source/kmer.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/source/mem_disk_file.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/source/mmer.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/source/radix.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/source/rev_byte.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/source/timer.cpp)
 
 if (KMC_ENABLE_DEVELOP)
 	set (KMC_CORE_INCLUDES ${KMC_CORE_INCLUDES} develop.h)
 	set (KMC_CORE_SOURCES ${KMC_CORE_SOURCES} develop.cpp)
 endif (KMC_ENABLE_DEVELOP)
 
-add_library (kmc_core STATIC ${KMC_CORE_INCLUDES} ${KMC_CORE_SOURCES})
-set_target_properties (kmc_core PROPERTIES VERSION ${PROJECT_VERSION})
+add_library (kmc_core STATIC ${KMC_CORE_INCLUDES} ${KMC_CORE_SOURCES} ${KMC_EXTERNAL_INCLUDES})
+target_link_libraries (kmc_core ${KMC_EXTERNAL_LIBRARIES})
+set_target_properties (kmc_core PROPERTIES VERSION ${KMC_VERSION})
+set_target_properties (kmc_core PROPERTIES SOVERSION ${KMC_SOVERSION})
 
-if (${KMC_INSTALL_ARCHIVE})
-	install (TARGETS kmc_core KMC
-		INCLUDES DESTINATION ${INSTALL_INCLUDE_DIR}
-		ARCHIVE DESTINATION ${INSTALL_ARCHIVE_DIR})
-endif (${KMC_INSTALL_ARCHIVE})
+install (TARGETS kmc_core
+	EXPORT KMCTargets
+	LIBRARY DESTINATION ${INSTALL_LIBRARY_DIR}
+	ARCHIVE DESTINATION ${INSTALL_ARCHIVE_DIR}
+	RUNTIME DESTINATION ${INSTALL_RUNTIME_DIR}
+	INCLUDES DESTINATION ${INSTALL_INCLUDE_DIR})
