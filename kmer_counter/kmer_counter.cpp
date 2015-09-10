@@ -5,8 +5,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 
 #include <fstream>
@@ -205,10 +205,10 @@ bool parse_parameters(int argc, char *argv[])
 			Params.p_ci = atoi(&argv[i][3]);
 		// Maximum counter threshold
 		else if(strncmp(argv[i], "-cx", 3) == 0)
-			Params.p_cx = atoi(&argv[i][3]);
+			Params.p_cx = atoll(&argv[i][3]);
 		// Maximal counter value
 		else if(strncmp(argv[i], "-cs", 3) == 0)
-			Params.p_cs = atoi(&argv[i][3]);
+			Params.p_cs = atoll(&argv[i][3]);
 		// Quake mode
 		else if(strncmp(argv[i], "-q", 2) == 0)
 		{
@@ -378,6 +378,21 @@ bool parse_parameters(int argc, char *argv[])
 	{
 		cout << "Warning: -sm is not supported in quake mode. -sm has no effect\n";
 		Params.p_strict_mem = false;
+	}
+
+
+	if (Params.p_k > 9)
+	{
+		if ((uint64)Params.p_cx > ((1ull << 32) - 1))
+		{
+			cout << "Warning: for k > 9 maximum value of -cx is 4294967295\n";
+			Params.p_cx = 4294967295;
+		}
+		if ((uint64)Params.p_cs > ((1ull << 32) - 1))
+		{
+			cout << "Warning: for k > 9 maximum value of -cs is 4294967295\n";
+			Params.p_cs = 4294967295;
+		}
 	}
 
 	return true;

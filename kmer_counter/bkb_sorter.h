@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 
 #ifndef _BKB_SORTER_H
@@ -185,9 +185,9 @@ CBigKmerBinSorter<KMER_T, SIZE>::CBigKmerBinSorter(CKMCParams& Params, CKMCQueue
 	n_omp_threads = Params.sm_n_omp_threads;
 	
 	sum_n_rec = sum_n_plus_x_rec = 0;
-	cutoff_max = Params.cutoff_max;
+	cutoff_max = (int32)Params.cutoff_max;
 	cutoff_min = Params.cutoff_min;
-	counter_max = Params.counter_max;
+	counter_max = (int32)Params.counter_max;
 }
 
 //----------------------------------------------------------------------------------

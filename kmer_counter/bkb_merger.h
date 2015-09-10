@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 
 #ifndef _HBH_MERGER_H
@@ -51,8 +51,8 @@ CBigKmerBinMerger<KMER_T,SIZE>::CBigKmerBinMerger(CKMCParams& Params, CKMCQueues
 	kmer_len = Params.kmer_len;
 	lut_prefix_len = Params.lut_prefix_len;
 	cutoff_min = Params.cutoff_min;
-	cutoff_max = Params.cutoff_max;
-	counter_max = Params.counter_max;
+	cutoff_max = (int32)Params.cutoff_max;
+	counter_max = (int32)Params.counter_max;
 	sm_pmm_merger_suff = Queues.sm_pmm_merger_suff;
 	sm_pmm_merger_lut = Queues.sm_pmm_merger_lut;
 	sm_pmm_sub_bin_suff = Queues.sm_pmm_sub_bin_suff;

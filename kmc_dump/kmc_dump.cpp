@@ -7,8 +7,8 @@
 
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 
 #include "stdafx.h"
@@ -85,7 +85,7 @@ int _tmain(int argc, char* argv[])
 		uint32 _lut_prefix_length;
 		uint32 _signature_len;
 		uint32 _min_count;
-		uint32 _max_count;
+		uint64 _max_count;
 		uint64 _total_kmers;
 
 		kmer_data_base.Info(_kmer_length, _mode, _counter_size, _lut_prefix_length, _signature_len, _min_count, _max_count, _total_kmers);
@@ -118,7 +118,7 @@ int _tmain(int argc, char* argv[])
 		}
 		else
 		{
-			uint32 counter;
+			uint64 counter;
 			while (kmer_data_base.ReadNextKmer(kmer_object, counter))
 			{
 				kmer_object.to_string(str);

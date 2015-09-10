@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 
 #ifndef _KB_SORTER_H
@@ -14,6 +14,7 @@
 #define DEBUGG_INFO
 
 #include "defs.h"
+#include "prob_qual.h"
 #include "params.h"
 #include "kmer.h"
 #include "radix.h"
@@ -129,70 +130,10 @@ public:
 };
 
 template <unsigned SIZE> class CKmerBinSorter_Impl<CKmerQuake<SIZE>, SIZE> {
-	static double prob_qual[94];
-	static double inv_prob_qual[94];
-	static double MIN_PROB_QUAL_VALUE;
 public:
 	static void Compact(CKmerBinSorter<CKmerQuake<SIZE>, SIZE> &ptr);
 	static void Expand(CKmerBinSorter<CKmerQuake<SIZE>, SIZE> &ptr, uint64 tmp_size);
 };
-
-// K-mers with probability less than MIN_PROB_QUAL_VALUE will not be counted
-template <unsigned SIZE> double CKmerBinSorter_Impl<CKmerQuake<SIZE>, SIZE>::MIN_PROB_QUAL_VALUE = 0.0000;
-
-
-template <unsigned SIZE> double CKmerBinSorter_Impl<CKmerQuake<SIZE>, SIZE>::prob_qual[94] = {
-	0.2500000000000000, 0.2500000000000000, 0.3690426555198070, 0.4988127663727280,
-	0.6018928294465030, 0.6837722339831620, 0.7488113568490420, 0.8004737685031120,
-	0.8415106807538890, 0.8741074588205830, 0.9000000000000000, 0.9205671765275720,
-	0.9369042655519810, 0.9498812766372730, 0.9601892829446500, 0.9683772233983160,
-	0.9748811356849040, 0.9800473768503110, 0.9841510680753890, 0.9874107458820580,
-	0.9900000000000000, 0.9920567176527570, 0.9936904265551980, 0.9949881276637270,
-	0.9960189282944650, 0.9968377223398320, 0.9974881135684900, 0.9980047376850310,
-	0.9984151068075390, 0.9987410745882060, 0.9990000000000000, 0.9992056717652760,
-	0.9993690426555200, 0.9994988127663730, 0.9996018928294460, 0.9996837722339830,
-	0.9997488113568490, 0.9998004737685030, 0.9998415106807540, 0.9998741074588210,
-	0.9999000000000000, 0.9999205671765280, 0.9999369042655520, 0.9999498812766370,
-	0.9999601892829450, 0.9999683772233980, 0.9999748811356850, 0.9999800473768500,
-	0.9999841510680750, 0.9999874107458820, 0.9999900000000000, 0.9999920567176530,
-	0.9999936904265550, 0.9999949881276640, 0.9999960189282940, 0.9999968377223400,
-	0.9999974881135680, 0.9999980047376850, 0.9999984151068080, 0.9999987410745880,
-	0.9999990000000000, 0.9999992056717650, 0.9999993690426560, 0.9999994988127660,
-	0.9999996018928290, 0.9999996837722340, 0.9999997488113570, 0.9999998004737680,
-	0.9999998415106810, 0.9999998741074590, 0.9999999000000000, 0.9999999205671770,
-	0.9999999369042660, 0.9999999498812770, 0.9999999601892830, 0.9999999683772230,
-	0.9999999748811360, 0.9999999800473770, 0.9999999841510680, 0.9999999874107460,
-	0.9999999900000000, 0.9999999920567180, 0.9999999936904270, 0.9999999949881280,
-	0.9999999960189280, 0.9999999968377220, 0.9999999974881140, 0.9999999980047380,
-	0.9999999984151070, 0.9999999987410750, 0.9999999990000000, 0.9999999992056720,
-	0.9999999993690430, 0.9999999994988130 };
-
-template <unsigned SIZE> double CKmerBinSorter_Impl<CKmerQuake<SIZE>, SIZE>::inv_prob_qual[94] = {
-	4.0000000000000000, 4.0000000000000000, 2.7097138638119600, 2.0047602375372500,
-	1.6614253419825500, 1.4624752955742600, 1.3354498310601800, 1.2492601748462100,
-	1.1883390465158700, 1.1440241012807300, 1.1111111111111100, 1.0862868300084900,
-	1.0673449110735400, 1.0527631448218000, 1.0414613220148200, 1.0326554320337200,
-	1.0257660789563300, 1.0203588353185700, 1.0161041657513100, 1.0127497641386300,
-	1.0101010101010100, 1.0080068832818700, 1.0063496369454600, 1.0050371177272600,
-	1.0039969839853900, 1.0031723093832600, 1.0025182118938000, 1.0019992513458400,
-	1.0015874090662800, 1.0012605123027600, 1.0010010010010000, 1.0007949596936500,
-	1.0006313557030000, 1.0005014385482300, 1.0003982657229900, 1.0003163277976500,
-	1.0002512517547400, 1.0001995660501600, 1.0001585144420900, 1.0001259083921100,
-	1.0001000100010000, 1.0000794391335500, 1.0000630997157700, 1.0000501212353700,
-	1.0000398123020100, 1.0000316237766300, 1.0000251194952900, 1.0000199530212600,
-	1.0000158491831200, 1.0000125894126100, 1.0000100001000000, 1.0000079433454400,
-	1.0000063096132600, 1.0000050118974600, 1.0000039810875500, 1.0000031622876600,
-	1.0000025118927400, 1.0000019952663000, 1.0000015848957000, 1.0000012589270000,
-	1.0000010000010000, 1.0000007943288700, 1.0000006309577400, 1.0000005011874800,
-	1.0000003981073300, 1.0000003162278700, 1.0000002511887100, 1.0000001995262700,
-	1.0000001584893400, 1.0000001258925600, 1.0000001000000100, 1.0000000794328300,
-	1.0000000630957400, 1.0000000501187300, 1.0000000398107200, 1.0000000316227800,
-	1.0000000251188600, 1.0000000199526200, 1.0000000158489300, 1.0000000125892500,
-	1.0000000100000000, 1.0000000079432800, 1.0000000063095700, 1.0000000050118700,
-	1.0000000039810700, 1.0000000031622800, 1.0000000025118900, 1.0000000019952600,
-	1.0000000015848900, 1.0000000012589300, 1.0000000010000000, 1.0000000007943300,
-	1.0000000006309600, 1.0000000005011900 };
-
 
 //************************************************************************************************************
 // CKmerBinSorter
@@ -219,8 +160,8 @@ template <typename KMER_T, unsigned SIZE> CKmerBinSorter<KMER_T, SIZE>::CKmerBin
 	memory_bins = Queues.memory_bins;
 
 	cutoff_min = Params.cutoff_min;
-	cutoff_max = Params.cutoff_max;
-	counter_max = Params.counter_max;
+	cutoff_max = (int32)Params.cutoff_max;
+	counter_max = (int32)Params.counter_max;
 	max_x = Params.max_x;
 	use_quake = Params.use_quake;
 	
@@ -768,14 +709,14 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmerQuake<SIZE>, SIZE>::Expan
 				symb = (data_p[pos] >> 6) & 3;
 				qual = data_p[pos++] & 63;
 
-				inv_probs[inv_probs_pos++] = inv_prob_qual[qual];
+				inv_probs[inv_probs_pos++] = CProbQual::inv_prob_qual[qual];
 
 				current_kmer.SHL_insert_2bits(symb);
 				kmer_rev.SHR_insert_2bits(3 - symb, kmer_len_shift);
-				kmer_prob *= prob_qual[qual];
+				kmer_prob *= CProbQual::prob_qual[qual];
 			}
 			current_kmer.mask(kmer_mask);			
-			if (kmer_prob >= MIN_PROB_QUAL_VALUE)
+			if (kmer_prob >= CProbQual::MIN_PROB_QUAL_VALUE)
 			{
 				kmer_can = current_kmer < kmer_rev ? current_kmer : kmer_rev;
 				kmer_can.quality = (float)kmer_prob;
@@ -790,9 +731,9 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmerQuake<SIZE>, SIZE>::Expan
 				current_kmer.mask(kmer_mask);
 				kmer_rev.SHR_insert_2bits(3 - symb, kmer_len_shift);
 				
-				kmer_prob *= prob_qual[qual] * inv_probs[inv_probs_pos - ptr.kmer_len];
-				inv_probs[inv_probs_pos++] = inv_prob_qual[qual];
-				if (kmer_prob >= MIN_PROB_QUAL_VALUE)
+				kmer_prob *= CProbQual::prob_qual[qual] * inv_probs[inv_probs_pos - ptr.kmer_len];
+				inv_probs[inv_probs_pos++] = CProbQual::inv_prob_qual[qual];
+				if (kmer_prob >= CProbQual::MIN_PROB_QUAL_VALUE)
 				{
 					kmer_can = current_kmer < kmer_rev ? current_kmer : kmer_rev;
 					kmer_can.quality = (float)kmer_prob;
@@ -812,13 +753,13 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmerQuake<SIZE>, SIZE>::Expan
 				symb = (data_p[pos] >> 6) & 3;
 				qual = data_p[pos++] & 63;
 
-				inv_probs[inv_probs_pos++] = inv_prob_qual[qual];
+				inv_probs[inv_probs_pos++] = CProbQual::inv_prob_qual[qual];
 
 				current_kmer.SHL_insert_2bits(symb);
-				kmer_prob *= prob_qual[qual];
+				kmer_prob *= CProbQual::prob_qual[qual];
 			}
 			current_kmer.mask(kmer_mask);
-			if (kmer_prob >= MIN_PROB_QUAL_VALUE)
+			if (kmer_prob >= CProbQual::MIN_PROB_QUAL_VALUE)
 			{
 				current_kmer.quality = (float)kmer_prob;
 				ptr.buffer_input[ptr.input_pos++].set(current_kmer);
@@ -831,9 +772,9 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmerQuake<SIZE>, SIZE>::Expan
 				current_kmer.SHL_insert_2bits(symb);
 				current_kmer.mask(kmer_mask);
 
-				kmer_prob *= prob_qual[qual] * inv_probs[inv_probs_pos - ptr.kmer_len];
-				inv_probs[inv_probs_pos++] = inv_prob_qual[qual];
-				if (kmer_prob >= MIN_PROB_QUAL_VALUE)
+				kmer_prob *= CProbQual::prob_qual[qual] * inv_probs[inv_probs_pos - ptr.kmer_len];
+				inv_probs[inv_probs_pos++] = CProbQual::inv_prob_qual[qual];
+				if (kmer_prob >= CProbQual::MIN_PROB_QUAL_VALUE)
 				{
 					current_kmer.quality = (float)kmer_prob;
 					ptr.buffer_input[ptr.input_pos++].set(current_kmer);

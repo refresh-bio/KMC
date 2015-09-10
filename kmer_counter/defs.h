@@ -4,15 +4,15 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 
 #ifndef _DEFS_H
 #define _DEFS_H
 
-#define KMC_VER		"2.2.0"
-#define KMC_DATE	"2015-04-15"
+#define KMC_VER		"2.3.0"
+#define KMC_DATE	"2015-08-21"
 
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -46,7 +46,7 @@
 #define MAX_K		256
 #endif
 
-#define MIN_K		10
+#define MIN_K		1
 
 #define MIN_MEM		1
 
@@ -134,6 +134,9 @@ const int32 MAX_STR_LEN = 32768;
 #define ALIGNMENT 0x100
 
 #define BYTE_LOG(x) (((x) < (1 << 8)) ? 1 : ((x) < (1 << 16)) ? 2 : ((x) < (1 << 24)) ? 3 : 4)
+
+#define BYTE_LOG_ULL(x) (((x) < (1ull << 8)) ? 1 : ((x) < (1ull << 16)) ? 2 : ((x) < (1ull << 24)) ? 3 : ((x) < (1ull << 32)) ? 4 : ((x) < (1ull << 40) ? 5 : ((x) < (1ull << 48) ? 6 : ((x) < (1ull << 56)) ? 7 : 8)))
+
 
 #endif
 

@@ -4,8 +4,8 @@ The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
 
 Authors: Sebastian Deorowicz and Agnieszka Debudaj-Grabysz
 
-Version: 2.2.0
-Date   : 2015-04-15
+Version: 2.3.0
+Date   : 2015-08-21
 */
 
 #ifndef _KMER_API_H
@@ -15,6 +15,7 @@ Date   : 2015-04-15
 #include "kmer_defs.h"
 #include <string>
 #include <iostream>
+#include <vector>
 #include "mmer.h"
 class CKMCFile;
 
@@ -65,12 +66,34 @@ protected:
 		}
 		kmer_data[no_of_rows - 1] += (uint64)val << (62 - (((kmer_length - 1 + byte_alignment) & 31) * 2));
 	}
+	
+	//----------------------------------------------------------------------------------
+	inline void SHR_insert2bits(uchar val)
+	{
+		for (uint32 i = no_of_rows - 1; i > 0; --i)
+		{
+			kmer_data[i] >>= 2;
+			kmer_data[i] += kmer_data[i - 1] << 62;
+		}
+		kmer_data[0] >>= 2;
+		kmer_data[no_of_rows - 1] &= ~((1ull << ((32 - (kmer_length + byte_alignment - (no_of_rows - 1) * 32)) * 2)) - 1);//mask falling of symbol
+		kmer_data[0] += ((uint64)val << 62) >> (byte_alignment * 2);
+	}
+
 	// ----------------------------------------------------------------------------------
 	inline void from_binary(const char* kmer)
 	{
 		clear();
 		for (uint32 i = 0; i < kmer_length; ++i)
 			insert2bits(i, kmer[i]);
+	}
+
+	// ----------------------------------------------------------------------------------
+	inline void from_binary_rev(const char* kmer)
+	{
+		clear();
+		for (uint32 i = 0; i < kmer_length; ++i)
+			insert2bits(i, 3 - kmer[kmer_length - i - 1]);
 	}
 
 	// ----------------------------------------------------------------------------------
@@ -423,6 +446,19 @@ public:
 		to_string_impl(str);
 		str[kmer_length] = '\0';
 	};
+
+
+	inline void to_long(std::vector<uint64>& kmer)
+	{
+		kmer.resize(no_of_rows);
+		uint32 offset = 62 - ((kmer_length - 1 + byte_alignment) & 31) * 2;
+		for (int32 i = no_of_rows - 1; i >= 1; --i)
+		{
+			kmer[i] = kmer_data[i] >> offset;
+			kmer[i] += kmer_data[i - 1] << (64 - offset);
+		}
+		kmer[0] = kmer_data[0] >> offset;
+	}
 
 	//-----------------------------------------------------------------------
 	// Convert kmer into string (an alphabet ACGT)

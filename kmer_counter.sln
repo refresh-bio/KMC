@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_dump", "kmc_dump\kmc_du
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_dump_sample", "kmc_dump_sample\kmc_dump_sample.vcxproj", "{17823F37-86DE-4E58-B354-B84DA9EDA6A1}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_tools", "kmc_tools\kmc_tools.vcxproj", "{F3B0CC94-9DD0-4642-891C-EA08BDA50260}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -52,6 +54,17 @@ Global
 		{17823F37-86DE-4E58-B354-B84DA9EDA6A1}.Release|Win32.ActiveCfg = Release|Win32
 		{17823F37-86DE-4E58-B354-B84DA9EDA6A1}.Release|Win32.Build.0 = Release|Win32
 		{17823F37-86DE-4E58-B354-B84DA9EDA6A1}.Release|x64.ActiveCfg = Release|x64
+		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Debug|Win32.Build.0 = Debug|Win32
+		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Debug|x64.ActiveCfg = Debug|x64
+		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Release|Win32.ActiveCfg = Release|Win32
+		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Release|Win32.Build.0 = Release|Win32
+		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Release|x64.ActiveCfg = Release|x64
+		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -5,8 +5,8 @@
   The source codes are based on codes written by Dennis and published:
     http://allmybrain.com/2008/06/10/timing-cc-code-on-linux/
 
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 
 #ifndef _TIMER_H

@@ -4,8 +4,8 @@
 
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 
 #include "stdafx.h"
@@ -205,6 +205,8 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size)
 		result = fread(&max_count, 1, sizeof(uint32), file_pre);
 		original_max_count = max_count;
 		result = fread(&total_kmers, 1, sizeof(uint64), file_pre);
+		result = fread(&both_strands, 1, 1, file_pre);
+		both_strands = !both_strands;
 
 		signature_map_size = ((1 << (2 * signature_len)) + 1);
 		uint64 lut_area_size_in_bytes = size - (signature_map_size * sizeof(uint32)+header_offset + 8);
@@ -256,7 +258,7 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size)
 
 		header_index++;
 		counter_size = (uint32)prefix_file_buf[header_index];	//- the size of a counter in bytes; 
-		//- for mode 0 counter_size is 1, 2, 3, or 4
+		//- for mode 0 counter_size is 1, 2, 3, or 4 (or 5, 6, 7, 8 for small k values)
 		//- for mode = 1 counter_size is 4;
 		lut_prefix_length = prefix_file_buf[header_index] >> 32;		//- the number of prefix's symbols cut frm kmers; 
 		//- (kmer_length - lut_prefix_length) is divisible by 4
@@ -265,10 +267,17 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size)
 		original_min_count = (uint32)prefix_file_buf[header_index];    //- the minimal number of kmer's appearances 
 		min_count = original_min_count;
 		original_max_count = prefix_file_buf[header_index] >> 32;      //- the maximal number of kmer's appearances
-		max_count = original_max_count;
+		//max_count = original_max_count;
 
 		header_index++;
 		total_kmers = prefix_file_buf[header_index];					//- the total number of kmers 
+
+		header_index++;
+		both_strands = (prefix_file_buf[header_index] & 0x000000000000000F) == 1;
+		both_strands = !both_strands;
+
+		original_max_count += prefix_file_buf[header_index] & 0xFFFFFFFF00000000;
+		max_count = original_max_count;
 
 		prefix_file_buf[last_data_index] = total_kmers + 1;
 
@@ -340,7 +349,50 @@ bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint32 &count)
 		index_start = prefix_file_buf[pattern_prefix_value];
 		index_stop = prefix_file_buf[pattern_prefix_value + 1] - 1;
 	}
+	uint64 tmp_count ;
+	bool res = BinarySearch(index_start, index_stop, kmer, tmp_count, pattern_offset);
+	count = (uint32)tmp_count;
+	return res;
+}
 
+//------------------------------------------------------------------------------------------
+// Check if kmer exists. 
+// IN : kmer  - kmer
+// OUT: count - kmer's counter if kmer exists
+// RET: true  - if kmer exists
+//------------------------------------------------------------------------------------------
+bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint64 &count)
+{
+	if (is_opened != opened_for_RA)
+		return false;
+	if (end_of_file)
+		return false;
+
+	//recognize a prefix:
+	uint64 pattern_prefix_value = kmer.kmer_data[0];
+
+	uint32 pattern_offset = (sizeof(pattern_prefix_value)* 8) - (lut_prefix_length * 2) - (kmer.byte_alignment * 2);
+	int64 index_start = 0, index_stop = 0;
+
+	pattern_prefix_value = pattern_prefix_value >> pattern_offset;  //complements with 0
+	if (pattern_prefix_value >= prefix_file_buf_size)
+		return false;
+
+	if (kmc_version == 0x200)
+	{
+		uint32 signature = kmer.get_signature(signature_len);
+		uint32 bin_start_pos = signature_map[signature];
+		bin_start_pos *= single_LUT_size;
+		//look into the array with data
+		index_start = *(prefix_file_buf + bin_start_pos + pattern_prefix_value);
+		index_stop = *(prefix_file_buf + bin_start_pos + pattern_prefix_value + 1) - 1;
+	}
+	else if (kmc_version == 0)
+	{
+		//look into the array with data
+		index_start = prefix_file_buf[pattern_prefix_value];
+		index_stop = prefix_file_buf[pattern_prefix_value + 1] - 1;
+	}
 	return BinarySearch(index_start, index_stop, kmer, count, pattern_offset);
 }
 
@@ -461,6 +513,92 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint32 &count)
 
 	return true;
 }
+
+
+//-----------------------------------------------------------------------------------------------
+// Read next kmer
+// OUT: kmer - next kmer
+// OUT: count - kmer's counter
+// RET: true - if not EOF
+//-----------------------------------------------------------------------------------------------
+bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint64 &count)
+{
+	uint64 prefix_mask = (1 << 2 * lut_prefix_length) - 1; //for kmc2 db
+
+	if (is_opened != opened_for_listing)
+		return false;
+	do
+	{
+		if (end_of_file)
+			return false;
+
+		if (sufix_number == prefix_file_buf[prefix_index + 1])
+		{
+			prefix_index++;
+
+			while (prefix_file_buf[prefix_index] == prefix_file_buf[prefix_index + 1])
+				prefix_index++;
+		}
+
+		uint32 off = (sizeof(prefix_index)* 8) - (lut_prefix_length * 2) - kmer.byte_alignment * 2;
+
+		uint64 temp_prefix = (prefix_index & prefix_mask) << off;	// shift prefix towards MSD. "& prefix_mask" necessary for kmc2 db format
+
+		kmer.kmer_data[0] = temp_prefix;			// store prefix in an object CKmerAPI
+
+		for (uint32 i = 1; i < kmer.no_of_rows; i++)
+			kmer.kmer_data[i] = 0;
+
+		//read sufix:
+		uint32 row_index = 0;
+		uint64 suf = 0;
+
+		off = off - 8;
+
+		for (uint32 a = 0; a < sufix_size; a++)
+		{
+			if (index_in_partial_buf == part_size)
+				Reload_sufix_file_buf();
+
+			suf = sufix_file_buf[index_in_partial_buf++];
+			suf = suf << off;
+			kmer.kmer_data[row_index] = kmer.kmer_data[row_index] | suf;
+
+			if (off == 0)				//the end of a word in kmer_data
+			{
+				off = 56;
+				row_index++;
+			}
+			else
+				off -= 8;
+		}
+
+		//read counter:
+		if (index_in_partial_buf == part_size)
+			Reload_sufix_file_buf();
+
+		count = sufix_file_buf[index_in_partial_buf++];
+
+		for (uint32 b = 1; b < counter_size; b++)
+		{
+			if (index_in_partial_buf == part_size)
+				Reload_sufix_file_buf();
+
+			uint64 aux = 0x000000ff & sufix_file_buf[index_in_partial_buf++];
+			aux = aux << 8 * (b);
+			count = aux | count;
+		}
+
+		sufix_number++;
+
+		if (sufix_number == total_kmers)
+			end_of_file = true;
+
+	} while ((count < min_count) || (count > max_count));
+
+	return true;
+}
+
 //-------------------------------------------------------------------------------
 // Reload a contents of an array "sufix_file_buf" for listing mode. Auxiliary function.
 //-------------------------------------------------------------------------------
@@ -570,10 +708,21 @@ bool CKMCFile::SetMaxCount(uint32 x)
 // Return a value of max_count. Kmers with counters above this theshold are ignored 
 // RET	: a value of max_count
 //----------------------------------------------------------------------------------------
-uint32 CKMCFile::GetMaxCount(void)
+uint64 CKMCFile::GetMaxCount(void)
 {
 	return max_count;
 }
+
+//----------------------------------------------------------------------------------------
+// Return true if KMC was run without -b switch
+// RET	: a value of both_strands
+//----------------------------------------------------------------------------------------
+bool CKMCFile::GetBothStrands(void)
+{
+	return both_strands;
+}
+
+
 
 //----------------------------------------------------------------------------------------
 // Set original (readed from *.kmer_pre) values for min_count and max_count
@@ -678,7 +827,7 @@ uint64 CKMCFile::KmerCount(void)
 //			_total_kmers	- the total number of kmers
 // RET	: true if kmer_database has been opened
 //---------------------------------------------------------------------------------
-bool CKMCFile::Info(uint32 &_kmer_length, uint32 &_mode, uint32 &_counter_size, uint32 &_lut_prefix_length, uint32 &_signature_len, uint32 &_min_count, uint32 &_max_count, uint64 &_total_kmers)
+bool CKMCFile::Info(uint32 &_kmer_length, uint32 &_mode, uint32 &_counter_size, uint32 &_lut_prefix_length, uint32 &_signature_len, uint32 &_min_count, uint64 &_max_count, uint64 &_total_kmers)
 {
 	if(is_opened)
 	{
@@ -698,21 +847,60 @@ bool CKMCFile::Info(uint32 &_kmer_length, uint32 &_mode, uint32 &_counter_size, 
 	return false;
 };
 
+// Get current parameters from kmer_database
+bool CKMCFile::Info(CKMCFileInfo& info)
+{
+	if (is_opened)
+	{
+		info.kmer_length = kmer_length;
+		info.mode = mode;
+		info.counter_size = counter_size;
+		info.lut_prefix_length = lut_prefix_length;
+		if (kmc_version == 0x200)
+			info.signature_len = signature_len;
+		else
+			info.signature_len = 0; //for kmc1 there is no signature_len
+		info.min_count = min_count;
+		info.max_count = max_count;
+		info.total_kmers = total_kmers;
+		info.both_strands = both_strands;
+		return true;
+	}
+	return false;
+}
+
 
 //---------------------------------------------------------------------------------
 // Get counters from read
 // OUT	:	counters    	- vector of counters of each k-mer in read (of size read_len - kmer_len + 1), if some k-mer is invalid (i.e. contains 'N') the counter is equal to 0
 // IN   :   read			- 
-// RET	: true if success
+// RET	:   true if success, false if k > read length or some failure 
 //---------------------------------------------------------------------------------
 bool CKMCFile::GetCountersForRead(const std::string& read, std::vector<uint32>& counters)
 {
 	if (is_opened != opened_for_RA)
 		return false;
+
+	if (read.length() < kmer_length)
+	{
+		counters.clear();
+		return false;
+	}
+
 	if (kmc_version == 0x200)
-		return GetCountersForRead_kmc2(read, counters);
+	{		
+		if (both_strands)
+			return GetCountersForRead_kmc2_both_strands(read, counters);
+		else
+			return GetCountersForRead_kmc2(read, counters);
+	}
 	else if (kmc_version == 0)
-		return GetCountersForRead_kmc1(read, counters);
+	{
+		if (both_strands)
+			return GetCountersForRead_kmc1_both_strands(read,counters);
+		else
+			return GetCountersForRead_kmc1(read, counters);
+	}
 	else
 		return false; //never should be here
 }
@@ -767,9 +955,9 @@ uint32 CKMCFile::count_for_kmer_kmc1(CKmerAPI& kmer)
 	int64 index_start = prefix_file_buf[pattern_prefix_value];
 	int64 index_stop = prefix_file_buf[pattern_prefix_value + 1] - 1;
 
-	uint32 counter = 0;
+	uint64 counter = 0;
 	if (BinarySearch(index_start, index_stop, kmer, counter, pattern_offset))
-		return counter;
+		return (uint32)counter;
 	return 0;
 }
 
@@ -791,10 +979,88 @@ uint32 CKMCFile::count_for_kmer_kmc2(CKmerAPI& kmer, uint32 bin_start_pos)
 	int64 index_start = *(prefix_file_buf + bin_start_pos + pattern_prefix_value);
 	int64 index_stop = *(prefix_file_buf + bin_start_pos + pattern_prefix_value + 1) - 1;
 
-	uint32 counter = 0;
+	uint64 counter = 0;
 	if (BinarySearch(index_start, index_stop, kmer, counter, pattern_offset))
-		return counter;
+		return (uint32)counter;
 	return 0;
+}
+
+//---------------------------------------------------------------------------------
+// Auxiliary function.
+//---------------------------------------------------------------------------------
+bool CKMCFile::GetCountersForRead_kmc1_both_strands(const std::string& read, std::vector<uint32>& counters)
+{
+	uint32 read_len = static_cast<uint32>(read.length());
+	counters.resize(read.length() - kmer_length + 1);
+	std::string transformed_read = read;
+	for (char& c : transformed_read)
+		c = CKmerAPI::num_codes[(uchar)c];
+
+	uint32 i = 0;
+	CKmerAPI kmer(kmer_length), kmer_rev(kmer_length);
+	uint32 pos = 0;
+	uint32 rev_pos = kmer_length - 1;
+
+	uint32 counters_pos = 0;
+
+	while (i + kmer_length - 1 < read_len)
+	{
+		bool contains_N = false;
+		while (i < read_len && pos < kmer_length)
+		{
+			if (CKmerAPI::num_codes[(uchar)read[i]] < 0)
+			{
+				pos = 0;
+				rev_pos = kmer_length - 1;
+				kmer.clear();
+				kmer_rev.clear();
+				++i;
+				uint32 wrong_kmers = MIN(i - counters_pos, static_cast<uint32>(counters.size()) - counters_pos);
+				fill_n(counters.begin() + counters_pos, wrong_kmers, 0);
+				counters_pos += wrong_kmers;
+				contains_N = true;
+				break;
+			}
+			else
+			{
+				kmer_rev.insert2bits(rev_pos--, 3 - CKmerAPI::num_codes[(uchar)read[i]]);
+				kmer.insert2bits(pos++, CKmerAPI::num_codes[(uchar)read[i++]]);
+				
+			}
+		}
+		if (contains_N)
+			continue;
+		if (pos == kmer_length)
+		{
+			if(kmer < kmer_rev)
+				counters[counters_pos++] = count_for_kmer_kmc1(kmer);
+			else
+				counters[counters_pos++] = count_for_kmer_kmc1(kmer_rev);
+		}
+		else
+			break;
+
+		while (i < read_len)
+		{
+			if (CKmerAPI::num_codes[(uchar)read[i]] < 0)
+			{
+				pos = 0;
+				break;
+			}
+			kmer_rev.SHR_insert2bits(3 - CKmerAPI::num_codes[(uchar)read[i]]);
+			kmer.SHL_insert2bits(CKmerAPI::num_codes[(uchar)read[i++]]);
+			if(kmer < kmer_rev)
+				counters[counters_pos++] = count_for_kmer_kmc1(kmer);
+			else
+				counters[counters_pos++] = count_for_kmer_kmc1(kmer_rev);
+		}
+	}
+	if (counters_pos < counters.size())
+	{
+		fill_n(counters.begin() + counters_pos, counters.size() - counters_pos, 0);
+		counters_pos = static_cast<uint32>(counters.size());
+	}
+	return true;
 }
 
 //---------------------------------------------------------------------------------
@@ -860,24 +1126,18 @@ bool CKMCFile::GetCountersForRead_kmc1(const std::string& read, std::vector<uint
 	}
 	return true;
 }
+
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
-bool CKMCFile::GetCountersForRead_kmc2(const std::string& read, std::vector<uint32>& counters)
-{	
-counters.resize(read.length() - kmer_length + 1);
-	std::string transformed_read = read;
-	for (char& c : transformed_read)
-		c = CKmerAPI::num_codes[(uchar)c];
+void CKMCFile::GetSuperKmers(const std::string& transformed_read, super_kmers_t& super_kmers)
+{
 	uint32 i = 0;
 	uint32 len = 0; //length of super k-mer
 	uint32 signature_start_pos;
 	CMmer current_signature(signature_len), end_mmer(signature_len);
 
-	using super_kmers_t = std::vector<std::tuple<uint32, uint32, uint32>>;//start_pos, len, bin_no, 
-	super_kmers_t super_kmers;
-
-	while (i + kmer_length - 1 < read.length())
+	while (i + kmer_length - 1 < transformed_read.length())
 	{
 		bool contains_N = false;
 		//building first signature after 'N' or at the read beginning
@@ -897,7 +1157,7 @@ counters.resize(read.length() - kmer_length + 1);
 		}
 		len = signature_len;
 		signature_start_pos = i - signature_len;
-		current_signature.insert(transformed_read.c_str() + signature_start_pos); 
+		current_signature.insert(transformed_read.c_str() + signature_start_pos);
 		end_mmer.set(current_signature);
 
 		for (; i < transformed_read.length(); ++i)
@@ -954,7 +1214,93 @@ counters.resize(read.length() - kmer_length + 1);
 	{
 		super_kmers.push_back(std::make_tuple(i - len, len, signature_map[current_signature.get()]));
 	}
+}
 
+//---------------------------------------------------------------------------------
+// Auxiliary function.
+//---------------------------------------------------------------------------------
+bool CKMCFile::GetCountersForRead_kmc2_both_strands(const std::string& read, std::vector<uint32>& counters)
+{
+	counters.resize(read.length() - kmer_length + 1);
+	std::string transformed_read = read;
+	for (char& c : transformed_read)
+		c = CKmerAPI::num_codes[(uchar)c];
+
+	super_kmers_t super_kmers;
+	GetSuperKmers(transformed_read, super_kmers);
+
+	uint32 counters_pos = 0;
+	if (super_kmers.empty())
+	{
+		fill_n(counters.begin(), counters.size(), 0);
+		return true;
+	}
+
+	CKmerAPI kmer(kmer_length), rev_kmer(kmer_length);
+
+	uint32 last_end = 0;
+
+	//'N' somewhere in first k-mer
+	if (std::get<0>(super_kmers.front()) > 0)
+	{
+		fill_n(counters.begin(), std::get<0>(super_kmers.front()), 0);
+		last_end = std::get<0>(super_kmers.front());
+		counters_pos = std::get<0>(super_kmers.front());
+	}
+	for (auto& super_kmer : super_kmers)
+	{
+		//'N's between super k-mers
+		if (last_end < std::get<0>(super_kmer))
+		{
+			uint32 gap = std::get<0>(super_kmer) -last_end;
+			fill_n(counters.begin() + counters_pos, kmer_length + gap - 1, 0);
+			counters_pos += kmer_length + gap - 1;
+		}
+		last_end = std::get<0>(super_kmer) +std::get<1>(super_kmer);
+
+		kmer.from_binary(transformed_read.c_str() + std::get<0>(super_kmer));
+		rev_kmer.from_binary_rev(transformed_read.c_str() + std::get<0>(super_kmer));
+
+		uint32 bin_start_pos = std::get<2>(super_kmer) * single_LUT_size;
+		if(kmer < rev_kmer)
+			counters[counters_pos++] = count_for_kmer_kmc2(kmer, bin_start_pos);
+		else
+			counters[counters_pos++] = count_for_kmer_kmc2(rev_kmer, bin_start_pos);
+
+		for (uint32 i = std::get<0>(super_kmer) +kmer_length; i < std::get<0>(super_kmer) +std::get<1>(super_kmer); ++i)
+		{
+			kmer.SHL_insert2bits(transformed_read[i]);
+			rev_kmer.SHR_insert2bits(3 - transformed_read[i]);
+			if(kmer < rev_kmer)
+				counters[counters_pos++] = count_for_kmer_kmc2(kmer, bin_start_pos);
+			else
+				counters[counters_pos++] = count_for_kmer_kmc2(rev_kmer, bin_start_pos);
+		}
+	}
+	//'N's at the end of read
+	if (counters_pos < counters.size())
+	{
+		fill_n(counters.begin() + counters_pos, counters.size() - counters_pos, 0);
+		counters_pos = static_cast<uint32>(counters.size());
+	}
+
+	return true;
+}
+
+
+//---------------------------------------------------------------------------------
+// Auxiliary function.
+//---------------------------------------------------------------------------------
+bool CKMCFile::GetCountersForRead_kmc2(const std::string& read, std::vector<uint32>& counters)
+{	
+	counters.resize(read.length() - kmer_length + 1);
+	std::string transformed_read = read;
+	for (char& c : transformed_read)
+		c = CKmerAPI::num_codes[(uchar)c];
+	
+	super_kmers_t super_kmers;
+	GetSuperKmers(transformed_read, super_kmers);
+	
 	uint32 counters_pos = 0;
 	if (super_kmers.empty())
 	{
@@ -983,8 +1329,7 @@ counters.resize(read.length() - kmer_length + 1);
 			counters_pos += kmer_length + gap - 1;
 		}
 		last_end = std::get<0>(super_kmer) + std::get<1>(super_kmer);
-
-		kmer.clear();
+		
 		kmer.from_binary(transformed_read.c_str() + std::get<0>(super_kmer));
 
 		uint32 bin_start_pos = std::get<2>(super_kmer) * single_LUT_size;
@@ -1010,13 +1355,15 @@ counters.resize(read.length() - kmer_length + 1);
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
-bool CKMCFile::BinarySearch(int64 index_start, int64 index_stop, const CKmerAPI& kmer, uint32& counter, uint32 pattern_offset)
+bool CKMCFile::BinarySearch(int64 index_start, int64 index_stop, const CKmerAPI& kmer, uint64& counter, uint32 pattern_offset)
 {
+	if (index_start >= total_kmers)
+		return false;
 	uchar *sufix_byte_ptr = nullptr;
 	uint64 sufix = 0;
 
 	//sufix_offset is always 56
-	uint32 sufix_offset = 56;			// the ofset of a sufix is for shifting the sufix towards MSB, to compare the sufix with a pattern
+	uint32 sufix_offset = 56;			// the offset of a sufix is for shifting the sufix towards MSB, to compare the sufix with a pattern
 	// Bytes of a pattern to search are always shifted towards MSB
 
 	uint32 row_index = 0;				// the number of a current row in an array kmer_data
@@ -1073,7 +1420,7 @@ bool CKMCFile::BinarySearch(int64 index_start, int64 index_stop, const CKmerAPI&
 
 		for (uint32 b = 1; b < counter_size; b++)
 		{
-			uint32 aux = 0x000000ff & *(sufix_byte_ptr + b);
+			uint64 aux = 0x000000ff & *(sufix_byte_ptr + b);
 
 			aux = aux << 8 * (b);
 			counter = aux | counter;

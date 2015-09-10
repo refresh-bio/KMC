@@ -4,9 +4,9 @@
 
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-  Version: 2.2.0
-  Date   : 2015-04-15
-*/
+  Version: 2.3.0
+  Date   : 2015-08-21
+ */
 
 #ifndef _KMC_FILE_H
 #define _KMC_FILE_H
@@ -15,6 +15,19 @@
 #include "kmer_api.h"
 #include <string>
 #include <vector>
+
+struct CKMCFileInfo
+{
+	uint32 kmer_length;
+	uint32 mode;
+	uint32 counter_size;
+	uint32 lut_prefix_length;
+	uint32 signature_len;	
+	uint32 min_count;
+	uint64 max_count;
+	bool both_strands;
+	uint64 total_kmers;
+};
 
 class CKMCFile
 {
@@ -44,19 +57,20 @@ class CKMCFile
 	uint32 lut_prefix_length;
 	uint32 signature_len;
 	uint32 min_count;
-	uint32 max_count;
+	uint64 max_count;
 	uint64 total_kmers;
+	bool both_strands;
 
 	uint32 kmc_version;
 	uint32 sufix_size;		// sufix's size in bytes 
 	uint32 sufix_rec_size;  // sufix_size + counter_size
 
 	uint32 original_min_count;
-	uint32 original_max_count;
+	uint64 original_max_count;
 
 	static uint64 part_size; // the size of a block readed to sufix_file_buf, in listing mode 
 	
-	bool BinarySearch(int64 index_start, int64 index_stop, const CKmerAPI& kmer, uint32& counter, uint32 pattern_offset);
+	bool BinarySearch(int64 index_start, int64 index_stop, const CKmerAPI& kmer, uint64& counter, uint32 pattern_offset);
 
 	// Open a file, recognize its size and check its marker. Auxiliary function.
 	bool OpenASingleFile(const std::string &file_name, FILE *&file_handler, uint64 &size, char marker[]);	
@@ -67,8 +81,17 @@ class CKMCFile
 	// Reload a contents of an array "sufix_file_buf" for listing mode. Auxiliary function. 
 	void Reload_sufix_file_buf();
 
-	// Implementation of GetCountersForRead for kmc1 database format
-	bool GetCountersForRead_kmc1(const std::string& read, std::vector<uint32>& counters);
+	// Implementation of GetCountersForRead for kmc1 database format for both strands
+	bool GetCountersForRead_kmc1_both_strands(const std::string& read, std::vector<uint32>& counters);
+
+	// Implementation of GetCountersForRead for kmc1 database format without choosing canonical k-mer
+	bool GetCountersForRead_kmc1(const std::string& read, std::vector<uint32>& counters);		
+
+	using super_kmers_t = std::vector<std::tuple<uint32, uint32, uint32>>;//start_pos, len, bin_no
+	void GetSuperKmers(const std::string& transformed_read, super_kmers_t& super_kmers);
+
+	// Implementation of GetCountersForRead for kmc2 database format for both strands
+	bool GetCountersForRead_kmc2_both_strands(const std::string& read, std::vector<uint32>& counters);
 
 	// Implementation of GetCountersForRead for kmc2 database format
 	bool GetCountersForRead_kmc2(const std::string& read, std::vector<uint32>& counters);
@@ -86,6 +109,8 @@ public:
 	// Return next kmer in CKmerAPI &kmer. Return its counter in float &count. Return true if not EOF
 	bool ReadNextKmer(CKmerAPI &kmer, float &count);
 
+	bool ReadNextKmer(CKmerAPI &kmer, uint64 &count); //for small k-values when counter may be longer than 4bytes
+	
 	bool ReadNextKmer(CKmerAPI &kmer, uint32 &count);
 	// Release memory and close files in case they were opened 
 	bool Close();
@@ -100,7 +125,10 @@ public:
 	bool SetMaxCount(uint32 x);
 
 	// Return a value of max_count. Kmers with counters above this theshold are ignored 
-	uint32 GetMaxCount(void);
+	uint64 GetMaxCount(void);
+	
+	//Return true if kmc was run without -b switch.
+	bool GetBothStrands(void);
 
 	// Return the total number of kmers between min_count and max_count
 	uint64 KmerCount(void);
@@ -119,6 +147,8 @@ public:
 
 	bool CheckKmer(CKmerAPI &kmer, uint32 &count);
 
+	bool CheckKmer(CKmerAPI &kmer, uint64 &count);
+
 	// Return true if kmer exists
 	bool IsKmer(CKmerAPI &kmer);
 
@@ -126,8 +156,11 @@ public:
 	void ResetMinMaxCounts(void);
 
 	// Get current parameters from kmer_database
-	bool Info(uint32 &_kmer_length, uint32 &_mode, uint32 &_counter_size, uint32 &_lut_prefix_length, uint32 &_signature_len, uint32 &_min_count, uint32 &_max_count, uint64 &_total_kmers);
+	bool Info(uint32 &_kmer_length, uint32 &_mode, uint32 &_counter_size, uint32 &_lut_prefix_length, uint32 &_signature_len, uint32 &_min_count, uint64 &_max_count, uint64 &_total_kmers);
 	
+	// Get current parameters from kmer_database
+	bool Info(CKMCFileInfo& info);
+
 	// Get counters for all k-mers in read
 	bool GetCountersForRead(const std::string& read, std::vector<uint32>& counters);
 	bool GetCountersForRead(const std::string& read, std::vector<float>& counters);

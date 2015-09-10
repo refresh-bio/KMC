@@ -5,8 +5,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 #include <algorithm>
 #include <numeric>
@@ -43,9 +43,11 @@ CKmerBinCompleter::CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues)
 	signature_len  = Params.signature_len;
 
 	cutoff_min     = Params.cutoff_min;
-	cutoff_max     = Params.cutoff_max;
-	counter_max    = Params.counter_max;
+	cutoff_max     = (int32)Params.cutoff_max;
+	counter_max    = (int32)Params.counter_max;
 	lut_prefix_len = Params.lut_prefix_len;
+	both_strands   = Params.both_strands;
+
 
 	kmer_t_size    = Params.KMER_T_size;
 	
@@ -242,11 +244,13 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 	store_uint(out_lut, cutoff_max, 4);				offset += 4;
 	store_uint(out_lut, n_unique - n_cutoff_min - n_cutoff_max, 8);		offset += 8;
 
+	store_uint(out_lut, both_strands ? 0 : 1, 1);			offset++;
+
 	// Space for future use
-	for (int32 i = 0; i < 7; ++i)
+	for (int32 i = 0; i < 27; ++i)
 	{
-		store_uint(out_lut, 0, 4);
-		offset += 4;
+		store_uint(out_lut, 0, 1);
+		offset ++;
 	}
 
 	store_uint(out_lut, 0x200, 4);

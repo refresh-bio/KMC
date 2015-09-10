@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 
 #ifndef _KB_READER_H
@@ -75,8 +75,8 @@ template <typename KMER_T, unsigned SIZE> CKmerBinReader<KMER_T, SIZE>::CKmerBin
 
 	kmer_len       = Params.kmer_len;	
 	cutoff_min     = Params.cutoff_min;
-	cutoff_max     = Params.cutoff_max;
-	counter_max    = Params.counter_max;
+	cutoff_max	   = (int32)Params.cutoff_max;
+	counter_max    = (int32)Params.counter_max;
 	both_strands   = Params.both_strands;
 	use_quake = Params.use_quake;
 	max_x = Params.max_x;

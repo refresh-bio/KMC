@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 
 #ifndef _QUEUES_H
@@ -650,6 +650,14 @@ public:
 
 		part = (double*) (buffer + stack[--n_parts_free]*part_size);
 	}
+	// Allocate memory buffer - float*
+	void reserve(float* &part)
+	{
+		unique_lock<mutex> lck(mtx);
+		cv.wait(lck, [this]{return n_parts_free > 0; });
+
+		part = (float*)(buffer + stack[--n_parts_free] * part_size);
+	}
 
 	// Deallocate memory buffer - uchar*
 	void free(uchar* part)
@@ -690,6 +698,14 @@ public:
 		lock_guard<mutex> lck(mtx);
 
 		stack[n_parts_free++] = (uint32) ((((uchar *) part) - buffer) / part_size);
+		cv.notify_all();
+	}
+	// Deallocate memory buffer - float*
+	void free(float* part)
+	{
+		lock_guard<mutex> lck(mtx);
+
+		stack[n_parts_free++] = (uint32)((((uchar *)part) - buffer) / part_size);
 		cv.notify_all();
 	}
 };

@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 
 #ifndef _PARAMS_H
@@ -33,8 +33,8 @@ struct CKMCParams {
 	int p_so;							// no. of OpenMP threads for sorting
 	int p_sr;							// no. of sorting threads	
 	int p_ci;							// do not count k-mers occurring less than
-	int p_cx;							// do not count k-mers occurring more than
-	int p_cs;							// maximal counter value
+	int64 p_cx;							// do not count k-mers occurring more than
+	int64 p_cs;							// maximal counter value
 	bool p_quake;						// use Quake-compatibile counting
 	bool p_strict_mem;					// use strict memory limit mode
 	bool p_mem_mode;					// use RAM instead of disk
@@ -81,13 +81,18 @@ struct CKMCParams {
 	int64 mem_tot_pmm_epxand;
 	int64 mem_part_pmm_epxand;
 
+	int64 mem_part_small_k_buf;
+	int64 mem_tot_small_k_buf;
+	int64 mem_part_small_k_completer;
+	int64 mem_tot_small_k_completer;
+
 	bool verbose;	
 
 	int kmer_len;			// kmer length
 	int signature_len;
 	int cutoff_min;			// exclude k-mers occurring less than times
-	int cutoff_max;			// exclude k-mers occurring more than times
-	int counter_max;		// maximal counter value
+	int64 cutoff_max;			// exclude k-mers occurring more than times
+	int64 counter_max;		// maximal counter value
 	bool use_quake;			// use Quake's counting based on qualities
 	bool use_strict_mem;	// use strict memory limit mode
 	int lowest_quality;		// lowest quality value	    
@@ -180,6 +185,7 @@ struct CKMCQueues
 	CKmerQueue *kq;
 	CMemoryPool *pmm_bins, *pmm_fastq, *pmm_reads, *pmm_radix_buf, *pmm_prob, *pmm_stats, *pmm_expand;
 	CMemoryBins *memory_bins;
+	CMemoryPool* pmm_small_k_buf, *pmm_small_k_completer;
 
 
 	CDiskLogger* disk_logger;

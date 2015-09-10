@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.2.0
-  Date   : 2015-04-15
+  Version: 2.3.0
+  Date   : 2015-08-21
 */
 
 #ifndef _KMC_H
@@ -43,6 +43,8 @@
 
 using namespace std;
 
+template<typename KMER_T, unsigned SIZE, bool QUAKE_MODE>
+class CSmallKWrapper;
 
 template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> class CKMC {
 	bool initialized;
@@ -67,6 +69,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> class CKMC {
 	vector<CWStatsSplitter<false>*> w_stats_splitters;
 	vector<CWFastqReader*> w_fastqs;
 	vector<CWSplitter<QUAKE_MODE>*> w_splitters;
+
 	CWKmerBinStorer *w_storer;
 
 	CWKmerBinReader<KMER_T, SIZE>* w_reader;
@@ -84,6 +87,9 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> class CKMC {
 	void ShowSettingsStage1();
 	void ShowSettingsStage2();
 
+	friend class CSmallKWrapper<KMER_T, SIZE, QUAKE_MODE>;
+	bool AdjustMemoryLimitsSmallK();	
+	template<typename COUNTER_TYPE>	bool ProcessSmallKOptimization();
 	
 public:
 	CKMC();
@@ -94,6 +100,35 @@ public:
 	void GetStats(double &time1, double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers);
 };
 
+
+template<typename KMER_T, unsigned SIZE>
+class CSmallKWrapper<KMER_T, SIZE, true>
+{
+public:
+	static bool Process(CKMC<KMER_T, SIZE, true>& ptr);
+};
+
+template<typename KMER_T, unsigned SIZE>
+class CSmallKWrapper<KMER_T, SIZE, false>
+{
+public:
+	static bool Process(CKMC<KMER_T, SIZE, false>& ptr);
+};
+
+template<typename KMER_T, unsigned SIZE>
+bool CSmallKWrapper<KMER_T, SIZE, true>::Process(CKMC<KMER_T, SIZE, true>& ptr)
+{
+	return ptr.template ProcessSmallKOptimization<float>();
+}
+
+template<typename KMER_T, unsigned SIZE>
+bool CSmallKWrapper<KMER_T, SIZE, false>::Process(CKMC<KMER_T, SIZE, false>& ptr)
+{
+	if ((uint64)ptr.Params.cutoff_max > ((1ull << 32) - 1))
+		return ptr.template ProcessSmallKOptimization<uint64>();
+	else
+		return ptr.template ProcessSmallKOptimization<uint32>();
+}
 
 //----------------------------------------------------------------------------------
 template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> CKMC<KMER_T, SIZE, QUAKE_MODE>::CKMC()
@@ -483,9 +518,223 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 }
 
 //----------------------------------------------------------------------------------
+template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZE, QUAKE_MODE>::AdjustMemoryLimitsSmallK() 
+{
+	if (Params.kmer_len > 13) 
+		return false;
+
+	uint32 counter_size = 4; //in bytes
+	if ((uint64)Params.cutoff_max > ((1ull << 32) - 1))
+		counter_size = 8;
+
+	int tmp_n_splitters = Params.n_splitters;
+	int tmp_n_readers = Params.n_readers;
+	int tmp_fastq_buffer_size = 0;
+	int64 tmp_mem_part_pmm_fastq = 0;
+	int64 tmp_mem_tot_pmm_fastq = 0;
+	int64 tmp_mem_part_pmm_reads = (CSplitter<QUAKE_MODE>::MAX_LINE_SIZE + 1) * sizeof(double);
+	int64 tmp_mem_tot_pmm_reads = 0;
+	int32 tmp_gzip_buffer_size = Params.gzip_buffer_size;
+
+	int64 tmp_mem_part_small_k_buf = (1ll << 2 * Params.kmer_len) * counter_size;//no of possible k-mers * counter size
+	int64 tmp_mem_tot_small_k_buf = 0;
+
+	int64 mim_mem_for_readers = tmp_n_readers * (16 << 20);
+	
+	while (tmp_n_splitters)
+	{
+		tmp_mem_tot_pmm_reads = tmp_mem_part_pmm_reads * 3 * tmp_n_splitters;
+		tmp_mem_tot_small_k_buf = tmp_mem_part_small_k_buf * tmp_n_splitters;
+
+		if (tmp_mem_tot_pmm_reads + tmp_mem_tot_small_k_buf + mim_mem_for_readers < Params.max_mem_size)
+			break;
+
+		--tmp_n_splitters;
+	}
+
+	if (!tmp_n_splitters)
+		return false;
+		
+	int64 left_for_readers = Params.max_mem_size - tmp_mem_tot_pmm_reads - tmp_mem_tot_small_k_buf;
+
+	int64 max_for_gzip = (int64)(0.66 * left_for_readers);	
+	while (tmp_n_readers * tmp_gzip_buffer_size > max_for_gzip)
+		tmp_gzip_buffer_size /= 2;
+
+	int64 for_pmm_fastq = left_for_readers - tmp_n_readers * tmp_gzip_buffer_size;
+
+
+	tmp_fastq_buffer_size = 32 << 20;
+	do {
+		if (tmp_fastq_buffer_size & (tmp_fastq_buffer_size - 1))
+			tmp_fastq_buffer_size &= tmp_fastq_buffer_size - 1;
+		else
+			tmp_fastq_buffer_size = tmp_fastq_buffer_size / 2 + tmp_fastq_buffer_size / 4;
+		tmp_mem_part_pmm_fastq = tmp_fastq_buffer_size + CFastqReader::OVERHEAD_SIZE;
+		tmp_mem_tot_pmm_fastq = tmp_mem_part_pmm_fastq * (tmp_n_readers + tmp_n_splitters + 96);
+	} while (tmp_mem_tot_pmm_fastq > for_pmm_fastq);
+
+	Params.n_splitters = tmp_n_splitters;
+	Params.n_readers = tmp_n_readers;
+	Params.fastq_buffer_size = tmp_fastq_buffer_size;
+	Params.mem_part_pmm_fastq = tmp_mem_part_pmm_fastq;
+	Params.mem_part_small_k_completer = Params.mem_tot_small_k_completer = Params.mem_tot_pmm_fastq = tmp_mem_tot_pmm_fastq;
+	Params.mem_part_pmm_reads = tmp_mem_part_pmm_reads;
+	Params.mem_tot_pmm_reads = tmp_mem_tot_pmm_reads;
+	Params.gzip_buffer_size = tmp_gzip_buffer_size;
+	Params.mem_part_small_k_buf = tmp_mem_part_small_k_buf;
+	Params.mem_tot_small_k_buf = tmp_mem_tot_small_k_buf;
+	
+	return true;
+}
+
+//----------------------------------------------------------------------------------
+template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> 
+template<typename COUNTER_TYPE>
+bool CKMC<KMER_T, SIZE, QUAKE_MODE>::ProcessSmallKOptimization()
+{		
+	vector<CWSmallKSplitter<QUAKE_MODE, COUNTER_TYPE>*> w_small_k_splitters; //For small k values only
+
+	w1.startTimer();
+	Queues.input_files_queue = new CInputFilesQueue(Params.input_file_names);
+	Queues.part_queue = new CPartQueue(Params.n_readers);
+
+	Queues.pmm_fastq = new CMemoryPool(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
+	Queues.pmm_reads = new CMemoryPool(Params.mem_tot_pmm_reads, Params.mem_part_pmm_reads);
+	Queues.pmm_small_k_buf = new CMemoryPool(Params.mem_tot_small_k_buf, Params.mem_part_small_k_buf);
+
+	w_small_k_splitters.resize(Params.n_splitters);
+
+	for (int i = 0; i < Params.n_splitters; ++i)
+	{
+		w_small_k_splitters[i] = new CWSmallKSplitter<QUAKE_MODE, COUNTER_TYPE>(Params, Queues);
+		gr1_2.push_back(thread(std::ref(*w_small_k_splitters[i])));
+	}
+
+	w_fastqs.resize(Params.n_readers);
+	for (int i = 0; i < Params.n_readers; ++i)
+	{
+		w_fastqs[i] = new CWFastqReader(Params, Queues);
+		gr1_1.push_back(thread(std::ref(*w_fastqs[i])));
+	}
+
+	for (auto& t : gr1_1)
+		t.join();
+	for (auto& t : gr1_2)
+		t.join();
+
+	for (auto r : w_fastqs)
+		delete r;
+
+	vector<CSmallKBuf<COUNTER_TYPE>> results(Params.n_splitters);
+
+	for (int i = 0; i < Params.n_splitters; ++i)
+	{		
+		results[i] = w_small_k_splitters[i]->GetResult();
+	}
+
+	w1.stopTimer();
+
+	w2.startTimer();
+
+	uint64 n_kmers = 0;
+
+	for (int j = 1; j < Params.n_splitters; ++j)
+	{
+		for (int i = 0; i < (1 << 2 * Params.kmer_len); ++i)
+			results[0].buf[i] += results[j].buf[i];
+	}
+
+	n_total = 0;
+
+
+	for (int j = 0; j < (1 << 2 * Params.kmer_len); ++j)
+		if (results[0].buf[j]) ++n_kmers;
+	
+	uint64 tmp_n_reads;
+	tmp_size = 0;
+	n_reads = 0;
+	n_total_super_kmers = 0;
+	for (auto s : w_small_k_splitters)
+	{
+		s->GetTotal(tmp_n_reads);
+		n_reads += tmp_n_reads;
+		n_total += s->GetTotalKmers();
+		s->Release();
+		delete s;
+	}
+
+
+	Queues.pmm_fastq->release();
+	delete Queues.pmm_fastq;
+
+
+	uint32 best_lut_prefix_len = 0;
+	uint64 best_mem_amount = 1ull << 62;
+
+	
+	uint32 counter_size = 0;
+	if (Params.use_quake)
+		counter_size = 4;
+	else
+		counter_size = min(BYTE_LOG(Params.cutoff_max), BYTE_LOG(Params.counter_max));
+
+	for (Params.lut_prefix_len = 1; Params.lut_prefix_len < 16; ++Params.lut_prefix_len)
+	{
+		uint32 suffix_len;
+		if (Params.lut_prefix_len > (uint32)Params.kmer_len)
+			suffix_len = 0;
+		else
+			suffix_len = Params.kmer_len - Params.lut_prefix_len;
+		
+		if (suffix_len % 4)
+			continue;
+
+		uint64 suf_mem = n_kmers * (suffix_len / 4 + counter_size);
+		uint64 lut_mem = (1ull << (2 * Params.lut_prefix_len)) * sizeof(uint64);
+
+		if (suf_mem + lut_mem < best_mem_amount)
+		{
+			best_lut_prefix_len = Params.lut_prefix_len;
+			best_mem_amount = suf_mem + lut_mem;
+		}
+	}
+
+	Params.lut_prefix_len = best_lut_prefix_len;
+
+	Queues.pmm_small_k_completer = new CMemoryPool(Params.mem_tot_small_k_completer, Params.mem_part_small_k_completer);
+
+	CSmallKCompleter<QUAKE_MODE> small_k_completer(Params, Queues);
+	small_k_completer.Complete(results[0]);
+	small_k_completer.GetTotal(n_unique, n_cutoff_min, n_cutoff_max);
+
+	Queues.pmm_reads->release();
+	Queues.pmm_small_k_buf->release();
+	Queues.pmm_small_k_completer->release();
+	delete Queues.pmm_small_k_completer;
+	delete Queues.pmm_reads;
+	delete Queues.pmm_small_k_buf;
+	w2.stopTimer();
+	cout << "\n";
+	return true;
+}
+
+//----------------------------------------------------------------------------------
 // Run the counter
 template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZE, QUAKE_MODE>::Process()
 {
+	if (!initialized)
+		return false;
+
+	if (AdjustMemoryLimitsSmallK())
+	{
+		if (Params.verbose)
+		{
+			cout << "\nSmall k optimization on!\n";
+		}
+		return CSmallKWrapper<KMER_T, SIZE, QUAKE_MODE>::Process(*this);		
+	}
+
 	int32 bin_id;
 	CMemDiskFile *file;
 	string name;
@@ -493,9 +742,6 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	uint64 n_rec;
 	uint64 n_plus_x_recs;
 	uint64 n_super_kmers;
-
-	if (!initialized)
-		return false;
 
 	if (!AdjustMemoryLimits())
 		return false;
