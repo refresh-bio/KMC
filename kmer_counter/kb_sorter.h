@@ -70,9 +70,9 @@ template <typename KMER_T, unsigned SIZE> class CKmerBinSorter {
 	CSignatureMapper* s_mapper;
 
 	uint64 n_unique, n_cutoff_min, n_cutoff_max, n_total;
-	int32 cutoff_min, cutoff_max;
+	uint32 cutoff_min, cutoff_max;
 	int32 lut_prefix_len;
-	int32 counter_max;
+	uint32 counter_max;
 
 	KMER_T *buffer_input, *buffer_tmp, *buffer;
 	uint32 *kxmer_counters;
@@ -160,8 +160,8 @@ template <typename KMER_T, unsigned SIZE> CKmerBinSorter<KMER_T, SIZE>::CKmerBin
 	memory_bins = Queues.memory_bins;
 
 	cutoff_min = Params.cutoff_min;
-	cutoff_max = (int32)Params.cutoff_max;
-	counter_max = (int32)Params.counter_max;
+	cutoff_max = (uint32)Params.cutoff_max;
+	counter_max = (uint32)Params.counter_max;
 	max_x = Params.max_x;
 	use_quake = Params.use_quake;
 	
@@ -958,14 +958,14 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::CompactKxm
 			{
 				ptr.n_total += count;
 				++ptr.n_unique;
-				if (count < (uint32)ptr.cutoff_min)
+				if (count < ptr.cutoff_min)
 					ptr.n_cutoff_min++;
-				else if (count >(uint32)ptr.cutoff_max)
+				else if (count >ptr.cutoff_max)
 					ptr.n_cutoff_max++;
 				else
 				{
 					lut[kmer.remove_suffix(2 * kmer_symbols)]++;
-					if (count > (uint32)ptr.counter_max)
+					if (count > ptr.counter_max)
 						count = ptr.counter_max;
 
 					// Store compacted kmer
@@ -984,14 +984,14 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::CompactKxm
 		//last one
 		++ptr.n_unique;
 		ptr.n_total += count;
-		if (count < (uint32)ptr.cutoff_min)
+		if (count < ptr.cutoff_min)
 			ptr.n_cutoff_min++;
-		else if (count >(uint32)ptr.cutoff_max)
+		else if (count >ptr.cutoff_max)
 			ptr.n_cutoff_max++;
 		else
 		{
 			lut[kmer.remove_suffix(2 * kmer_symbols)]++;
-			if (count > (uint32)ptr.counter_max)
+			if (count > ptr.counter_max)
 				count = ptr.counter_max;
 
 			// Store compacted kmer
@@ -1064,14 +1064,14 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::CompactKme
 				count++;
 			else
 			{
-				if (count < (uint32)ptr.cutoff_min)
+				if (count < ptr.cutoff_min)
 				{
 					act_kmer = &ptr.buffer[i];
 					ptr.n_cutoff_min++;
 					ptr.n_unique++;
 					count = 1;
 				}
-				else if (count >(uint32) ptr.cutoff_max)
+				else if (count > ptr.cutoff_max)
 				{
 					act_kmer = &ptr.buffer[i];
 					ptr.n_cutoff_max++;
@@ -1080,7 +1080,7 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::CompactKme
 				}
 				else
 				{
-					if (count > (uint32)ptr.counter_max)
+					if (count > ptr.counter_max)
 						count = ptr.counter_max;
 
 					// Store compacted kmer
@@ -1098,17 +1098,17 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::CompactKme
 			}
 		}
 
-		if (count < (uint32)ptr.cutoff_min)
+		if (count < ptr.cutoff_min)
 		{
 			ptr.n_cutoff_min++;
 		}
-		else if (count >= (uint32)ptr.cutoff_max)
+		else if (count >= ptr.cutoff_max)
 		{
 			ptr.n_cutoff_max++;
 		}
 		else
 		{
-			if (count >(uint32) ptr.counter_max)
+			if (count >ptr.counter_max)
 				count = ptr.counter_max;
 
 			for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)

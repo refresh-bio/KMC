@@ -43,8 +43,8 @@ CKmerBinCompleter::CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues)
 	signature_len  = Params.signature_len;
 
 	cutoff_min     = Params.cutoff_min;
-	cutoff_max     = (int32)Params.cutoff_max;
-	counter_max    = (int32)Params.counter_max;
+	cutoff_max     = (uint32)Params.cutoff_max;
+	counter_max    = (uint32)Params.counter_max;
 	lut_prefix_len = Params.lut_prefix_len;
 	both_strands   = Params.both_strands;
 

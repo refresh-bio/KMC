@@ -475,8 +475,8 @@ public:
 		std::cout << "  -ci<value> - exclude k-mers occurring less than <value> times \n";
 		std::cout << "  -cx<value> - exclude k-mers occurring more of than <value> times\n";
 		std::cout << " For input set of reads there are additional parameters:\n";
-		std::cout << " -ci<value> - remove reads containing less k-mers than value. It can be integer or floating number in range [0.0;1.0]\n";
-		std::cout << " -ci<value> - remove reads containing more k-mers than value. It can be integer or floating number in range [0.0;1.0]\n";
+		std::cout << " -ci<value> - remove reads containing less k-mers than value. It can be integer or floating number in range [0.0;1.0] (default: 2)\n";
+		std::cout << " -cx<value> - remove reads containing more k-mers than value. It can be integer or floating number in range [0.0;1.0] (default: 1e9)\n";
 		std::cout << " -f<a/q>    - input in FASTA format (-fa), FASTQ format (-fq); default: FASTQ\n";
 		std::cout << " For output set of reads there are additional parameters:\n";
 		std::cout << " -f<a/q>    - output in FASTA format (-fa), FASTQ format (-fq); default: same as input\n";

@@ -48,8 +48,8 @@ class CKmerBinCompleter {
 	uint32 lut_prefix_len;
 	uint64 n_unique, n_cutoff_min, n_cutoff_max, n_total;
 	uint32 kmer_t_size;
-	int32 cutoff_min, cutoff_max;
-	int32 counter_max;
+	uint32 cutoff_min, cutoff_max;
+	uint32 counter_max;
 	int32 kmer_len;
 	int32 signature_len;
 	bool use_quake;
@@ -94,7 +94,7 @@ class CSmallKCompleter
 	uint64 n_unique, n_cutoff_min, n_cutoff_max;
 	uint32 lut_prefix_len;
 	int64 cutoff_max, counter_max;
-	int cutoff_min;
+	uint32 cutoff_min;
 	uint32 kmer_len;
 	int64 mem_tot_small_k_completer;
 	std::string output_file_name;
@@ -216,7 +216,7 @@ bool CSmallKCompleter<QUAKE_MODE>::Complete(CSmallKBuf<COUNTER_TYPE> result)
 		{
 			++n_unique;
 
-			if (result.buf[kmer.data] < (uint32)cutoff_min)
+			if (result.buf[kmer.data] < cutoff_min)
 				++n_cutoff_min;
 			else if (result.buf[kmer.data] > (uint64)cutoff_max)
 				++n_cutoff_max;

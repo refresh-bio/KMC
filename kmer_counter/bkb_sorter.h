@@ -42,9 +42,7 @@ class CBigKmerBinSorter
 	uint32 *kxmers_counters;
 	uint64 kxmers_size;
 	uint64 kxmers_pos;
-
-	int32 cutoff_min, cutoff_max;
-	int32 counter_max;
+	
 	uint32 *kxmer_counters;
 
 	int32 lut_prefix_len;
@@ -184,10 +182,7 @@ CBigKmerBinSorter<KMER_T, SIZE>::CBigKmerBinSorter(CKMCParams& Params, CKMCQueue
 
 	n_omp_threads = Params.sm_n_omp_threads;
 	
-	sum_n_rec = sum_n_plus_x_rec = 0;
-	cutoff_max = (int32)Params.cutoff_max;
-	cutoff_min = Params.cutoff_min;
-	counter_max = (int32)Params.counter_max;
+	sum_n_rec = sum_n_plus_x_rec = 0;	
 }
 
 //----------------------------------------------------------------------------------

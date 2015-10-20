@@ -38,8 +38,8 @@ template <typename KMER_T, unsigned SIZE> class CKmerBinReader {
 	CMemoryBins *memory_bins;
 	CDiskLogger* disk_logger;
 
-	int32 cutoff_min, cutoff_max;
-	int32 counter_max;
+	uint32 cutoff_min, cutoff_max;
+	uint32 counter_max;
 	int32 kmer_len;
 	int32 lut_prefix_len;
 	uint32 max_x;
@@ -75,8 +75,8 @@ template <typename KMER_T, unsigned SIZE> CKmerBinReader<KMER_T, SIZE>::CKmerBin
 
 	kmer_len       = Params.kmer_len;	
 	cutoff_min     = Params.cutoff_min;
-	cutoff_max	   = (int32)Params.cutoff_max;
-	counter_max    = (int32)Params.counter_max;
+	cutoff_max	   = (uint32)Params.cutoff_max;
+	counter_max    = (uint32)Params.counter_max;
 	both_strands   = Params.both_strands;
 	use_quake = Params.use_quake;
 	max_x = Params.max_x;
@@ -129,7 +129,7 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 			kxmer_counter_size = 0;
 			kxmer_symbols = kmer_len;
 		}
-		uint64 max_out_recs    = (n_rec+1) / max(cutoff_min, 1);	
+		uint64 max_out_recs    = (n_rec+1) / max(cutoff_min, 1u);	
 		
 		uint64 counter_size    = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
 		if(KMER_T::QUALITY_SIZE > counter_size)
