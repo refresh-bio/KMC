@@ -30,12 +30,12 @@ class CSignatureMapper
 
 	class Comp
 	{
-		uint32* signature_occurences;
+		uint32* signature_occurrences;
 	public:
-		Comp(uint32* _signature_occurences) : signature_occurences(_signature_occurences){}
+		Comp(uint32* _signature_occurrences) : signature_occurrences(_signature_occurrences){}
 		bool operator()(int i, int j)
 		{
-			return signature_occurences[i] > signature_occurences[j];
+			return signature_occurrences[i] > signature_occurrences[j];
 		}
 	};
 	
