@@ -355,7 +355,7 @@ public:
 		std::cout << "out_db_path - path to output database\n";
 		std::cout << "ref_input - one of input1, input2, ..., inputN\n";
 		std::cout << "oper - one of {*,-,~,+}, which refers to {intersect, kmers_subtract, counters_subtract, union}\n";
-		std::cout << "operator * has the highest priority. Other operators has equals priorities. Order of operations can be changed with barenthesis\n";
+		std::cout << "operator * has the highest priority. Other operators has equals priorities. Order of operations can be changed with parentheses\n";
 		std::cout << "output_params are:\n";
 		std::cout << "  -ci<value> - exclude k-mers occurring less than <value> times \n";
 		std::cout << "  -cx<value> - exclude k-mers occurring more of than <value> times\n";
