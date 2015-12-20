@@ -362,7 +362,7 @@ template<unsigned SIZE> void CBigKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::PreCompa
 }
 
 //----------------------------------------------------------------------------------
-//Binary search position of first occurence of symbol 'symb' in [start_pos,end_pos). Offset defines which symbol in k+x-mer is taken.
+//Binary search position of first occurrence of symbol 'symb' in [start_pos,end_pos). Offset defines which symbol in k+x-mer is taken.
 template <unsigned SIZE> uint64 CBigKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::FindFirstSymbOccur(CBigKmerBinSorter<CKmer<SIZE>, SIZE> &ptr, uint64 start_pos, uint64 end_pos, uint32 offset, uchar symb)
 {
 	uint32 kxmer_offset = (ptr.kmer_len + ptr.max_x - offset) * 2;

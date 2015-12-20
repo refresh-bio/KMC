@@ -37,7 +37,7 @@ public:
 		{
 			if (fwrite(buf, 1, size, kmc_suf) != size)
 			{
-				std::cout << "Error while writting to kmc_suf file\n";
+				std::cout << "Error while writing to kmc_suf file\n";
 				exit(1);
 			}
 			delete[] buf;
@@ -78,9 +78,9 @@ private:
 
 	void store_pre_buf();
 	void send_suf_buf_to_queue();
-	void start_writting();
+	void start_writing();
 	inline void add_kmer(CKmer<SIZE>& kmer, uint32 counter);
-	void finish_writting();	
+	void finish_writing();	
 
 	template<typename T> void write_header_part(T data);
 	void calc_lut_prefix_len();
@@ -159,7 +159,7 @@ template <unsigned SIZE> CKMC1DbWriter<SIZE>::CKMC1DbWriter(CBundle<SIZE>* bundl
 template<unsigned SIZE> bool CKMC1DbWriter<SIZE>::Process()
 {
 
-	start_writting();
+	start_writing();
 
 	//Converts bundles to output buffers, sufix buffer is placed to another queue and write in separate thread (sufix_writer)
 	std::thread preparing_thread([this]{
@@ -201,7 +201,7 @@ template<unsigned SIZE> bool CKMC1DbWriter<SIZE>::Process()
 	preparing_thread.join();
 	suf_buf_writing_thread.join();
 
-	finish_writting();
+	finish_writing();
 	return true;
 }
 
@@ -232,22 +232,22 @@ template <unsigned SIZE> template <typename T> void CKMC1DbWriter<SIZE>::write_h
 }
 
 /*****************************************************************************************************************************/
-template<unsigned SIZE> void CKMC1DbWriter<SIZE>::start_writting()
+template<unsigned SIZE> void CKMC1DbWriter<SIZE>::start_writing()
 {
 	if (fwrite("KMCP", 1, 4, kmc_pre) != 4)
 	{
-		std::cout << "Error while writting starting KMCP marker";
+		std::cout << "Error while writing starting KMCP marker";
 		exit(1);
 	}
 	if (fwrite("KMCS", 1, 4, kmc_suf) != 4)
 	{
-		std::cout << "Error while writting starting KMCS marker";
+		std::cout << "Error while writing starting KMCS marker";
 		exit(1);
 	}
 }
 
 /*****************************************************************************************************************************/
-template<unsigned SIZE> void CKMC1DbWriter<SIZE>::finish_writting()
+template<unsigned SIZE> void CKMC1DbWriter<SIZE>::finish_writing()
 {
 	uint32 max_prefix = (1 << 2 * lut_prefix_len);
 	while (current_prefix < max_prefix - 1)
@@ -284,12 +284,12 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::finish_writting()
 
 	if (fwrite("KMCP", 1, 4, kmc_pre) != 4)
 	{
-		std::cout << "Error while writting end KMCP marker";
+		std::cout << "Error while writing end KMCP marker";
 		exit(1);
 	}
 	if (fwrite("KMCS", 1, 4, kmc_suf) != 4)
 	{
-		std::cout << "Error while writting end KMCS marker";
+		std::cout << "Error while writing end KMCS marker";
 		exit(1);
 	}
 	fclose(kmc_pre);
@@ -327,7 +327,7 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::store_pre_buf()
 {	
 	if (fwrite(pre_buff, sizeof(uint64), pre_pos, kmc_pre) != pre_pos)
 	{
-		std::cout << "Error while writting to kmc_pre file\n";
+		std::cout << "Error while writing to kmc_pre file\n";
 		exit(1);
 	}
 	pre_pos = 0;

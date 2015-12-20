@@ -143,7 +143,7 @@ void RadixSort_uint8(uint32 *&data_ptr, uint32 *&tmp_ptr, uint64 size, unsigned 
   Satish, N., Kim, C., Chhugani, J., Nguyen, A.D., Lee, V.W., Kim, D., Dubey, P. (2010). 
   Fast Sort on CPUs and GPUs. A Case for Bandwidth Oblivious SIMD Sort. 
   Proc. of the 2010 Int. Conf. on Management of data, pp. 351–362. 
-  The usage of software-managed buffers in the writting phase results in diminishing
+  The usage of software-managed buffers in the writing phase results in diminishing
   the influence of irregular memory accesses. As the number of cache conflict misses
   is reduced better efficiency is reached.*/
 template<typename COUNTER_TYPE, typename INT_TYPE>
