@@ -30,6 +30,7 @@ class CParser
 	std::ifstream file;
 	uint32 line_no;
 	std::regex input_line_pattern;
+	std::regex output_line_pattern;
 	std::regex empty_line_pattern;	
 	std::map<std::string, uint32> input;	
 	void parseInputLine(const std::string& line);
@@ -77,7 +78,7 @@ template<unsigned SIZE> CExpressionNode<SIZE>* CParser::ParseOutput()
 template<unsigned SIZE> CExpressionNode<SIZE>* CParser::parseOutputLine(const std::string& line)
 {
 	std::smatch match;
-	if (std::regex_search(line, match, input_line_pattern))
+	if (std::regex_search(line, match, output_line_pattern))
 	{
 #ifdef ENABLE_DEBUG
 		std::cout << "out file name " << match[1] << "\n";
@@ -86,6 +87,16 @@ template<unsigned SIZE> CExpressionNode<SIZE>* CParser::parseOutputLine(const st
 		std::cout << "Tokenize resf of output\n";
 #endif
 		config.output_desc.file_src = match[1];
+
+		//trim whitespaces at the end
+		static const std::string whitespace = " \t\r\n\v\f";
+		auto end = config.output_desc.file_src.find_last_not_of(whitespace);
+		config.output_desc.file_src.erase(end + 1);
+		if (config.output_desc.file_src == "")
+		{
+			std::cout << "Error: wrong line format, line: " << line_no << " (output file name is not specified)\n";
+			exit(1);
+		}
 
 		CTokenizer tokenizer;
 
