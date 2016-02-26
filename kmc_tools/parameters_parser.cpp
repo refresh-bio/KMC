@@ -388,6 +388,7 @@ void CParametersParser::Parse()
 		}		
 		complex_parser = make_unique<CParser>(argv[pos]);
 		complex_parser->ParseInputs();
+		complex_parser->ParseOutput();
 	}
 	else if (config.mode == CConfig::Mode::DUMP)
 	{

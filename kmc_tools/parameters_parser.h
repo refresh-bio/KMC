@@ -75,9 +75,8 @@ CExpressionNode<SIZE>* CParametersParser::GetExpressionRoot()
 		return expression_root;
 	}
 	else if (config.mode == CConfig::Mode::COMPLEX)
-	{
-		auto result = complex_parser->ParseOutput<SIZE>();
-		return result;
+	{		
+		return complex_parser->GetExpressionRoot<SIZE>();
 	}
 	else if (config.mode == CConfig::Mode::SORT)
 	{

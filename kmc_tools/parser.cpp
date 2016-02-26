@@ -71,6 +71,27 @@ void CParser::ParseInputs()
 	}
 }
 
+//************************************************************************************************************
+void CParser::ParseOutput()
+{
+	std::string line;
+	if (!nextLine(line) || line.find("OUTPUT_PARAMS:") != std::string::npos)
+	{
+		std::cout << "Error: None output was defined\n";
+		exit(1);
+	}
+
+	parseOutputLine(line);
+
+	while (nextLine(line))
+	{
+		if (line.find("OUTPUT_PARAMS:") != std::string::npos)
+		{
+			parseOtuputParamsLine();
+			break;
+		}
+	}
+}
 
 /*****************************************************************************************************************************/
 /********************************************************** PRIVATE **********************************************************/
@@ -123,6 +144,39 @@ void CParser::parseInputLine(const std::string& line)
 			config.input_desc.push_back(desc);
 			input[match[1]] = (uint32)(config.input_desc.size() - 1);				
 		}
+	}
+	else
+	{
+		std::cout << "Error: wrong line format, line: " << line_no << "\n";
+		exit(1);
+	}
+}
+
+//************************************************************************************************************
+void CParser::parseOutputLine(const std::string& line)
+{
+	std::smatch match;
+	if (std::regex_search(line, match, output_line_pattern))
+	{
+#ifdef ENABLE_DEBUG
+		std::cout << "out file name " << match[1] << "\n";
+		std::cout << "rest of output " << match[2] << "\n";
+
+		std::cout << "Tokenize resf of output\n";
+#endif
+		config.output_desc.file_src = match[1];
+
+		//trim whitespaces at the end
+		static const std::string whitespace = " \t\r\n\v\f";
+		auto end = config.output_desc.file_src.find_last_not_of(whitespace);
+		config.output_desc.file_src.erase(end + 1);
+		if (config.output_desc.file_src == "")
+		{
+			std::cout << "Error: wrong line format, line: " << line_no << " (output file name is not specified)\n";
+			exit(1);
+		}
+
+		tokenizer.Tokenize(match[2], tokens);
 	}
 	else
 	{
