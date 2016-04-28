@@ -20,8 +20,7 @@ If needed, you can also redefine maximal length of k-mer, which is 256 in the cu
 Note: KMC is highly optimized and spends only as many bytes for k-mer (rounded up to 8) as
 necessary, so using large values of MAX_K does not affect the KMC performance for short k-mers.
 
-Some parts of KMC use C++11 features, so you need a compatible C++ compiler, e.g., gcc 4.7
-or higher.
+Some parts of KMC use C++14 features, so you need a compatible C++ compiler, e.g., gcc 4.9+ or clang 3.4+
 
 After that, you can run make to compile kmc and kmc_dump applications.
 If you want to compile kmc without asmlib run:
