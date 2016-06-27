@@ -297,7 +297,7 @@ bool parse_parameters(int argc, char *argv[])
 			tmp = atoi(&argv[i][2]);
 			if (tmp < MIN_N_BINS || tmp > MAX_N_BINS)
 			{
-				cout << "Wrong parameter: number of bins must be in range <" << MIN_SR << "," << MAX_SR << "\n";
+				cout << "Wrong parameter: number of bins must be in range <" << MIN_N_BINS << "," << MAX_N_BINS << "\n";
 				return false;
 			}
 			else

@@ -1188,7 +1188,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 		Queues.bbd->reset_reading();
 		int32 sub_bin_id = 0;
 		uint32 lut_prefix_len = 0;
-		uint32 n_kmers = 0;
+		uint64 n_kmers = 0;
 		uint64 file_size = 0;
 		uint32 size = 0;
 		FILE* file = NULL;		

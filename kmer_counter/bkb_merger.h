@@ -94,7 +94,7 @@ void CBigKmerBinMerger<KMER_T, SIZE>::init(int32 bin_id, uint32 _size)
 	}
 
 	uint32 lut_prefix_len = 0;;
-	uint32 n_kmers = 0;
+	uint64 n_kmers = 0;
 	uint64 file_size = 0;
 	FILE* file = NULL;
 	string name;

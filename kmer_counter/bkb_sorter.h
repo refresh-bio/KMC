@@ -293,7 +293,7 @@ template<unsigned SIZE> void CBigKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::PostProc
 	uint64 suff_buff_size = ptr.sm_mem_part_suffixes / suffix_rec_bytes * suffix_rec_bytes;
 
 	uint64 suff_buff_pos = 0;
-	uint32 n_recs = 0;
+	uint64 n_recs = 0;
 	CKmer<SIZE> *act_kmer;
 	uint32 count;
 	uint64 i;
@@ -448,7 +448,7 @@ template<unsigned SIZE> void CBigKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::PostProc
 	uint64 suff_buff_size = ptr.sm_mem_part_suffixes / suffix_rec_bytes * suffix_rec_bytes;
 	
 	uint64 suff_buff_pos = 0;
-	uint32 n_recs = 0;
+	uint64 n_recs = 0;
 
 	uint64 compacted_count;
 	PreCompactKxmers(ptr, compacted_count, ptr.kxmers_counters);

@@ -1221,7 +1221,7 @@ public:
 class CBigBinDesc
 {
 	//lut_prefix_len, n_kmers, tmp_file_handle, string file_name, file_size
-	typedef std::tuple<uint32, uint32, FILE*, string, uint64> elem_t;
+	typedef std::tuple<uint32, uint64, FILE*, string, uint64> elem_t;
 	typedef map<int32, pair<int32, map<int32, elem_t>>> data_t;
 	mutable mutex mtx;
 	data_t m;
@@ -1231,7 +1231,7 @@ public:
 	{
 		curr_id = -1;
 	}
-	void push(int32 bin_id, int32 sub_bin_id, uint32 lut_prefix_len, uint32 n_kmers, FILE* file, string desc, uint64 file_size)
+	void push(int32 bin_id, int32 sub_bin_id, uint32 lut_prefix_len, uint64 n_kmers, FILE* file, string desc, uint64 file_size)
 	{
 		lock_guard<mutex> lck(mtx);
 		auto bin = m.find(bin_id);
@@ -1306,7 +1306,7 @@ public:
 			e.second.first = -1;			
 	}
 
-	bool next_sub_bin(int32 bin_id, int32& sub_bin_id, uint32& lut_prefix_len, uint32& n_kmers, FILE* &file, string& desc, uint64& file_size)
+	bool next_sub_bin(int32 bin_id, int32& sub_bin_id, uint32& lut_prefix_len, uint64& n_kmers, FILE* &file, string& desc, uint64& file_size)
 	{
 		lock_guard<mutex> lck(mtx);
 		auto& sub_bin = m.find(bin_id)->second;
