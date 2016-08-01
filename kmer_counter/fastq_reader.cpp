@@ -2,9 +2,9 @@
 /*
   This file is a part of KMC software distributed under GNU GPL 3 licence.
   The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
-  
+
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
-  
+
   Version: 2.3.0
   Date   : 2015-08-21
 */
@@ -116,7 +116,7 @@ bool CFastqReader::OpenFiles()
 		return false;
 
 	// Uncompressed file
-	if(mode == m_plain)	
+	if(mode == m_plain)
 	{
 		if((in = fopen(input_file_name.c_str(), "rb")) == NULL)
 			return false;
@@ -141,7 +141,7 @@ bool CFastqReader::OpenFiles()
 			return false;
 		}
 	}
-	
+
 	// Reserve via PMM
 	pmm_fastq->reserve(part);
 
@@ -174,10 +174,14 @@ bool CFastqReader::GetPartFromMultilneFasta(uchar *&_part, uint64 &_size)
 			if(part[i] == '>')
 			{
 				int64 tmp = i;
-				SkipNextEOL(part,i,total_filled);
+				bool next_line = SkipNextEOL(part, i, total_filled);
+				if (!next_line)
+					i = total_filled;
 				copy(part+tmp, part+i, part+pos);
 				last_header_pos = pos;
 				pos += i - tmp;
+				if (!next_line)
+					break;
 			}
 			if(part[i] != '\n' && part[i] != '\r')
 			{
@@ -212,7 +216,7 @@ bool CFastqReader::GetPart(uchar *&_part, uint64 &_size)
 	if(!in && !in_gzip && !in_bzip2)
 		return false;
 
-	
+
 
 	if(file_type == multiline_fasta)
 		return GetPartFromMultilneFasta(_part,_size);
@@ -220,7 +224,7 @@ bool CFastqReader::GetPart(uchar *&_part, uint64 &_size)
 	if(IsEof())
 		return false;
 	uint64 readed;
-	
+
 	// Read data
 	if(mode == m_plain)
 		readed = fread(part+part_filled, 1, part_size, in);
@@ -248,7 +252,7 @@ bool CFastqReader::GetPart(uchar *&_part, uint64 &_size)
 		part = NULL;
 		return true;
 	}
-	
+
 	// Look for the end of the last complete record in a buffer
 	if(file_type == fasta)			// FASTA files
 	{
@@ -278,7 +282,7 @@ bool CFastqReader::GetPart(uchar *&_part, uint64 &_size)
 				_size = 0;
 			else
 				_size = line_start[k];
-		}	
+		}
 	}
 	else			// FASTQ file
 	{
@@ -306,7 +310,7 @@ bool CFastqReader::GetPart(uchar *&_part, uint64 &_size)
 				{
 					if(part[line_start[k+2]+1] == '\n' || part[line_start[k+2]+1] == '\r')
 						break;
-					if(line_start[k+1]-line_start[k] == line_start[k+3]-line_start[k+2] && 
+					if(line_start[k+1]-line_start[k] == line_start[k+3]-line_start[k+2] &&
 						memcmp(part+line_start[k]+1, part+line_start[k+2]+1, line_start[k+3]-line_start[k+2]-1) == 0)
 						break;
 				}
@@ -390,7 +394,7 @@ void CWFastqReader::operator()()
 {
 	uchar *part;
 	uint64 part_filled;
-	
+
 	while(input_files_queue->pop(file_name))
 	{
 		fqr = new CFastqReader(mm, pmm_fastq, file_type, gzip_buffer_size, bzip2_buffer_size, kmer_len);

@@ -2,9 +2,9 @@
 /*
   This file is a part of KMC software distributed under GNU GPL 3 licence.
   The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
-  
+
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
-  
+
   Version: 2.3.0
   Date   : 2015-08-21
 */
@@ -46,7 +46,7 @@ public:
 
 		app_1 = new CApplication<KMER_TPL, SIZE - 1, QUAKE_MODE>(Params);
 		if(is_selected)
-		{			
+		{
 			kmc = new CKMC<KMER_TPL<SIZE>, SIZE, QUAKE_MODE>;
 			kmc->SetParams(Params);
 		}
@@ -140,19 +140,19 @@ void usage()
 	cout << "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 12\n";
 	cout << "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n";
 	cout << "  -p<par> - signature length (5, 6, 7, 8); default: 7\n";
-	cout << "  -f<a/q/m> - input in FASTA format (-fa), FASTQ format (-fq) or mulit FASTA (-fm); default: FASTQ\n";
+	cout << "  -f<a/q/m> - input in FASTA format (-fa), FASTQ format (-fq) or multi FASTA (-fm); default: FASTQ\n";
 	cout << "  -q[value] - use Quake's compatible counting with [value] representing lowest quality (default: 33)\n";
 	cout << "  -ci<value> - exclude k-mers occurring less than <value> times (default: 2)\n";
 	cout << "  -cs<value> - maximal value of a counter (default: 255)\n";
 	cout << "  -cx<value> - exclude k-mers occurring more of than <value> times (default: 1e9)\n";
-	cout << "  -b - turn off transformation of k-mers into canonical form\n";	
+	cout << "  -b - turn off transformation of k-mers into canonical form\n";
 	cout << "  -r - turn on RAM-only mode \n";
 	cout << "  -n<value> - number of bins \n";
 	cout << "  -t<value> - total number of threads (default: no. of CPU cores)\n";
 	cout << "  -sf<value> - number of FASTQ reading threads\n";
 	cout << "  -sp<value> - number of splitting threads\n";
 	cout << "  -sr<value> - number of sorter threads\n";
-	cout << "  -so<value> - number of threads per single sorter\n";	
+	cout << "  -so<value> - number of threads per single sorter\n";
 	cout << "Example:\n";
 	cout << "kmc -k27 -m24 NA19238.fastq NA.res \\data\\kmc_tmp_dir\\\n";
 	cout << "kmc -k27 -q -m24 @files.lst NA.res \\data\\kmc_tmp_dir\\\n";
@@ -175,7 +175,7 @@ bool parse_parameters(int argc, char *argv[])
 		// Number of threads
 		if(strncmp(argv[i], "-t", 2) == 0)
 			Params.p_t = atoi(&argv[i][2]);
-//		else 
+//		else
 		// k-mer length
 		if(strncmp(argv[i], "-k", 2) == 0)
 		{
@@ -273,13 +273,13 @@ bool parse_parameters(int argc, char *argv[])
 		{
 			tmp = atoi(&argv[i][3]);
 			if(tmp < MIN_SO || tmp > MAX_SO)
-			{	
+			{
 				cout << "Wrong parameter: number of sorter threads must be in range <" << MIN_SO << "," << MAX_SO << "\n";
 				return false;
 			}
 			else
 				Params.p_so = tmp;
-		}		
+		}
 		// Number of internal sorting threads (per single sorter)
 		else if(strncmp(argv[i], "-sr", 3) == 0)
 		{
@@ -303,7 +303,7 @@ bool parse_parameters(int argc, char *argv[])
 			else
 				Params.p_n_bins = tmp;
 		}
-	
+
 		if (strncmp(argv[i], "-smso", 5) == 0)
 		{
 			tmp = atoi(&argv[i][5]);
@@ -325,7 +325,7 @@ bool parse_parameters(int argc, char *argv[])
 			}
 			else
 				Params.p_smun = tmp;
-		}		
+		}
 		if (strncmp(argv[i], "-smme", 5) == 0)
 		{
 			tmp = atoi(&argv[i][5]);
@@ -452,7 +452,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	if (Params.p_strict_mem)
 		cout << "Total    : " << (time1 + time2 + time3) << "s\n";
 	else
-		cout << "Total    : " << (time1+time2) << "s\n";	
+		cout << "Total    : " << (time1+time2) << "s\n";
 	if (Params.p_strict_mem)
 	{
 		cout << "Tmp size : " << tmp_size / 1000000 << "MB\n";
