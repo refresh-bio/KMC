@@ -1,7 +1,7 @@
 /*************************** asmlib.h ***************************************
 * Author:        Agner Fog
 * Date created:  2003-12-12
-* Last modified: 2011-08-21
+* Last modified: 2013-10-04
 * Project:       asmlib.zip
 * Source URL:    www.agner.org/optimize
 *
@@ -10,7 +10,7 @@
 * This library is available in many versions for different platforms.
 * See asmlib-instructions.pdf for details.
 *
-* Copyright 2003 - 2011 by Agner Fog. 
+* (c) Copyright 2003 - 2013 by Agner Fog. 
 * GNU General Public License http://www.gnu.org/licenses/gpl.html
 *****************************************************************************/
 
@@ -66,6 +66,7 @@ Function prototypes, memory and string functions
 void * A_memcpy (void * dest, const void * src, size_t count); // Copy count bytes from src to dest
 void * A_memmove(void * dest, const void * src, size_t count); // Same as memcpy, allows overlap between src and dest
 void * A_memset (void * dest, int c, size_t count);            // Set count bytes in dest to (char)c
+int    A_memcmp (const void * buf1, const void * buf2, size_t num); // Compares two blocks of memory
 size_t GetMemcpyCacheLimit(void);                              // Data blocks bigger than this will be copied uncached by memcpy and memmove
 void   SetMemcpyCacheLimit(size_t);                            // Change limit in GetMemcpyCacheLimit
 size_t GetMemsetCacheLimit(void);                              // Data blocks bigger than this will be stored uncached by memset
@@ -83,6 +84,7 @@ size_t A_strspn (const char * str, const char * set);          // Find span of c
 size_t A_strcspn(const char * str, const char * set);          // Find span of characters that don't belong to set
 size_t strCountInSet(const char * str, const char * set);      // Count characters that belong to set
 size_t strcount_UTF8(const char * str);                        // Counts the number of characters in a UTF-8 encoded string
+
 
 /***********************************************************************
 Function prototypes, miscellaneous functions
@@ -141,21 +143,27 @@ uint32_t dividefixedu32(const uint32_t buffer[2], uint32_t x); // Fast division 
 #if defined(_INCLUDED_EMM) || (defined(_EMMINTRIN_H_INCLUDED) && defined(__SSE2__))
 #define VECTORDIVISIONDEFINED
 
-// define vector division functions for 16 bit signed and unsigned integers
-void setdivisorV8i16(__m128i buf[2], int16_t d);               // Set divisor for repeated division
-__m128i dividefixedV8i16(const __m128i buf[2], __m128i x);     // Fast division with previously set divisor
-void setdivisorV8u16(__m128i buf[2], uint16_t d);              // Set divisor for repeated division
-__m128i dividefixedV8u16(const __m128i buf[2], __m128i x);     // Fast division with previously set divisor
+// Integer vector division functions. These functions divide an integer vector by a scalar:
 
-// define vector division functions for 32 bit signed and unsigned integers
+// Set divisor for repeated integer vector division
+void setdivisorV8i16(__m128i buf[2], int16_t d);               // Set divisor for repeated division
+void setdivisorV8u16(__m128i buf[2], uint16_t d);              // Set divisor for repeated division
 void setdivisorV4i32(__m128i buf[2], int32_t d);               // Set divisor for repeated division
-__m128i dividefixedV4i32(const __m128i buf[2], __m128i x);     // Fast division with previously set divisor
 void setdivisorV4u32(__m128i buf[2], uint32_t d);              // Set divisor for repeated division
+
+// Fast division of vector by previously set divisor
+__m128i dividefixedV8i16(const __m128i buf[2], __m128i x);     // Fast division with previously set divisor
+__m128i dividefixedV8u16(const __m128i buf[2], __m128i x);     // Fast division with previously set divisor
+__m128i dividefixedV4i32(const __m128i buf[2], __m128i x);     // Fast division with previously set divisor
 __m128i dividefixedV4u32(const __m128i buf[2], __m128i x);     // Fast division with previously set divisor
-#endif
+
+#endif // defined(_INCLUDED_EMM) || (defined(_EMMINTRIN_H_INCLUDED) && defined(__SSE2__))
 
 #ifdef __cplusplus
 }  // end of extern "C"
+#endif // __cplusplus
+
+#ifdef __cplusplus
 
 // Define classes and operator '/' for fast division with fixed divisor
 class div_i32;
@@ -165,100 +173,51 @@ static inline uint32_t operator / (uint32_t x, div_u32 const & D);
 
 class div_i32 {                                                // Signed 32 bit integer division
 public:
-div_i32() {buffer[0] = buffer[1] = 0;}                         // Default constructor
-div_i32(int d) {setdivisor(d);}                                // Constructor with divisor
-void setdivisor(int d) {setdivisori32(buffer, d);}             // Set divisor
+    div_i32() {                                                // Default constructor
+        buffer[0] = buffer[1] = 0;
+    }
+    div_i32(int d) {                                           // Constructor with divisor
+        setdivisor(d);
+    }
+    void setdivisor(int d) {                                   // Set divisor
+        setdivisori32(buffer, d);
+    }
 protected:
-   int buffer[2];                                              // Internal memory
-friend int32_t operator / (int32_t x, div_i32 const & D);
+    int buffer[2];                                             // Internal memory
+    friend int32_t operator / (int32_t x, div_i32 const & D);
 };
+
 static inline int32_t operator / (int32_t x, div_i32 const &D){// Overloaded operator '/'
-   return dividefixedi32(D.buffer, x);}
+    return dividefixedi32(D.buffer, x);
+}
+
+static inline int32_t operator /= (int32_t &x, div_i32 const &D){// Overloaded operator '/='
+    return x = x / D;
+}
 
 class div_u32 {                                                // Unsigned 32 bit integer division
 public:
-div_u32() {buffer[0] = buffer[1] = 0;}                         // Default constructor
-div_u32(uint32_t d) {setdivisor(d);}                           // Constructor with divisor
-void setdivisor(uint32_t d) {setdivisoru32(buffer, d);}        // Set divisor
+    div_u32() {                                                // Default constructor
+        buffer[0] = buffer[1] = 0;
+    }
+    div_u32(uint32_t d) {                                      // Constructor with divisor
+        setdivisor(d);
+    }
+    void setdivisor(uint32_t d) {                              // Set divisor
+        setdivisoru32(buffer, d);
+    }
 protected:
-   uint32_t buffer[2];                                         // Internal memory
-friend uint32_t operator / (uint32_t x, div_u32 const & D);
+    uint32_t buffer[2];                                        // Internal memory
+    friend uint32_t operator / (uint32_t x, div_u32 const & D);
 };
-static inline uint32_t operator / (uint32_t x, div_u32 const & D) { // Overloaded operator '/'
-   return dividefixedu32(D.buffer, x);}
 
-#ifdef VECTORDIVISIONDEFINED
-// Define classes and operator '/' for fast division of vectors with fixed divisor
-class div_v8i16;   // vector of 8 signed   integers of 16 bits
-class div_v8u16;   // vector of 8 unsigned integers of 16 bits
-class div_v4i32;   // vector of 4 signed   integers of 32 bits
-class div_v4u32;   // vector of 4 unsigned integers of 32 bits
-static inline __m128i operator / (__m128i x, div_v8i16 const & D);
-static inline __m128i operator / (__m128i x, div_v8u16 const & D);
-static inline __m128i operator / (__m128i x, div_v4i32 const & D);
-static inline __m128i operator / (__m128i x, div_v4u32 const & D);
+static inline uint32_t operator / (uint32_t x, div_u32 const & D){ // Overloaded operator '/'
+    return dividefixedu32(D.buffer, x);
+}
 
-class div_v8i16 {                                              // vector of 8 signed integers of 16 bits
-public:
-   div_v8i16() {buffer[0] = buffer[1] = _mm_set1_epi16(0);}    // default constructor
-   div_v8i16(int16_t d) {setdivisor(d);}                       // constructor with divisor
-   void setdivisor(int16_t d) {setdivisorV8i16(buffer, d);}    // set divisor
-protected:
-   __m128i buffer[2];                                          // Internal memory
-friend __m128i operator / (__m128i x, div_v8i16 const & D);
-};
-static inline __m128i operator / (__m128i x, div_v8i16 const &D){// Overloaded operator '/'
-   return dividefixedV8i16(D.buffer, x);}
-
-class div_v8u16 {                                              // vector of 8 unsigned integers of 16 bits
-public:
-   div_v8u16() {buffer[0] = buffer[1] = _mm_set1_epi16(0);}    // default constructor
-   div_v8u16(uint16_t d) {setdivisor(d);}                      // constructor with divisor
-   void setdivisor(uint16_t d) {setdivisorV8u16(buffer, d);}   // set divisor
-protected:
-   __m128i buffer[2];                                          // Internal memory
-friend __m128i operator / (__m128i x, div_v8u16 const & D);
-};
-static inline __m128i operator / (__m128i x, div_v8u16 const &D){// Overloaded operator '/'
-   return dividefixedV8u16(D.buffer, x);}
-
-class div_v4i32 {                                              // vector of 4 signed integers of 32 bits
-public:
-   div_v4i32() {buffer[0] = buffer[1] = _mm_set1_epi32(0);}    // default constructor
-   div_v4i32(int32_t d) {setdivisor(d);}                       // constructor with divisor
-   void setdivisor(int32_t d) {setdivisorV4i32(buffer, d);}    // set divisor
-protected:
-   __m128i buffer[2];                                          // Internal memory
-friend __m128i operator / (__m128i x, div_v4i32 const & D);
-};
-static inline __m128i operator / (__m128i x, div_v4i32 const &D){// Overloaded operator '/'
-   return dividefixedV4i32(D.buffer, x);}
-
-class div_v4u32 {                                              // vector of 4 unsigned integers of 32 bits
-public:
-   div_v4u32() {buffer[0] = buffer[1] = _mm_set1_epi32(0);}    // default constructor
-   div_v4u32(uint32_t d) {setdivisor(d);}                      // constructor with divisor
-   void setdivisor(uint32_t d) {setdivisorV4u32(buffer, d);}   // set divisor
-protected:
-   __m128i buffer[2];                                          // Internal memory
-friend __m128i operator / (__m128i x, div_v4u32 const & D);
-};
-static inline __m128i operator / (__m128i x, div_v4u32 const &D){// Overloaded operator '/'
-   return dividefixedV4u32(D.buffer, x);}
-
-// Support for vector classes defined in Intel's dvec.h
-#ifdef _DVEC_H_INCLUDED
-static inline Is32vec4 operator / (Is32vec4 const &x, div_v4i32 const &D){
-   return (__m128i)x / D;}
-static inline Iu32vec4 operator / (Iu32vec4 const &x, div_v4u32 const &D){
-   return (__m128i)x / D;}
-static inline Is16vec8 operator / (Is16vec8 const &x, div_v8i16 const &D){
-   return (__m128i)x / D;}
-static inline Iu16vec8 operator / (Iu16vec8 const &x, div_v8u16 const &D){
-   return (__m128i)x / D;}
-#endif // _DVEC_H_INCLUDED
-
-#endif // VECTORDIVISIONDEFINED
+static inline uint32_t operator /= (uint32_t &x, div_u32 const &D){// Overloaded operator '/='
+    return x = x / D;
+}
 
 #endif // __cplusplus
 
