@@ -1,11 +1,11 @@
 /*
-  This file is a part of KMC software distributed under GNU GPL 3 licence.
-  The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
-  
-  Authors: Marek Kokot
-  
-  Version: 2.3.0
-  Date   : 2015-08-21
+This file is a part of KMC software distributed under GNU GPL 3 licence.
+The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
+
+Authors: Marek Kokot
+
+Version: 3.0.0
+Date   : 2017-01-28
 */
 
 #ifndef _KMC1_DB_WRITER_H
@@ -19,18 +19,18 @@
 #include <vector>
 
 //************************************************************************************************************
-// CKMC1SufixFileWriter - thread for writing sufixes' parts
+// CKMC1SuffixFileWriter - thread for writing suffixes' parts
 //************************************************************************************************************
-class CKMC1SufixFileWriter
+class CKMC1SuffixFileWriter
 {
 public:
-	CKMC1SufixFileWriter(CSufWriteQueue& input_queue, FILE* kmc_suf) :
+	CKMC1SuffixFileWriter(CSufWriteQueue& input_queue, FILE* kmc_suf) :
 		input_queue(input_queue),
 		kmc_suf(kmc_suf)
 	{
 	}
 	void operator()()
-	{		
+	{
 		uchar* buf;
 		uint32 size;
 		while (input_queue.pop(buf, size))
@@ -41,7 +41,7 @@ public:
 				exit(1);
 			}
 			delete[] buf;
-		}		
+		}
 	}
 private:
 	CSufWriteQueue& input_queue;
@@ -54,16 +54,17 @@ private:
 template<unsigned SIZE> class CKMC1DbWriter
 {
 public:
-	CKMC1DbWriter(CBundle<SIZE>* bundle);
+	CKMC1DbWriter(CBundle<SIZE>* bundle, COutputDesc& output_desc);
 	~CKMC1DbWriter();
 	bool Process();
 
 private:
 	static const uint32 PRE_BUFF_SIZE_BYTES = KMC1_DB_WRITER_PREFIX_BUFF_BYTES;
-	static const uint32 SUF_BUFF_SIZE_BYTES = KMC1_DB_WRITER_SUFIX_BUFF_BYTES;
+	static const uint32 SUF_BUFF_SIZE_BYTES = KMC1_DB_WRITER_SUFFIX_BUFF_BYTES;
 
 	CConfig& config;
-	CBundle<SIZE>* bundle;
+	COutputDesc& output_desc;
+	CBundle<SIZE>* bundle = nullptr;
 	FILE* kmc_pre, *kmc_suf;
 	uint32 lut_prefix_len;
 	uint32 current_prefix;
@@ -73,14 +74,15 @@ private:
 	uint64* pre_buff;
 	uchar* suf_buff;
 	uint64 added_kmers;
-	uint32 sufix_rec_bytes;
+	uint32 suffix_rec_bytes;
 	uint32 suf_pos, pre_pos;
+
 
 	void store_pre_buf();
 	void send_suf_buf_to_queue();
 	void start_writing();
 	inline void add_kmer(CKmer<SIZE>& kmer, uint32 counter);
-	void finish_writing();	
+	void finish_writing();
 
 	template<typename T> void write_header_part(T data);
 	void calc_lut_prefix_len();
@@ -88,7 +90,18 @@ private:
 
 	CCircularQueue<SIZE> bundles_queue;
 	CSufWriteQueue suf_buf_queue;
-	
+
+
+	//for simple and transform operations
+	std::thread preparing_thread;
+	CKMC1SuffixFileWriter* suffix_writer = nullptr;
+	std::thread suf_buf_writing_thread;
+public:
+	void MultiOptputInit();
+	void MultiOptputAddResultPart(COutputBundle<SIZE>& bundle);
+	void MultiOptputAddResultPart(CBundle<SIZE>& bundle);
+	void MultiOptputFinish();
+
 };
 
 /*****************************************************************************************************************************/
@@ -96,21 +109,22 @@ private:
 /*****************************************************************************************************************************/
 
 /*****************************************************************************************************************************/
-template <unsigned SIZE> CKMC1DbWriter<SIZE>::CKMC1DbWriter(CBundle<SIZE>* bundle) :
-	config(CConfig::GetInstance()),
-	bundle(bundle),
-	bundles_queue(DEFAULT_CIRCULAL_QUEUE_CAPACITY)
+template <unsigned SIZE> CKMC1DbWriter<SIZE>::CKMC1DbWriter(CBundle<SIZE>* bundle, COutputDesc& output_desc) :
+config(CConfig::GetInstance()),
+output_desc(output_desc),
+bundle(bundle),
+bundles_queue(DEFAULT_CIRCULAL_QUEUE_CAPACITY)
 {
 	kmc_pre = NULL;
 	kmc_suf = NULL;
 	pre_buff = NULL;
 	suf_buff = NULL;
-	std::string kmc_pre_file_name = config.output_desc.file_src + ".kmc_pre";
-	std::string kmc_suf_file_name = config.output_desc.file_src + ".kmc_suf";
+	std::string kmc_pre_file_name = output_desc.file_src + ".kmc_pre";
+	std::string kmc_suf_file_name = output_desc.file_src + ".kmc_suf";
 
 	kmc_pre = fopen(kmc_pre_file_name.c_str(), "wb");
 	setvbuf(kmc_pre, NULL, _IONBF, 0);
-	
+
 	if (!kmc_pre)
 	{
 		std::cout << "Error: cannot open file : " << kmc_pre_file_name << "\n";
@@ -118,7 +132,7 @@ template <unsigned SIZE> CKMC1DbWriter<SIZE>::CKMC1DbWriter(CBundle<SIZE>* bundl
 	}
 	kmc_suf = fopen(kmc_suf_file_name.c_str(), "wb");
 	setvbuf(kmc_suf, NULL, _IONBF, 0);
-	
+
 	if (!kmc_suf)
 	{
 		fclose(kmc_pre);
@@ -130,25 +144,25 @@ template <unsigned SIZE> CKMC1DbWriter<SIZE>::CKMC1DbWriter(CBundle<SIZE>* bundl
 	setvbuf(kmc_suf, NULL, _IONBF, 0);
 	// Calculate LUT size
 
-	
 
-	calc_lut_prefix_len();	
 
-	counter_size = MIN(BYTE_LOG(config.output_desc.counter_max), BYTE_LOG(config.output_desc.cutoff_max));
-	sufix_rec_bytes = (config.kmer_len - lut_prefix_len) / 4 + counter_size;
+	calc_lut_prefix_len();
+
+	counter_size = MIN(BYTE_LOG(output_desc.counter_max), BYTE_LOG(output_desc.cutoff_max));
+	suffix_rec_bytes = (config.kmer_len - lut_prefix_len) / 4 + counter_size;
 	current_prefix = 0;
 	added_kmers = 0;
 	pre_buff_size = PRE_BUFF_SIZE_BYTES / sizeof(uint64);
-	suf_buff_size = SUF_BUFF_SIZE_BYTES / sufix_rec_bytes;
+	suf_buff_size = SUF_BUFF_SIZE_BYTES / suffix_rec_bytes;
 	suf_pos = pre_pos = 0;
 
 	pre_buff = new uint64[pre_buff_size];
 	pre_buff[pre_pos++] = 0;
-	suf_buff = new uchar[suf_buff_size * sufix_rec_bytes];
+	suf_buff = new uchar[suf_buff_size * suffix_rec_bytes];
 
-	
-	suf_buf_queue.init(suf_buff_size * sufix_rec_bytes, SUFIX_WRITE_QUEUE_CAPACITY);
-	
+
+	suf_buf_queue.init(suf_buff_size * suffix_rec_bytes, SUFFIX_WRITE_QUEUE_CAPACITY);
+
 }
 
 /*****************************************************************************************************************************/
@@ -161,9 +175,9 @@ template<unsigned SIZE> bool CKMC1DbWriter<SIZE>::Process()
 
 	start_writing();
 
-	//Converts bundles to output buffers, sufix buffer is placed to another queue and write in separate thread (sufix_writer)
-	std::thread preparing_thread([this]{
-		CBundleData<SIZE> bundle_data;		
+	//Converts bundles to output buffers, suffix buffer is placed to another queue and write in separate thread (suffix_writer)
+	preparing_thread = std::thread([this]{
+		CBundleData<SIZE> bundle_data;
 		while (bundles_queue.pop(bundle_data))
 		{
 			while (!bundle_data.Empty())
@@ -172,14 +186,14 @@ template<unsigned SIZE> bool CKMC1DbWriter<SIZE>::Process()
 				bundle_data.Pop();
 			}
 		}
-		suf_buf_queue.push(suf_buff, sufix_rec_bytes * suf_pos);
+		suf_buf_queue.push(suf_buff, suffix_rec_bytes * suf_pos);
 		suf_buf_queue.mark_completed();
 	});
-	
 
-	
-	CKMC1SufixFileWriter sufix_writer(suf_buf_queue, kmc_suf);
-	std::thread suf_buf_writing_thread(std::ref(sufix_writer));
+
+
+	suffix_writer = new CKMC1SuffixFileWriter(suf_buf_queue, kmc_suf);
+	suf_buf_writing_thread = std::thread(std::ref(*suffix_writer));
 
 #ifdef ENABLE_LOGGER
 	CTimer timer;
@@ -202,9 +216,52 @@ template<unsigned SIZE> bool CKMC1DbWriter<SIZE>::Process()
 	suf_buf_writing_thread.join();
 
 	finish_writing();
+
+	delete suffix_writer;
 	return true;
 }
 
+
+template<unsigned SIZE> void CKMC1DbWriter<SIZE>::MultiOptputInit()
+{
+	start_writing();
+	//Converts bundles to output buffers, suffix buffer is placed to another queue and write in separate thread (suffix_writer)
+	preparing_thread = std::thread([this]{
+		CBundleData<SIZE> bundle_data;
+		while (bundles_queue.pop(bundle_data))
+		{
+			while (!bundle_data.Empty())
+			{
+				add_kmer(bundle_data.TopKmer(), bundle_data.TopCounter());
+				bundle_data.Pop();
+			}
+		}
+		suf_buf_queue.push(suf_buff, suffix_rec_bytes * suf_pos);
+		suf_buf_queue.mark_completed();
+	});
+
+	suffix_writer = new CKMC1SuffixFileWriter(suf_buf_queue, kmc_suf);
+	suf_buf_writing_thread = std::thread(std::ref(*suffix_writer));
+}
+
+template<unsigned SIZE> void CKMC1DbWriter<SIZE>::MultiOptputAddResultPart(COutputBundle<SIZE>& bundle)
+{
+	bundles_queue.push(bundle.Data());
+}
+
+template<unsigned SIZE> void CKMC1DbWriter<SIZE>::MultiOptputAddResultPart(CBundle<SIZE>& bundle)
+{
+	bundles_queue.push(bundle.Data());
+}
+
+template<unsigned SIZE> void CKMC1DbWriter<SIZE>::MultiOptputFinish()
+{
+	bundles_queue.mark_completed();
+	preparing_thread.join();
+	suf_buf_writing_thread.join();
+	delete suffix_writer;
+	finish_writing();
+}
 
 /*****************************************************************************************************************************/
 template<unsigned SIZE> CKMC1DbWriter<SIZE>::~CKMC1DbWriter()
@@ -219,7 +276,7 @@ template<unsigned SIZE> CKMC1DbWriter<SIZE>::~CKMC1DbWriter()
 
 /*****************************************************************************************************************************/
 template <unsigned SIZE> template <typename T> void CKMC1DbWriter<SIZE>::write_header_part(T data)
-{	
+{
 	for (uint32 i = 0; i < sizeof(T); ++i)
 	{
 		char c = (data >> (i << 3)) & 0xff;
@@ -228,7 +285,7 @@ template <unsigned SIZE> template <typename T> void CKMC1DbWriter<SIZE>::write_h
 			std::cout << "Error while writing header of kmc1\n";
 			exit(1);
 		}
-	}	
+	}
 }
 
 /*****************************************************************************************************************************/
@@ -265,11 +322,11 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::finish_writing()
 	write_header_part(config.headers.front().mode);
 	write_header_part(counter_size);
 	write_header_part(lut_prefix_len);
-	write_header_part(config.output_desc.cutoff_min);
-	write_header_part(config.output_desc.cutoff_max);
+	write_header_part(output_desc.cutoff_min);
+	write_header_part(output_desc.cutoff_max);
 	write_header_part(added_kmers);
 
-	bool both_stands = false; 
+	bool both_stands = false;
 	for (auto& input : config.headers)
 		both_stands = both_stands || input.both_strands; //if any input database is in both strands, output is also in both strands
 
@@ -278,7 +335,7 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::finish_writing()
 
 	for (uint32 i = 0; i < 31; ++i)
 		write_header_part(uchar(0));
-	
+
 	write_header_part((uint32)64);
 
 
@@ -299,10 +356,10 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::finish_writing()
 /*****************************************************************************************************************************/
 template<unsigned SIZE> void CKMC1DbWriter<SIZE>::add_kmer(CKmer<SIZE>& kmer, uint32 counter)
 {
-	if (counter < config.output_desc.cutoff_min || counter > config.output_desc.cutoff_max)
+	if (counter < output_desc.cutoff_min || counter > output_desc.cutoff_max)
 		return;
-	if (counter > config.output_desc.counter_max)
-		counter = config.output_desc.counter_max;
+	if (counter > output_desc.counter_max)
+		counter = output_desc.counter_max;
 	uint64 kmer_prefix = kmer.remove_suffix((config.kmer_len - lut_prefix_len) * 2);
 	while (current_prefix < kmer_prefix)
 	{
@@ -311,9 +368,9 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::add_kmer(CKmer<SIZE>& kmer, ui
 		if (pre_pos == pre_buff_size)
 			store_pre_buf();
 	}
-	uchar* rec = suf_buff + suf_pos * sufix_rec_bytes;
+	uchar* rec = suf_buff + suf_pos * suffix_rec_bytes;
 
-	kmer.store(rec, sufix_rec_bytes - counter_size);
+	kmer.store(rec, suffix_rec_bytes - counter_size);
 	for (uint32 i = 0; i < counter_size; ++i)
 		*rec++ = counter >> (i << 3);
 	++suf_pos;
@@ -324,7 +381,7 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::add_kmer(CKmer<SIZE>& kmer, ui
 
 /*****************************************************************************************************************************/
 template<unsigned SIZE> void CKMC1DbWriter<SIZE>::store_pre_buf()
-{	
+{
 	if (fwrite(pre_buff, sizeof(uint64), pre_pos, kmc_pre) != pre_pos)
 	{
 		std::cout << "Error while writing to kmc_pre file\n";
@@ -336,7 +393,7 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::store_pre_buf()
 /*****************************************************************************************************************************/
 template<unsigned SIZE> void CKMC1DbWriter<SIZE>::send_suf_buf_to_queue()
 {
-	suf_buf_queue.push(suf_buff, sufix_rec_bytes * suf_pos);
+	suf_buf_queue.push(suf_buff, suffix_rec_bytes * suf_pos);
 	suf_pos = 0;
 }
 
@@ -347,7 +404,7 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::calc_lut_prefix_len()
 
 	std::vector<uint32> best_lut_prefix_len_inputs(config.headers.size());
 
-	
+
 	for (uint32 i = 0; i < config.headers.size(); ++i)
 	{
 		uint32 best_lut_prefix_len = 0;
@@ -366,11 +423,11 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::calc_lut_prefix_len()
 				best_lut_prefix_len = lut_prefix_len;
 				best_mem_amount = suf_mem + lut_mem;
 			}
-		}		
+		}
 		best_lut_prefix_len_inputs[i] = best_lut_prefix_len;
 	}
 
-	//TODO poki co jako lut size biore najwieszy z najlepszych dla baz wejsciowych
+	//TODO: poki co jako lut size biore najwieszy z najlepszych dla baz wejsciowych
 	lut_prefix_len = *std::max_element(best_lut_prefix_len_inputs.begin(), best_lut_prefix_len_inputs.end());
 }
 

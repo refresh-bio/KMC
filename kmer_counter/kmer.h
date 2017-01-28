@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _KMER_H
@@ -15,6 +15,7 @@
 
 #include "meta_oper.h"
 #include <string>
+#include <random>
 
 // *************************************************************************
 // Ckmer class for k > 32 with classic kmer counting
@@ -24,6 +25,7 @@ template<unsigned SIZE> struct CKmer {
 
 	typedef unsigned long long data_t;
 	static uint32 QUALITY_SIZE;
+	static uint32 KMER_SIZE;
 
 	inline void set(const CKmer<SIZE> &x);
 	
@@ -54,14 +56,19 @@ template<unsigned SIZE> struct CKmer {
 	inline void load(uchar *&buffer, int32 n);
 
 	inline bool operator==(const CKmer<SIZE> &x);
-	inline bool operator<(const CKmer<SIZE> &x);
+	inline bool operator<(const CKmer<SIZE> &x) const;
 
 	inline void clear(void);
 
 	inline char get_symbol(int p);
+	
+	inline void fill_T();
+
+	inline void random_init(uint32 pos, uint64 value);
 };
 
 template <unsigned SIZE> uint32 CKmer<SIZE>::QUALITY_SIZE = 0;
+template <unsigned SIZE> uint32 CKmer<SIZE>::KMER_SIZE = SIZE;
 
 // *********************************************************************
 template<unsigned SIZE> inline void CKmer<SIZE>::set(const CKmer<SIZE> &x)
@@ -107,9 +114,11 @@ template<unsigned SIZE> inline void CKmer<SIZE>::from_kxmer(const CKmer<SIZE>& x
 		{
 			data[i] = x.data[i] >> (2 * _shr);
 			data[i] += x.data[i+1]<<(64-2*_shr);
+			data[i] &= _mask.data[i];
 		}	
 #endif
 		data[SIZE - 1] = x.data[SIZE - 1] >> (2 * _shr);
+		data[SIZE - 1] &= _mask.data[SIZE - 1];
 	}
 	else
 	{
@@ -119,10 +128,10 @@ template<unsigned SIZE> inline void CKmer<SIZE>::from_kxmer(const CKmer<SIZE>& x
 		}, uint_<SIZE - 1>());
 #else
 		for (uint32 i = 0; i < SIZE; ++i)
-			data[i] = x.data[i];
+			data[i] = x.data[i] & _mask.data[i];
 #endif
 	}
-	mask(_mask);
+//	mask(_mask);
 }
 
 
@@ -147,7 +156,6 @@ template<unsigned SIZE> inline uint32 CKmer<SIZE>::end_mask(const uint32 mask)
 // *********************************************************************
 template<unsigned SIZE> inline void CKmer<SIZE>::set_2bits(const uint64 x, const uint32 p) 
 {
-//	data[p >> 6] |= x << (p & 63);
 	data[p >> 6] += x << (p & 63);
 }
 
@@ -161,20 +169,17 @@ template<unsigned SIZE> inline void CKmer<SIZE>::SHR_insert_2bits(const uint64 x
 #ifdef USE_META_PROG
 	IterFwd([&](const int &i){
 		data[i] >>= 2;
-//		data[i] |= data[i+1] << (64-2);
 		data[i] += data[i+1] << (64-2);
 		}, uint_<SIZE-2>());
 #else
 	for(uint32 i = 0; i < SIZE-1; ++i)
 	{
 		data[i] >>= 2;
-//		data[i] |= data[i+1] << (64-2);
 		data[i] += data[i+1] << (64-2);
 	}
 #endif
 	data[SIZE-1] >>= 2;
 
-//	data[p >> 6] |= x << (p & 63);
 	data[p >> 6] += x << (p & 63);
 }
 
@@ -186,14 +191,12 @@ template<unsigned SIZE> inline void CKmer<SIZE>::SHR(const uint32 p)
 #ifdef USE_META_PROG
 	IterFwd([&](const int &i){
 		data[i] >>= 2*p;
-//		data[i] |= data[i+1] << (64-2*p);
 		data[i] += data[i+1] << (64-2*p);
 		}, uint_<SIZE-2>());
 #else
 	for(uint32 i = 0; i < SIZE-1; ++i)
 	{
 		data[i] >>= 2*p;
-//		data[i] |= data[i+1] << (64-2*p);
 		data[i] += data[i+1] << (64-2*p);
 	}
 #endif
@@ -206,14 +209,12 @@ template<unsigned SIZE> inline void CKmer<SIZE>::SHL(const uint32 p)
 #ifdef USE_META_PROG
 	IterRev([&](const int &i){
 		data[i+1] <<= p*2;
-//		data[i+1] |= data[i] >> (64-p*2);
 		data[i+1] += data[i] >> (64-p*2);
 		}, uint_<SIZE-2>());
 #else
 	for(uint32 i = SIZE-1; i > 0; --i)
 	{
 		data[i] <<= p*2;
-//		data[i] |= data[i-1] >> (64-p*2);
 		data[i] += data[i-1] >> (64-p*2);
 	}
 #endif
@@ -226,19 +227,16 @@ template<unsigned SIZE> inline void CKmer<SIZE>::SHL_insert_2bits(const uint64 x
 #ifdef USE_META_PROG
 	IterRev([&](const int &i){
 		data[i+1] <<= 2;
-//		data[i+1] |= data[i] >> (64-2);
 		data[i+1] += data[i] >> (64-2);
 		}, uint_<SIZE-2>());
 #else
 	for(uint32 i = SIZE-1; i > 0; --i)
 	{
 		data[i] <<= 2;
-//		data[i] |= data[i-1] >> (64-2);
 		data[i] += data[i-1] >> (64-2);
 	}
 #endif
 	data[0] <<= 2;
-//	data[0] |= x;
 	data[0] += x;
 }
 
@@ -251,17 +249,14 @@ template<unsigned SIZE> inline uchar CKmer<SIZE>::get_byte(const uint32 p)
 // *********************************************************************
 template<unsigned SIZE> inline void CKmer<SIZE>::set_byte(const uint32 p, uchar x) 
 {
-//	data[p >> 3] |= ((uint64) x) << ((p & 7) << 3);
 	data[p >> 3] += ((uint64) x) << ((p & 7) << 3);
 }
 
 // *********************************************************************
 template<unsigned SIZE> inline void CKmer<SIZE>::set_bits(const uint32 p, const uint32 n, uint64 x)
 {
-//	data[p >> 6] |= x << (p & 63);
 	data[p >> 6] += x << (p & 63);
 	if((p >> 6) != ((p+n-1) >> 6))
-//		data[(p >> 6) + 1] |= x >> (64 - (p & 63));
 		data[(p >> 6) + 1] += x >> (64 - (p & 63));
 }
 
@@ -275,7 +270,7 @@ template<unsigned SIZE> inline bool CKmer<SIZE>::operator==(const CKmer<SIZE> &x
 }
 
 // *********************************************************************
-template<unsigned SIZE> inline bool CKmer<SIZE>::operator<(const CKmer<SIZE> &x) {
+template<unsigned SIZE> inline bool CKmer<SIZE>::operator<(const CKmer<SIZE> &x) const {
 	for(int32 i = SIZE-1; i >= 0; --i)
 		if(data[i] < x.data[i])
 			return true;
@@ -283,8 +278,6 @@ template<unsigned SIZE> inline bool CKmer<SIZE>::operator<(const CKmer<SIZE> &x)
 			return false;
 	return false;
 }
-
-
 
 // *********************************************************************
 template<unsigned SIZE> inline void CKmer<SIZE>::clear(void)
@@ -308,7 +301,6 @@ template<unsigned SIZE> inline uint64 CKmer<SIZE>::remove_suffix(const uint32 n)
 	if(p == SIZE-1)
 		return data[p] >> r;
 	else
-//		return (data[p+1] << (64-r)) | (data[p] >> r);
 		return (data[p+1] << (64-r)) + (data[p] >> r);
 }
 
@@ -334,7 +326,6 @@ template<unsigned SIZE> inline void CKmer<SIZE>::set_n_01(const uint32 n)
 
 	for(uint32 i = 0; i < n; ++i)
 		if(!(i & 1))
-//			data[i >> 6] |= (1ull << (i & 63));
 			data[i >> 6] += (1ull << (i & 63));
 }
 
@@ -375,6 +366,20 @@ template<unsigned SIZE> inline char CKmer<SIZE>::get_symbol(int p)
 }
 
 // *********************************************************************
+template<unsigned SIZE> inline void CKmer<SIZE>::fill_T()
+{
+	for (uint32 i = 0; i < SIZE; ++i)
+		data[i] = ~0ull;
+}
+
+// *********************************************************************
+template<unsigned SIZE> inline void CKmer<SIZE>::random_init(uint32 pos, uint64 value)
+{
+	data[pos] = value;
+}
+
+
+// *********************************************************************
 // *********************************************************************
 // *********************************************************************
 // *********************************************************************
@@ -385,6 +390,7 @@ template<> struct CKmer<1> {
 
 	typedef unsigned long long data_t;
 	static uint32 QUALITY_SIZE;
+	static uint32 KMER_SIZE;
 
 	void set(const CKmer<1> &x);
 
@@ -415,11 +421,15 @@ template<> struct CKmer<1> {
 	void load(uchar *&buffer, int32 n);
 
 	bool operator==(const CKmer<1> &x);
-	bool operator<(const CKmer<1> &x);
+	bool operator<(const CKmer<1> &x)const;
 
 	void clear(void);
 
 	inline char get_symbol(int p);
+
+	inline void fill_T();
+
+	inline void random_init(uint32 pos, uint64 value);
 };
 
 
@@ -465,7 +475,6 @@ inline void CKmer<1>::from_kxmer(const CKmer<1>& x, uint32 _shr, const CKmer<1>&
 // *********************************************************************
 inline void CKmer<1>::set_2bits(const uint64 x, const uint32 p) 
 {
-//	data |= x << p;
 	data += x << p;
 }
 
@@ -477,7 +486,6 @@ inline uchar CKmer<1>::get_2bits(const uint32 p)
 inline void CKmer<1>::SHR_insert_2bits(const uint64 x, const uint32 p) 
 {
 	data >>= 2;
-//	data |= x << p;
 	data += x << p;
 }
 
@@ -495,7 +503,6 @@ inline void CKmer<1>::SHL(const uint32 p)
 // *********************************************************************
 inline void CKmer<1>::SHL_insert_2bits(const uint64 x) 
 {
-//	data = (data << 2) | x;
 	data = (data << 2) + x;
 }
 
@@ -508,14 +515,12 @@ inline uchar CKmer<1>::get_byte(const uint32 p)
 // *********************************************************************
 inline void CKmer<1>::set_byte(const uint32 p, uchar x) 
 {
-//	data |= ((uint64) x) << (p << 3);
 	data += ((uint64) x) << (p << 3);
 }
 
 // *********************************************************************
 inline void CKmer<1>::set_bits(const uint32 p, const uint32 n, uint64 x)
 {
-//	data |= x << p;
 	data += x << p;
 }
 
@@ -525,7 +530,7 @@ inline bool CKmer<1>::operator==(const CKmer<1> &x) {
 }
 
 // *********************************************************************
-inline bool CKmer<1>::operator<(const CKmer<1> &x) {
+inline bool CKmer<1>::operator<(const CKmer<1> &x) const{
 	return data < x.data;
 }
 
@@ -557,7 +562,6 @@ inline void CKmer<1>::set_n_01(const uint32 n)
 
 	for(uint32 i = 0; i < n; ++i)
 		if(!(i & 1))
-//			data |= (1ull << i);
 			data += (1ull << i);
 }
 
@@ -598,6 +602,18 @@ char CKmer<1>::get_symbol(int p)
 	}
 }
 
+// *********************************************************************
+inline void CKmer<1>::fill_T()
+{
+	data = ~0ull;
+}
+
+// *********************************************************************
+inline void CKmer<1>::random_init(uint32 pos, uint64 value)
+{
+	data = value;
+}
+
 
 // *********************************************************************
 // *********************************************************************
@@ -608,6 +624,7 @@ template<unsigned SIZE> struct CKmerQuake {
 
 	typedef unsigned long long data_t;
 	static uint32 QUALITY_SIZE;
+	static uint32 KMER_SIZE;
 
 	inline void set(const CKmerQuake<SIZE> &x);
 	inline void mask(const CKmerQuake<SIZE> &x);
@@ -628,14 +645,25 @@ template<unsigned SIZE> struct CKmerQuake {
 	inline void load(uchar *&buffer, int32 n);
 
 	inline bool operator==(const CKmerQuake<SIZE> &x);
-	inline bool operator<(const CKmerQuake<SIZE> &x);
+	inline bool operator<(const CKmerQuake<SIZE> &x)const;
 
 	inline void clear(void);
 
 	inline char get_symbol(int p);
+
+	//TODO: quake nie bedize juz wspierany
+	inline void fill_T()
+	{
+		for (uint32 i = 0; i < SIZE; ++i)
+			data[i] = ~0ull;
+	}
+
+	inline void random_init(uint32 pos, uint64 value)
+	{}
 };
 
 template <unsigned SIZE> uint32 CKmerQuake<SIZE>::QUALITY_SIZE = sizeof(float);
+template <unsigned SIZE> uint32 CKmerQuake<SIZE>::KMER_SIZE = SIZE;
 
 // *********************************************************************
 template<unsigned SIZE> void CKmerQuake<SIZE>::set(const CKmerQuake<SIZE> &x)
@@ -749,7 +777,7 @@ template<unsigned SIZE> bool CKmerQuake<SIZE>::operator==(const CKmerQuake<SIZE>
 }
 
 // *********************************************************************
-template<unsigned SIZE> bool CKmerQuake<SIZE>::operator<(const CKmerQuake<SIZE> &x) {
+template<unsigned SIZE> bool CKmerQuake<SIZE>::operator<(const CKmerQuake<SIZE> &x) const{
 	for(int32 i = SIZE-1; i >= 0; --i)
 		if(data[i] < x.data[i])
 			return true;
@@ -869,6 +897,7 @@ template<> struct CKmerQuake<1> {
 
 	typedef unsigned long long data_t;
 	static uint32 QUALITY_SIZE;
+	static uint32 KMER_SIZE;
 
 	void set(const CKmerQuake<1> &x);
 	void mask(const CKmerQuake<1> &x);
@@ -889,11 +918,20 @@ template<> struct CKmerQuake<1> {
 	void load(uchar *&buffer, int32 n);
 
 	bool operator==(const CKmerQuake<1> &x);
-	bool operator<(const CKmerQuake<1> &x);
+	bool operator<(const CKmerQuake<1> &x)const;
 
 	void clear(void);
 
 	inline char get_symbol(int p);
+
+	//TODO: quake nie bedzie juz wspierany
+	inline void fill_T()
+	{
+		data = ~0ull;
+	}
+
+	inline void random_init(uint32 pos, uint64 value)
+	{}
 };
 
 // *********************************************************************
@@ -957,7 +995,7 @@ inline bool CKmerQuake<1>::operator==(const CKmerQuake<1> &x) {
 }
 
 // *********************************************************************
-inline bool CKmerQuake<1>::operator<(const CKmerQuake<1> &x) {
+inline bool CKmerQuake<1>::operator<(const CKmerQuake<1> &x) const{
 	return data < x.data;
 }
 

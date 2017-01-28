@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _SPLITTER_H
@@ -684,8 +684,8 @@ bool CSplitter_Impl<false>::ProcessReadsSmallK(CSplitter<false> &ptr, uchar *_pa
 			++ptr.total_kmers;
 		}
 	}
-	putchar('*');
-	fflush(stdout);
+	//putchar('*');
+	//fflush(stdout);
 
 	ptr.pmm_reads->free(seq);
 	return true;
@@ -805,8 +805,8 @@ bool CSplitter_Impl<false>::ProcessReads(CSplitter<false> &ptr, uchar *_part, ui
 		}
 	}
 		
-	putchar('*');
-	fflush(stdout);
+	//putchar('*');
+	//fflush(stdout);
 
 	ptr.pmm_reads->free(seq);
 
@@ -962,8 +962,8 @@ bool CSplitter_Impl<true>::ProcessReadsSmallK(CSplitter<true> &ptr, uchar *_part
 		}
 	}
 
-	putchar('*');
-	fflush(stdout);
+	//putchar('*');
+	//fflush(stdout);
 
 	ptr.pmm_reads->free(seq);
 	ptr.pmm_reads->free(quals);
@@ -1093,8 +1093,8 @@ bool CSplitter_Impl<true>::ProcessReads(CSplitter<true> &ptr, uchar *_part, uint
 	}
 
 
-	putchar('*');
-	fflush(stdout);
+	//putchar('*');
+	//fflush(stdout);
 
 	
 	ptr.pmm_reads->free(seq);

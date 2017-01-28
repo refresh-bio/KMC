@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _EXPRESSION_NODE_H
@@ -92,15 +92,33 @@ protected:
 	CExpressionNode* left, *right;
 };
 
+template<unsigned SIZE> class COperNode : public CExpressionNode<SIZE> 
+{
+protected:
+	CounterOpType counter_op_type;
+public:
+	COperNode(CounterOpType counter_op_type) :counter_op_type(counter_op_type)
+	{
+
+	}
+	void SetCounterOpType(CounterOpType _counter_op_type)
+	{
+		this->counter_op_type = _counter_op_type;
+	}
+};
+
 //************************************************************************************************************
-// CExpressionNode - represents node for union operation
+// CUnionNode - represents node for union operation
 //************************************************************************************************************
-template<unsigned SIZE> class CUnionNode : public CExpressionNode<SIZE>
+template<unsigned SIZE> class CUnionNode : public COperNode<SIZE>
 {
 public:
+	CUnionNode():COperNode<SIZE>(CounterOpType::SUM)
+	{
+	}
 	CBundle<SIZE>* GetExecutionRoot() override
 	{
-		return new CBundle<SIZE>(new CUnion<SIZE>(this->left->GetExecutionRoot(), this->right->GetExecutionRoot()));
+		return new CBundle<SIZE>(new CUnion<SIZE>(this->left->GetExecutionRoot(), this->right->GetExecutionRoot(), this->counter_op_type));
 	}
 #ifdef ENABLE_DEBUG
 	void Info() override
@@ -114,9 +132,12 @@ public:
 // CKmersSubtractionNode - represents node for subtraction of k-mers (if k-mer exists in both input,
 //	it is absent in result) operation
 //************************************************************************************************************
-template<unsigned SIZE> class CKmersSubtractionNode : public CExpressionNode<SIZE>
+template<unsigned SIZE> class CKmersSubtractionNode : public COperNode<SIZE>
 {
 public:
+	CKmersSubtractionNode() :COperNode<SIZE>(CounterOpType::NONE)
+	{
+	}
 	CBundle<SIZE>* GetExecutionRoot() override
 	{
 		return new CBundle<SIZE>(new CKmersSubtract<SIZE>(this->left->GetExecutionRoot(), this->right->GetExecutionRoot()));
@@ -130,12 +151,16 @@ public:
 };
 
 
-template<unsigned SIZE> class CCountersSubtractionNode : public CExpressionNode<SIZE>
+template<unsigned SIZE> class CCountersSubtractionNode : public COperNode<SIZE>
 {
 public:
+	CCountersSubtractionNode():
+		COperNode<SIZE>(CounterOpType::DIFF)
+	{
+	}
 	CBundle<SIZE>* GetExecutionRoot() override
 	{
-		return new CBundle<SIZE>(new CCountersSubtract<SIZE>(this->left->GetExecutionRoot(), this->right->GetExecutionRoot()));
+		return new CBundle<SIZE>(new CCountersSubtract<SIZE>(this->left->GetExecutionRoot(), this->right->GetExecutionRoot(), this->counter_op_type));
 	}
 #ifdef ENABLE_DEBUG
 	void Info() override
@@ -147,12 +172,16 @@ public:
 //************************************************************************************************************
 // CIntersectionNode - represents node for intersection operation
 //************************************************************************************************************
-template<unsigned SIZE> class CIntersectionNode : public CExpressionNode<SIZE>
+template<unsigned SIZE> class CIntersectionNode : public COperNode<SIZE>
 {
 public:	
+	CIntersectionNode():
+		COperNode<SIZE>(CounterOpType::MIN)
+	{
+	}
 	CBundle<SIZE>* GetExecutionRoot() override
 	{		
-		return new CBundle<SIZE>(new CIntersection<SIZE>(this->left->GetExecutionRoot(), this->right->GetExecutionRoot()));
+		return new CBundle<SIZE>(new CIntersection<SIZE>(this->left->GetExecutionRoot(), this->right->GetExecutionRoot(), this->counter_op_type));
 	}
 #ifdef ENABLE_DEBUG
 	void Info() override

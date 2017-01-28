@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _OUTPUT_PARSER_H
@@ -43,6 +43,8 @@ template<unsigned SIZE> class COutputParser
 	CExpressionNode<SIZE>* term();
 	CExpressionNode<SIZE>* sum_op(CExpressionNode<SIZE>* left);
 	CExpressionNode<SIZE>* expr();
+
+	void modifier(COperNode<SIZE>* exp);
 public:
 	COutputParser(std::list<Token>& tokens, const std::map<std::string, uint32>& input) :
 		tokens(tokens), input(input)
@@ -64,7 +66,7 @@ CExpressionNode<SIZE>* COutputParser<SIZE>::Parse()
 	CExpressionNode<SIZE>* res = expr();
 	if (curr_token.second != TokenType::TERMINATOR)
 	{
-		std::cout << "Error: wrong symbol :" << curr_token.first;
+		std::cout << "Error: wrong symbol :" << curr_token.first <<"\n";
 		exit(1);
 	}
 #ifdef ENABLE_DEBUG
@@ -124,9 +126,10 @@ template<unsigned SIZE> CExpressionNode<SIZE>* COutputParser<SIZE>::term_op(CExp
 {
 	if (curr_token.second == TokenType::MUL_OPER)
 	{
-		CExpressionNode<SIZE>* res = new CIntersectionNode<SIZE>;
+		COperNode<SIZE>* res = new CIntersectionNode<SIZE>;
 		res->AddLeftChild(left);
 		nextToken();
+		modifier(res);
 		auto right = argument();
 		res->AddRightChild(right);
 		return term_op(res);
@@ -140,19 +143,56 @@ template<unsigned SIZE> CExpressionNode<SIZE>* COutputParser<SIZE>::term()
 }
 
 /*****************************************************************************************************************************/
+template<unsigned SIZE> void COutputParser<SIZE>::modifier(COperNode<SIZE>* exp)
+{	
+	if (curr_token.second == TokenType::DIFF_MODIFIER)
+	{
+		exp->SetCounterOpType(CounterOpType::DIFF);
+		nextToken();
+	}
+	else if (curr_token.second == TokenType::LEFT_MODIFIER)
+	{
+		exp->SetCounterOpType(CounterOpType::FROM_DB1);
+		nextToken();
+	}
+	else if (curr_token.second == TokenType::MAX_MODIFIER)
+	{
+		exp->SetCounterOpType(CounterOpType::MAX);
+		nextToken();
+	}
+	else if (curr_token.second == TokenType::MIN_MODIFIER)
+	{
+		exp->SetCounterOpType(CounterOpType::MIN);
+		nextToken();
+	}
+	else if (curr_token.second == TokenType::RIGHT_MODIFIER)
+	{
+		exp->SetCounterOpType(CounterOpType::FROM_DB2);
+		nextToken();
+	}
+	else if (curr_token.second == TokenType::SUM_MODIFIER)
+	{
+		exp->SetCounterOpType(CounterOpType::SUM);
+		nextToken();
+	}
+}
+/*****************************************************************************************************************************/
 template<unsigned SIZE> CExpressionNode<SIZE>* COutputParser<SIZE>::sum_op(CExpressionNode<SIZE>* left)
 {
 	if (curr_token.second == TokenType::PLUS_OPER || curr_token.second == TokenType::STRICT_MINUS_OPER || curr_token.second == TokenType::COUNTER_MINUS_OPER)
 	{
-		CExpressionNode<SIZE>* res = nullptr;
+		COperNode<SIZE>* res = nullptr;
 		if (curr_token.second == TokenType::PLUS_OPER)
 			res = new CUnionNode<SIZE>;
 		else if (curr_token.second == TokenType::STRICT_MINUS_OPER)
 			res = new CKmersSubtractionNode<SIZE>;
 		else
 			res = new CCountersSubtractionNode<SIZE>;
-		res->AddLeftChild(left);
-		nextToken();
+		res->AddLeftChild(left);		
+		bool modifier_allowed = !(curr_token.second == TokenType::STRICT_MINUS_OPER);
+		nextToken();		
+		if(modifier_allowed)
+			modifier(res);
 		auto right = term();
 		res->AddRightChild(right);
 		return sum_op(res);

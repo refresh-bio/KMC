@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #include "stdafx.h"
@@ -66,6 +66,11 @@ void CParametersParser::parse_global_params()
 	{
 		if (strncmp(argv[pos], "-t", 2) == 0)
 		{
+			if (strlen(argv[pos]) < 3)
+			{
+				std::cout << "Error: -t require value\n";
+				exit(1);
+			}
 			config.avaiable_threads = atoi(argv[pos] + 2);
 			continue;
 		}
@@ -196,6 +201,31 @@ void CParametersParser::read_output_fastq_desc()
 	}
 }
 
+void CParametersParser::read_filter_params()
+{
+	while (pos < argc && argv[pos][0] == '-')
+	{
+		if (strncmp(argv[pos], "-t", 2) == 0)
+		{
+			config.filtering_params.trim = true;
+		}
+		else
+		{
+			cout << "Warning: Unknow parameter for filter operation: " << argv[pos] << "\n";
+		}
+		++pos;
+	}
+}
+
+void CParametersParser::read_check_params()
+{
+	if (pos >= argc)
+	{
+		std::cout << "Error: check operation require k-mer to check\n";
+		exit(1);
+	}
+	config.check_params.kmer = argv[pos++];
+}
 
 void CParametersParser::read_dump_params()
 {
@@ -212,6 +242,51 @@ void CParametersParser::read_dump_params()
 		++pos;
 	}
 
+}
+
+
+void CParametersParser::read_operation_type()
+{
+	if (strncmp(argv[pos], "-oc", 3) == 0)
+	{
+		char* mode = argv[pos] + 3;
+		if (strcmp(mode, "min") == 0)
+		{
+			config.counter_op_type = CounterOpType::MIN;
+		}
+		else if (strcmp(mode, "max") == 0)
+		{
+			config.counter_op_type = CounterOpType::MAX;
+		}
+		else if (strcmp(mode, "sum") == 0)
+		{
+			config.counter_op_type = CounterOpType::SUM;
+		}
+		else if (strcmp(mode, "diff") == 0)
+		{
+			config.counter_op_type = CounterOpType::DIFF;
+		}
+		else if (strcmp(mode, "left") == 0)
+		{
+			config.counter_op_type = CounterOpType::FROM_DB1;
+		}
+		else if (strcmp(mode, "right") == 0)
+		{
+			config.counter_op_type = CounterOpType::FROM_DB2;
+		}
+		else
+		{
+			cout << "Unknown counter calculation mode: " << mode << ". Allowed values: min, max, sum, diff, left, right\n";
+			exit(1);
+		}
+		++pos;
+
+		if (config.mode == CConfig::Mode::KMERS_SUBTRACT)
+		{
+			cout << "Error: counter calculation mode not allowed for kmers_subtract\n";
+			exit(1);
+		}
+	}
 }
 
 void CParametersParser::read_input_desc()
@@ -248,6 +323,235 @@ void CParametersParser::read_input_desc()
 	}
 }
 
+bool CParametersParser::read_output_for_transform()
+{
+	if (pos >= argc)
+		return false;
+
+	CTransformOutputDesc::OpType op_type;
+	if (strcmp(argv[pos], "sort") == 0)
+	{
+		op_type = CTransformOutputDesc::OpType::SORT;	
+	}
+	else if (strcmp(argv[pos], "reduce") == 0)
+	{
+		op_type = CTransformOutputDesc::OpType::REDUCE;
+	}
+	else if (strcmp(argv[pos], "compact") == 0)
+	{
+		op_type = CTransformOutputDesc::OpType::COMPACT;
+	}
+	else if (strcmp(argv[pos], "histogram") == 0)
+	{
+		op_type = CTransformOutputDesc::OpType::HISTOGRAM;
+	}
+	else if (strcmp(argv[pos], "dump") == 0)
+	{
+		op_type = CTransformOutputDesc::OpType::DUMP;
+	}
+	else
+	{
+		cout << "Unknown operation: " << argv[pos] << "\n";
+		Usage();
+		exit(1);
+	}
+
+	config.transform_output_desc.emplace_back(op_type);
+
+	++pos;
+
+	//read op paramts
+	while (pos < argc)
+	{
+		if (strncmp(argv[pos], "-", 1) != 0)
+			break;
+		if (strncmp(argv[pos], "-s", 3) == 0)
+		{
+			if (config.transform_output_desc.back().op_type == CTransformOutputDesc::OpType::DUMP)
+			{
+				config.transform_output_desc.back().sorted_output = true;
+			}
+			else
+			{
+				cout << "-s parameter allowed only for dump operation\n";
+				Usage();
+				exit(1);
+			}
+		}
+		else
+		{
+			cout << "Error: unknown operation parameter: " << argv[pos] <<"\n";
+			exit(1);
+		}
+		++pos;
+	}
+
+	if (pos >= argc)
+	{
+		cout << "Error: Output database path missed\n";
+		exit(1);
+	}
+	if (strncmp(argv[pos], "-", 1) == 0)
+	{
+		cout << "Error: Output database path required, but " << argv[pos] << " found\n";
+		exit(1);
+	}
+
+	
+	
+	config.transform_output_desc.back().file_src = argv[pos++];
+
+	//read database params
+	while (pos < argc)
+	{
+		if (strncmp(argv[pos], "-", 1) != 0)
+			break;
+		if (strncmp(argv[pos], "-ci", 3) == 0)
+		{
+			config.transform_output_desc.back().cutoff_min = replace_zero(atoi(argv[pos++] + 3), "-ci", 1);
+		}
+		else if (strncmp(argv[pos], "-cx", 3) == 0)
+		{
+			config.transform_output_desc.back().cutoff_max = replace_zero(atoi(argv[pos++] + 3), "-cx", 1);
+		}
+		else if (strncmp(argv[pos], "-cs", 3) == 0)
+		{
+			config.transform_output_desc.back().counter_max = replace_zero(atoi(argv[pos++] + 3), "-cs", 1);
+		}
+		else
+		{
+			cout << "Error: Unknown parameter: " << argv[pos];
+			Usage();
+			exit(1);
+		}
+	}
+	if (op_type == CTransformOutputDesc::OpType::COMPACT)
+	{
+		if (config.transform_output_desc.back().counter_max)
+			cout << "Warning: -cs can not be specified for compact operation, value specified will be ignored\n";
+		config.transform_output_desc.back().counter_max = 1;
+	}	
+	return true;
+}
+
+bool CParametersParser::read_output_desc_for_simple()
+{
+	if (pos >= argc)
+		return false;
+
+	//get op name
+	CSimpleOutputDesc::OpType op_type;
+	if (strcmp(argv[pos], "intersect") == 0)
+	{
+		op_type = CSimpleOutputDesc::OpType::INTERSECT;
+	}
+	else if (strcmp(argv[pos], "kmers_subtract") == 0)
+	{
+		op_type = CSimpleOutputDesc::OpType::KMERS_SUBTRACTION;
+	}
+	else if (strcmp(argv[pos], "counters_subtract") == 0)
+	{
+		op_type = CSimpleOutputDesc::OpType::COUNTERS_SUBTRACTION;
+	}
+	else if (strcmp(argv[pos], "union") == 0)
+	{
+		op_type = CSimpleOutputDesc::OpType::UNION;
+	}
+	else if (strcmp(argv[pos], "reverse_kmers_subtract") == 0)
+	{
+		op_type = CSimpleOutputDesc::OpType::REVERSE_KMERS_SUBTRACTION;
+	}
+	else if (strcmp(argv[pos], "reverse_counters_subtract") == 0)
+	{
+		op_type = CSimpleOutputDesc::OpType::REVERSE_COUNTERS_SUBTRACTION;
+	}
+	else
+	{
+		cout << "Unknown operation: " << argv[pos] << "\n";
+		Usage();
+		exit(1);
+	}
+
+	++pos;
+	if (pos >= argc)
+	{
+		cout << "Error: Output database path missed\n";
+		exit(1);
+	}
+	if (strncmp(argv[pos], "-", 1) == 0)
+	{
+		cout << "Error: Output database path required, but " << argv[pos] << " found\n";
+		exit(1);
+	}
+	config.simple_output_desc.emplace_back(op_type);
+	config.simple_output_desc.back().file_src = argv[pos++];
+
+	while (pos < argc)
+	{
+		if (strncmp(argv[pos], "-", 1) != 0)
+			break;
+		if (strncmp(argv[pos], "-ci", 3) == 0)
+		{
+			config.simple_output_desc.back().cutoff_min = replace_zero(atoi(argv[pos++] + 3), "-ci", 1);
+		}
+		else if (strncmp(argv[pos], "-cx", 3) == 0)
+		{
+			config.simple_output_desc.back().cutoff_max = replace_zero(atoi(argv[pos++] + 3), "-cx", 1);
+		}
+		else if (strncmp(argv[pos], "-cs", 3) == 0)
+		{
+			config.simple_output_desc.back().counter_max = replace_zero(atoi(argv[pos++] + 3), "-cs", 1);
+		}
+		else if (strncmp(argv[pos], "-oc", 3) == 0)
+		{
+			if (op_type == CSimpleOutputDesc::OpType::KMERS_SUBTRACTION || op_type == CSimpleOutputDesc::OpType::REVERSE_KMERS_SUBTRACTION)
+			{
+				cout << "-oc not allowed for kmers_subtract and reverse_kmers_subtract as it doesn't make sense (equal k-mers form both input will not be present in output)\n";
+				exit(1);
+			}
+			char* mode = argv[pos] + 3;
+			if (strcmp(mode, "min") == 0)
+			{
+				config.simple_output_desc.back().counter_op = CounterOpType::MIN;
+			}
+			else if (strcmp(mode, "max") == 0)
+			{
+				config.simple_output_desc.back().counter_op = CounterOpType::MAX;
+			}
+			else if (strcmp(mode, "sum") == 0)
+			{
+				config.simple_output_desc.back().counter_op = CounterOpType::SUM;
+			}
+			else if (strcmp(mode, "diff") == 0)
+			{
+				config.simple_output_desc.back().counter_op = CounterOpType::DIFF;
+			}
+			else if (strcmp(mode, "left") == 0)
+			{
+				config.simple_output_desc.back().counter_op = CounterOpType::FROM_DB1;
+			}
+			else if (strcmp(mode, "right") == 0)
+			{
+				config.simple_output_desc.back().counter_op = CounterOpType::FROM_DB2;
+			}
+			else
+			{
+				cout << "Unknown counter calculation mode: " << mode << ". Allowed values: min, max, sum, diff, left, right\n";
+				exit(1);
+			}
+			++pos;
+		}
+		else
+		{
+			cout << "Error: Unknow parameter: " << argv[pos];
+			Usage();
+			exit(1);
+		}
+
+	}
+	return true;
+}
+
 void CParametersParser::read_output_desc()
 {
 	if (pos >= argc)
@@ -260,8 +564,9 @@ void CParametersParser::read_output_desc()
 		cout << "Error: Output database source required, but " << argv[pos] << "found\n";
 		exit(1);
 	}
+	
 	config.output_desc.file_src = argv[pos++];
-	for (int i = 0; i < 2 && pos < argc; ++i)
+	for (int i = 0; i < 3 && pos < argc; ++i)
 	{
 		if (strncmp(argv[pos], "-", 1) != 0)
 			break;
@@ -275,7 +580,7 @@ void CParametersParser::read_output_desc()
 		}
 		else if (strncmp(argv[pos], "-cs", 3) == 0)
 		{
-			config.output_desc.counter_max = replace_zero(atoi(argv[pos++] + 3), "-cs", 1); 
+			config.output_desc.counter_max = replace_zero(atoi(argv[pos++] + 3), "-cs", 1);
 		}
 		else
 		{
@@ -308,6 +613,7 @@ void CParametersParser::Parse()
 	if (strcmp(argv[pos], "intersect") == 0)
 	{
 		config.mode = CConfig::Mode::INTERSECTION;
+		config.counter_op_type = CounterOpType::MIN;
 	}
 	else if (strcmp(argv[pos], "kmers_subtract") == 0)
 	{
@@ -316,14 +622,24 @@ void CParametersParser::Parse()
 	else if (strcmp(argv[pos], "counters_subtract") == 0)
 	{
 		config.mode = CConfig::Mode::COUNTERS_SUBTRACT;
+		config.counter_op_type = CounterOpType::DIFF;
 	}
 	else if (strcmp(argv[pos], "union") == 0)
 	{
 		config.mode = CConfig::Mode::UNION;
+		config.counter_op_type = CounterOpType::SUM;
 	}
 	else if (strcmp(argv[pos], "complex") == 0)
 	{
 		config.mode = CConfig::Mode::COMPLEX;
+	}
+	else if (strcmp(argv[pos], "transform") == 0)
+	{
+		config.mode = CConfig::Mode::TRANSFORM;
+	}
+	else if (strcmp(argv[pos], "simple") == 0)
+	{
+		config.mode = CConfig::Mode::SIMPLE_SET;
 	}
 	else if (strcmp(argv[pos], "sort") == 0)
 	{
@@ -353,6 +669,14 @@ void CParametersParser::Parse()
 	{
 		config.mode = CConfig::Mode::FILTER;
 	}
+	else if (strcmp(argv[pos], "info") == 0)
+	{
+		config.mode = CConfig::Mode::INFO;
+	}
+	else if (strcmp(argv[pos], "check") == 0)
+	{
+		config.mode = CConfig::Mode::CHECK;
+	}
 	else
 	{
 		cout << "Error: Unknow mode: " << argv[pos] << "\n";
@@ -368,20 +692,27 @@ void CParametersParser::Parse()
 
 	pos++;
 	if (config.mode == CConfig::Mode::INTERSECTION || config.mode == CConfig::Mode::KMERS_SUBTRACT || config.mode == CConfig::Mode::UNION || config.mode == CConfig::Mode::COUNTERS_SUBTRACT)
-	{
+	{		
+		read_operation_type();
 		read_input_desc(); //first input
 		read_input_desc(); //second input
 		read_output_desc(); //output
 	}
 	else if (config.mode == CConfig::Mode::FILTER)
 	{
+read_filter_params();
 		read_input_desc(); //kmc db
 		read_input_fastq_desc(); //fastq input
 		read_output_fastq_desc();
+		if (config.filtering_params.use_float_value && config.filtering_params.trim)
+		{
+			cout << " Error: trim (-t) is not compatibile with float values of cut off (-ci -cx)\n";
+			exit(1);
+		}
 	}
 	else if (config.mode == CConfig::Mode::COMPLEX)
 	{
-		if (strncmp(argv[2], "-", 1) == 0)
+		if (strncmp(argv[pos], "-", 1) == 0)
 		{
 			cout << "Error: operations description file expected but " << argv[2] << " found\n";
 			exit(1);
@@ -389,6 +720,33 @@ void CParametersParser::Parse()
 		complex_parser = make_unique<CParser>(argv[pos]);
 		complex_parser->ParseInputs();
 		complex_parser->ParseOutput();
+	}
+	else if (config.mode == CConfig::Mode::TRANSFORM)
+	{
+		read_input_desc();
+		while (read_output_for_transform())
+			;
+
+		if (config.transform_output_desc.size() == 0)
+		{
+			cout << "Error: output missed\n";
+			Usage();
+			exit(1);
+		}
+
+	}
+	else if (config.mode == CConfig::Mode::SIMPLE_SET)
+	{
+		read_input_desc(); //first input
+		read_input_desc(); //second input
+		while (read_output_desc_for_simple())
+			;
+		if (config.simple_output_desc.size() == 0)
+		{
+			cout << "Error: output missed\n";
+			Usage();
+			exit(1);
+		}
 	}
 	else if (config.mode == CConfig::Mode::DUMP)
 	{
@@ -407,12 +765,70 @@ void CParametersParser::Parse()
 				cout << "Warning: -cs can not be specified for compact operation, value specified will be ignored\n";
 			config.output_desc.counter_max = 1;
 		}
+		if (config.mode == CConfig::Mode::HISTOGRAM)
+		{
+			if (config.output_desc.cutoff_max)
+				std::cout << "Warning: -cx not allowed for histogram output, value specified will be ignored\n";
+			if(config.output_desc.cutoff_min)
+				std::cout << "Warning: -ci not allowed for histogram output, value specified will be ignored\n";
+			if (config.output_desc.counter_max)
+				std::cout << "Warning: -cs not allowed for histogram output, value specified will be ignored\n";
+
+
+			config.output_desc.cutoff_max = config.input_desc.front().cutoff_max;
+			config.output_desc.cutoff_min = config.input_desc.front().cutoff_min;
+			config.output_desc.counter_max = 0;
+
+		}
+	}
+	else if (config.mode == CConfig::Mode::INFO)
+	{
+		read_input_desc();
+	}
+	else if (config.mode == CConfig::Mode::CHECK)
+	{
+		read_input_desc();
+		read_check_params();		
 	}
 	else if (config.mode == CConfig::Mode::COMPARE)
 	{
 		read_input_desc();
 		read_input_desc();
 	}
+}
+
+uint32 CParametersParser::get_min_cutoff_min()
+{
+	uint32 min_cutoff_min = config.input_desc.front().cutoff_min;
+	for (uint32 i = 0; i < config.input_desc.size(); ++i)
+	{
+		if (config.input_desc[i].cutoff_min < min_cutoff_min)
+			min_cutoff_min = config.input_desc[i].cutoff_min;
+	}
+	return min_cutoff_min;
+}
+
+uint32 CParametersParser::get_max_cutoff_max()
+{
+	uint32 max_cutoff_max = config.input_desc.front().cutoff_max;
+	for (uint32 i = 0; i < config.input_desc.size(); ++i)
+	{
+		if (config.input_desc[i].cutoff_max > max_cutoff_max)
+			max_cutoff_max = config.input_desc[i].cutoff_max;
+	}
+	return max_cutoff_max;
+}
+
+uint32 CParametersParser::get_max_counter_max()
+{
+	uint32 max_counter_max = config.headers.front().counter_size;
+	for (uint32 i = 0; i < config.headers.size(); ++i)
+	{
+		if (config.headers[i].counter_size> max_counter_max)
+			max_counter_max = config.headers[i].counter_size;
+	}
+	max_counter_max = (uint32)((1ull << (max_counter_max << 3)) - 1);
+	return max_counter_max;
 }
 
 bool CParametersParser::validate_input_dbs()
@@ -454,53 +870,78 @@ bool CParametersParser::validate_input_dbs()
 	}
 
 	//update output description if it was not set with parameters
-	if (config.output_desc.cutoff_min == 0)
+	if (config.mode == CConfig::Mode::SIMPLE_SET)
 	{
-		uint32 min_cutoff_min = config.input_desc.front().cutoff_min;
-		for (uint32 i = 0; i < config.input_desc.size(); ++i)
-		{
-			if (config.input_desc[i].cutoff_min < min_cutoff_min)
-				min_cutoff_min = config.input_desc[i].cutoff_min;
-		}
-		config.output_desc.cutoff_min = min_cutoff_min;
-		if (config.verbose)
-			cout << "-ci was not specified for output. It will be set to " << min_cutoff_min << "\n";
-	}
-
-	if (config.output_desc.cutoff_max == 0)
-	{
-		if (config.mode == CConfig::Mode::HISTOGRAM) //for histogram default value differs
-		{
-			config.output_desc.cutoff_max = MIN(config.headers.front().max_count, MIN(HISTOGRAM_MAX_COUNTER_DEFAULT, (uint32)((1ull << (8 * config.headers.front().counter_size)) - 1)));
-		}
-		else
-		{
-			uint32 max_cutoff_max = config.input_desc.front().cutoff_max;
-			for (uint32 i = 0; i < config.input_desc.size(); ++i)
-			{
-				if (config.input_desc[i].cutoff_max > max_cutoff_max)
-					max_cutoff_max = config.input_desc[i].cutoff_max;
-			}
-			config.output_desc.cutoff_max = max_cutoff_max;
-		}
+		uint32 min_cutoff_min = get_min_cutoff_min();
+		uint32 max_cutoff_max = get_max_cutoff_max();
+		uint32 max_counter_max = get_max_counter_max();
 		
-		if (config.verbose)
-			cout << "-cx was not specified for output. It will be set to " << config.output_desc.cutoff_max << "\n";
-	}
-	if (config.output_desc.counter_max == 0)
-	{
-		uint32 max_counter_max = config.headers.front().counter_size;
-		for (uint32 i = 0; i < config.headers.size(); ++i)
+		for (auto& desc : config.simple_output_desc)
 		{
-			if (config.headers[i].counter_size> max_counter_max)
-				max_counter_max = config.headers[i].counter_size;
+			if (desc.cutoff_min == 0)
+				desc.cutoff_min = min_cutoff_min;
+			if (desc.cutoff_max == 0)
+				desc.cutoff_max = max_cutoff_max;
+			if (desc.counter_max == 0)
+				desc.counter_max = max_counter_max;
+		}
+	}
+	else if (config.mode == CConfig::Mode::TRANSFORM)
+	{
+		uint32 min_cutoff_min = get_min_cutoff_min();
+		uint32 max_cutoff_max = get_max_cutoff_max();
+		uint32 max_counter_max = get_max_counter_max();
+
+		for (auto& desc : config.transform_output_desc)
+		{
+			if (desc.cutoff_min == 0)
+				desc.cutoff_min = min_cutoff_min;
+			if (desc.cutoff_max == 0)
+			{
+				if (desc.op_type == CTransformOutputDesc::OpType::HISTOGRAM)//for histogram default value differs				
+				{
+					desc.cutoff_max = MIN(config.headers.front().max_count, MIN(HISTOGRAM_MAX_COUNTER_DEFAULT, (uint32)((1ull << (8 * config.headers.front().counter_size)) - 1)));					
+				}
+				else
+					desc.cutoff_max = max_cutoff_max;
+			}
+			if (desc.counter_max == 0)
+				desc.counter_max = max_counter_max;
+		}
+	}
+	else //old style operations
+	{
+		if (config.output_desc.cutoff_min == 0)
+		{
+			uint32 min_cutoff_min = get_min_cutoff_min();
+			config.output_desc.cutoff_min = min_cutoff_min;
+			if (config.verbose)
+				cout << "-ci was not specified for output. It will be set to " << min_cutoff_min << "\n";
 		}
 
-		max_counter_max = (uint32)((1ull << (max_counter_max << 3)) - 1);
-		config.output_desc.counter_max = max_counter_max;
-		if (config.verbose)
-			cout << "-cs was not specified for output. It will be set to " << max_counter_max << "\n";
+		if (config.output_desc.cutoff_max == 0)
+		{
+			if (config.mode == CConfig::Mode::HISTOGRAM) //for histogram default value differs
+				config.output_desc.cutoff_max = MIN(config.headers.front().max_count, MIN(HISTOGRAM_MAX_COUNTER_DEFAULT, (uint32)((1ull << (8 * config.headers.front().counter_size)) - 1)));
+			else
+			{
+				uint32 max_cutoff_max = get_max_cutoff_max();
+				config.output_desc.cutoff_max = max_cutoff_max;
+			}
+			if (config.verbose)
+				cout << "-cx was not specified for output. It will be set to " << config.output_desc.cutoff_max << "\n";
+		}
+		if (config.output_desc.counter_max == 0)
+		{
+			uint32 max_counter_max = get_max_counter_max();			
+			config.output_desc.counter_max = max_counter_max;
+			if (config.verbose)
+				cout << "-cs was not specified for output. It will be set to " << max_counter_max << "\n";
+		}
 	}
+	
+	
+
 	return true;
 }
 	
@@ -518,6 +959,13 @@ void CParametersParser::SetThreads()
 		if (config.headers[i].IsKMC2())
 		{
 			kmc2_desc.push_back(ref(config.input_desc[i]));
+		}
+		else
+		{
+			if (threads_left > 2)
+				threads_left -= 2; //2 threads for kmc1 input
+			else
+				threads_left = 1;
 		}
 	}
 	if (kmc2_desc.size())

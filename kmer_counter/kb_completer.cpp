@@ -5,8 +5,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 #include <algorithm>
 #include <numeric>
@@ -66,7 +66,8 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 {
 	int32 bin_id = 0;
 	uchar *data = NULL;
-	uint64 data_size = 0;
+	//uint64 data_size = 0;
+	list<pair<uint64, uint64>> data_packs;
 	uchar *lut = NULL;
 	uint64 lut_size = 0;
 	counter_size = 0;
@@ -114,7 +115,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 	while(!kq->empty())
 	{
 		// Get the next bin
-		if (!kq->pop(bin_id, data, data_size, lut, lut_size, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total))
+		if (!kq->pop(bin_id, data, data_packs, lut, lut_size, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total))
 			continue;
 
 		// Decrease memory size allocated by stored bin
@@ -129,20 +130,24 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 
 		uint64 lut_recs        = lut_size / sizeof(uint64);
 		
-		// Write bin data to the output file
-#ifdef WIN32 //fwrite bug https://connect.microsoft.com/VisualStudio/feedback/details/755018/fwrite-hangs-with-large-size-count
-		uint64 write_offset = 0;
-		uint64 left_to_write = data_size;
-		while (left_to_write)
+
+		for (auto& e : data_packs)
 		{
-			uint64 current_to_write = MIN(left_to_write, (4ull << 30) - 1);			
-			fwrite(data + write_offset, 1, current_to_write, out_kmer);
-			write_offset += current_to_write;
-			left_to_write -= current_to_write;
-		}
+			// Write bin data to the output file
+#ifdef WIN32 //fwrite bug https://connect.microsoft.com/VisualStudio/feedback/details/755018/fwrite-hangs-with-large-size-count
+			uint64 write_offset = e.first;
+			uint64 left_to_write = e.second - e.first;
+			while (left_to_write)
+			{
+				uint64 current_to_write = MIN(left_to_write, (4ull << 30) - 1);
+				fwrite(data + write_offset, 1, current_to_write, out_kmer);
+				write_offset += current_to_write;
+				left_to_write -= current_to_write;
+			}
 #else
-		fwrite(data, 1, data_size, out_kmer);
+			fwrite(data + e.first, 1, e.second - e.first, out_kmer);
 #endif
+		}
 		memory_bins->free(bin_id, CMemoryBins::mba_suffix);
 
 		uint64 *ulut = (uint64*) lut;

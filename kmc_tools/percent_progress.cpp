@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #include "stdafx.h"
@@ -64,7 +64,7 @@ void CPercentProgress::Complete(uint32 id)
 	if (items[id].cur_percent != 100)
 	{
 		items[id].cur_percent = 100;
-		display();
+		display();		
 	}
 }
 

@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #include "stdafx.h"
@@ -70,28 +70,27 @@ void CParser::ParseInputs()
 			break;
 	}
 }
-
 //************************************************************************************************************
-void CParser::ParseOutput()
-{
+ void CParser::ParseOutput()
+ {
 	std::string line;
 	if (!nextLine(line) || line.find("OUTPUT_PARAMS:") != std::string::npos)
 	{
-		std::cout << "Error: None output was defined\n";
-		exit(1);
+ 		std::cout << "Error: None output was defined\n";
+ 		exit(1);
 	}
-
+ 
 	parseOutputLine(line);
-
+ 
 	while (nextLine(line))
 	{
-		if (line.find("OUTPUT_PARAMS:") != std::string::npos)
-		{
-			parseOtuputParamsLine();
-			break;
-		}
+ 		if (line.find("OUTPUT_PARAMS:") != std::string::npos)
+ 		{
+ 			parseOtuputParamsLine();
+ 			break;
+ 		}
 	}
-}
+ }
 
 /*****************************************************************************************************************************/
 /********************************************************** PRIVATE **********************************************************/
@@ -110,6 +109,11 @@ void CParser::parseInputLine(const std::string& line)
 		if (input.find(match[1]) != input.end())
 		{
 			std::cout << "Error: Name redefinition(" << match[1] << ")" << " line: " << line_no << "\n";
+			exit(1);
+		}
+		if (CTokenizer::GetKeywords().find(match[1]) != CTokenizer::GetKeywords().end())
+		{
+			std::cout << "Error: `" << match[1] << "` is not valid name, line: " << line_no << "\n";
 			exit(1);
 		}
 		else
@@ -151,6 +155,7 @@ void CParser::parseInputLine(const std::string& line)
 		exit(1);
 	}
 }
+
 
 //************************************************************************************************************
 void CParser::parseOutputLine(const std::string& line)

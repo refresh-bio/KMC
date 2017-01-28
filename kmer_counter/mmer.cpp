@@ -5,8 +5,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #include "mmer.h"
@@ -16,6 +16,9 @@ uint32 CMmer::norm5[];
 uint32 CMmer::norm6[];
 uint32 CMmer::norm7[];
 uint32 CMmer::norm8[];
+uint32 CMmer::norm9[];
+uint32 CMmer::norm10[];
+uint32 CMmer::norm11[];
 
 CMmer::_si CMmer::_init;
 
@@ -37,6 +40,15 @@ CMmer::CMmer(uint32 _len)
 	case 8:
 		norm = norm8;
 		break;
+	case 9:
+		norm = norm9;
+		break;
+	case 10:
+		norm = norm10;
+		break;
+	case 11:
+		norm = norm11;
+		break;
 	default:
 		break;
 	}
@@ -46,4 +58,5 @@ CMmer::CMmer(uint32 _len)
 }
 
 //--------------------------------------------------------------------------
+
 

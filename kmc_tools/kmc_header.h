@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _KMC_HEADER_H
@@ -34,7 +34,7 @@ public:
 	uint64 file_size = 0;
 
 	uint32 no_of_bins = 0; //only for kmc2
-	bool IsKMC2()
+	bool IsKMC2()const
 	{
 		return db_version == 0x200;
 	}

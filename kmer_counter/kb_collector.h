@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _KB_COLLECTOR_H
@@ -32,6 +32,10 @@ using namespace std;
 // Class collecting kmers belonging to a single bin
 class CKmerBinCollector
 {
+	list<pair<uint64, uint64>> expander_parts; //range, n_plus_x_recs_in_range
+	uint64 prev_n_plus_x_recs = 0;
+	uint64 prev_pos = 0;
+
 	enum comparision_state  { kmer_smaller, rev_smaller, equals };
 	uint32 bin_no;
 	CBinPartQueue *bin_part_queue;
@@ -40,6 +44,10 @@ class CKmerBinCollector
 	uchar* buffer;
 	uint32 buffer_size;
 	uint32 buffer_pos;
+
+	uint32 super_kmer_no = 0;
+	const uint32 max_super_kmers_expander_pack = 1ul << 12; 
+	
 	CMemoryPool *pmm_bins;
 	uint32 n_recs;
 	uint32 n_plus_x_recs;
@@ -86,9 +94,16 @@ CKmerBinCollector::CKmerBinCollector(CKMCQueues& Queues, CKMCParams& Params, uin
 //---------------------------------------------------------------------------------
 void CKmerBinCollector::PutExtendedKmer(char* seq, uint32 n)
 {
+	if (super_kmer_no >= max_super_kmers_expander_pack)
+	{
+		expander_parts.push_back(make_pair(buffer_pos - prev_pos, n_plus_x_recs - prev_n_plus_x_recs));
+		prev_pos = buffer_pos;
+		prev_n_plus_x_recs = n_plus_x_recs;
+		super_kmer_no = 0;
+	}
 	uint32 bytes = 1 + (n + 3) / 4;
 	if(buffer_pos + bytes > buffer_size)
-	{
+	{		
 		//send current buff
 		Flush();
 
@@ -218,7 +233,16 @@ void CKmerBinCollector::PutExtendedKmer(char* seq, char* quals, uint32 n)
 //---------------------------------------------------------------------------------
 void CKmerBinCollector::Flush()
 {
-	bin_part_queue->push(bin_no, buffer, buffer_pos, buffer_size);
+	if (prev_pos < buffer_pos)
+	{
+		expander_parts.push_back(make_pair(buffer_pos - prev_pos, n_plus_x_recs - prev_n_plus_x_recs));
+	}
+	prev_pos = 0;
+	prev_n_plus_x_recs = 0;
+	super_kmer_no = 0;
+
+	bin_part_queue->push(bin_no, buffer, buffer_pos, buffer_size, expander_parts);
+	expander_parts.clear();
 	bd->insert(bin_no, NULL, "", buffer_pos, n_recs, n_plus_x_recs, n_super_kmers);
 }
 

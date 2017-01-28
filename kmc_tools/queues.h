@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _QUEUES_H_
@@ -94,10 +94,15 @@ template<unsigned SIZE> class CCircularQueue
 
 	std::condition_variable cv_push;
 	std::condition_variable cv_pop;
-
 	bool forced_to_finish = false;
 
 public:
+	CCircularQueue(int size, uint32 bundle_size) : full(false), is_completed(false), start(0), end(0)
+	{
+		buff.reserve(size);
+		for (int i = 0; i < size; ++i)
+			buff.emplace_back(bundle_size);
+	}
 	CCircularQueue(int size) : buff(size), full(false), is_completed(false), start(0), end(0)
 	{
 
@@ -106,6 +111,7 @@ public:
 	bool push(CBundleData<SIZE>& bundle_data)
 	{
 		std::unique_lock<std::mutex> lck(mtx);
+
 		cv_push.wait(lck, [this]{return !full || forced_to_finish; });
 		
 		if (forced_to_finish)
@@ -130,7 +136,7 @@ public:
 
 	bool pop(CBundleData<SIZE>& bundle_data)
 	{
-		std::unique_lock<std::mutex> lck(mtx);
+		std::unique_lock<std::mutex> lck(mtx);		
 		cv_pop.wait(lck, [this]{ return start != end || full || is_completed || forced_to_finish; });
 
 		if (forced_to_finish)
@@ -388,6 +394,16 @@ public:
 		return true;
 	}
 };
+
+
+struct CFilteringQueues
+{
+	CInputFilesQueue *input_files_queue;
+	CPartQueue *input_part_queue, *filtered_part_queue;
+	CMemoryPool *pmm_fastq_reader;
+	CMemoryPool *pmm_fastq_filter;
+};
+
 
 #endif
 

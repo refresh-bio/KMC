@@ -5,8 +5,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #include "defs.h"
@@ -15,4 +15,6 @@
 uint32 CKmer<1>::QUALITY_SIZE      = 0;
 uint32 CKmerQuake<1>::QUALITY_SIZE = 4;
 
+uint32 CKmer<1>::KMER_SIZE = 1;
+uint32 CKmerQuake<1>::KMER_SIZE = 1;
 // ***** EOF

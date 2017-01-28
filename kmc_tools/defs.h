@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _DEFS_H
@@ -32,25 +32,22 @@ using uchar = unsigned char;
 //#define ENABLE_DEBUG
 //#define ENABLE_LOGGER
 
-#define KMC_VER		"2.3.0"
-#define KMC_DATE	"2015-08-21"
-
-
-
+#define KMC_VER		"3.0.0"
+#define KMC_DATE	"2017-01-28"
 
 #define DEFAULT_CIRCULAL_QUEUE_CAPACITY (4)
 
-#define SUFIX_WRITE_QUEUE_CAPACITY (10)
+#define SUFFIX_WRITE_QUEUE_CAPACITY (10)
 
 
 #define KMC1_DB_READER_PREFIX_BUFF_BYTES (1 << 24)
-#define KMC1_DB_READER_SUFIX_BUFF_BYTES  (1 << 24)
+#define KMC1_DB_READER_SUFFIX_BUFF_BYTES  (1 << 24)
 
 #define KMC2_DB_READER_PREFIX_BUFF_BYTES (1 << 24)
-#define KMC2_DB_READER_SUFIX_BUFF_BYTES  (1 << 24)
+#define KMC2_DB_READER_SUFFIX_BUFF_BYTES  (1 << 24)
 
 #define KMC1_DB_WRITER_PREFIX_BUFF_BYTES (1 << 24)
-#define KMC1_DB_WRITER_SUFIX_BUFF_BYTES  (1 << 24)
+#define KMC1_DB_WRITER_SUFFIX_BUFF_BYTES  (1 << 24)
 
 #define HISTOGRAM_MAX_COUNTER_DEFAULT 10000
 
@@ -59,10 +56,11 @@ using uchar = unsigned char;
 //Increasing this value will lead to more memory consumption, but from preliminary observations it has no performance(is sense of time) impact, so it is recommended to not change this value
 #define BUNDLE_CAPACITY (1 << 12) //in kmers, for kmers and counters. 
 
+#define KMC2_DB_READER_BUNDLE_CAPACITY (1 << 22)
+
 //this value has high impact to used memory, max value of memory is = 2 * SINGLE_BIN_BUFF_SIZE_FOR_DB2_READER * number_of_kmc2_input_dbs * number_of_bins_per_in_db
 //increasing this value can have positive performance impact when running on HDD
 #define SINGLE_BIN_BUFF_SIZE_FOR_DB2_READER (1 << 21) //if less is needed less will be allocated
-
 
 //default values
 #define CUTOFF_MIN 2 
@@ -79,11 +77,26 @@ using uchar = unsigned char;
 #define my_fopen	fopen
 #define my_fseek	_fseeki64
 #define my_ftell	_ftelli64
-
 #else
 #define my_fopen	fopen
 #define my_fseek	fseek
 #define my_ftell	ftell
+#endif
+
+
+#ifdef _MSC_VER
+	#define _bswap_uint64(X) _byteswap_uint64(X)
+	#define _bswap_uint32(X) _byteswap_ulong(X)
+#elif defined(__GNUC__)
+	#define _bswap_uint64(X) __builtin_bswap64(X)
+	#define _bswap_uint32(X) __builtin_bswap32(X)
+#else //unknown. Use the fastest "standard" way I've found
+	#define _bswap_uint64(val) \
+		val = ((val << 8) & 0xFF00FF00FF00FF00ULL) + ((val >> 8) & 0x00FF00FF00FF00FFULL); \
+		val = ((val << 16) & 0xFFFF0000FFFF0000ULL) + ((val >> 16) & 0x0000FFFF0000FFFFULL); \
+		val = (val << 32) + (val >> 32);
+	#define _bswap_uint32(val) \
+		val = (val<<24) | ((val<<8) & 0x00ff0000) | ((val >> 8) & 0x0000ff00) | (val >> 24);
 #endif
 
 #endif

@@ -4,8 +4,8 @@ The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
 
 Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
-Version: 2.3.0
-Date   : 2015-08-21
+Version: 3.0.0
+Date   : 2017-01-28
 */
 
 #ifndef _KMER_H
@@ -16,6 +16,7 @@ Date   : 2015-08-21
 #include "defs.h"
 #include "meta_oper.h"
 #include <string>
+#include <cstring>
 
 // *************************************************************************
 // Ckmer class for k > 32 with classic kmer counting
@@ -31,7 +32,10 @@ template<unsigned SIZE> struct CKmer {
 	inline uchar get_2bits(const uint32 p);
 	inline uchar get_byte(const uint32 p);
 	inline void set_byte(const uint32 p, uchar x);
+	inline void set_bytes(const uint32 p, const uint32 n, uint32 x);
 	inline void set_bits(const uint32 p, const uint32 n, uint64 x);
+
+	inline void increment_at(uint32 suffix_bytes);
 
 	inline void SHL_insert_2bits(const uint64 x);
 	inline void SHR_insert_2bits(const uint64 x, const uint32 p);
@@ -45,14 +49,21 @@ template<unsigned SIZE> struct CKmer {
 
 	inline void store(uchar *&buffer, int32 n);
 	inline void store(uchar *buffer, int32 p, int32 n);
+
 	inline void load(uchar *&buffer, int32 n);
 
+	inline void load_fast(uchar *&buffer, int32 n, bool little_endian);
+
+
 	inline bool operator==(const CKmer<SIZE> &x);
-	inline bool operator<(const CKmer<SIZE> &x);
+	inline bool operator<(const CKmer<SIZE> &x)const;
 
 	inline void clear(void);
 
 	inline char get_symbol(int p);
+
+
+	inline void set_prefix(CKmer<SIZE>& rhs, uint32 suffix_bytes);
 };
 
 
@@ -199,6 +210,15 @@ template<unsigned SIZE> inline void CKmer<SIZE>::set_byte(const uint32 p, uchar 
 }
 
 // *********************************************************************
+template<unsigned SIZE> inline void CKmer<SIZE>::set_bytes(const uint32 p, const uint32 n, uint32 x)
+{
+	data[p >> 3] += ((uint64)x) << ((p & 7) << 3);
+	//if (8 - (p & 7) < n)
+	if((p>>3) != ((p + n - 1) >> 3))
+		data[(p >> 3) + 1] += ((uint64)x) >> ((8 - (p & 7)) << 3);
+}
+
+// *********************************************************************
 template<unsigned SIZE> inline void CKmer<SIZE>::set_bits(const uint32 p, const uint32 n, uint64 x)
 {
 	//	data[p >> 6] |= x << (p & 63);
@@ -206,6 +226,15 @@ template<unsigned SIZE> inline void CKmer<SIZE>::set_bits(const uint32 p, const 
 	if ((p >> 6) != ((p + n - 1) >> 6))
 		//		data[(p >> 6) + 1] |= x >> (64 - (p & 63));
 		data[(p >> 6) + 1] += x >> (64 - (p & 63));
+}
+
+// *********************************************************************
+template<unsigned SIZE> inline void CKmer<SIZE>::increment_at(uint32 suffix_bytes)
+{
+	data[(suffix_bytes) >> 3] += 1ull << ((suffix_bytes & 7) << 3);
+	if (((suffix_bytes) >> 3) < (SIZE - 1) && (data[(suffix_bytes) >> 3]) == 0) //overflow
+		++data[SIZE - 1];
+
 }
 
 // *********************************************************************
@@ -218,7 +247,7 @@ template<unsigned SIZE> inline bool CKmer<SIZE>::operator==(const CKmer<SIZE> &x
 }
 
 // *********************************************************************
-template<unsigned SIZE> inline bool CKmer<SIZE>::operator<(const CKmer<SIZE> &x) {
+template<unsigned SIZE> inline bool CKmer<SIZE>::operator<(const CKmer<SIZE> &x)const {
 	for (int32 i = SIZE - 1; i >= 0; --i)
 	if (data[i] < x.data[i])
 		return true;
@@ -304,6 +333,33 @@ template<unsigned SIZE> inline void CKmer<SIZE>::load(uchar *&buffer, int32 n)
 }
 
 // *********************************************************************
+template<unsigned SIZE> inline void CKmer<SIZE>::load_fast(uchar *&buffer, int32 n, bool little_endian)
+{	
+	uint32 p = ((n + 7) >> 3) - 1;
+	for (uint32 i = SIZE - 1; i > p; --i)
+		data[i] = 0;
+	
+	if (!(n & 7))
+		++p;
+	else
+	{
+		memcpy(&data[p], buffer, sizeof(uint64));
+		if (little_endian)
+			data[p] = _bswap_uint64(data[p]);
+		data[p] >>= (sizeof(uint64)-(n & 7)) << 3;
+		buffer += n & 7;
+	}
+	for (int i = p - 1; i >= 0; --i)
+	{
+		memcpy(&data[i], buffer, sizeof(uint64));
+		if (little_endian)
+			data[i] = _bswap_uint64(data[i]);
+		buffer += 8;
+	}
+}
+
+
+// *********************************************************************
 template<unsigned SIZE> inline char CKmer<SIZE>::get_symbol(int p)
 {
 	uint32 x = (data[p >> 5] >> (2 * (p & 31))) & 0x03;
@@ -318,6 +374,13 @@ template<unsigned SIZE> inline char CKmer<SIZE>::get_symbol(int p)
 }
 
 // *********************************************************************
+template<unsigned SIZE> inline void CKmer<SIZE>::set_prefix(CKmer<SIZE>& rhs, uint32 suffix_bytes)
+{
+	data[(suffix_bytes) >> 3] += rhs.data[(suffix_bytes) >> 3];
+	if (((suffix_bytes) >> 3) < SIZE - 1)
+		data[SIZE - 1] += rhs.data[SIZE - 1];
+}
+// *********************************************************************
 // *********************************************************************
 // *********************************************************************
 // *********************************************************************
@@ -325,9 +388,9 @@ template<unsigned SIZE> inline char CKmer<SIZE>::get_symbol(int p)
 template<> struct CKmer<1> {
 	unsigned long long data;
 
-
 	typedef unsigned long long data_t;
 	static uint32 QUALITY_SIZE;
+	static uint32 KMER_SIZE;
 
 	void set(const CKmer<1> &x);	
 
@@ -337,7 +400,10 @@ template<> struct CKmer<1> {
 	uchar get_2bits(const uint32 p);
 	uchar get_byte(const uint32 p);
 	void set_byte(const uint32 p, uchar x);
+	void set_bytes(const uint32 p, const uint32 n, uint32 x);
 	void set_bits(const uint32 p, const uint32 n, uint64 x);
+
+	void increment_at(uint32 suffix_bytes);
 
 	void SHL_insert_2bits(const uint64 x);
 	void SHR_insert_2bits(const uint64 x, const uint32 p);
@@ -351,14 +417,20 @@ template<> struct CKmer<1> {
 
 	void store(uchar *&buffer, int32 n);
 	void store(uchar *buffer, int32 p, int32 n);
+
+
 	void load(uchar *&buffer, int32 n);
 
+	void load_fast(uchar *&buffer, int32 n, bool little_endian);
+
 	bool operator==(const CKmer<1> &x);
-	bool operator<(const CKmer<1> &x);
+	bool operator<(const CKmer<1> &x)const;
 
 	void clear(void);
 
 	inline char get_symbol(int p);
+
+	inline void set_prefix(CKmer<1>& rhs, uint32 suffix_bytes);
 };
 
 
@@ -431,6 +503,12 @@ inline void CKmer<1>::set_byte(const uint32 p, uchar x)
 }
 
 // *********************************************************************
+inline void CKmer<1>::set_bytes(const uint32 p, const uint32 n, uint32 x)
+{
+	data += ((uint64) x) << (p << 3);
+}
+
+// *********************************************************************
 inline void CKmer<1>::set_bits(const uint32 p, const uint32 n, uint64 x)
 {
 	//	data |= x << p;
@@ -438,12 +516,17 @@ inline void CKmer<1>::set_bits(const uint32 p, const uint32 n, uint64 x)
 }
 
 // *********************************************************************
+inline void CKmer<1>::increment_at(uint32 suffix_bytes)
+{
+	data += (1ull << (suffix_bytes << 3));
+}
+// *********************************************************************
 inline bool CKmer<1>::operator==(const CKmer<1> &x) {
 	return data == x.data;
 }
 
 // *********************************************************************
-inline bool CKmer<1>::operator<(const CKmer<1> &x) {
+inline bool CKmer<1>::operator<(const CKmer<1> &x)const {
 	return data < x.data;
 }
 
@@ -493,13 +576,49 @@ inline void CKmer<1>::store(uchar *buffer, int32 p, int32 n)
 }
 
 // *********************************************************************
+inline void CKmer<1>::load_fast(uchar *&buffer, int32 n, bool little_endian)
+{
+	//It compiles to the same as data = *(uint64*)buffer; ->  mov	rax, QWORD PTR [rcx]
+	//i am not sure about other platforms than x86
+	memcpy(&data, buffer, sizeof(data)); 
+	if (little_endian)
+		data = _bswap_uint64(data);
+	data >>= (sizeof(data)-n) << 3;
+	buffer += n;
+}
+
+// *********************************************************************
 inline void CKmer<1>::load(uchar *&buffer, int32 n)
 {
 	clear();
-	for (int32 i = n - 1; i >= 0; --i)
-		set_byte(i, *buffer++);
-}
 
+	if (!n)
+		return;
+	unsigned long long tmp;
+	tmp = 0;
+
+	switch (n-1)
+	{
+	case 7:
+		data = ((uint64) *buffer++) << 56;
+	case 6:
+		tmp = ((uint64) *buffer++) << 48;
+	case 5:
+		data += ((uint64) *buffer++) << 40;
+	case 4:
+		tmp += ((uint64) *buffer++) << 32;
+	case 3:
+		data += ((uint64) *buffer++) << 24;
+	case 2:
+		tmp += ((uint64) *buffer++) << 16;
+	case 1:
+		data += ((uint64) *buffer++) << 8;
+	}
+
+	tmp += *buffer++;
+
+	data += tmp;
+}
 
 // *********************************************************************
 char CKmer<1>::get_symbol(int p)
@@ -515,6 +634,11 @@ char CKmer<1>::get_symbol(int p)
 	}
 }
 
+// *********************************************************************
+void CKmer<1>::set_prefix(CKmer<1>& rhs, uint32 suffix_bytes)
+{
+	data += rhs.data;
+}
 #endif
 
 // ***** EOF

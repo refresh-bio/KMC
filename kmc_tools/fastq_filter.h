@@ -1,17 +1,19 @@
 /*
-  This file is a part of KMC software distributed under GNU GPL 3 licence.
-  The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
-  
-  Authors: Marek Kokot
-  
-  Version: 2.3.0
-  Date   : 2015-08-21
+This file is a part of KMC software distributed under GNU GPL 3 licence.
+The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
+
+Authors: Marek Kokot
+
+Version: 3.0.0
+Date   : 2017-01-28
 */
 
 #ifndef _FASTQ_FILTER_H
 #define _FASTQ_FILTER_H
 
 #include "config.h"
+#include "queues.h"
+
 #include "../kmc_api/kmc_file.h"
 
 //************************************************************************************************************
@@ -23,9 +25,10 @@ class CFastqFilter
 	CMemoryPool *pmm_fastq_reader;
 	CMemoryPool *pmm_fastq_filter;
 	CFilteringParams::file_type input_file_type, output_file_type;
+	bool trim;
 	CKMCFile& kmc_api;
 	uint64 output_part_size;
-	
+
 	uchar* input_part;
 	uint64 input_part_size;
 	uint64 input_part_pos;
@@ -42,9 +45,11 @@ class CFastqFilter
 		uint64 quality_header_start;
 		uint64 quality_header_end;
 		uint64 quality_start;
-		uint64 quality_end;		
+		uint64 quality_end;
 		uint64 end;
 	}seq_desc;
+
+	uint32 trim_len; //for trim mode
 
 	bool use_float_value;
 	float f_max_kmers;
@@ -53,17 +58,31 @@ class CFastqFilter
 	uint32 n_min_kmers;
 	uint32 kmer_len;
 
-	void ProcessFastaToFasta();
-	void ProcessFastqToFasta();
-	void ProcessFastqToFastq();
+	template<class Helper> void ProcessImpl();
+
+
 
 	bool NextSeqFastq();
 	bool NextSeqFasta();
 	bool FilterRead();
+	bool FilterReadTrim();
 public:
 	CFastqFilter(CFilteringParams& Params, CFilteringQueues& Queues, CKMCFile& kmc_api);
-	void Process();	
-	
+	void Process();
+
+
+private: //Helpers classes for ProcessImpl
+
+	class FastqToFastqHelper;
+	class FastqToFastaHelper;
+	class FastaToFastaHelper;
+
+	class TrimFastqToFastqHelper;
+	class TrimFastqToFastaHelper;
+	class TrimFastaToFastaHelper;
+
+
+
 };
 
 //************************************************************************************************************

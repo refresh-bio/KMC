@@ -4,15 +4,15 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _DEFS_H
 #define _DEFS_H
 
-#define KMC_VER		"2.3.0"
-#define KMC_DATE	"2015-08-21"
+#define KMC_VER		"3.0.0"
+#define KMC_DATE	"2017-01-28"
 
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -30,7 +30,9 @@
 //#define DEBUG_MODE
 //#define DEVELOP_MODE 
 
-#define USE_META_PROG
+//#define USE_META_PROG
+
+#define COMPACT_CUMSUM_PART_SIZE (1<<10)
 
 #define KMER_X		3
 
@@ -56,15 +58,15 @@
 
 // Range of number of signature length
 #define MIN_SL		5
-#define MAX_SL		8
+#define MAX_SL		11
 
 // Range of number of splitting threads
 #define MIN_SP		1
 #define MAX_SP		64
 
-// Range of number of sorting threads
-#define MIN_SO		1
-#define MAX_SO		64
+// Range of number of threads for 2nd stage
+#define MIN_SR		1
+#define MAX_SR		128
 
 //Range of number of sorter threads pre sorter in strict memory mode
 #define MIN_SMSO	1
@@ -78,10 +80,6 @@
 #define MIN_SMME	1
 #define MAX_SMME	16
 
-
-// Range of number of threads per single sorting thread
-#define MIN_SR		1
-#define MAX_SR		16
 
 
 typedef float	count_t;
@@ -136,6 +134,32 @@ const int32 MAX_STR_LEN = 32768;
 #define BYTE_LOG(x) (((x) < (1 << 8)) ? 1 : ((x) < (1 << 16)) ? 2 : ((x) < (1 << 24)) ? 3 : 4)
 
 #define BYTE_LOG_ULL(x) (((x) < (1ull << 8)) ? 1 : ((x) < (1ull << 16)) ? 2 : ((x) < (1ull << 24)) ? 3 : ((x) < (1ull << 32)) ? 4 : ((x) < (1ull << 40) ? 5 : ((x) < (1ull << 48) ? 6 : ((x) < (1ull << 56)) ? 7 : 8)))
+
+#ifdef WIN32
+#define FORCE_INLINE __forceinline
+#else
+#define FORCE_INLINE inline __attribute__((always_inline))
+#endif
+
+
+
+//for radix
+#define WIN_ALIGNMENT 64
+//designated experimentally
+constexpr int32 BUFFER_WIDTHS[] = { -1, 32, 16, 16, 8, 8, 4, 8, 4 };
+#ifdef WIN32
+#define ALIGN_ARRAY __declspec(align(WIN_ALIGNMENT))
+#else
+#define ALIGN_ARRAY __attribute__((aligned(ALIGNMENT)))
+#endif
+
+#ifdef WIN32
+typedef unsigned __int8 uint8_t;
+#else
+#include <stdint.h>
+#endif
+
+
 
 
 #endif

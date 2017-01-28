@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -28,21 +28,21 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>NotSet</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -50,7 +50,7 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -154,7 +154,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -165,14 +165,19 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="asmlib_wrapper.h" />
+    <ClInclude Include="binary_reader.h" />
     <ClInclude Include="bkb_merger.h" />
     <ClInclude Include="bkb_reader.h" />
     <ClInclude Include="bkb_sorter.h" />
     <ClInclude Include="bkb_subbin.h" />
     <ClInclude Include="bkb_writer.h" />
+    <ClInclude Include="cpu_info.h" />
     <ClInclude Include="defs.h" />
+    <ClInclude Include="develop.h" />
     <ClInclude Include="fastq_reader.h" />
     <ClInclude Include="bkb_uncompactor.h" />
+    <ClInclude Include="first_dispatch.h" />
+    <ClInclude Include="intr_copy.h" />
     <ClInclude Include="kb_collector.h" />
     <ClInclude Include="kb_completer.h" />
     <ClInclude Include="kb_reader.h" />
@@ -189,9 +194,13 @@
     <ClInclude Include="mem_disk_file.h" />
     <ClInclude Include="meta_oper.h" />
     <ClInclude Include="mmer.h" />
+    <ClInclude Include="percent_progress.h" />
     <ClInclude Include="prob_qual.h" />
+    <ClInclude Include="raduls.h" />
+    <ClInclude Include="raduls_impl.h" />
     <ClInclude Include="rev_byte.h" />
     <ClInclude Include="small_k_buf.h" />
+    <ClInclude Include="small_sort.h" />
     <ClInclude Include="s_mapper.h" />
     <ClInclude Include="params.h" />
     <ClInclude Include="queues.h" />
@@ -204,15 +213,39 @@
   <ItemGroup>
     <ClCompile Include="bkb_reader.cpp" />
     <ClCompile Include="bkb_writer.cpp" />
+    <ClCompile Include="cpu_info.cpp" />
+    <ClCompile Include="develop.cpp" />
     <ClCompile Include="fastq_reader.cpp" />
     <ClCompile Include="kb_completer.cpp" />
     <ClCompile Include="kb_storer.cpp" />
     <ClCompile Include="kmer.cpp" />
     <ClCompile Include="kmer_counter.cpp" />
+    <ClCompile Include="libs\vectorclass\instrset_detect.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="mem_disk_file.cpp" />
     <ClCompile Include="mmer.cpp" />
     <ClCompile Include="prob_qual.cpp" />
-    <ClCompile Include="radix.cpp" />
+    <ClCompile Include="raduls_avx.cpp">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/arch:AVX %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/arch:AVX %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="raduls_avx2.cpp">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/arch:AVX
+-D__AVX2__ %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/arch:AVX
+-D__AVX2__ %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="raduls_sse2.cpp">
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotSet</EnableEnhancedInstructionSet>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/arch:sse2 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/arch:sse2 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="raduls_sse41.cpp">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/arch:sse2 -D__SSE4_1__ %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/arch:sse2 -D__SSE4_1__ %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
     <ClCompile Include="rev_byte.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -230,7 +263,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="libs\alibcof64.lib" />
+    <Library Include="libs\libacof64.lib" />
     <Library Include="libs\libbzip2.lib" />
     <Library Include="libs\zlibstat.lib" />
   </ItemGroup>

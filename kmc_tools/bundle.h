@@ -4,15 +4,16 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _BUNDLE_H
 #define _BUNDLE_H
+#include "config.h"
 #include "defs.h"
 #include "kmer.h"
-
+#include "libs/asmlib.h"
 
 //************************************************************************************************************
 // CBundle and CInput are CORE classes of this application. CInputs are nodes of binary tree which 
@@ -46,29 +47,39 @@ protected:
 
 };
 
-
+template<unsigned SIZE> class CSimpleOperation; 
+template<unsigned SIZE> class CKMC1DbReader; 
+template<unsigned SIZE> class CMergerParent;
+template<unsigned SIZE> class CMergerParentSubthread;
 
 //************************************************************************************************************
 // CBundleData - class containing a buffer of k-mers and its counters. 
 //************************************************************************************************************
 template<unsigned SIZE> class CBundleData
 {
+	struct CKmerWithCounter
+	{
+		CKmer<SIZE> kmer;
+		uint32 counter;
+	};
+
 public:
+	CBundleData(uint32 size) : insert_pos(0), get_pos(0), size(size)
+	{
+		kmers_with_counters = new CKmerWithCounter[size];
+	}
 	CBundleData() : insert_pos(0), get_pos(0), size(BUNDLE_CAPACITY)
 	{
-		kmers = new CKmer<SIZE>[size]; 
-		counters = new uint32[size];
+		kmers_with_counters = new CKmerWithCounter[size];
 	}
 	~CBundleData()
 	{
-		delete[] kmers;
-		delete[] counters;
+		delete[] kmers_with_counters;
 	}
-	CBundleData(CBundleData<SIZE>&& rhs):
-		insert_pos(rhs.insert_pos), get_pos(rhs.get_pos), size(rhs.size), kmers(rhs.kmers), counters(rhs.counters)
+	CBundleData(CBundleData<SIZE>&& rhs) :
+		insert_pos(rhs.insert_pos), get_pos(rhs.get_pos), size(rhs.size), kmers_with_counters(rhs.kmers_with_counters)
 	{
-		rhs.counters = nullptr;
-		rhs.kmers = nullptr;
+		rhs.kmers_with_counters = nullptr;
 		rhs.get_pos = rhs.size = rhs.insert_pos = 0;
 	}
 
@@ -76,33 +87,39 @@ public:
 	{
 		if (this != &rhs)
 		{
-			delete[] kmers;
-			delete[] counters;
+			delete[] kmers_with_counters;
 
-			kmers = rhs.kmers;
-			counters = rhs.counters;
+			kmers_with_counters = rhs.kmers_with_counters;
 			get_pos = rhs.get_pos;
 			size = rhs.size;
 			insert_pos = rhs.insert_pos;
 
-			rhs.counters = nullptr;
-			rhs.kmers = nullptr;
+			rhs.kmers_with_counters = nullptr;
 			rhs.get_pos = rhs.size = rhs.insert_pos = 0;
 		}
 		return *this;
 	}
+
+	//deprecated
+	//void CopyFrom(CBundleData<SIZE>& rhs) //similar to assign operator but I want assign operator deleted, this method should be used carefully. this->size and rhs.size must quals
+	//{
+	//	A_memcpy(kmers_with_counters, rhs.kmers_with_counters, rhs.insert_pos * sizeof(CKmerWithCounter));
+	//	insert_pos = rhs.insert_pos;
+	//	get_pos = 0;
+	//}
+
 
 	CBundleData(const CBundleData<SIZE>&) = delete;
 	CBundle<SIZE>& operator=(const CBundleData<SIZE>&) = delete;
 
 	CKmer<SIZE>& TopKmer() const
 	{
-		return kmers[get_pos];
+		return kmers_with_counters[get_pos].kmer;
 	}
 
 	uint32& TopCounter() const
 	{
-		return counters[get_pos];
+		return kmers_with_counters[get_pos].counter;
 	}
 
 	bool Full()
@@ -117,8 +134,8 @@ public:
 
 	void Insert(CKmer<SIZE>& kmer, uint32 counter)
 	{
-		kmers[insert_pos] = kmer;
-		counters[insert_pos++] = counter;
+		kmers_with_counters[insert_pos].kmer = kmer;
+		kmers_with_counters[insert_pos++].counter = counter;
 	}
 	void Pop()
 	{
@@ -130,13 +147,21 @@ public:
 		insert_pos = get_pos = 0;
 	}
 
-private:
-	friend class CBundle<SIZE>;	
-	uint32 insert_pos, get_pos, size;
-	CKmer<SIZE>* kmers;
-	uint32* counters;
-};
+	uint32 NRecLeft()
+	{
+		return insert_pos - get_pos;
+	}
 
+
+private:
+	friend class CKMC1DbReader<SIZE>; //improve performance, but CKMC1DbReader takes responsibility for CBundleData state!
+	friend class CSimpleOperation<SIZE>; //as above
+	friend class CMergerParent<SIZE>;
+	friend class CMergerParentSubthread<SIZE>;
+	friend class CBundle<SIZE>;
+	uint32 insert_pos, get_pos, size;
+	CKmerWithCounter* kmers_with_counters;
+};
 
 
 //************************************************************************************************************
@@ -149,6 +174,12 @@ public:
 	{
 		
 	}
+
+	//deprecated
+	//void CopyFrom(CBundle<SIZE>& rhs) //Use carefully. Look at comment in called function
+	//{
+	//	data.CopyFrom(rhs.data);
+	//}
 
 	CKmer<SIZE>& TopKmer() const
 	{
@@ -198,11 +229,84 @@ public:
 		return data.insert_pos;
 	}
 
-private:
+	uint32 NRecLeft()
+	{
+		return data.insert_pos - data.get_pos;
+	}
+	
+protected:
+	friend class CSimpleOperation<SIZE>; //improve performance
 	CBundleData<SIZE> data;
 	CInput<SIZE>* input;
 	bool finished = false;
 };
+
+//forward declaration
+template <unsigned SIZE> class CKMC1DbWriter;
+template<unsigned SIZE>
+class COutputBundle : public CBundle<SIZE>
+{
+private:
+	CSimpleOutputDesc::OpType op_type;
+	CounterOpType counter_op;
+	CKMC1DbWriter<SIZE>& db_writer;
+	
+public:
+
+	uint32 GetCounter(uint32 counter1, uint32 counter2)
+	{
+		switch (counter_op)
+		{
+		case CounterOpType::DIFF:
+			return counter1 > counter2 ? counter1 - counter2 : 0;
+		case CounterOpType::MAX:
+			return MAX(counter1, counter2);
+		case CounterOpType::MIN:
+			return MIN(counter1, counter2);
+		case CounterOpType::SUM:
+			return counter1 + counter2;
+		case CounterOpType::FROM_DB1:
+			return counter1;
+		case CounterOpType::FROM_DB2:
+			return counter2;
+		case CounterOpType::NONE://should never be here
+			std::cout << "Trying to use undefined counter calculation mode!\n";
+			exit(1);
+		}
+		return 0;
+	}
+	
+	CSimpleOutputDesc::OpType GetOpType()
+	{
+		return op_type;
+	}
+
+
+	COutputBundle(CSimpleOutputDesc::OpType op_type, CounterOpType counter_op, CKMC1DbWriter<SIZE>& db_writer) :
+		CBundle<SIZE>(nullptr),
+		op_type(op_type),
+		counter_op(counter_op),
+		db_writer(db_writer)
+	{
+
+	}
+
+	void InsertAndSendIfFull(CKmer<SIZE>& kmer, uint32 counter)
+	{
+		this->data.Insert(kmer, counter);
+		if (this->Full())
+		{			
+			db_writer.MultiOptputAddResultPart(*this);
+		}
+	}
+
+	void NotifyFinish()
+	{
+		if (!this->Empty())
+			db_writer.MultiOptputAddResultPart(*this);
+	}
+};
+
 
 //************************************************************************************************************
 template<unsigned SIZE> inline bool CBundle<SIZE>::Finished()

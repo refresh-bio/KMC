@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _PARAMS_H
@@ -19,6 +19,7 @@
 
 typedef enum {fasta, fastq, multiline_fasta} input_type;
 
+
 using namespace std;
 
 // Structure for passing KMC parameters
@@ -30,8 +31,7 @@ struct CKMCParams {
 	int p_t;							// no. of threads
 	int p_sf;							// no. of reading threads
 	int p_sp;							// no. of splitting threads
-	int p_so;							// no. of OpenMP threads for sorting
-	int p_sr;							// no. of sorting threads	
+	int p_sr;							// no. of threads for 2nd stage
 	int p_ci;							// do not count k-mers occurring less than
 	int64 p_cx;							// do not count k-mers occurring more than
 	int64 p_cs;							// maximal counter value
@@ -41,6 +41,9 @@ struct CKMCParams {
 	int p_quality;						// lowest quality
 	input_type p_file_type;				// input in FASTA format
 	bool p_verbose;						// verbose mode
+#ifdef DEVELOP_MODE
+	bool p_verbose_log = false;         // verbose log
+#endif
 	bool p_both_strands;				// compute canonical k-mer representation
 	int p_p1;							// signature length	
 	int p_n_bins;						// no. of bins
@@ -78,15 +81,17 @@ struct CKMCParams {
 	int64 mem_tot_pmm_stats;
 	int64 mem_part_pmm_stats;
 	
-	int64 mem_tot_pmm_epxand;
-	int64 mem_part_pmm_epxand;
-
+	int64 mem_part_pmm_binary_file_reader;
+	int64 mem_tot_pmm_binary_file_reader;
 	int64 mem_part_small_k_buf;
 	int64 mem_tot_small_k_buf;
 	int64 mem_part_small_k_completer;
 	int64 mem_tot_small_k_completer;
 
 	bool verbose;	
+#ifdef DEVELOP_MODE
+	bool verbose_log;
+#endif
 
 	int kmer_len;			// kmer length
 	int signature_len;
@@ -107,15 +112,12 @@ struct CKMCParams {
 	int n_readers;			// number of FASTQ readers; default: 1
 	int n_splitters;		// number of splitters; default: 1
 	int n_sorters;			// number of sorters; default: 1
-	vector<int> n_omp_threads;// number of OMP threads per sorters
+	vector<int> n_sorting_threads;// number of OMP threads per sorters
 	uint32 max_x;					//k+x-mers will be counted
-
-	uint32 gzip_buffer_size;
-	uint32 bzip2_buffer_size;
 
 	//params for strict memory mode
 	int sm_n_uncompactors;
-	int sm_n_omp_threads;	
+	int sm_n_sorting_threads;	
 	int sm_n_mergers;
 
 	int64 sm_mem_part_input_file;
@@ -145,7 +147,6 @@ struct CKMCParams {
 		p_t = 0;
 		p_sf = 0;
 		p_sp = 0;
-		p_so = 0;
 		p_sr = 0;
 		p_smme = p_smso = p_smun = 0;
 		p_ci = 2;
@@ -158,11 +159,8 @@ struct CKMCParams {
 		p_file_type = fastq;
 		p_verbose = false;
 		p_both_strands = true;
-		p_p1 = 7;	
-		p_n_bins = 512;
-
-		gzip_buffer_size  = 64 << 20;
-		bzip2_buffer_size = 64 << 20;
+		p_p1 = 9;	
+		p_n_bins = 512;		
 	}
 };
 
@@ -174,6 +172,8 @@ struct CKMCQueues
 	// Memory monitors
 	CMemoryMonitor *mm;
 
+	vector<CBinaryPackQueue*> binary_pack_queues;
+
 	// Queues
 	CInputFilesQueue *input_files_queue;
 	CPartQueue *part_queue;
@@ -181,9 +181,10 @@ struct CKMCQueues
 
 	CBinPartQueue *bpq;
 	CBinDesc *bd;
+	CExpanderPackDesc* epd;
 	CBinQueue *bq;
 	CKmerQueue *kq;
-	CMemoryPool *pmm_bins, *pmm_fastq, *pmm_reads, *pmm_radix_buf, *pmm_prob, *pmm_stats, *pmm_expand;
+	CMemoryPool *pmm_bins, *pmm_fastq, *pmm_reads, *pmm_radix_buf, *pmm_prob, *pmm_stats, *pmm_binary_file_reader;
 	CMemoryBins *memory_bins;
 	CMemoryPool* pmm_small_k_buf, *pmm_small_k_completer;
 
@@ -201,6 +202,7 @@ struct CKMCQueues
 	CMemoryPool* sm_pmm_input_file, *sm_pmm_expand, *sm_pmm_sort, *sm_pmm_sorter_suffixes, *sm_pmm_sorter_lut, *sm_pmm_sub_bin_lut, *sm_pmm_sub_bin_suff, *sm_pmm_merger_lut, *sm_pmm_merger_suff;
 	
 	CCompletedBinsCollector* sm_cbc;
+	CSortersManager* sorters_manager = nullptr;
 };
 
 #endif

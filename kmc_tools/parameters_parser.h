@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _PARAMETERS_PARSER_H
@@ -28,8 +28,17 @@ class CParametersParser
 	void read_input_fastq_desc();
 	void read_output_fastq_desc();
 	void read_input_desc();
+	void read_operation_type();
+	void read_check_params();
 	void read_dump_params();
 	void read_output_desc();
+	void read_filter_params();
+	bool read_output_desc_for_simple();
+	bool read_output_for_transform();
+
+	uint32 get_max_counter_max();
+	uint32 get_max_cutoff_max();
+	uint32 get_min_cutoff_min();
 public:
 	
 	CParametersParser(int argc, char** argv);
@@ -51,7 +60,7 @@ CExpressionNode<SIZE>* CParametersParser::GetExpressionRoot()
 	{
 		CExpressionNode<SIZE>* left = new CInputNode<SIZE>(0);
 		CExpressionNode<SIZE>* right = new CInputNode<SIZE>(1);
-		CExpressionNode<SIZE>* expression_root = nullptr;
+		COperNode<SIZE>* expression_root = nullptr;
 		switch (config.mode)
 		{
 		case CConfig::Mode::INTERSECTION:
@@ -70,12 +79,13 @@ CExpressionNode<SIZE>* CParametersParser::GetExpressionRoot()
 			std::cout << "Error: unknow operation\n";
 			exit(1);
 		}
+		expression_root->SetCounterOpType(config.counter_op_type);
 		expression_root->AddLeftChild(left);
 		expression_root->AddRightChild(right);
 		return expression_root;
 	}
 	else if (config.mode == CConfig::Mode::COMPLEX)
-	{		
+	{
 		return complex_parser->GetExpressionRoot<SIZE>();
 	}
 	else if (config.mode == CConfig::Mode::SORT)

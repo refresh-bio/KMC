@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _TIMER_H
@@ -14,7 +14,7 @@
 #include <chrono>
 class CTimer
 {
-	using time_p = std::chrono::system_clock::time_point;
+	using time_p = decltype(std::chrono::high_resolution_clock::now());
 	time_p _start, _end;
 public:
 	void start()
@@ -24,7 +24,7 @@ public:
 	double get_time()
 	{
 		auto time = std::chrono::high_resolution_clock::now() - _start;
-		return static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(time).count());
+		return static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(time).count() / 1000000.0);
 	}
 };
 

@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _TOKENIZER_H
@@ -15,9 +15,10 @@
 #include <vector>
 #include <regex>
 #include <list>
+#include <set>
 #include <iostream>
 
-enum class TokenType{ VARIABLE, PLUS_OPER, STRICT_MINUS_OPER, COUNTER_MINUS_OPER, MUL_OPER, PARENTHESIS_OPEN, PARENTHESIS_CLOSE, TERMINATOR };
+enum class TokenType{ VARIABLE, PLUS_OPER, STRICT_MINUS_OPER, COUNTER_MINUS_OPER, MUL_OPER, PARENTHESIS_OPEN, PARENTHESIS_CLOSE, TERMINATOR, DIFF_MODIFIER, SUM_MODIFIER, MIN_MODIFIER, MAX_MODIFIER, LEFT_MODIFIER, RIGHT_MODIFIER };
 using Token = std::pair<std::string, TokenType>;
 
 //************************************************************************************************************
@@ -26,12 +27,13 @@ using Token = std::pair<std::string, TokenType>;
 class CTokenizer
 {
 public:
+	static const std::set<std::string>& GetKeywords();
 	CTokenizer();
 	void Tokenize(const std::string& _expression, std::list<Token>& tokens);
 
 private:
 	std::vector<std::pair<std::regex, TokenType>> token_patterns;
-	void leftTrimString(std::string& str, int start_pos);
+	void leftTrimString(std::string& str, int start_pos);	
 };
 
 #endif

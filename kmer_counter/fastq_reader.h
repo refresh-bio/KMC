@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _FASTQ_READER_H
@@ -19,44 +19,88 @@
 #include "libs/zlib.h"
 #include "libs/bzlib.h"
 
-
 using namespace std;
+
+//************************************************************************************************************
+// data source for FASTA/FASTQ reader
+//************************************************************************************************************
+class CFastqReaderDataSrc
+{
+	z_stream stream;	
+	bz_stream _bz_stram;
+	uchar* in_buffer;
+	CBinaryPackQueue* binary_pack_queue;
+	CMemoryPool *pmm_binary_file_reader;
+	bool in_progress = false;
+	bool end_reached = false;
+	FilePart file_part;
+	CompressionType compression_type;
+	uchar* in_data;
+	uint64 in_data_size;
+	uint64 in_data_pos; //for plain
+	void init_stream();
+public:
+	inline void SetQueue(CBinaryPackQueue* _binary_pack_queue, CMemoryPool *_pmm_binary_file_reader);
+	inline bool Finished();
+	uint64 read(uchar* buff, uint64 size);
+	void IgnoreRest()
+	{
+		if (in_data)
+			pmm_binary_file_reader->free(in_data);
+		in_data = nullptr;
+		//clean queue
+		while (binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type))
+		{
+			if(in_data_size)
+				pmm_binary_file_reader->free(in_data);
+			in_data = nullptr;
+		}
+		switch (compression_type)
+		{
+		case CompressionType::plain:
+			break;
+		case CompressionType::gzip:
+			inflateEnd(&stream);
+			break;
+		case CompressionType::bzip2:
+			BZ2_bzDecompressEnd(&_bz_stram);
+			break;
+		default:
+			break;
+		}
+
+	}
+};
+
 
 //************************************************************************************************************
 // FASTA/FASTQ reader class
 //************************************************************************************************************
 class CFastqReader {
-	typedef enum {m_plain, m_gzip, m_bzip2} t_mode;
+	
+	CBinaryPackQueue* binary_pack_queue;
 
 	CMemoryMonitor *mm;
 	CMemoryPool *pmm_fastq;
+	CMemoryPool *pmm_binary_file_reader;
 
 	string input_file_name;
 	input_type file_type;
 	int kmer_len;
-	t_mode mode;
-
-	FILE *in;
-	gzFile_s *in_gzip;
-	BZFILE *in_bzip2;
-	int bzerror;
+	
+	CFastqReaderDataSrc data_src;
 
 	uint64 part_size;
 	
 	uchar *part;
 	uint64 part_filled;
 	
-	uint32 gzip_buffer_size;
-	uint32 bzip2_buffer_size;
-
 	bool containsNextChromosome; //for multiline_fasta processing
 
 	bool SkipNextEOL(uchar *part, int64 &pos, int64 max_pos);
 
-	bool IsEof();
-
 public:
-	CFastqReader(CMemoryMonitor *_mm, CMemoryPool *_pmm_fastq, input_type _file_type, uint32 _gzip_buffer_size, uint32 _bzip2_buffer_size, int _kmer_len);
+	CFastqReader(CMemoryMonitor *_mm, CMemoryPool *_pmm_fastq, input_type _file_type, int _kmer_len, CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader);
 	~CFastqReader();
 
 	static uint64 OVERHEAD_SIZE;
@@ -67,6 +111,19 @@ public:
 
 	bool GetPartFromMultilneFasta(uchar *&_part, uint64 &_size);
 	bool GetPart(uchar *&_part, uint64 &_size);
+
+	bool GetPartNew(uchar *&_part, uint64 &_size);
+	void Init()
+	{
+		pmm_fastq->reserve(part);
+		part_filled = 0;
+	}
+
+	void IgnoreRest()
+	{
+		data_src.IgnoreRest();
+	}
+
 };
 
 //************************************************************************************************************
@@ -75,19 +132,17 @@ public:
 class CWFastqReader {
 	CMemoryMonitor *mm;
 	CMemoryPool *pmm_fastq;
+	CMemoryPool *pmm_binary_file_reader;
 
 	CFastqReader *fqr;
-	string file_name;
 	uint64 part_size;
-	CInputFilesQueue *input_files_queue;
+	CBinaryPackQueue* binary_pack_queue;
 	CPartQueue *part_queue;
-	input_type file_type;
-	uint32 gzip_buffer_size;
-	uint32 bzip2_buffer_size;
+	input_type file_type;	
 	int kmer_len;
 
 public:
-	CWFastqReader(CKMCParams &Params, CKMCQueues &Queues);
+	CWFastqReader(CKMCParams &Params, CKMCQueues &Queues, CBinaryPackQueue* _binary_pack_queue);
 	~CWFastqReader();
 
 	void operator()();
@@ -101,19 +156,15 @@ public:
 class CWStatsFastqReader {
 	CMemoryMonitor *mm;
 	CMemoryPool *pmm_fastq;
-
+	CMemoryPool *pmm_binary_file_reader;
 	CFastqReader *fqr;
-	string file_name;
 	uint64 part_size;
-	CInputFilesQueue *input_files_queue;
 	CStatsPartQueue *stats_part_queue;
-	input_type file_type;
-	uint32 gzip_buffer_size;
-	uint32 bzip2_buffer_size;
+	input_type file_type;	
 	int kmer_len;
-
+	CBinaryPackQueue* binary_pack_queue;
 public:
-	CWStatsFastqReader(CKMCParams &Params, CKMCQueues &Queues);
+	CWStatsFastqReader(CKMCParams &Params, CKMCQueues &Queues, CBinaryPackQueue* _binary_pack_queue);
 	~CWStatsFastqReader();
 
 	void operator()();

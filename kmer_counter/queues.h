@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _QUEUES_H
@@ -17,9 +17,11 @@
 #include <tuple>
 #include <queue>
 #include <list>
+#include <set>
 #include <map>
 #include <string>
 #include "mem_disk_file.h"
+#include "asmlib_wrapper.h"
 
 using namespace std;
 
@@ -28,6 +30,68 @@ using namespace std;
 #include <condition_variable>
 
 using std::thread;
+
+//************************************************************************************************************
+
+enum class FilePart { Begin, Middle, End };
+enum class CompressionType { plain, gzip, bzip2 };
+class CBinaryPackQueue
+{
+	std::queue<tuple<uchar*, uint64, FilePart, CompressionType>> q;
+	std::mutex mtx;
+	std::condition_variable cv_pop, cv_push;
+	bool completed = false;
+	bool stop = false;
+public:
+	bool push(uchar* data, uint64 size, FilePart file_part, CompressionType mode)
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		if (stop)
+			return false;
+		q.emplace(data, size, file_part, mode);
+		if (q.size() == 1) //was empty
+			cv_pop.notify_all();
+		return true;
+	}
+
+	void mark_completed()
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		completed = true;
+		cv_pop.notify_all();
+	}
+	bool pop(uchar* &data, uint64 &size, FilePart &file_part, CompressionType &mode)
+	{
+		std::unique_lock<std::mutex> lck(mtx);
+		cv_pop.wait(lck, [this]{return !q.empty() || completed; });
+		if (q.empty())
+			return false;
+
+		data = get<0>(q.front());
+		size = get<1>(q.front());
+		file_part = get<2>(q.front());
+		mode = get<3>(q.front());
+
+		q.pop();
+		return true;
+	}
+
+	bool is_next_last()
+	{
+		std::unique_lock<std::mutex> lck(mtx);
+		cv_pop.wait(lck, [this]{return !q.empty() || completed; });
+		if (q.empty())
+			return true;
+		return get<2>(q.front()) == FilePart::End;
+	}
+
+	void ignore_rest()
+	{
+		lock_guard<mutex> lck(mtx);
+		stop = true;
+		cv_push.notify_all();
+	}
+};
 
 
 //************************************************************************************************************
@@ -41,6 +105,10 @@ class CInputFilesQueue {
 	mutable mutex mtx;								// The mutex to synchronise on
 
 public:
+	queue_t GetCopy()
+	{
+		return q;
+	}
 	CInputFilesQueue(const vector<string> &file_names) {
 		unique_lock<mutex> lck(mtx);
 
@@ -202,7 +270,7 @@ public:
 
 //************************************************************************************************************
 class CBinPartQueue {
-	typedef tuple<int32, uchar *, uint32, uint32> elem_t;
+	typedef tuple<int32, uchar *, uint32, uint32, list<pair<uint64, uint64>>> elem_t;
 	typedef queue<elem_t, list<elem_t>> queue_t;
 	queue_t q;
 
@@ -235,15 +303,16 @@ public:
 		if(!n_writers)
 			cv_queue_empty.notify_all();
 	}
-	void push(int32 bin_id, uchar *part, uint32 true_size, uint32 alloc_size) {
+	void push(int32 bin_id, uchar *part, uint32 true_size, uint32 alloc_size, list<pair<uint64, uint64>>& expander_parts) {
 		unique_lock<mutex> lck(mtx);
 
 		bool was_empty = q.empty();
-		q.push(std::make_tuple(bin_id, part, true_size, alloc_size));
+		q.push(std::make_tuple(bin_id, part, true_size, alloc_size, std::move(expander_parts)));
+		
 		if(was_empty)
 			cv_queue_empty.notify_all();
 	}
-	bool pop(int32 &bin_id, uchar *&part, uint32 &true_size, uint32 &alloc_size) {
+	bool pop(int32 &bin_id, uchar *&part, uint32 &true_size, uint32 &alloc_size, list<pair<uint64, uint64>>& expander_parts) {
 		unique_lock<mutex> lck(mtx);
 		cv_queue_empty.wait(lck, [this]{return !q.empty() || !n_writers;}); 
 
@@ -254,6 +323,7 @@ public:
 		part       = get<1>(q.front());
 		true_size  = get<2>(q.front());
 		alloc_size = get<3>(q.front());
+		expander_parts = std::move(get<4>(q.front()));
 		q.pop();
 
 		return true;
@@ -261,6 +331,27 @@ public:
 };
 
 //************************************************************************************************************
+class CExpanderPackDesc
+{
+	vector<list<pair<uint64, uint64>>> data; //end_pos, n_plus_x_recs
+	std::mutex mtx;
+public:
+	CExpanderPackDesc(uint32 n_bins)
+	{
+		data.resize(n_bins);
+	}
+	void push(uint32 bin_id, list<pair<uint64, uint64>>& l)
+	{
+		lock_guard<mutex> lck(mtx);
+		data[bin_id].splice(data[bin_id].end(), l);
+	}
+	void pop(uint32 bin_id, list<pair<uint64, uint64>>& l)
+	{
+		lock_guard<mutex> lck(mtx);
+		l = std::move(data[bin_id]);
+		data[bin_id].clear();
+	}
+};
 class CBinDesc {
 	typedef tuple<string, int64, uint64, uint32, uint32, CMemDiskFile*, uint64, uint64> desc_t;
 	typedef map<int32, desc_t> map_t;
@@ -269,6 +360,8 @@ class CBinDesc {
 	int32 bin_id;
 
 	vector<int32> random_bins;
+
+	vector<int32> sorted_bins;
 
 	mutable mutex mtx;
 
@@ -289,6 +382,123 @@ public:
 		return m.empty();
 	}
 
+	void init_sort(vector<pair<int32, int64>>& bin_sizes)
+	{
+		//for (auto& p : m)
+		//	bin_sizes.push_back(make_pair(p.first, get<2>(p.second)));
+
+		//sort(bin_sizes.begin(), bin_sizes.end(), [](const pair<int32, int64>& l, const pair<int32, int64>& r){
+		//	return l.second > r.second;
+		//});
+
+		sorted_bins.reserve(bin_sizes.size());
+
+		for (auto& e : bin_sizes)
+			sorted_bins.push_back(e.first);
+
+	}
+
+	uint64 get_req_size(uint32 sorting_phases, int64 file_size, int64 kxmers_size, int64 out_buffer_size, int64 kxmer_counter_size, int64 lut_size)
+	{
+		int64 part1_size;
+		int64 part2_size;
+
+		if (sorting_phases % 2 == 0)
+		{
+			part1_size = kxmers_size + kxmer_counter_size;
+			part2_size = max(max(file_size, kxmers_size), out_buffer_size + lut_size);
+		}
+		else
+		{
+			part1_size = max(kxmers_size + kxmer_counter_size, file_size);
+			part2_size = max(kxmers_size, out_buffer_size + lut_size);
+		}
+		return part1_size + part2_size;
+	}
+
+	int64 round_up_to_alignment(int64 x)
+	{
+		return (x + ALIGNMENT - 1) / ALIGNMENT * ALIGNMENT;
+	}
+
+	uint64 get_n_rec_sum()
+	{
+		uint64 res = 0;
+		for (auto& e : m)
+			res += get<2>(e.second);		
+		return res;
+	}
+
+	vector<pair<int32, int64>> get_sorted_req_sizes(uint32 max_x, const uint64 size_of_kmer_t, uint32 cutoff_min, int64 cutoff_max, int64 counter_max, uint32 lut_prefix_len)
+	{
+		lock_guard<mutex> lck(mtx);
+		vector<pair<int32, int64>> bin_sizes;
+
+		uint64 size;
+		uint64 n_rec;
+		uint64 n_plus_x_recs;		
+		uint32 kmer_len;
+
+		for (auto& p : m)
+		{
+			int32 bin_id = p.first;
+
+			size = (uint64)get<1>(m[bin_id]);
+			n_rec = get<2>(m[bin_id]);			
+			kmer_len = get<4>(m[bin_id]);
+			n_plus_x_recs = get<6>(m[bin_id]);
+
+			uint64 input_kmer_size;
+			uint64 kxmer_counter_size;
+			uint32 kxmer_symbols;
+			if (max_x)
+			{
+				input_kmer_size = n_plus_x_recs * size_of_kmer_t;
+				kxmer_counter_size = n_plus_x_recs * sizeof(uint32);
+				kxmer_symbols = kmer_len + max_x + 1;
+			}
+			else
+			{
+				input_kmer_size = n_rec * size_of_kmer_t;
+				kxmer_counter_size = 0;
+				kxmer_symbols = kmer_len;
+			}
+			
+			uint64 max_out_recs = (n_rec + 1) / max(cutoff_min, 1u);
+
+			uint64 counter_size = MIN(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
+
+			uint32 kmer_symbols = kmer_len - lut_prefix_len;
+			uint64 kmer_bytes = kmer_symbols / 4;
+			uint64 out_buffer_size = max_out_recs * (kmer_bytes + counter_size);
+
+			uint32 rec_len = (kxmer_symbols + 3) / 4;
+
+			uint64 lut_recs = 1 << (2 * lut_prefix_len);
+			uint64 lut_size = lut_recs * sizeof(uint64);
+
+			auto req_size = get_req_size(rec_len, round_up_to_alignment(size), round_up_to_alignment(input_kmer_size), round_up_to_alignment(out_buffer_size), round_up_to_alignment(kxmer_counter_size), round_up_to_alignment(lut_size));
+			bin_sizes.push_back(make_pair(p.first, req_size));
+		}
+
+		sort(bin_sizes.begin(), bin_sizes.end(), [](const pair<int32, int64>& l, const pair<int32, int64>& r){
+			return l.second > r.second;
+		});
+		return bin_sizes;
+	}
+
+
+	int32 get_next_sort_bin()
+	{
+		lock_guard<mutex> lck(mtx);
+		if (bin_id == -1)
+			bin_id = 0;
+		else
+			++bin_id;
+		if (bin_id >= (int32)m.size())
+			return -1000;
+		return sorted_bins[bin_id];
+	}
 	void init_random()
 	{
 		lock_guard<mutex> lck(mtx);
@@ -435,6 +645,54 @@ public:
 		if(was_empty)
 			cv_queue_empty.notify_all();
 	}
+	int32 top_bin_id()
+	{
+		unique_lock<mutex> lck(mtx);
+		return get<0>(q.front());
+	}
+
+
+	bool pop(int32 &bin_id, uchar *&part, uint64 &size, uint64 &n_rec, bool& is_allowed, const set<int>& allowed) {
+		unique_lock<mutex> lck(mtx);
+
+		cv_queue_empty.wait(lck, [this]{return !q.empty() || !n_writers; });
+
+		if (q.empty())
+			return false;
+
+		bin_id = get<0>(q.front());
+
+		is_allowed = true;
+		if (allowed.find(bin_id) == allowed.end())
+		{
+			is_allowed = false;
+			return true;
+		}
+
+		part = get<1>(q.front());
+		size = get<2>(q.front());
+		n_rec = get<3>(q.front());
+		q.pop();
+
+		return true;
+	}
+
+	bool pop_if_any(int32 &bin_id, uchar *&part, uint64 &size, uint64 &n_rec)
+	{
+		lock_guard<mutex> lck(mtx);
+		
+		if (q.empty())
+			return false;
+
+		bin_id = get<0>(q.front());
+		part = get<1>(q.front());
+		size = get<2>(q.front());
+		n_rec = get<3>(q.front());
+		q.pop();
+
+		return true;
+	}
+
 	bool pop(int32 &bin_id, uchar *&part, uint64 &size, uint64 &n_rec) {
 		unique_lock<mutex> lck(mtx);
 
@@ -455,10 +713,10 @@ public:
 
 //************************************************************************************************************
 class CKmerQueue {
-	typedef tuple<int32, uchar*, uint64, uchar*, uint64, uint64, uint64, uint64, uint64> data_t;
+	typedef tuple<int32, uchar*, list<pair<uint64, uint64>>, uchar*, uint64, uint64, uint64, uint64, uint64> data_t;
 	typedef list<data_t> list_t;
-
 	int n_writers;
+private:
 	mutable mutex mtx;								// The mutex to synchronise on
 	condition_variable cv_queue_empty;
 
@@ -483,12 +741,19 @@ public:
 		if (!n_writers)
 			cv_queue_empty.notify_all();
 	}
-	void push(int32 bin_id, uchar *data, uint64 data_size, uchar *lut, uint64 lut_size, uint64 n_unique, uint64 n_cutoff_min, uint64 n_cutoff_max, uint64 n_total) {
+
+	void add_n_writers(int32 n)
+	{
 		lock_guard<mutex> lck(mtx);
-		l.push_back(std::make_tuple(bin_id, data, data_size, lut, lut_size, n_unique, n_cutoff_min, n_cutoff_max, n_total));
+		n_writers += n;
+	}
+
+	void push(int32 bin_id, uchar *data, list<pair<uint64, uint64>> data_packs, uchar *lut, uint64 lut_size, uint64 n_unique, uint64 n_cutoff_min, uint64 n_cutoff_max, uint64 n_total) {
+		lock_guard<mutex> lck(mtx);
+		l.push_back(std::make_tuple(bin_id, data, std::move(data_packs), lut, lut_size, n_unique, n_cutoff_min, n_cutoff_max, n_total));
 		cv_queue_empty.notify_all();
 	}
-	bool pop(int32 &bin_id, uchar *&data, uint64 &data_size, uchar *&lut, uint64 &lut_size, uint64 &n_unique, uint64 &n_cutoff_min, uint64 &n_cutoff_max, uint64 &n_total) {
+	bool pop(int32 &bin_id, uchar *&data, list<pair<uint64, uint64>>& data_packs, uchar *&lut, uint64 &lut_size, uint64 &n_unique, uint64 &n_cutoff_min, uint64 &n_cutoff_max, uint64 &n_total) {
 		unique_lock<mutex> lck(mtx);
 		cv_queue_empty.wait(lck, [this]{return !l.empty() || !n_writers; });
 		if (l.empty())
@@ -496,7 +761,7 @@ public:
 
 		bin_id = get<0>(l.front());
 		data = get<1>(l.front());
-		data_size = get<2>(l.front());
+		data_packs = std::move(get<2>(l.front()));
 		lut = get<3>(l.front());
 		lut_size = get<4>(l.front());
 		n_unique = get<5>(l.front());
@@ -726,28 +991,49 @@ public:
 private:
 	uchar *buffer, *raw_buffer;
 	bin_ptrs_t *bin_ptrs;
+	uint32 n_threads;
 
-	list<pair<uint64, uint64>> list_reserved;
-	list<pair<uint32, uint64>> list_insert_order;
+	map<uint64, uint64> map_reserved;
 
 	mutable mutex mtx;							// The mutex to synchronise on
 	condition_variable cv;						// The condition to wait for
 
 public:
-	CMemoryBins(int64 _total_size, uint32 _n_bins, bool _use_strict_mem) {
+	CMemoryBins(int64 _total_size, uint32 _n_bins, bool _use_strict_mem, uint32 _n_threads) {
 		raw_buffer = NULL;
 		buffer = NULL;
 		bin_ptrs = NULL;
 		use_strict_mem = _use_strict_mem;
+		n_threads = _n_threads;
 		prepare(_total_size, _n_bins);
 	}
 	~CMemoryBins() {
 		release();
 	}
 
+	uint64 GetTotalSize()
+	{
+		return total_size;
+	}
+
 	int64 round_up_to_alignment(int64 x)
 	{
 		return (x + ALIGNMENT - 1) / ALIGNMENT * ALIGNMENT;
+	}
+
+	void parallel_memory_init(uchar *ptr, uint64 size)
+	{
+		// Initialize the memory in parallel
+		vector<thread> v_thr;
+		for (uint32 i = 0; i < n_threads; ++i)
+			v_thr.push_back(thread([&, i]{
+			uint64 part_size = total_size / n_threads;
+			for (uint64 pos = part_size * i; pos < part_size*(i + 1); pos += 1 << 20)
+				buffer[pos] = 0;
+		}));
+
+		for (auto &x : v_thr)
+			x.join();
 	}
 
 	void prepare(int64 _total_size, uint32 _n_bins) {
@@ -764,9 +1050,10 @@ public:
 		while (((uint64)buffer) % ALIGNMENT)
 			buffer++;
 
-		list_reserved.clear();
-		list_insert_order.clear();
-		list_reserved.push_back(make_pair(total_size, 0));		// guard
+		parallel_memory_init(buffer, total_size);
+
+		map_reserved.clear();
+		map_reserved[total_size] = 0;							// guard
 	}
 
 	void release(void) {
@@ -780,8 +1067,23 @@ public:
 		bin_ptrs = NULL;
 	}
 
+	void log(string info, uint64 size = 0)
+	{
+		return;			// !!! Log will be removed 
+
+		cout << info;
+		if (size)
+			cout << " [" << size << "]: ";
+		else
+			cout << ": ";
+		for (auto &p : map_reserved)
+			cout << "(" << p.first << ", " << p.second << ")   ";
+		cout << endl;
+
+	}
+
 	// Prepare memory buffer for bin of given id
-	bool init(uint32 bin_id, uint32 sorting_phases, int64 file_size, int64 kxmers_size, int64 out_buffer_size, int64 kxmer_counter_size, int64 lut_size)
+/*	bool init_old(uint32 bin_id, uint32 sorting_phases, int64 file_size, int64 kxmers_size, int64 out_buffer_size, int64 kxmer_counter_size, int64 lut_size)
 	{
 		unique_lock<mutex> lck(mtx);
 		int64 part1_size;
@@ -808,38 +1110,18 @@ public:
 		// Look for space to insert
 		cv.wait(lck, [&]() -> bool{
 			found_pos = total_size;
-			if (!list_insert_order.empty())
-			{
-				last_found_pos = list_insert_order.back().second;
-				for (auto p = list_reserved.begin(); p != list_reserved.end(); ++p)
-					if (p->first == last_found_pos)
-					{
-						uint64 last_end_pos = p->first + p->second;
-						++p;
-						if (last_end_pos + req_size <= p->first)
-						{
-							found_pos = last_end_pos;
-							return true;
-						}
-						else
-							break;
-					}
-			}
-
 			uint64 prev_end_pos = 0;
-
-			for (auto p = list_reserved.begin(); p != list_reserved.end(); ++p)
-			{
-				if (prev_end_pos + req_size <= p->first)
+			for (auto &p : map_reserved)
+				if (prev_end_pos + req_size < p.first)
 				{
 					found_pos = prev_end_pos;
 					return true;
 				}
-				prev_end_pos = p->first + p->second;
-			}
+				else
+					prev_end_pos = p.first + p.second;
 
 			// Reallocate memory for buffer if necessary
-			if (list_insert_order.empty() && req_size > (int64)list_reserved.back().first)
+			if (map_reserved.size() == 1 && req_size > (int64) total_size)
 			{
 				::free(raw_buffer);
 				total_size = round_up_to_alignment(req_size);
@@ -850,7 +1132,10 @@ public:
 				while (((uint64)buffer) % ALIGNMENT)
 					buffer++;
 
-				list_reserved.back().first = total_size;
+				parallel_memory_init(buffer, total_size, n_threads);
+
+				map_reserved.clear();
+				map_reserved[total_size] = 0;
 				found_pos = 0;
 				return true;
 			}
@@ -859,13 +1144,7 @@ public:
 		});
 
 		// Reserve found free space
-		list_insert_order.push_back(make_pair(bin_id, found_pos));
-		for (auto p = list_reserved.begin(); p != list_reserved.end(); ++p)
-			if (found_pos < p->first)
-			{
-				list_reserved.insert(p, make_pair(found_pos, req_size));
-				break;
-			}
+		map_reserved[found_pos] = req_size;
 
 		uchar *base_ptr = get<0>(bin_ptrs[bin_id]) = buffer + found_pos;
 
@@ -892,9 +1171,280 @@ public:
 
 		return true;
 	}
+	*/
+	// Prepare memory buffer for bin of given id - in fact alllocate only for the bin file size
+	bool init(uint32 bin_id, uint32 sorting_phases, int64 file_size, int64 kxmers_size, int64 out_buffer_size, int64 kxmer_counter_size, int64 lut_size)
+	{
+		unique_lock<mutex> lck(mtx);
+		int64 part1_size;
+		int64 part2_size;
+
+		if (sorting_phases % 2 == 0)
+		{
+			part1_size = kxmers_size + kxmer_counter_size;
+			part2_size = max(max(file_size, kxmers_size), out_buffer_size + lut_size);
+		}
+		else
+		{
+			part1_size = max(kxmers_size + kxmer_counter_size, file_size);
+			part2_size = max(kxmers_size, out_buffer_size + lut_size);
+		}
+		int64 req_size = part1_size + part2_size;
+		if (use_strict_mem && req_size > total_size)
+		{
+			return false;
+		}
+
+		log("Init begin", file_size);
+
+		uint64 found_pos;
+
+		// Look for space to insert
+		cv.wait(lck, [&]() -> bool{
+			found_pos = total_size;
+			uint64 prev_end_pos = 0;
+
+			// Look for space for complete bin
+			for (auto &p : map_reserved)
+				if (prev_end_pos + req_size < p.first)
+				{
+					found_pos = prev_end_pos;
+
+					// Reserve found free space
+					map_reserved[found_pos] = req_size;
+					return true;
+				}
+				else
+					prev_end_pos = p.first + p.second;
+
+			// Free space is small, so look for the space just for bin file
+			for (auto &p : map_reserved)
+				if (prev_end_pos + file_size < p.first)
+				{
+					found_pos = prev_end_pos;
+
+					// Reserve found free space
+					map_reserved[found_pos] = file_size;
+					return true;
+				}
+				else
+					prev_end_pos = p.first + p.second;
+
+			// Reallocate memory for buffer if necessary
+			if (map_reserved.size() == 1 && req_size >(int64) total_size)
+			{
+				::free(raw_buffer);
+				total_size = round_up_to_alignment(req_size);
+				free_size = total_size;
+
+				raw_buffer = (uchar*)malloc(total_size + ALIGNMENT);
+				buffer = raw_buffer;
+				while (((uint64)buffer) % ALIGNMENT)
+					buffer++;
+
+				parallel_memory_init(buffer, total_size);
+
+				map_reserved.clear();
+				map_reserved[total_size] = 0;
+				found_pos = 0;
+
+				// Reserve found free space
+				map_reserved[found_pos] = req_size;
+
+				return true;
+			}
+
+			return false;
+		});
+
+		uchar *base_ptr = get<0>(bin_ptrs[bin_id]) = buffer + found_pos;
+
+		if (map_reserved[found_pos] == (uint64)file_size)		// Only memory for bin file is allocated
+		{
+			get<1>(bin_ptrs[bin_id]) = base_ptr;
+
+			free_size -= file_size;
+		}
+		else											// Memory for whole bin is allocated
+		{
+			if (sorting_phases % 2 == 0)				// the result of sorting is in the same place as input
+			{
+				get<1>(bin_ptrs[bin_id]) = base_ptr + part1_size;
+				get<2>(bin_ptrs[bin_id]) = base_ptr;
+				get<3>(bin_ptrs[bin_id]) = base_ptr + part1_size;
+			}
+			else
+			{
+				get<1>(bin_ptrs[bin_id]) = base_ptr;
+				get<2>(bin_ptrs[bin_id]) = base_ptr + part1_size;
+				get<3>(bin_ptrs[bin_id]) = base_ptr;
+			}
+			get<4>(bin_ptrs[bin_id]) = base_ptr + part1_size;									// data
+			get<5>(bin_ptrs[bin_id]) = get<4>(bin_ptrs[bin_id]) + out_buffer_size;
+			if (kxmer_counter_size)
+				get<6>(bin_ptrs[bin_id]) = base_ptr + kxmers_size;								// kxmers counter
+			else
+				get<6>(bin_ptrs[bin_id]) = NULL;
+			get<7>(bin_ptrs[bin_id]) = req_size;
+
+			free_size -= req_size;
+		}
+
+		log("Init end");
+
+		return true;
+	}
+
+	// Prepare memory buffer for bin of given id - in fact alllocate only for the bin file size
+	bool extend(uint32 bin_id, uint32 sorting_phases, int64 file_size, int64 kxmers_size, int64 out_buffer_size, int64 kxmer_counter_size, int64 lut_size)
+	{
+		unique_lock<mutex> lck(mtx);
+		int64 part1_size;
+		int64 part2_size;
+
+		if (sorting_phases % 2 == 0)
+		{
+			part1_size = kxmers_size + kxmer_counter_size;
+			part2_size = max(max(file_size, kxmers_size), out_buffer_size + lut_size);
+		}
+		else
+		{
+			part1_size = max(kxmers_size + kxmer_counter_size, file_size);
+			part2_size = max(kxmers_size, out_buffer_size + lut_size);
+		}
+		int64 req_size = part1_size + part2_size;
+
+		log("Ext. begin", req_size);
+
+		uint64 found_pos;
+		bool must_reallocate = false;
+		uint64 present_pos = get<0>(bin_ptrs[bin_id]) - buffer;
+
+		// Case 1 - whole buffer was allocated during init()
+		// Check whether we already have whole buffer allocated or not
+		if (map_reserved[present_pos] == (uint64)req_size)
+		{
+			log("Ext-r end");
+			return true;
+		}
+
+		// We have to extend the buffer
+		
+		// Look for space to insert
+		cv.wait(lck, [&]() -> bool{
+			auto p = map_reserved.find(present_pos);
+			auto q = p;
+			++q;
+
+			// Check whether we can just extend the memory buffer to the required size
+			if (p->first + req_size <= q->first)
+			{
+				must_reallocate = false;
+				found_pos = present_pos;
+				return true;
+			}
+			
+			// Look for a free space of required size
+			found_pos = total_size;
+			uint64 prev_end_pos = 0;
+			for (auto &p : map_reserved)
+				if (prev_end_pos + req_size < p.first)
+				{
+					found_pos = prev_end_pos;
+					must_reallocate = true;
+					return true;
+				}
+				else
+					prev_end_pos = p.first + p.second;
+
+			return false;
+		});
+
+		// Case 2 - buffer must be extended but without reallocation
+		if (!must_reallocate)
+		{
+			map_reserved[present_pos] = req_size;
+
+			uchar *base_ptr = get<0>(bin_ptrs[bin_id]) = buffer + found_pos;
+
+			if (sorting_phases % 2 == 0)				// the result of sorting is in the same place as input
+			{
+				get<1>(bin_ptrs[bin_id]) = base_ptr + part1_size;
+				get<2>(bin_ptrs[bin_id]) = base_ptr;
+				get<3>(bin_ptrs[bin_id]) = base_ptr + part1_size;
+			}
+			else
+			{
+				get<1>(bin_ptrs[bin_id]) = base_ptr;
+				get<2>(bin_ptrs[bin_id]) = base_ptr + part1_size;
+				get<3>(bin_ptrs[bin_id]) = base_ptr;
+			}
+			get<4>(bin_ptrs[bin_id]) = base_ptr + part1_size;									// data
+			get<5>(bin_ptrs[bin_id]) = get<4>(bin_ptrs[bin_id]) + out_buffer_size;
+			if (kxmer_counter_size)
+				get<6>(bin_ptrs[bin_id]) = base_ptr + kxmers_size;								//kxmers counter
+			else
+				get<6>(bin_ptrs[bin_id]) = NULL;
+			
+			get<7>(bin_ptrs[bin_id]) = req_size;
+
+			free_size += file_size;
+			free_size -= req_size;
+			
+			// Sub-Case 2a - input data must be moved to correct position
+			if (sorting_phases % 2 == 0)				// Must move input data
+				A_memcpy(base_ptr + part1_size, base_ptr, file_size);
+			// Sub-Case 2b - nothing has to be done with input data
+			else
+				;
+
+			log("Ext-e end");
+			return true;
+		}
+
+		// Case 3 - Buffer is allocated in new place in memory, so we must move the input data
+		map_reserved[found_pos] = req_size;
+
+		auto readed_part = get<1>(bin_ptrs[bin_id]);
+
+		uchar *base_ptr = get<0>(bin_ptrs[bin_id]) = buffer + found_pos;
+
+		if (sorting_phases % 2 == 0)				// the result of sorting is in the same place as input
+		{
+			get<1>(bin_ptrs[bin_id]) = base_ptr + part1_size;
+			get<2>(bin_ptrs[bin_id]) = base_ptr;
+			get<3>(bin_ptrs[bin_id]) = base_ptr + part1_size;
+		}
+		else
+		{
+			get<1>(bin_ptrs[bin_id]) = base_ptr;
+			get<2>(bin_ptrs[bin_id]) = base_ptr + part1_size;
+			get<3>(bin_ptrs[bin_id]) = base_ptr;
+		}
+		get<4>(bin_ptrs[bin_id]) = base_ptr + part1_size;									// data
+		get<5>(bin_ptrs[bin_id]) = get<4>(bin_ptrs[bin_id]) + out_buffer_size;
+		if (kxmer_counter_size)
+			get<6>(bin_ptrs[bin_id]) = base_ptr + kxmers_size;								//kxmers counter
+		else
+			get<6>(bin_ptrs[bin_id]) = NULL;
+		get<7>(bin_ptrs[bin_id]) = req_size;
+
+		free_size += file_size;
+		free_size -= req_size;
+
+		// Make a copy of the readed part
+		A_memcpy(get<1>(bin_ptrs[bin_id]), readed_part, file_size);
+
+		// Remove the memory of the already copied part of data
+		map_reserved.erase(present_pos);
+
+		log("Ext-r end");
+		return true;
+	}
+
 
 	void reserve(uint32 bin_id, uchar* &part, mba_t t)
-	{
+	{		
 		unique_lock<mutex> lck(mtx);
 		if (t == mba_input_file)
 			part = get<1>(bin_ptrs[bin_id]);
@@ -912,7 +1462,7 @@ public:
 
 	// Deallocate memory buffer - uchar*
 	void free(uint32 bin_id, mba_t t)
-	{
+	{		
 		unique_lock<mutex> lck(mtx);
 		if (t == mba_input_file)
 			get<1>(bin_ptrs[bin_id]) = NULL;
@@ -927,22 +1477,12 @@ public:
 		else if (t == mba_kxmer_counters)
 			get<6>(bin_ptrs[bin_id]) = NULL;
 
-		if (!get<1>(bin_ptrs[bin_id]) && !get<2>(bin_ptrs[bin_id]) && !get<3>(bin_ptrs[bin_id]) && !get<4>(bin_ptrs[bin_id]) && !get<5>(bin_ptrs[bin_id]) && !get<6>(bin_ptrs[bin_id]))
+		if (!get<1>(bin_ptrs[bin_id]) && !get<2>(bin_ptrs[bin_id]) && !get<3>(bin_ptrs[bin_id]) && !get<4>(bin_ptrs[bin_id]) &&
+			!get<5>(bin_ptrs[bin_id]) && !get<6>(bin_ptrs[bin_id]))
 		{
-			for (auto p = list_reserved.begin(); p != list_reserved.end() && p->second != 0; ++p)
-			{
-				if ((int64)p->first == get<0>(bin_ptrs[bin_id]) - buffer)
-				{
-					list_reserved.erase(p);
-					break;
-				}
-			}
-			for (auto p = list_insert_order.begin(); p != list_insert_order.end(); ++p)
-			if (p->first == bin_id)
-			{
-				list_insert_order.erase(p);
-				break;
-			}
+			map_reserved.erase(get<0>(bin_ptrs[bin_id]) - buffer);
+
+			log("Free");
 
 			get<0>(bin_ptrs[bin_id]) = NULL;
 			free_size += get<7>(bin_ptrs[bin_id]);
@@ -1365,6 +1905,7 @@ public:
 	}
 	void mark_completed()
 	{
+		lock_guard<mutex> lck(mtx);
 		--n_writers;
 		if (!n_writers)
 			cv_pop.notify_all();
@@ -1405,8 +1946,121 @@ public:
 		lock_guard<mutex> lck(mtx);
 		return current;
 	}
-
 };
+
+class CSortersManager
+{
+	int free_threads = 0;
+	int max_sorters = 0;
+	int working_with_additional;
+	vector<int> n_sorters; // number of sorters working at the same time
+	CBinQueue *bq;
+
+	mutex mtx;
+	condition_variable cv_get_next;	
+public:
+	CSortersManager(uint32 n_bins, uint32 n_threads, CBinQueue *_bq, int64 max_mem_size, const vector<pair<int32, int64>>& sorted_bins)
+	{
+		bq = _bq;
+		n_sorters.resize(n_bins, 0);
+		max_sorters = free_threads = n_threads;
+		working_with_additional = 0;
+		uint32 curr_sorters = 1;
+		uint32 pos = 0;
+		uint32 max_sorters = free_threads;
+
+		while (curr_sorters < max_sorters)
+		{
+			if (pos >= sorted_bins.size())
+				break;
+
+			while (pos < sorted_bins.size())
+			{
+				if (sorted_bins[pos].second > max_mem_size / 2.0 / curr_sorters)
+					n_sorters[sorted_bins[pos++].first] = /*max_sorters / */curr_sorters; //but in fact one more will be possible when available
+				else
+					break;
+			}
+			
+			curr_sorters *= 2;
+		}
+
+		for (uint32 i = pos; i < sorted_bins.size(); ++i)
+			n_sorters[sorted_bins[i].first] = max_sorters/*1*/;
+
+		/*cout << "bin_id;req_size;threads per bin" << endl;
+		for (auto &e : sorted_bins)
+		{
+			cout << e.first << ";" << e.second << ";" << threads_per_bin[e.first] << endl;
+		}
+		cout << "--------------------------------------------------------------------------------------------------------------\n";*/
+	}
+
+	bool GetNext(int32 &bin_id, uchar *&part, uint64 &size, uint64 &n_rec, int& n_threads)
+	{
+		unique_lock<mutex> lck(mtx);
+		
+		bool no_more = false;
+		bool poped = false;
+		cv_get_next.wait(lck, [this, &bin_id, &part, &size, &n_rec, &no_more, &poped, &n_threads]
+		{
+			if (!poped)
+			{
+				poped = bq->pop_if_any(bin_id, part, size, n_rec);
+				if (!poped)
+					no_more = bq->completed();
+			}
+			if (no_more)
+				return true;
+			if (!poped)
+				return false;
+
+			int should_work_with_additional = max_sorters % n_sorters[bin_id];
+			
+			n_threads = max_sorters / n_sorters[bin_id];
+			//cout << "works_with_additional: " << working_with_additional << ", should_work_with_additional: " << should_work_with_additional << endl;
+			if (working_with_additional < should_work_with_additional)
+			{
+				++n_threads;
+			}
+			return free_threads >= n_threads;
+		});
+		if (no_more)
+			return false;
+	
+		free_threads -= n_threads;		
+
+		if (max_sorters / n_sorters[bin_id] < n_threads)
+			++working_with_additional;
+		
+		//cout << "bin " << bin_id << ": " << threads_per_bin[bin_id] << " sorters, threads assigned: " << n_threads << endl; //TODO: remove
+
+		return true;
+	}
+
+	void ReturnThreads(uint32 n_threads, uint32 bin_id)
+	{
+		lock_guard<mutex> lck(mtx);		
+		free_threads += n_threads;	
+		if (max_sorters / n_sorters[bin_id] < (int)n_threads)
+			--working_with_additional;
+
+		//cout << "Return Thread, working_with_additional: " << working_with_additional << endl;
+		cv_get_next.notify_all();
+	}
+
+	void NotifyBQPush()
+	{
+		lock_guard<mutex> lck(mtx);	
+		cv_get_next.notify_one();
+	}
+	void NotifyQueueCompleted()
+	{
+		lock_guard<mutex> lck(mtx);
+		cv_get_next.notify_all();
+	}
+};
+
 #endif
 
 // ***** EOF

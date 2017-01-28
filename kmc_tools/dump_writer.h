@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _DUMP_WRITER_H
@@ -57,12 +57,18 @@ public:
 	}
 };
 
-template<typename KMCDB, unsigned SIZE>
-class CDumpWriter
+template<unsigned SIZE>
+class CDumpWriterBase
 {
 	static const uint32 OVERHEAD_SIZE = 1000;
-	KMCDB& kmcdb;
-	COutputDesc output_desc;
+
+	uint32 counter_len;
+	
+	std::string& file_src;
+	uint32 cutoff_max;
+	uint32 cutoff_min;	
+	uint32 counter_max;
+	
 	uint32 kmer_len;
 	uint32 kmer_bytes;
 	CConfig& config;
@@ -70,6 +76,9 @@ class CDumpWriter
 	char* buf;
 	uint32 buf_size;
 	uint32 buf_pos;
+
+	FILE* file = nullptr;
+
 	struct DumpOpt
 	{
 		char* opt_ACGT;
@@ -91,14 +100,14 @@ class CDumpWriter
 		{
 			delete[]opt_ACGT;
 		}
-		
+
 	}opt;
 
 	void kmerToStr(CKmer<SIZE>& kmer, char* kmer_str)
 	{
 		//first byte
 		char* base = opt.opt_ACGT + 4 * kmer.get_byte(kmer_bytes - 1) + 4 - in_first_byte;
-		for(uint32 i = 0 ; i < in_first_byte ; ++i)
+		for (uint32 i = 0; i < in_first_byte; ++i)
 			*kmer_str++ = *base++;
 		//rest
 		for (int pos = kmer_bytes - 2; pos >= 0; --pos)
@@ -111,52 +120,41 @@ class CDumpWriter
 		}
 	}
 
-public:
-	CDumpWriter(KMCDB& kmcdb) :kmcdb(kmcdb), output_desc(CConfig::GetInstance().output_desc), config(CConfig::GetInstance())
+protected:
+	void Init()
 	{
-		kmer_len = config.headers.front().kmer_len;
-		kmer_bytes = (kmer_len + 3) / 4;
-		in_first_byte = kmer_len % 4;
-		if (in_first_byte == 0)
-			in_first_byte = 4;
-	}
-
-	bool Process()
-	{
-		CKmer<SIZE> kmer;
-		uint32 counter;
-	
-		uint32 counter_len;
-		FILE* file = fopen(output_desc.file_src.c_str(), "wb");
+		file = fopen(file_src.c_str(), "wb");
 		if (!file)
 		{
-			std::cout << "Error: cannot open file: " << output_desc.file_src << "\n";
+			std::cout << "Error: cannot open file: " << file_src << "\n";
 			exit(1);
 		}
 		buf_pos = 0;
 		buf_size = DUMP_BUF_SIZE;
 		buf = new char[buf_size];
+	}
 
-		//while (kmcdb.NextKmerSequential(kmer, counter))
-		while (kmcdb.NextKmer(kmer, counter))
+	void ProcessKmer(CKmer<SIZE>& kmer, uint32 counter)
+	{
+		if (counter >= cutoff_min && counter <= cutoff_max)
 		{
-			if (counter >= output_desc.cutoff_min && counter <= output_desc.cutoff_max)
+			if (counter > counter_max)
+				counter_max = counter_max;
+			kmerToStr(kmer, buf + buf_pos);
+			buf[buf_pos + kmer_len] = '\t';
+			counter_len = CNumericConversions::Int2PChar(counter, (uchar*)(buf + buf_pos + kmer_len + 1));
+			buf[buf_pos + kmer_len + 1 + counter_len] = '\n';
+			buf_pos += kmer_len + 2 + counter_len;
+			if (buf_pos + OVERHEAD_SIZE > buf_size)
 			{
-				kmerToStr(kmer, buf + buf_pos);
-				buf[buf_pos + kmer_len] = '\t';
-				counter_len = CNumericConversions::Int2PChar(counter, (uchar*)(buf + buf_pos + kmer_len + 1));
-				buf[buf_pos + kmer_len + 1 + counter_len] = '\n';				
-				buf_pos += kmer_len + 2 + counter_len;
-				if (buf_pos + OVERHEAD_SIZE > buf_size)
-				{
-					fwrite(buf, 1, buf_pos, file);
-					buf_pos = 0;
-				}
-
+				fwrite(buf, 1, buf_pos, file);
+				buf_pos = 0;
 			}
 		}
+	}
 
-		//save rest if necessary
+	void Finish()
+	{		
 		if (buf_pos)
 		{
 			fwrite(buf, 1, buf_pos, file);
@@ -164,10 +162,75 @@ public:
 		}
 
 		fclose(file);
-
 		delete[] buf;
+	}
 
+protected:
+	CDumpWriterBase(std::string& file_src, uint32 cutoff_max, uint32 cutoff_min, uint32 counter_max) :
+		file_src(file_src),
+		cutoff_max(cutoff_max),
+		cutoff_min(cutoff_min),
+		counter_max(counter_max),
+		config(CConfig::GetInstance())
+	{
+		kmer_len = config.headers.front().kmer_len;
+		kmer_bytes = (kmer_len + 3) / 4;
+		in_first_byte = kmer_len % 4;
+		if (in_first_byte == 0)
+			in_first_byte = 4;
+	}
+};
+
+template<typename KMCDB, unsigned SIZE>
+class CDumpWriter : public CDumpWriterBase<SIZE>
+{	
+	KMCDB& kmcdb;
+public:
+	CDumpWriter(KMCDB& kmcdb) :
+		CDumpWriterBase<SIZE>(CConfig::GetInstance().output_desc.file_src, CConfig::GetInstance().output_desc.cutoff_max, CConfig::GetInstance().output_desc.cutoff_min, CConfig::GetInstance().output_desc.counter_max),
+		kmcdb(kmcdb)		
+	{
+
+	}
+
+	bool Process()
+	{
+		CKmer<SIZE> kmer;
+		uint32 counter;			
+		this->Init();		
+		while (kmcdb.NextKmer(kmer, counter))
+		{
+			this->ProcessKmer(kmer, counter);
+		}
+		this->Finish();		
 		return true;
+	}
+};
+
+template<unsigned SIZE>
+class CDumpWriterForTransform : public CDumpWriterBase<SIZE>
+{	
+public:
+	CDumpWriterForTransform(CTransformOutputDesc& output_desc)
+		:
+		CDumpWriterBase<SIZE>(output_desc.file_src, output_desc.cutoff_max, output_desc.cutoff_min, output_desc.counter_max)
+	{
+
+	}
+
+	void Init()
+	{
+		CDumpWriterBase<SIZE>::Init();
+	}
+
+	void PutKmer(CKmer<SIZE>& kmer, uint32 counter)
+	{
+		this->ProcessKmer(kmer, counter);
+	}
+
+	void Finish()
+	{
+		CDumpWriterBase<SIZE>::Finish();
 	}
 };
 

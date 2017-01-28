@@ -36,7 +36,7 @@ void map_log(uint32 signature_len, uint32 map_size, int32* signature_map)
 
 
 
-void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, uint32 quality_size, uint64 n_reads)
+void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, uint32 quality_size, uint64 n_reads, uint32 signature_len, uint32 map_size, int32* signature_map)
 {
 #ifdef KMERS_PER_BIN_LOG_FILE
 	int32 bin_id;
@@ -56,13 +56,10 @@ void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, u
 		cout << "cannot open file to store kmers per bin: " << KMERS_PER_BIN_LOG_FILE << "\n";
 		exit(1);
 	}
-	fprintf(stats_file, "%12s%12s%12s%12s%12s\n", "bin_id", "n_rec", "n_super_kmers", "size", "sorted mem");
-	while ((bin_id = Queues.bd->get_next_bin()) >= 0)
+	fprintf(stats_file, "%s;%s;%s;%s;%s;%s\n", "bin_id", "n_rec", "n_super_kmers", "size", "2nd stage MEM", "n_singatures");
+	while ((bin_id = Queues.bd->get_next_sort_bin()) >= 0)
 	{
 		Queues.bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs, n_super_kmers);
-
-
-
 
 		// Reserve memory necessary to process the current bin at all next stages
 		uint64 input_kmer_size;
@@ -121,21 +118,26 @@ void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, u
 		}
 		int64 req_size = part1_size + part2_size;
 
+		uint64 n_signatures = 0;
+		for (uint32 i = 0; i < map_size; ++i)
+		{
+			if (signature_map[i] == bin_id)
+				++n_signatures;
+		}
 
-
-
-		fprintf(stats_file, "%12i%12llu%12llu%12llu%12llu\n", bin_id, n_rec, n_super_kmers, size, (uint64)req_size);
+		fprintf(stats_file, "%i;%llu;%llu;%llu;%llu;%llu\n", bin_id, n_rec, n_super_kmers, size, (uint64)req_size, n_signatures);
 		sum_size += size;
 		sum_n_rec += n_rec;
 		sum_n_plus_x_recs += n_plus_x_recs;
 		sum_n_super_kmers += n_super_kmers;
 	}
 
-	fprintf(stats_file, "%12s%12llu%12llu%12llu\n", "SUMMARY", sum_n_rec, sum_n_super_kmers, sum_size);
+	fprintf(stats_file, "%s;%llu;%llu;%llu\n", "SUMMARY", sum_n_rec, sum_n_super_kmers, sum_size);
 	fprintf(stats_file, "n_reads: %llu\n", n_reads);
 
 	fclose(stats_file);
 
+	Queues.bd->reset_reading();
 	exit(1);
 #endif
 }

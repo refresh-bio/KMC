@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _S_MAPPER_H
@@ -18,7 +18,6 @@
 #include "develop.h"
 #endif
 
-
 class CSignatureMapper
 {
 	uint32 map_size;
@@ -27,6 +26,10 @@ class CSignatureMapper
 	uint32 special_signature;
 	CMemoryPool* pmm_stats;
 	uint32 n_bins;
+
+#ifdef DEVELOP_MODE
+	bool verbose_log = false;
+#endif
 
 	class Comp
 	{
@@ -126,11 +129,26 @@ public:
 		pmm_stats->free(sorted);
 
 #ifdef DEVELOP_MODE
-		map_log(signature_len, map_size, signature_map);
+		if (verbose_log)
+			map_log(signature_len, map_size, signature_map);		
 #endif
 
 	}
-	CSignatureMapper(CMemoryPool* _pmm_stats, uint32 _signature_len, uint32 _n_bins)
+#ifdef DEVELOP_MODE
+	uint32 GetMapSize()
+	{
+		return map_size;
+	}
+	int32* GetMap()
+	{
+		return signature_map;
+	}
+#endif
+	CSignatureMapper(CMemoryPool* _pmm_stats, uint32 _signature_len, uint32 _n_bins
+#ifdef DEVELOP_MODE
+		,  bool _verbose_log
+#endif
+		)
 	{
 		n_bins = _n_bins;
 		pmm_stats = _pmm_stats;
@@ -139,6 +157,9 @@ public:
 		map_size = (1 << 2 * signature_len) + 1;
 		signature_map = new int32[map_size];		
 		fill_n(signature_map, map_size, -1);
+#ifdef DEVELOP_MODE
+		verbose_log = _verbose_log;
+#endif
 	}
 	inline int32 get_bin_id(uint32 signature)
 	{

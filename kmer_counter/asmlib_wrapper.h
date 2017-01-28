@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _ASMLIB_WRAPPER_H
@@ -14,6 +14,7 @@
 #include "defs.h"
 #ifdef DISABLE_ASMLIB
 #define A_memcpy memcpy
+#define A_memmove memmove
 #define SetMemcpyCacheLimit(X) 
 #else
 #include "libs/asmlib.h"

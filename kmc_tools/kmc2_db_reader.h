@@ -1,11 +1,11 @@
 /*
-  This file is a part of KMC software distributed under GNU GPL 3 licence.
-  The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
-  
-  Authors: Marek Kokot
-  
-  Version: 2.3.0
-  Date   : 2015-08-21
+This file is a part of KMC software distributed under GNU GPL 3 licence.
+The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
+
+Authors: Marek Kokot
+
+Version: 3.0.0
+Date   : 2017-01-28
 */
 
 #ifndef _KMC2_DB_READER_H
@@ -18,12 +18,11 @@
 #include <mutex>
 #include <memory>
 #include <tuple>
-
 //#include <stack>
 #include <queue>
 
+#include <algorithm>
 #include <condition_variable>
-
 
 //Forward declaration
 template<unsigned SIZE> class CKMC2DbReaderSorted;
@@ -31,7 +30,8 @@ template<unsigned SIZE> class CKMC2DbReaderSorted;
 template<unsigned SIZE> class CBin;
 
 
-struct CBinBuff //must be moveable
+
+struct CBinBuff //must be moveble
 {
 	uchar* buf;
 	uint32 size;
@@ -45,7 +45,7 @@ struct CBinBuff //must be moveable
 	{
 
 	}
-	
+
 #ifdef WIN32
 	CBinBuff& operator=(CBinBuff&& rhs) throw()
 #else
@@ -87,7 +87,7 @@ template<unsigned SIZE> class CBinBufProvider
 	uint32 rec_size;
 
 	using desc_t = std::tuple<uint64, uint64, bool>;//current_kmer, last_kmer, is_empty
-	using to_read_t = std::tuple<uint32, uint64, uchar*, uint32>;//bin_id, file_pos, bufer to read, size to read
+	using to_read_t = std::tuple<uint32, uint64, uchar*, uint32>;//bin_id, file_pos, buffer to read, size to read
 
 	std::vector<desc_t> desc;
 	//std::stack<to_read_t, std::vector<to_read_t>> to_read;
@@ -116,7 +116,7 @@ public:
 			uint32 kmers_to_read = (uint32)MIN(kmers_left, max_bin_bytes / rec_size);
 			internal_bufs[bin_id].size = kmers_to_read * rec_size;
 			bool was_empty = to_read.empty();
-			to_read.push(std::make_tuple(bin_id, 4 + std::get<0>(desc[bin_id]) * rec_size, internal_bufs[bin_id].buf, internal_bufs[bin_id].size));			
+			to_read.push(std::make_tuple(bin_id, 4 + std::get<0>(desc[bin_id]) * rec_size, internal_bufs[bin_id].buf, internal_bufs[bin_id].size));
 			std::get<0>(desc[bin_id]) += kmers_to_read;
 			if (was_empty)
 				cv_get_next_to_read.notify_all();
@@ -130,7 +130,7 @@ public:
 	}
 
 	void notify_bin_filled(uint32 bin_id)
-	{		
+	{
 		std::lock_guard<std::mutex> lck(mtx);
 		std::get<2>(desc[bin_id]) = false;
 		cv_pop.notify_all();
@@ -143,7 +143,7 @@ public:
 		if (forced_to_finish || (to_read.empty() && !bins_left_to_read))
 			return false;
 
-		std::tie(bin_id, file_pos, buf, size) = to_read.front();				
+		std::tie(bin_id, file_pos, buf, size) = to_read.front();
 		to_read.pop();
 		return true;
 	}
@@ -152,7 +152,7 @@ public:
 	{
 		std::lock_guard<std::mutex> lck(mtx);
 		forced_to_finish = true;
-		cv_get_next_to_read.notify_all();		
+		cv_get_next_to_read.notify_all();
 	}
 
 	~CBinBufProvider()
@@ -179,42 +179,36 @@ public:
 		uint32 bin_id;
 		uint64 file_pos;
 		uchar* buf;
-		uint32 size;		
-#ifdef ENABLE_LOGGER
-		CTimer timer;
-#endif
+		uint32 size;
 
 		while (bin_provider.get_next_to_read(bin_id, file_pos, buf, size))
-		{		
+		{
 			my_fseek(suf_file, file_pos, SEEK_SET);
-#ifdef ENABLE_LOGGER		
-			timer.start();
-#endif						
-			if (fread(buf, 1, size, suf_file) != size)			
+			if (fread(buf, 1, size, suf_file) != size)
 			{
-				std::cout << "Error while reading sufix file\n";
+				std::cout << "Error while reading suffix file\n";
 				exit(1);
 			}
-#ifdef ENABLE_LOGGER
-			CLoger::GetLogger().log_operation("fread", this, timer.get_time());
-			timer.start();
-#endif
 			bin_provider.notify_bin_filled(bin_id);
 		}
 	}
-
 };
 
-
+template<unsigned SIZE> class CKmerPQ;
 template<unsigned SIZE> class CBin
 {
 public:
 	CBin(uint32 bin_id, uint64* LUT, CKMC2DbReaderSorted<SIZE>& kmc2_db);
 	bool NextKmer(CKmer<SIZE>& kmer, uint32& counter);
 
-	uint64 get_kmer_number()
+	uint64 get_kmer_number_start()
 	{
-		return kmer_number;
+		return kmer_number_start;
+	}
+
+	uint64 get_kmers_left()
+	{
+		return kmers_left;
 	}
 
 	uint64 get_kmer_number_end()
@@ -232,30 +226,35 @@ public:
 		bin_buff = std::move(_bin_buff);
 		pos = bin_buff.size; //force reload
 	}
-	
+
 
 #ifdef WIN32
-	//Because VS2013 does generate default move ctro here
-	CBin(CBin&& o) throw():
+	//Because VS2013 does generate default move ctor here
+	CBin(CBin&& o) throw() :
 		bin_id(o.bin_id),
 		bin_buff(std::move(o.bin_buff)),
 		LUT(o.LUT),
 		pos(o.pos),
 		bin_provider(o.bin_provider),
 		kmc2_db(o.kmc2_db),
-	
-		kmer_number(o.kmer_number), kmer_number_end(o.kmer_number_end),
+		kmer_number_start(o.kmer_number_start), kmer_number_end(o.kmer_number_end),
+		kmers_left(o.kmers_left),
+		kmers_left_for_current_prefix(o.kmers_left_for_current_prefix),
 		kmer_bytes(o.kmer_bytes), prefix_bytes(o.prefix_bytes), suffix_bytes(o.suffix_bytes), counter_size(o.counter_size), record_size(o.record_size),
+		cutoff_range(o.cutoff_range), cutoff_min(o.cutoff_min),
+		prefix_pos(o.prefix_pos),
 		prefix(o.prefix),
-		max_prefix(o.max_prefix)
+		max_prefix(o.max_prefix),
+		is_little_endian(o.is_little_endian),
+		counter_mask(o.counter_mask)
 	{
-		
+
 	}
 #else
-//g++ generate here move ctor automatically
+	//g++ generate here move ctor automatically
 #endif
 
-	
+
 
 
 private:
@@ -266,16 +265,20 @@ private:
 	CBinBufProvider<SIZE>& bin_provider;
 	CKMC2DbReaderSorted<SIZE>& kmc2_db;
 	void reload_suf_buf();
-	uint64 kmer_number, kmer_number_end;
+	uint64 kmer_number_start, kmer_number_end;
+	uint64 kmers_left;
+	uint64 kmers_left_for_current_prefix;
 	uint32 kmer_bytes, prefix_bytes, suffix_bytes, counter_size, record_size;
-	uint64 prefix = 0;
+	uint32 cutoff_range, cutoff_min;
+	uint64 prefix_pos = 0;
+	CKmer<SIZE> prefix;
 	uint64 max_prefix;
+	bool is_little_endian;
+	uint32 counter_mask;
+
+
+	friend class CKmerPQ<SIZE>;
 };
-
-
-
-
-
 
 
 template<unsigned SIZE> void CBinBufProvider<SIZE>::init(std::vector<CBin<SIZE>>& bins)
@@ -286,12 +289,11 @@ template<unsigned SIZE> void CBinBufProvider<SIZE>::init(std::vector<CBin<SIZE>>
 	max_bin_bytes = SINGLE_BIN_BUFF_SIZE_FOR_DB2_READER / rec_size * rec_size;
 	uint32 mem;
 
-
 	internal_bufs.resize(bins.size());
 	for (uint32 i = 0; i < bins.size(); ++i)
 	{
 		auto& b = bins[i];
-		start = b.get_kmer_number();
+		start = b.get_kmer_number_start();
 		end = b.get_kmer_number_end();
 		mem = (uint32)MIN((end - start) * rec_size, max_bin_bytes);
 
@@ -300,10 +302,9 @@ template<unsigned SIZE> void CBinBufProvider<SIZE>::init(std::vector<CBin<SIZE>>
 		needed_mem += mem;
 	}
 
-	bins_left_to_read = (uint32)bins.size();	
+	bins_left_to_read = (uint32)bins.size();
 	buf_bins = new uchar[needed_mem];
 	buf_internal = new uchar[needed_mem];
-
 
 	internal_bufs[0].buf = buf_internal;
 
@@ -332,7 +333,6 @@ template<unsigned SIZE> void CBinBufProvider<SIZE>::init(std::vector<CBin<SIZE>>
 			--bins_left_to_read;
 		}
 	}
-
 }
 
 //************************************************************************************************************
@@ -343,13 +343,12 @@ template<unsigned SIZE> class CKmerPQ
 public:
 	CKmerPQ(uint32 _no_of_bins);
 	inline void init_add(CBin<SIZE>* bin);
-	inline bool get_min(CBundleData<SIZE>& bundle_data);
+
+	void Process(CCircularQueue<SIZE>& output_queue);
 
 	inline void reset();
 
 private:
-	inline void update_heap();
-
 	using elem_t = std::pair<CKmer<SIZE>, uint32>;//kmer, desc_id
 	using desc_t = std::pair<CBin<SIZE>*, uint32>;//bin, counter
 	std::vector<elem_t> elems;
@@ -357,22 +356,28 @@ private:
 	uint32 pos, desc_pos;
 };
 
-
 //************************************************************************************************************
 // CMergerParent - Merger of k-mers produced by CMergerChilds
 //************************************************************************************************************
 template<unsigned SIZE> class CMergerParent
 {
 public:
-	CMergerParent(std::vector<CCircularQueue<SIZE>*>& input_queues, CCircularQueue<SIZE>& output_queue);
-
+	CMergerParent(std::vector<CCircularQueue<SIZE>*>& input_queues, CCircularQueue<SIZE>& output_queue, uint32 n_subthreads);
 	void operator()();
 
 private:
+	void Process2Inputs();
+	void ProcessMoreInputs();
+
+	uint32 LastLowerPlus1(CBundleData<SIZE>& b, uint32 start, uint32 end, CKmer<SIZE> kmer);
+	void ProcessWithSubthreads();
+
 	std::vector<CBundleData<SIZE>> input_bundles;
 	std::vector<CCircularQueue<SIZE>*>& input_queues;
+
 	CBundleData<SIZE> output_bundle;
 	CCircularQueue<SIZE>& output_queue;
+	uint32 n_subthreads;
 };
 
 //************************************************************************************************************
@@ -383,7 +388,6 @@ template<unsigned SIZE> class CMergerChild
 	using bin_iter = typename std::vector<CBin<SIZE>>::iterator;
 public:
 	CMergerChild(bin_iter begin, bin_iter end, CCircularQueue<SIZE>& output_queue);
-
 	void operator()();
 
 private:
@@ -399,7 +403,7 @@ template<unsigned SIZE> class CKMC2DbReaderSorted
 public:
 	CKMC2DbReaderSorted(const CKMC_header& header, const CInputDesc& desc);
 
-	void NextBundle(CBundle<SIZE>& bundle, bool& finished);	
+	void NextBundle(CBundle<SIZE>& bundle, bool& finished);
 
 	void IgnoreRest();
 
@@ -425,11 +429,12 @@ private:
 
 
 	uint32 n_child_threads;
+	uint32 n_parent_threads;
 
-	CMergerParent<SIZE>* parent;
+	CMergerParent<SIZE>* parent = nullptr;
 	std::thread parent_thread;
 
-	CCircularQueue<SIZE> output_queue;
+	CCircularQueue<SIZE>* output_queue;
 	std::vector<CCircularQueue<SIZE>*> childs_parent_queues;
 
 	std::vector<CMergerChild<SIZE>*> childs;
@@ -442,7 +447,8 @@ private:
 // CKCM2DbReaderSeqCounter_Base - Base class for classes to access k-mers one by one (not sorted) or 
 // for counters only from KMC2 database
 //************************************************************************************************************
-template <unsigned SIZE> class CKCM2DbReaderSeqCounter_Base
+template <unsigned SIZE>
+class CKCM2DbReaderSeqCounter_Base
 {
 protected:
 	CKCM2DbReaderSeqCounter_Base(const CKMC_header& header, const CInputDesc& desc);
@@ -452,29 +458,31 @@ protected:
 	bool reload_suf_buff();
 
 	static const uint32 PREFIX_BUFF_BYTES = KMC2_DB_READER_PREFIX_BUFF_BYTES;
-	static const uint32 SUFIX_BUFF_BYTES = KMC2_DB_READER_SUFIX_BUFF_BYTES;
+	static const uint32 SUFFIX_BUFF_BYTES = KMC2_DB_READER_SUFFIX_BUFF_BYTES;
 
 	const CKMC_header& header;
 	const CInputDesc& desc;
 
-	uint32 sufix_bytes;
-	uint32 record_size; //of sufix, in bytes
-	uint64 sufix_buff_size, sufix_buff_pos, sufix_left_to_read;
+	uint32 suffix_bytes;
+	uint32 record_size; //of suffix, in bytes
+	uint64 suffix_buff_size, suffix_buff_pos, suffix_left_to_read;
 	uint64 prefix_buff_size, prefix_buff_pos, prefix_left_to_read;
-	uint64 sufix_number;
+	uint64 suffix_number;
 
 	uint32 kmer_bytes, prefix_bytes;
 
-	uchar* sufix_buff = nullptr;
+	uchar* suffix_buff = nullptr;
 
-	FILE* sufix_file;
-	std::string sufix_file_name;
+	FILE* suffix_file;
+	std::string suffix_file_name;
 };
+
 
 //************************************************************************************************************
 // CKMC2DbReaderSequential - Produce k-mers sequentialy from KMC2 database (they are not sorted!)
 //************************************************************************************************************
-template<unsigned SIZE> class CKMC2DbReaderSequential : public CKCM2DbReaderSeqCounter_Base<SIZE>
+template<unsigned SIZE>
+class CKMC2DbReaderSequential : public CKCM2DbReaderSeqCounter_Base<SIZE>
 {
 public:
 	CKMC2DbReaderSequential(const CKMC_header& header, const CInputDesc& desc);
@@ -492,12 +500,14 @@ private:
 	uint64 prefix_mask;
 
 	uint64* prefix_buff = nullptr;
+	int a;
 };
 
 //************************************************************************************************************
 // CKMC2DbReaderCountersOnly - Produce counters of k-mers from KMC2 database
 //************************************************************************************************************
-template<unsigned SIZE> class CKMC2DbReaderCountersOnly : CKCM2DbReaderSeqCounter_Base<SIZE>
+template<unsigned SIZE>
+class CKMC2DbReaderCountersOnly : CKCM2DbReaderSeqCounter_Base<SIZE>
 {
 public:
 	CKMC2DbReaderCountersOnly(const CKMC_header& header, const CInputDesc& desc);
@@ -510,7 +520,8 @@ private:
 //************************************************************************************************************
 // CKMC2DbReader - reader of KMC2 
 //************************************************************************************************************
-template<unsigned SIZE> class CKMC2DbReader : public CInput<SIZE>
+template<unsigned SIZE>
+class CKMC2DbReader : public CInput<SIZE>
 {
 public:
 	CKMC2DbReader(const CKMC_header& header, const CInputDesc& desc, CPercentProgress& percent_progress, KMCDBOpenMode open_mode);
@@ -542,21 +553,30 @@ private:
 /*****************************************************************************************************************************/
 
 template<unsigned SIZE> CBin<SIZE>::CBin(uint32 bin_id, uint64* LUT, CKMC2DbReaderSorted<SIZE>& kmc2_db) :
-	bin_id(bin_id),
-	LUT(LUT),	
-	bin_provider(kmc2_db.bin_provider),
-	kmc2_db(kmc2_db),
-	suffix_bytes(kmc2_db.suffix_bytes),
-	counter_size(kmc2_db.header.counter_size),
-	max_prefix(kmc2_db.lut_size - 1)
-	
+bin_id(bin_id),
+LUT(LUT),
+bin_provider(kmc2_db.bin_provider),
+kmc2_db(kmc2_db),
+suffix_bytes(kmc2_db.suffix_bytes),
+counter_size(kmc2_db.header.counter_size),
+max_prefix(kmc2_db.lut_size - 1)
+
 {
-	kmer_number = LUT[0];
+	kmer_number_start = LUT[0];
 	kmer_number_end = LUT[kmc2_db.lut_size];
+	kmers_left = kmer_number_end - kmer_number_start;
+	kmers_left_for_current_prefix = LUT[1] - LUT[0];
 	prefix_bytes = (kmc2_db.header.lut_prefix_len + 3) / 4;
 	kmer_bytes = prefix_bytes + suffix_bytes;
 
+	cutoff_min = kmc2_db.desc.cutoff_min;
+	cutoff_range = kmc2_db.desc.cutoff_max - kmc2_db.desc.cutoff_min;
+
 	record_size = suffix_bytes + counter_size;
+
+	prefix.clear();
+	is_little_endian = CConfig::GetInstance().IsLittleEndian();
+	counter_mask = (uint32)((1ull << (counter_size << 3)) - 1);
 }
 
 
@@ -565,45 +585,35 @@ template<unsigned SIZE> CBin<SIZE>::CBin(uint32 bin_id, uint64* LUT, CKMC2DbRead
 /*****************************************************************************************************************************/
 
 /*****************************************************************************************************************************/
-
-
-/*****************************************************************************************************************************/
 template<unsigned SIZE> bool CBin<SIZE>::NextKmer(CKmer<SIZE>& kmer, uint32& counter)
 {
-	while (true)
+	while (kmers_left)
 	{
-		if (kmer_number >= kmer_number_end)
-			return false;
-
 		if (pos >= bin_buff.size)
 			reload_suf_buf();
 
 		//skip empty
-		while (LUT[prefix + 1] <= kmer_number)
+		while (!kmers_left_for_current_prefix)
 		{
-			++prefix;
+			++prefix_pos;
+			prefix.increment_at(suffix_bytes);
+			kmers_left_for_current_prefix = LUT[prefix_pos + 1] - LUT[prefix_pos];
 		}
 
-		uint32 in_kmer_pos = kmer_bytes - 1;
 		uchar* record = bin_buff.buf + pos;
-		kmer.load(record, suffix_bytes);
-		for (int32 i = prefix_bytes - 1; i >= 0; --i)
-			kmer.set_byte(in_kmer_pos--, uchar(prefix >> (i << 3)));
 
-		counter = 0;
-		for (int32 i = counter_size - 1; i >= 0; --i)
-		{
-			counter <<= 8;
-			counter += record[i];
-		}
+		kmer.load_fast(record, suffix_bytes, is_little_endian);
+		kmer.set_prefix(prefix, suffix_bytes);
 
-		++kmer_number;
+		CCounterBuilder::build_counter(counter, record, counter_size, counter_mask, is_little_endian);
 		pos += record_size;
 
-		if (counter >= kmc2_db.desc.cutoff_min && counter <= kmc2_db.desc.cutoff_max)
+		--kmers_left;
+		--kmers_left_for_current_prefix;
+		if (counter - cutoff_min <= cutoff_range)
 			return true;
 	}
-	return true;
+	return false;
 }
 /*****************************************************************************************************************************/
 /********************************************************** PRIVATE **********************************************************/
@@ -646,14 +656,113 @@ template<unsigned SIZE> void CKmerPQ<SIZE>::reset()
 }
 
 /*****************************************************************************************************************************/
-template<unsigned SIZE> inline bool CKmerPQ<SIZE>::get_min(CBundleData<SIZE>& bundle_data)
+template<unsigned SIZE> void CKmerPQ<SIZE>::Process(CCircularQueue<SIZE>& output_queue)
 {
 	if (pos <= 1)
-		return false;
-	bundle_data.Insert(elems[1].first, descs[elems[1].second].second);
+	{
+		output_queue.mark_completed();
+		return;
+	}
+	CBundleData<SIZE> bundle_data;
+	uint32 desc_id = 0;
+	CBin<SIZE>* bin = descs[elems[1].second].first;
+	CKmer<SIZE> kmer;
+	uint32 counter;
+	uchar* record = nullptr;
 
-	update_heap();
-	return true;
+	uint32 suffix_bytes = bin->suffix_bytes;
+	uint32 counter_size = bin->counter_size;
+	uint32 counter_mask = bin->counter_mask;
+	uint32 record_size = bin->record_size;
+	uint32 cutoff_min = bin->cutoff_min;
+	uint32 cutoff_range = bin->cutoff_range;
+
+	bool endian = CConfig::GetInstance().IsLittleEndian();
+
+	while (true)
+	{
+		if (pos <= 1)
+			break;
+		bundle_data.Insert(elems[1].first, descs[elems[1].second].second);
+
+
+		//UPDATE HEAP!
+		desc_id = elems[1].second;
+		bin = descs[desc_id].first;
+
+		bool exists = false;
+
+
+		while (bin->kmers_left)
+		{
+
+			if (bin->pos >= bin->bin_buff.size)
+				bin->reload_suf_buf();
+
+			//skip empty
+			while (!bin->kmers_left_for_current_prefix)
+			{
+				++bin->prefix_pos;
+				bin->prefix.increment_at(suffix_bytes);
+				bin->kmers_left_for_current_prefix = bin->LUT[bin->prefix_pos + 1] - bin->LUT[bin->prefix_pos];
+			}
+
+			record = bin->bin_buff.buf + bin->pos;
+
+			kmer.load_fast(record, suffix_bytes, endian);
+			kmer.set_prefix(bin->prefix, suffix_bytes);
+
+			CCounterBuilder::build_counter(counter, record, counter_size, counter_mask, endian);
+			bin->pos += record_size;
+
+			--bin->kmers_left;
+			--bin->kmers_left_for_current_prefix;
+			if (counter - cutoff_min <= cutoff_range)
+			{
+				exists = true;
+				break;
+			}
+		}
+
+		if (!exists)
+		{
+			kmer.set(elems[--pos].first);
+			desc_id = elems[pos].second;
+		}
+		else
+			descs[desc_id].second = counter;
+
+		uint32 parent, less;
+		parent = less = 1;
+		while (true)
+		{
+			if (parent * 2 >= pos)
+				break;
+			if (parent * 2 + 1 >= pos)
+				less = parent * 2;
+			else if (elems[parent * 2].first < elems[parent * 2 + 1].first)
+				less = parent * 2;
+			else
+				less = parent * 2 + 1;
+			if (elems[less].first < kmer)
+			{
+				elems[parent] = elems[less];
+				parent = less;
+			}
+			else
+				break;
+		}
+		elems[parent] = std::make_pair(kmer, desc_id);
+
+		if (bundle_data.Full())
+		{
+			if (!output_queue.push(bundle_data))
+				break;
+		}
+	}
+	if (!bundle_data.Empty())
+		output_queue.push(bundle_data);
+	output_queue.mark_completed();
 }
 
 /*****************************************************************************************************************************/
@@ -678,63 +787,19 @@ template<unsigned SIZE> inline void CKmerPQ<SIZE>::init_add(CBin<SIZE>* bin)
 }
 
 /*****************************************************************************************************************************/
-/********************************************************** PRIVATE **********************************************************/
-/*****************************************************************************************************************************/
-
-/*****************************************************************************************************************************/
-template<unsigned SIZE> inline void CKmerPQ<SIZE>::update_heap()
-{
-	uint32 desc_id = elems[1].second;
-	CBin<SIZE>* bin = descs[desc_id].first;
-	CKmer<SIZE> kmer;
-	uint32 counter;
-	if (!bin->NextKmer(kmer, counter))
-	{
-		kmer.set(elems[--pos].first);
-		desc_id = elems[pos].second;
-	}
-	else
-		descs[desc_id].second = counter;
-
-	uint32 parent, less;
-	parent = less = 1;
-	while (true)
-	{
-		if (parent * 2 >= pos)
-			break;
-		if (parent * 2 + 1 >= pos)
-			less = parent * 2;
-		else if (elems[parent * 2].first < elems[parent * 2 + 1].first)
-			less = parent * 2;
-		else
-			less = parent * 2 + 1;
-		if (elems[less].first < kmer)
-		{
-			elems[parent] = elems[less];
-			parent = less;
-		}
-		else
-			break;
-	}
-	elems[parent] = std::make_pair(kmer, desc_id);
-}
-
-
-
-/*****************************************************************************************************************************/
 /*********************************************** CMergerParent IMPLEMENTATION ************************************************/
 /*****************************************************************************************************************************/
 
 /*****************************************************************************************************************************/
 /******************************************************** CONSTRUCTOR ********************************************************/
 /*****************************************************************************************************************************/
-template<unsigned SIZE>	CMergerParent<SIZE>::CMergerParent(std::vector<CCircularQueue<SIZE>*>& input_queues, CCircularQueue<SIZE>& output_queue) :
+template<unsigned SIZE>	CMergerParent<SIZE>::CMergerParent(std::vector<CCircularQueue<SIZE>*>& input_queues, CCircularQueue<SIZE>& output_queue, uint32 n_subthreads) :
 	input_queues(input_queues),
-	output_queue(output_queue)
+	output_queue(output_queue),
+	n_subthreads(n_subthreads)
 {
 	input_bundles.resize(input_queues.size());
 }
-
 
 /*****************************************************************************************************************************/
 /********************************************************** PUBLIC ***********************************************************/
@@ -743,8 +808,511 @@ template<unsigned SIZE>	CMergerParent<SIZE>::CMergerParent(std::vector<CCircular
 /*****************************************************************************************************************************/
 template<unsigned SIZE> void CMergerParent<SIZE>::operator()()
 {
+	if (n_subthreads > 1)
+	{
+		ProcessWithSubthreads();
+	}
+
+	else if (input_queues.size() == 2)
+	{
+		Process2Inputs();
+	}
+	else
+	{
+		ProcessMoreInputs();
+	}
+}
+
+//************************************************************************************************************
+// CParentSubthreadPartDesc - Contains current state of buffers
+//************************************************************************************************************
+struct CParentSubthreadPartDesc
+{
+	uint32 start, end, part_end;
+	uint32 left()
+	{
+		return end - part_end;
+	};
+};
+
+//************************************************************************************************************
+// CParentSubthreadSynchronizer - Synchronize subthreads created by CMergerParent
+//************************************************************************************************************
+class CParentSubthreadSynchronizer
+{
+	uint32 n_tasks = 0;
+	std::mutex mtx;
+	std::condition_variable cv;
+public:
+	void decrement()
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		--n_tasks;
+	}
+	void increment()
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		++n_tasks;
+	}
+
+	void wait()
+	{
+		std::unique_lock<std::mutex> lck(mtx);
+		cv.wait(lck, [this]{return !n_tasks; });
+	}
+
+	void notify_task_finished()
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		--n_tasks;
+		if (!n_tasks)
+			cv.notify_all();
+	}
+};
+
+//************************************************************************************************************
+// CParentSubthreadDesc - Input data of subthreads of CMergerParent
+//************************************************************************************************************
+template<unsigned SIZE>
+struct CParentSubthreadDesc
+{
+	std::vector<CBundleData<SIZE>>* inputs;
+	CBundleData<SIZE>* out;
+	std::vector<CParentSubthreadPartDesc> desc;
+	uint32 o_start;
+};
+
+//************************************************************************************************************
+// CParentSubthreadDescQueue - Passes data to subthreads from CMergerParent
+//************************************************************************************************************
+template<unsigned SIZE>
+class CParentSubthreadDescQueue
+{
+	mutable std::mutex mtx;
+	std::condition_variable cv;
+	bool empty = true;
+	bool completed = false;
+public:
+	CParentSubthreadDesc<SIZE> desc;
+	void start()
+	{
+		std::unique_lock<std::mutex> lck(mtx);
+		cv.wait(lck, [this]{return empty; });
+		empty = false;
+		cv.notify_all();
+	}
+
+	bool pop(CParentSubthreadDesc<SIZE> &_desc)
+	{
+		std::unique_lock<std::mutex> lck(mtx);
+		cv.wait(lck, [this]{return !empty || completed; });
+		if (completed)
+			return false;
+		_desc = desc;
+		empty = true;
+		cv.notify_all();
+		return true;
+	}
+	void mark_completed()
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		completed = true;
+		cv.notify_all();
+	}
+};
+
+//************************************************************************************************************
+// CMergerParentSubthread - Merge data described in CParentSubthreadDescQueue
+//************************************************************************************************************
+template<unsigned SIZE>
+class CMergerParentSubthread
+{
+	CParentSubthreadDescQueue<SIZE>& task_queue;
+	CParentSubthreadSynchronizer& synchronizer;
+public:
+	CMergerParentSubthread(CParentSubthreadDescQueue<SIZE>& task_queue, CParentSubthreadSynchronizer& synchronizer)
+		:
+		task_queue(task_queue),
+		synchronizer(synchronizer)
+	{
+	}
+
+	void operator()()
+	{
+		CParentSubthreadDesc<SIZE> t;
+		while (task_queue.pop(t))
+		{
+			std::vector<CBundleData<SIZE>>& inputs = *t.inputs;
+			CBundleData<SIZE>& out = *t.out;
+			using heap_elem_t = std::pair<CKmer<SIZE>, uint32>;
+			std::vector<heap_elem_t> heap(inputs.size() + 1);
+
+			uint32 pos = 1;
+
+			for (uint32 i = 0; i < inputs.size(); ++i)
+			{
+				if (t.desc[i].start >= t.desc[i].part_end)
+					continue;
+				heap[pos] = std::make_pair(inputs[i].kmers_with_counters[t.desc[i].start].kmer, i);
+				t.desc[i].start++;
+				uint32 child_pos = pos++;
+				while (child_pos > 1 && heap[child_pos].first < heap[child_pos / 2].first)
+				{
+					std::swap(heap[child_pos], heap[child_pos / 2]);
+					child_pos /= 2;
+				}
+			}
+
+			uint32 out_pos = t.o_start;
+			while (true)
+			{
+				if (pos <= 1)
+					break;
+				uint32 desc_pos = heap[1].second;
+				out.kmers_with_counters[out_pos++] = inputs[desc_pos].kmers_with_counters[t.desc[desc_pos].start - 1];
+
+				CKmer<SIZE> kmer;
+				uint32 desc_id = heap[1].second;
+
+				if (t.desc[desc_pos].start < t.desc[desc_pos].part_end)
+				{
+					kmer.set(inputs[desc_pos].kmers_with_counters[t.desc[desc_pos].start].kmer);
+					++t.desc[desc_pos].start;
+				}
+				else
+				{
+					kmer.set(heap[--pos].first);
+					desc_id = heap[pos].second;
+				}
+
+				uint32 parent, less;
+				parent = less = 1;
+				while (true)
+				{
+					if (parent * 2 >= pos)
+						break;
+					if (parent * 2 + 1 >= pos)
+						less = parent * 2;
+					else if (heap[parent * 2].first < heap[parent * 2 + 1].first)
+						less = parent * 2;
+					else
+						less = parent * 2 + 1;
+					if (heap[less].first < kmer)
+					{
+						heap[parent] = heap[less];
+						parent = less;
+					}
+					else
+						break;
+				}
+				heap[parent] = std::make_pair(kmer, desc_id);
+			}
+			//out.insert_pos = out_pos;
+			synchronizer.notify_task_finished();
+		}
+	}
+};
+
+/*****************************************************************************************************************************/
+/********************************************************** PRIVATE **********************************************************/
+/*****************************************************************************************************************************/
+
+/*****************************************************************************************************************************/
+template<unsigned SIZE> void CMergerParent<SIZE>::Process2Inputs()
+{
+	CBundleData<SIZE> b1, b2;
+	CCircularQueue<SIZE>* q1, *q2;
+	q1 = input_queues[0];
+	q2 = input_queues[1];
+	bool q1_empty = !q1->pop(b1);
+	bool q2_empty = !q2->pop(b2);
+
+	if (q1_empty && q2_empty)
+		return;
+	if (q1_empty || q2_empty)
+	{
+		CCircularQueue<SIZE>* q = q1_empty ? q2 : q1;
+		CBundleData<SIZE>& b = q1_empty ? b2 : b1;
+		while (true)
+		{
+			if (!output_queue.push(b))
+				break;
+			if (!q->pop(b))
+				break;
+		}
+		output_queue.mark_completed();
+		return;
+	}
+
+	uint32 get1 = 0;
+	uint32 get2 = 0;
+
+	CKmer<SIZE> kmer2 = b2.kmers_with_counters[get2].kmer;
+	uint32 counter2 = b2.kmers_with_counters[get2].counter;
+	CKmer<SIZE> kmer1 = b1.kmers_with_counters[get1].kmer;
+	uint32 counter1 = b1.kmers_with_counters[get1].counter;
+
+	uint32 left1 = b1.NRecLeft();
+	uint32 left2 = b2.NRecLeft();
+
+	uint32 out_insert_pos = 0;
+	uint32 out_size = output_bundle.size;
+
+	while (true)
+	{
+		if (kmer1 < kmer2)
+		{
+			output_bundle.kmers_with_counters[out_insert_pos].kmer = kmer1;
+			output_bundle.kmers_with_counters[out_insert_pos++].counter = counter1;
+			if (out_insert_pos == out_size)
+			{
+				output_bundle.insert_pos = out_insert_pos;
+
+				if (!output_queue.push(output_bundle))
+					break;
+				out_insert_pos = 0;
+				out_size = output_bundle.size;
+			}
+
+			++get1;
+			if (--left1)
+			{
+				kmer1 = b1.kmers_with_counters[get1].kmer;
+				counter1 = b1.kmers_with_counters[get1].counter;
+			}
+			else
+			{
+				b1.get_pos = get1;
+				if (q1->pop(b1))
+				{
+					get1 = 0;
+					kmer1 = b1.kmers_with_counters[get1].kmer;
+					counter1 = b1.kmers_with_counters[get1].counter;
+					left1 = b1.NRecLeft();
+				}
+				else
+					break;
+
+			}
+		}
+		else
+		{
+			output_bundle.kmers_with_counters[out_insert_pos].kmer = kmer2;
+			output_bundle.kmers_with_counters[out_insert_pos++].counter = counter2;
+			if (out_insert_pos == out_size)
+			{
+				output_bundle.insert_pos = out_insert_pos;
+				if (!output_queue.push(output_bundle))
+					break;
+				out_insert_pos = 0;
+				out_size = output_bundle.size;
+			}
+
+			++get2;
+			if (--left2)
+			{
+				kmer2 = b2.kmers_with_counters[get2].kmer;
+				counter2 = b2.kmers_with_counters[get2].counter;
+			}
+			else
+			{
+				b2.get_pos = get2;
+				if (q2->pop(b2))
+				{
+					get2 = 0;
+					kmer2 = b2.kmers_with_counters[get2].kmer;
+					counter2 = b2.kmers_with_counters[get2].counter;
+					left2 = b2.NRecLeft();
+				}
+				else
+					break;
+			}
+		}
+	}
+
+	b1.get_pos = get1;
+	b2.get_pos = get2;
+	output_bundle.insert_pos = out_insert_pos;
+
+	if (b1.Empty())
+		q1->pop(b1);
+	if (!b1.Empty())
+	{
+		while (true)
+		{
+			if (b1.Empty())
+			{
+				if (!q1->pop(b1))
+					break;
+			}
+			output_bundle.Insert(b1.TopKmer(), b1.TopCounter());
+			b1.Pop();
+			if (output_bundle.Full())
+			{
+				if (!output_queue.push(output_bundle))
+					break;
+			}
+		}
+	}
+
+	if (b2.Empty())
+		q2->pop(b2);
+	if (!b2.Empty())
+	{
+		while (true)
+		{
+			if (b2.Empty())
+			{
+				if (!q2->pop(b2))
+					break;
+			}
+			output_bundle.Insert(b2.TopKmer(), b2.TopCounter());
+			b2.Pop();
+			if (output_bundle.Full())
+			{
+				if (!output_queue.push(output_bundle))
+					break;
+			}
+		}
+	}
+
+	if (!output_bundle.Empty())
+		output_queue.push(output_bundle);
+	output_queue.mark_completed();
+}
+
+/*****************************************************************************************************************************/
+template<unsigned SIZE> void CMergerParent<SIZE>::ProcessMoreInputs()
+{
 	//init
-	//for (uint32 i = 0; i < input_queues.size(); ++i)
+	auto q_iter = input_queues.begin();
+	auto b_iter = input_bundles.begin();
+	for (; q_iter != input_queues.end();)
+	{
+		if (!(*q_iter)->pop(*b_iter))
+		{
+			q_iter = input_queues.erase(q_iter);
+			b_iter = input_bundles.erase(b_iter);
+		}
+		else
+			++q_iter, ++b_iter;
+	}
+	uint32 index_of_min = 0;
+	CKmer<SIZE> min_kmer;
+
+	uint32 output_bundle_insert_pos = output_bundle.insert_pos;
+	uint32 output_bundle_size = output_bundle.size;
+	decltype(output_bundle.kmers_with_counters) kmers_counters = output_bundle.kmers_with_counters;
+
+	while (input_bundles.size())
+	{
+		index_of_min = 0;
+		min_kmer = input_bundles[index_of_min].TopKmer();
+
+		if (input_bundles.size() == 4)
+		{
+			uint32 tmp_min = 2;
+			CKmer<SIZE> tmp_kmer = input_bundles[tmp_min].TopKmer();
+
+			if (input_bundles[1].TopKmer() < min_kmer)
+			{
+				min_kmer = input_bundles[1].TopKmer();
+				index_of_min = 1;
+			}
+			if (input_bundles[3].TopKmer() < tmp_kmer)
+			{
+				tmp_kmer = input_bundles[3].TopKmer();
+				tmp_min = 3;
+			}
+			if (tmp_kmer < min_kmer)
+			{
+				index_of_min = tmp_min;
+			}
+		}
+		else if (input_bundles.size() == 3)
+		{
+			if (input_bundles[1].TopKmer() < min_kmer)
+			{
+				min_kmer = input_bundles[1].TopKmer();
+				index_of_min = 1;
+			}
+			if (input_bundles[2].TopKmer() < min_kmer)
+			{
+				min_kmer = input_bundles[2].TopKmer();
+				index_of_min = 2;
+			}
+		}
+		else if (input_bundles.size() == 2)
+		{
+			if (input_bundles[1].TopKmer() < min_kmer)
+			{
+				min_kmer = input_bundles[1].TopKmer();
+				index_of_min = 1;
+			}
+		}
+		else if (input_bundles.size() == 1)
+		{
+		}
+		else
+		{
+			for (uint32 i = 1; i < input_bundles.size(); ++i)
+			{
+				if (input_bundles[i].TopKmer() < min_kmer)
+				{
+					index_of_min = i;
+					min_kmer = input_bundles[index_of_min].TopKmer();
+				}
+			}
+		}
+
+		kmers_counters[output_bundle_insert_pos].kmer = input_bundles[index_of_min].TopKmer();
+		kmers_counters[output_bundle_insert_pos++].counter = input_bundles[index_of_min].TopCounter();
+		//output_bundle.Insert(input_bundles[index_of_min].TopKmer(), input_bundles[index_of_min].TopCounter());
+
+		input_bundles[index_of_min].Pop();
+		if (input_bundles[index_of_min].Empty())
+		{
+
+			if (!input_queues[index_of_min]->pop(input_bundles[index_of_min]))
+			{
+				input_queues.erase(input_queues.begin() + index_of_min);
+				input_bundles.erase(input_bundles.begin() + index_of_min);
+			}
+		}
+
+
+		if (output_bundle_insert_pos == output_bundle_size)
+			//if (output_bundle.Full())
+		{
+			output_bundle.insert_pos = output_bundle_insert_pos;
+			if (!output_queue.push(output_bundle))
+			{
+				output_bundle_insert_pos = output_bundle.insert_pos; //0
+				kmers_counters = output_bundle.kmers_with_counters;
+				break;
+			}
+			output_bundle_insert_pos = output_bundle.insert_pos; //0
+			kmers_counters = output_bundle.kmers_with_counters;
+		}
+	}
+	output_bundle.insert_pos = output_bundle_insert_pos;
+	if (!output_bundle.Empty())
+		output_queue.push(output_bundle);
+	output_queue.mark_completed();
+}
+
+/*****************************************************************************************************************************/
+template<unsigned SIZE> void CMergerParent<SIZE>::ProcessWithSubthreads()
+{
+	std::vector<CBundleData<SIZE>> input_bundles(input_queues.size());
+	
+	//std::vector<CBundleData<SIZE>> output_bundles;
+	//output_bundles.reserve(n_subthreads);
+	//for (uint32 i = 0; i < n_subthreads; ++i)
+		//output_bundles.emplace_back(KMC2_DB_READER_BUNDLE_CAPACITY);
+	CBundleData<SIZE> output_bundle(KMC2_DB_READER_BUNDLE_CAPACITY);
+	uint32 curr_end = output_bundle.insert_pos;
+
 	auto q_iter = input_queues.begin();
 	auto b_iter = input_bundles.begin();
 	for (; q_iter != input_queues.end();)
@@ -758,40 +1326,145 @@ template<unsigned SIZE> void CMergerParent<SIZE>::operator()()
 			++q_iter, ++b_iter;
 	}
 
-	//run
-	uint32 index_of_min = 0;
+	std::vector<CParentSubthreadDescQueue<SIZE>> task_descs(n_subthreads);
+	std::vector<CParentSubthreadPartDesc> descs(input_queues.size());
+	for (uint32 i = 0; i < input_queues.size(); ++i)
+	{
+		descs[i].start = descs[i].part_end = input_bundles[i].get_pos;
+		descs[i].end = input_bundles[i].insert_pos;
+	}
+
+	std::vector<CMergerParentSubthread<SIZE>> subtasks;
+	std::vector<std::thread> subthreads;
+
+	subtasks.reserve(n_subthreads);
+	subthreads.reserve(n_subthreads);
+
+	CParentSubthreadSynchronizer syncer;
+	for (uint32 i = 0; i < n_subthreads; ++i)
+	{
+		subtasks.emplace_back(task_descs[i], syncer);
+		subthreads.push_back(std::thread(std::ref(subtasks.back())));
+	}
+
 	while (input_bundles.size())
 	{
-		index_of_min = 0;
-		for (uint32 i = 1; i < input_bundles.size(); ++i)
+		//prepare threads					
+		for (uint32 th = 0; th < n_subthreads; ++th)
 		{
-			if (input_bundles[i].TopKmer() < input_bundles[index_of_min].TopKmer())
-				index_of_min = i;
-		}
-
-		output_bundle.Insert(input_bundles[index_of_min].TopKmer(), input_bundles[index_of_min].TopCounter());
-		input_bundles[index_of_min].Pop();
-		if (input_bundles[index_of_min].Empty())
-		{
-			if (!input_queues[index_of_min]->pop(input_bundles[index_of_min]))
+			bool any_empty = false;
+			for (uint32 i = 0; i < descs.size(); ++i)
 			{
-				input_queues.erase(input_queues.begin() + index_of_min);
-				input_bundles.erase(input_bundles.begin() + index_of_min);
+				descs[i].part_end = descs[i].start + MIN((output_bundle.size - curr_end) / input_bundles.size() / (n_subthreads - th), descs[i].left());
+
+				//if any is empty it must be refilled or removed
+				if (descs[i].part_end == descs[i].start)
+				{
+					any_empty = true;
+					break;
+				}
+			}
+			if (any_empty)
+				break;
+
+			//find min kmer
+			uint32 min_kmer_i = 0;
+			CKmer<SIZE> min_kmer = input_bundles[0].kmers_with_counters[descs[0].part_end - 1].kmer;
+
+			for (uint32 i = min_kmer_i + 1; i < input_bundles.size(); ++i)
+			{
+				if (input_bundles[i].kmers_with_counters[descs[i].part_end - 1].kmer < min_kmer)
+				{
+					min_kmer = input_bundles[i].kmers_with_counters[descs[i].part_end - 1].kmer;
+					min_kmer_i = i;
+				}
+			}
+
+			uint32 prev_end = curr_end;
+
+			//correct part_end according to min kmer
+			for (uint32 i = 0; i < descs.size(); ++i)
+			{
+				if (i != min_kmer_i)
+				{
+					descs[i].part_end = LastLowerPlus1(input_bundles[i], descs[i].start, descs[i].part_end, min_kmer);
+				}
+				curr_end += descs[i].part_end - descs[i].start;
+			}
+
+			task_descs[th].desc.desc = descs;
+			task_descs[th].desc.inputs = &input_bundles;
+			task_descs[th].desc.out = &output_bundle;
+			task_descs[th].desc.o_start = prev_end;
+			syncer.increment();
+			task_descs[th].start();
+
+			for (uint32 i = 0; i < descs.size(); ++i)
+			{
+				descs[i].start = descs[i].part_end;
 			}
 		}
 
+		syncer.wait(); //BARIER
 
-		if (output_bundle.Full())
+		//send output
+		output_bundle.insert_pos = curr_end;
+		if (!output_bundle.Empty())
 		{
 			if (!output_queue.push(output_bundle))
+			{
 				break;
+			}
 		}
+
+		curr_end = output_bundle.insert_pos;
+
+		auto q_iter = input_queues.begin();
+		auto b_iter = input_bundles.begin();
+		auto d_iter = descs.begin();
+
+		for (; b_iter != input_bundles.end();)
+		{
+			b_iter->get_pos = d_iter->start;
+			if ((*b_iter).Empty())
+			{
+				if ((*q_iter)->pop(*b_iter))
+				{
+					d_iter->start = d_iter->part_end = b_iter->get_pos;
+					d_iter->end = b_iter->insert_pos;
+				}
+				else
+				{
+					d_iter = descs.erase(d_iter);
+					b_iter = input_bundles.erase(b_iter);
+					q_iter = input_queues.erase(q_iter);
+					continue;
+				}
+			}
+			++q_iter, ++b_iter, ++d_iter;
+		}
+
 	}
-	if (!output_bundle.Empty())
-		output_queue.push(output_bundle);
+
+	for (auto& t : task_descs)
+		t.mark_completed();
+
+	for (auto& t : subthreads)
+		t.join();
+
 	output_queue.mark_completed();
 }
 
+/*****************************************************************************************************************************/
+template<unsigned SIZE> uint32 CMergerParent<SIZE>::LastLowerPlus1(CBundleData<SIZE>& b, uint32 start, uint32 end, CKmer<SIZE> kmer)
+{
+	auto ub = std::upper_bound(b.kmers_with_counters + start, b.kmers_with_counters + end, kmer,
+		[](const CKmer<SIZE>& kmer, typename CBundleData<SIZE>::CKmerWithCounter& kc)
+	{
+		return kmer < kc.kmer;
+	});
+	return ub - b.kmers_with_counters;
+}
 
 /*****************************************************************************************************************************/
 /************************************************ CMergerChild IMPLEMENTATION ************************************************/
@@ -801,12 +1474,11 @@ template<unsigned SIZE> void CMergerParent<SIZE>::operator()()
 /******************************************************** CONSTRUCTOR ********************************************************/
 /*****************************************************************************************************************************/
 template<unsigned SIZE> CMergerChild<SIZE>::CMergerChild(bin_iter begin, bin_iter end, CCircularQueue<SIZE>& output_queue) :
-	bins(begin, end),
-	output_queue(output_queue)
+bins(begin, end),
+output_queue(output_queue)
 {
 
 }
-
 /*****************************************************************************************************************************/
 /********************************************************** PUBLIC ***********************************************************/
 /*****************************************************************************************************************************/
@@ -818,18 +1490,7 @@ template<unsigned SIZE> void CMergerChild<SIZE>::operator()()
 	for (uint32 i = 0; i < bins.size(); ++i)
 		kmers_pq.init_add(&bins[i].get());
 
-	CBundleData<SIZE> bundle_data;
-	while (kmers_pq.get_min(bundle_data))
-	{
-		if (bundle_data.Full())
-		{
-			if (!output_queue.push(bundle_data))
-				break;
-		}
-	}
-	if (!bundle_data.Empty())
-		output_queue.push(bundle_data);
-	output_queue.mark_completed();
+	kmers_pq.Process(output_queue);
 }
 
 
@@ -842,9 +1503,8 @@ template<unsigned SIZE> void CMergerChild<SIZE>::operator()()
 /******************************************************** CONSTRUCTOR ********************************************************/
 /*****************************************************************************************************************************/
 template<unsigned SIZE> CKMC2DbReaderSorted<SIZE>::CKMC2DbReaderSorted(const CKMC_header& header, const CInputDesc& desc) :
-	header(header),
-	desc(desc),
-	output_queue(DEFAULT_CIRCULAL_QUEUE_CAPACITY)
+header(header),
+desc(desc)
 {
 	LUTS = nullptr;
 	lut_size = 1 << 2 * header.lut_prefix_len;
@@ -895,13 +1555,64 @@ template<unsigned SIZE> CKMC2DbReaderSorted<SIZE>::CKMC2DbReaderSorted(const CKM
 	suf_bin_reader = new CSufBinReader<SIZE>(bin_provider, kmc_suf);
 	suf_bin_reader_th = std::thread(std::ref(*suf_bin_reader));
 
-	n_child_threads = desc.threads;
+	uint32 n_threads = desc.threads;
 
+	if (n_threads < 3)
+	{
+		n_threads = n_child_threads = 1;		
+		output_queue = new CCircularQueue<SIZE>(DEFAULT_CIRCULAL_QUEUE_CAPACITY);
+		childs.push_back(new CMergerChild<SIZE>(bins.begin(), bins.end(), *output_queue));
+		childs_threads.push_back(std::thread(std::ref(*childs.front())));
+		return;
+	}
+
+	else if (n_threads == 3)
+	{
+		n_child_threads = 2;
+		n_parent_threads = 1; 
+	}
+	//based on experiment on 24 core machine
+	else if (n_threads < 6)
+	{
+		n_child_threads = 3;
+		n_parent_threads = n_threads - n_child_threads;
+	}
+	else if (n_threads < 9)
+	{
+		n_child_threads = 4;
+		n_parent_threads = n_threads - n_child_threads;
+	}
+	else if (n_threads < 11)
+	{
+		n_child_threads = 5;
+		n_parent_threads = n_threads - n_child_threads;
+	}
+	else if (n_threads < 14)
+	{
+		n_child_threads = 6;
+		n_parent_threads = n_threads - n_child_threads;
+	}
+	else if (n_threads < 17)
+	{
+		n_child_threads = 7;
+		n_parent_threads = n_threads - n_child_threads;
+	}
+	else
+	{
+		n_child_threads = (n_threads - 17) / 5 + 8;
+		n_parent_threads = n_threads - n_child_threads;
+	}
 	childs_parent_queues.reserve(n_child_threads);
+	childs.reserve(n_child_threads);
+
+	uint32 bundle_size = KMC2_DB_READER_BUNDLE_CAPACITY;
+	if (n_parent_threads < 2)
+	{
+		bundle_size = BUNDLE_CAPACITY;
+	}
 
 	for (uint32 i = 0; i < n_child_threads; ++i)
-		childs_parent_queues.push_back(new CCircularQueue<SIZE>(DEFAULT_CIRCULAL_QUEUE_CAPACITY));
-
+		childs_parent_queues.push_back(new CCircularQueue<SIZE>(DEFAULT_CIRCULAL_QUEUE_CAPACITY, bundle_size));
 
 	uint32 bins_per_thread = header.no_of_bins / n_child_threads;
 
@@ -915,12 +1626,10 @@ template<unsigned SIZE> CKMC2DbReaderSorted<SIZE>::CKMC2DbReaderSorted(const CKM
 	childs.push_back(new CMergerChild<SIZE>(bins.begin() + (n_child_threads - 1) * bins_per_thread, bins.end(), *childs_parent_queues.back()));
 	childs_threads.push_back(std::thread(std::ref(*childs.back())));
 
-	parent = new CMergerParent<SIZE>(childs_parent_queues, output_queue);
+	output_queue = new CCircularQueue<SIZE>(DEFAULT_CIRCULAL_QUEUE_CAPACITY, bundle_size);
+
+	parent = new CMergerParent<SIZE>(childs_parent_queues, *output_queue, n_parent_threads);
 	parent_thread = std::thread(std::ref(*parent));
-
-
-
-
 }
 
 /*****************************************************************************************************************************/
@@ -930,7 +1639,7 @@ template<unsigned SIZE> CKMC2DbReaderSorted<SIZE>::CKMC2DbReaderSorted(const CKM
 /*****************************************************************************************************************************/
 template<unsigned SIZE> void CKMC2DbReaderSorted<SIZE>::NextBundle(CBundle<SIZE>& bundle, bool& finished)
 {
-	if (output_queue.pop(bundle.Data()))
+	if (output_queue->pop(bundle.Data()))
 	{
 		return;
 	}
@@ -940,20 +1649,25 @@ template<unsigned SIZE> void CKMC2DbReaderSorted<SIZE>::NextBundle(CBundle<SIZE>
 	for (auto& child : childs)
 		delete child;
 
-	parent_thread.join();
-	delete parent;
+	if(parent_thread.joinable()) //for small number of threads there is only one child thread and parent threads is not needed
+		parent_thread.join();
+	if (parent) //as above
+		delete parent;
+
+	delete output_queue;
 
 	for (auto& q : childs_parent_queues)
 		delete q;
 
 	suf_bin_reader_th.join();
 	delete suf_bin_reader;
+	finished = true;
 }
 
 /*****************************************************************************************************************************/
 template<unsigned SIZE> void CKMC2DbReaderSorted<SIZE>::IgnoreRest()
 {
-	output_queue.force_finish();
+	output_queue->force_finish();
 
 	for (auto& q : childs_parent_queues)
 		q->force_finish();
@@ -963,8 +1677,13 @@ template<unsigned SIZE> void CKMC2DbReaderSorted<SIZE>::IgnoreRest()
 	for (auto& child : childs)
 		delete child;
 
-	parent_thread.join();
-	delete parent;
+	if (parent_thread.joinable()) //for small number of threads there is only one child thread and parent threads is not needed
+		parent_thread.join();
+
+	if(parent) //as above
+		delete parent;
+
+	delete output_queue;
 
 	for (auto& q : childs_parent_queues)
 		delete q;
@@ -983,38 +1702,6 @@ template<unsigned SIZE> CKMC2DbReaderSorted<SIZE>::~CKMC2DbReaderSorted()
 }
 
 /*****************************************************************************************************************************/
-/********************************************************** PRIVATE **********************************************************/
-/*****************************************************************************************************************************/
-
-/*****************************************************************************************************************************/
-//template<unsigned SIZE> void CKMC2DbReaderSorted<SIZE>::get_suf_buf_part(uchar* &buf, uint64 start, uint32 size)
-//{
-//#ifdef ENABLE_LOGGER
-//	CTimer timer;
-//	timer.start();
-//#endif
-//	std::unique_lock<std::mutex> lck(mtx);
-//#ifdef ENABLE_LOGGER
-//	CLoger::GetLogger().log_operation("waiting for lock", this, timer.get_time());
-//	timer.start();
-//#endif
-//	start = 4 + start * record_size;
-//	size *= record_size;
-//
-//
-//	my_fseek(kmc_suf, start, SEEK_SET);
-//	if (fread(buf, 1, size, kmc_suf) != size)
-//	{
-//		std::cout << "Error: some error occured while reading " << desc.file_src << ".kmc_suf file\n";
-//		exit(1);
-//	}
-//#ifdef ENABLE_LOGGER
-//	CLoger::GetLogger().log_operation("fread time", this, timer.get_time());
-//#endif
-//}
-
-
-/*****************************************************************************************************************************/
 /******************************************* CKCM2DbReaderSeqCounter_Base IMPLEMENTATION *************************************/
 /*****************************************************************************************************************************/
 
@@ -1022,21 +1709,21 @@ template<unsigned SIZE> CKMC2DbReaderSorted<SIZE>::~CKMC2DbReaderSorted()
 /******************************************************** CONSTRUCTOR ********************************************************/
 /*****************************************************************************************************************************/
 template<unsigned SIZE> CKCM2DbReaderSeqCounter_Base<SIZE>::CKCM2DbReaderSeqCounter_Base(const CKMC_header& header, const CInputDesc& desc) :
-	header(header),
-	desc(desc)
+header(header),
+desc(desc)
 {
-	sufix_bytes = (header.kmer_len - header.lut_prefix_len) / 4;
-	record_size = sufix_bytes + header.counter_size;
-	sufix_buff_size = SUFIX_BUFF_BYTES / record_size * record_size;
+	suffix_bytes = (header.kmer_len - header.lut_prefix_len) / 4;
+	record_size = suffix_bytes + header.counter_size;
+	suffix_buff_size = SUFFIX_BUFF_BYTES / record_size * record_size;
 
-	sufix_left_to_read = header.total_kmers * record_size;
+	suffix_left_to_read = header.total_kmers * record_size;
 
-	if (sufix_left_to_read < sufix_buff_size)
-		sufix_buff_size = sufix_left_to_read;
+	if (suffix_left_to_read < suffix_buff_size)
+		suffix_buff_size = suffix_left_to_read;
 
 	prefix_bytes = (header.lut_prefix_len + 3) / 4;
 
-	kmer_bytes = prefix_bytes + sufix_bytes;
+	kmer_bytes = prefix_bytes + suffix_bytes;
 
 }
 
@@ -1047,70 +1734,70 @@ template<unsigned SIZE> CKCM2DbReaderSeqCounter_Base<SIZE>::CKCM2DbReaderSeqCoun
 /*****************************************************************************************************************************/
 template<unsigned SIZE> CKCM2DbReaderSeqCounter_Base<SIZE>::~CKCM2DbReaderSeqCounter_Base()
 {
-	if (sufix_file)
-		fclose(sufix_file);
-	delete[] sufix_buff;
+	if (suffix_file)
+		fclose(suffix_file);
+	delete[] suffix_buff;
 }
 
 /*****************************************************************************************************************************/
 template<unsigned SIZE> void CKCM2DbReaderSeqCounter_Base<SIZE>::open_files()
 {
-	sufix_file_name = desc.file_src + ".kmc_suf";
+	suffix_file_name = desc.file_src + ".kmc_suf";
 
-	sufix_file = fopen(sufix_file_name.c_str(), "rb");
+	suffix_file = fopen(suffix_file_name.c_str(), "rb");
 
 
-	if (!sufix_file)
+	if (!suffix_file)
 	{
-		std::cout << "Error: cannot open file: " << sufix_file_name << "\n";
+		std::cout << "Error: cannot open file: " << suffix_file_name << "\n";
 		exit(1);
 	}
-	setvbuf(sufix_file, NULL, _IONBF, 0);
+	setvbuf(suffix_file, NULL, _IONBF, 0);
 
 	char marker[4];
-	if (fread(marker, 1, 4, sufix_file) != 4)
+	if (fread(marker, 1, 4, suffix_file) != 4)
 	{
-		std::cout << "Error: while reading start marker in file: " << sufix_file_name << "\n";
+		std::cout << "Error: while reading start marker in file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 
 	if (strncmp(marker, "KMCS", 4) != 0)
 	{
-		std::cout << "Error: wrong start marker in file: " << sufix_file_name << "\n";
+		std::cout << "Error: wrong start marker in file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 
 
-	my_fseek(sufix_file, -4, SEEK_END);
-	if (fread(marker, 1, 4, sufix_file) != 4)
+	my_fseek(suffix_file, -4, SEEK_END);
+	if (fread(marker, 1, 4, suffix_file) != 4)
 	{
-		std::cout << "Error: while reading end marker in file: " << sufix_file_name << "\n";
+		std::cout << "Error: while reading end marker in file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 
 	if (strncmp(marker, "KMCS", 4) != 0)
 	{
-		std::cout << "Error: wrong end marker in file: " << sufix_file_name << "\n";
+		std::cout << "Error: wrong end marker in file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 
-	my_fseek(sufix_file, 4, SEEK_SET); //skip KMCS	
+	my_fseek(suffix_file, 4, SEEK_SET); //skip KMCS	
 }
 
 /*****************************************************************************************************************************/
 template<unsigned SIZE> bool CKCM2DbReaderSeqCounter_Base<SIZE>::reload_suf_buff()
 {
-	uint64 to_read = MIN(sufix_left_to_read, sufix_buff_size);
+	uint64 to_read = MIN(suffix_left_to_read, suffix_buff_size);
 	if (to_read == 0)
 		return false;
-	uint64 readed = fread(sufix_buff, 1, to_read, sufix_file);
+	uint64 readed = fread(suffix_buff, 1, to_read, suffix_file);
 	if (readed != to_read)
 	{
-		std::cout << "Error: some error while reading " << sufix_file_name << "\n";
+		std::cout << "Error: some error while reading " << suffix_file_name << "\n";
 		exit(1);
 	}
-	sufix_buff_pos = 0;
-	sufix_left_to_read -= to_read;
+	suffix_buff_pos = 0;
+	suffix_left_to_read -= to_read;
 	return true;
 }
 
@@ -1123,51 +1810,51 @@ template<unsigned SIZE> bool CKCM2DbReaderSeqCounter_Base<SIZE>::reload_suf_buff
 /******************************************************** CONSTRUCTOR ********************************************************/
 /*****************************************************************************************************************************/
 template<unsigned SIZE> CKMC2DbReaderSequential<SIZE>::CKMC2DbReaderSequential(const CKMC_header& header, const CInputDesc& desc) :
-	CKCM2DbReaderSeqCounter_Base<SIZE>(header, desc)
+CKCM2DbReaderSeqCounter_Base<SIZE>(header, desc)
 {
-		this->open_files();
+	this->open_files();
 
-		prefix_file_name = desc.file_src + ".kmc_pre";
-		prefix_file = fopen(prefix_file_name.c_str(), "rb");
+	prefix_file_name = desc.file_src + ".kmc_pre";
+	prefix_file = fopen(prefix_file_name.c_str(), "rb");
 
-		if (!prefix_file)
-		{
-			std::cout << "Error: cannot open file: " << prefix_file_name << "\n";
-			exit(1);
-		}
-		setvbuf(prefix_file, NULL, _IONBF, 0);
-		my_fseek(prefix_file, 4 + sizeof(uint64), SEEK_SET);//skip KMCP and first value as it must be 0
-
-		signle_bin_size = 1 << 2 * header.lut_prefix_len;
-		map_size = (1 << 2 * header.signature_len) + 1;
-
-		map_size_bytes = map_size * sizeof(uint32);
-
-		no_of_bins = header.no_of_bins;
-
-		this->prefix_buff_size = this->PREFIX_BUFF_BYTES / sizeof(uint64);
-
-		this->sufix_left_to_read = this->header.total_kmers * this->record_size;
-
-		if (this->sufix_left_to_read < this->sufix_buff_size)
-			this->sufix_buff_size = this->sufix_left_to_read;
-
-		this->prefix_left_to_read = (1 << this->header.lut_prefix_len * 2) * this->no_of_bins;
-
-		if (this->prefix_left_to_read < this->prefix_buff_size)
-			this->prefix_buff_size = this->prefix_left_to_read;
-
-		prefix_mask = (1 << 2 * this->header.lut_prefix_len) - 1;
-
-		allocate_buffers();
-
-		my_fseek(prefix_file, 4 + sizeof(uint64), SEEK_SET);
-		reload_pref_buff();
-
-		this->reload_suf_buff();
-		current_prefix_index = 0;
-		this->sufix_number = 0;
+	if (!prefix_file)
+	{
+		std::cout << "Error: cannot open file: " << prefix_file_name << "\n";
+		exit(1);
 	}
+	setvbuf(prefix_file, NULL, _IONBF, 0);
+	my_fseek(prefix_file, 4 + sizeof(uint64), SEEK_SET);//skip KMCP and first value as it must be 0
+
+	signle_bin_size = 1 << 2 * header.lut_prefix_len;
+	map_size = (1 << 2 * header.signature_len) + 1;
+
+	map_size_bytes = map_size * sizeof(uint32);
+
+	no_of_bins = header.no_of_bins;
+
+	this->prefix_buff_size = this->PREFIX_BUFF_BYTES / sizeof(uint64);
+
+	this->suffix_left_to_read = this->header.total_kmers * this->record_size;
+
+	if (this->suffix_left_to_read < this->suffix_buff_size)
+		this->suffix_buff_size = this->suffix_left_to_read;
+
+	this->prefix_left_to_read = (1 << this->header.lut_prefix_len * 2) * this->no_of_bins;
+
+	if (this->prefix_left_to_read < this->prefix_buff_size)
+		this->prefix_buff_size = this->prefix_left_to_read;
+
+	prefix_mask = (1 << 2 * this->header.lut_prefix_len) - 1;
+
+	allocate_buffers();
+
+	my_fseek(prefix_file, 4 + sizeof(uint64), SEEK_SET);
+	reload_pref_buff();
+
+	this->reload_suf_buff();
+	current_prefix_index = 0;
+	this->suffix_number = 0;
+}
 
 /*****************************************************************************************************************************/
 /********************************************************** PUBLIC ***********************************************************/
@@ -1178,10 +1865,10 @@ template<unsigned SIZE> bool CKMC2DbReaderSequential<SIZE>::NextKmerSequential(C
 {
 	while (true)
 	{
-		if (this->sufix_number >= this->header.total_kmers)
+		if (this->suffix_number >= this->header.total_kmers)
 			return false;
 
-		while (this->prefix_buff[this->prefix_buff_pos] <= this->sufix_number)
+		while (this->prefix_buff[this->prefix_buff_pos] <= this->suffix_number)
 		{
 			++current_prefix_index;
 			++this->prefix_buff_pos;
@@ -1189,12 +1876,12 @@ template<unsigned SIZE> bool CKMC2DbReaderSequential<SIZE>::NextKmerSequential(C
 				this->reload_pref_buff();
 		}
 
-		uchar* record = this->sufix_buff + this->sufix_buff_pos;
+		uchar* record = this->suffix_buff + this->suffix_buff_pos;
 		uint32 pos = this->kmer_bytes - 1;
 
 		uint32 current_prefix = static_cast<uint32>(current_prefix_index & prefix_mask);
 
-		kmer.load(record, this->sufix_bytes);
+		kmer.load(record, this->suffix_bytes);
 		for (int32 i = this->prefix_bytes - 1; i >= 0; --i)
 			kmer.set_byte(pos--, current_prefix >> (i << 3));
 
@@ -1205,10 +1892,10 @@ template<unsigned SIZE> bool CKMC2DbReaderSequential<SIZE>::NextKmerSequential(C
 			counter += record[i];
 		}
 
-		++this->sufix_number;
-		this->sufix_buff_pos += this->record_size;
+		++this->suffix_number;
+		this->suffix_buff_pos += this->record_size;
 
-		if (this->sufix_buff_pos >= this->sufix_buff_size)
+		if (this->suffix_buff_pos >= this->suffix_buff_size)
 			this->reload_suf_buff();
 
 		if (counter >= this->desc.cutoff_min && counter <= this->desc.cutoff_max)
@@ -1231,7 +1918,7 @@ template<unsigned SIZE> CKMC2DbReaderSequential<SIZE>::~CKMC2DbReaderSequential(
 /*****************************************************************************************************************************/
 template<unsigned SIZE> void CKMC2DbReaderSequential<SIZE>::allocate_buffers()
 {
-	this->sufix_buff = new uchar[this->sufix_buff_size];
+	this->suffix_buff = new uchar[this->suffix_buff_size + sizeof(uint64)]; //+ sizeof(uint64) because CKmer::load_fast may look out of buffer
 	this->prefix_buff = new uint64[this->prefix_buff_size];
 }
 
@@ -1261,13 +1948,13 @@ template<unsigned SIZE> void CKMC2DbReaderSequential<SIZE>::reload_pref_buff()
 /******************************************************** CONSTRUCTOR ********************************************************/
 /*****************************************************************************************************************************/
 template<unsigned SIZE> CKMC2DbReaderCountersOnly<SIZE>::CKMC2DbReaderCountersOnly(const CKMC_header& header, const CInputDesc& desc) :
-	CKCM2DbReaderSeqCounter_Base<SIZE>(header, desc)
+CKCM2DbReaderSeqCounter_Base<SIZE>(header, desc)
 {
-		this->open_files();
-		allocate_buffers();
-		this->reload_suf_buff();
-		this->sufix_number = 0;
-	}
+	this->open_files();
+	allocate_buffers();
+	this->reload_suf_buff();
+	this->suffix_number = 0;
+}
 
 /*****************************************************************************************************************************/
 /********************************************************** PUBLIC ***********************************************************/
@@ -1278,10 +1965,10 @@ template<unsigned SIZE> bool CKMC2DbReaderCountersOnly<SIZE>::NextCounter(uint32
 {
 	while (true)
 	{
-		if (this->sufix_number >= this->header.total_kmers)
+		if (this->suffix_number >= this->header.total_kmers)
 			return false;
 
-		uchar* record = this->sufix_buff + this->sufix_buff_pos + this->sufix_bytes;
+		uchar* record = this->suffix_buff + this->suffix_buff_pos + this->suffix_bytes;
 
 		counter = 0;
 		for (int32 i = this->header.counter_size - 1; i >= 0; --i)
@@ -1290,10 +1977,10 @@ template<unsigned SIZE> bool CKMC2DbReaderCountersOnly<SIZE>::NextCounter(uint32
 			counter += record[i];
 		}
 
-		++this->sufix_number;
-		this->sufix_buff_pos += this->record_size;
+		++this->suffix_number;
+		this->suffix_buff_pos += this->record_size;
 
-		if (this->sufix_buff_pos >= this->sufix_buff_size)
+		if (this->suffix_buff_pos >= this->suffix_buff_size)
 			this->reload_suf_buff();
 
 		if (counter >= this->desc.cutoff_min && counter <= this->desc.cutoff_max)
@@ -1308,7 +1995,7 @@ template<unsigned SIZE> bool CKMC2DbReaderCountersOnly<SIZE>::NextCounter(uint32
 /*****************************************************************************************************************************/
 template<unsigned SIZE> void CKMC2DbReaderCountersOnly<SIZE>::allocate_buffers()
 {
-	this->sufix_buff = new uchar[this->sufix_buff_size];
+	this->suffix_buff = new uchar[this->suffix_buff_size];
 }
 
 
@@ -1348,25 +2035,21 @@ template<unsigned SIZE> CKMC2DbReader<SIZE>::CKMC2DbReader(const CKMC_header& he
 /*****************************************************************************************************************************/
 template<unsigned SIZE> void CKMC2DbReader<SIZE>::NextBundle(CBundle<SIZE>& bundle)
 {
-#ifdef ENABLE_LOGGER
-	CTimer timer;
-	timer.start();
-#endif
 	db_reader_sorted->NextBundle(bundle, this->finished);
 	percent_progress.UpdateItem(progress_id, bundle.Size());
-	if(this->finished)
+	if (this->finished)
 	{
 		percent_progress.Complete(progress_id);
 	}
-#ifdef ENABLE_LOGGER
-	CLoger::GetLogger().log_operation("pobranie bundla z wejscia", this, timer.get_time());
-#endif
 }
 
 /*****************************************************************************************************************************/
 template<unsigned SIZE> void CKMC2DbReader<SIZE>::IgnoreRest()
 {
+	if (this->finished)
+		return;
 	db_reader_sorted->IgnoreRest();
+	this->finished = true;
 }
 
 /*****************************************************************************************************************************/
@@ -1396,3 +2079,4 @@ template<unsigned SIZE> bool CKMC2DbReader<SIZE>::NextCounter(uint32& counter)
 
 
 #endif
+

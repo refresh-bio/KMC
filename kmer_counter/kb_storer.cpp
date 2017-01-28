@@ -5,8 +5,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 #include <algorithm>
 #include <numeric>
@@ -30,6 +30,7 @@ CKmerBinStorer::CKmerBinStorer(CKMCParams &Params, CKMCQueues &Queues)
 	n_bins			    = Params.n_bins;
 	q_part			    = Queues.bpq;
 	bd                  = Queues.bd;
+	epd					= Queues.epd;
 	working_directory = Params.working_directory;
 
 	mem_mode			= Params.mem_mode;
@@ -214,8 +215,11 @@ void CKmerBinStorer::ProcessQueue()
 		uint32 true_size;
 		uint32 alloc_size;
 
-		if(q_part->pop(bin_id, part, true_size, alloc_size))
+		list<pair<uint64, uint64>> expander_parts;
+		if (q_part->pop(bin_id, part, true_size, alloc_size, expander_parts))
 		{
+			epd->push(bin_id, expander_parts);
+			expander_parts.clear();
 			if(!buffer[bin_id])
 				buffer[bin_id] = new elem_t;
 			buffer[bin_id]->push_back(make_tuple(part, true_size, alloc_size));

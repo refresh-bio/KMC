@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _KB_STORER_H
@@ -36,6 +36,7 @@ class CKmerBinStorer {
 	int n_bins;
 	CBinPartQueue *q_part;
 	CBinDesc *bd;
+	CExpanderPackDesc *epd;
 	uint64 buffer_size_bytes;
 	uint64 max_mem_buffer;
 	uint64 max_mem_single_package;

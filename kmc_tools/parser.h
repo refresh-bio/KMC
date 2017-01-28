@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _PARSER_H
@@ -39,16 +39,14 @@ class CParser
 	void parseOtuputParamsLine();
 	bool nextLine(std::string& line);
 	CConfig& config;
-
-	//for complex mode
+	
 	CTokenizer tokenizer;
 	std::list<Token> tokens;
 
 public:
 	CParser(const std::string& src);
 	void ParseInputs();
-
-	void ParseOutput();	
+	void ParseOutput();
 
 	template<unsigned SIZE>
 	CExpressionNode<SIZE>* GetExpressionRoot();
@@ -61,7 +59,6 @@ template<unsigned SIZE> CExpressionNode<SIZE>* CParser::GetExpressionRoot()
 	COutputParser<SIZE> out_parser(tokens, input);
 	return out_parser.Parse();
 }
-
 
 #endif
 

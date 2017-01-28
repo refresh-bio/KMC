@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 2.3.0
-  Date   : 2015-08-21
+  Version: 3.0.0
+  Date   : 2017-01-28
 */
 
 #ifndef _KB_READER_H
@@ -16,6 +16,7 @@
 #include "kmer.h"
 #include "s_mapper.h"
 #include "radix.h"
+#include "percent_progress.h"
 #include <string>
 #include <algorithm>
 #include <numeric>
@@ -33,6 +34,7 @@ template <typename KMER_T, unsigned SIZE> class CKmerBinReader {
 
 	CBinDesc *bd;
 	CBinQueue *bq;
+	CSortersManager* sorters_manager;
 	CTooLargeBinsQueue *tlbq;
 
 	CMemoryBins *memory_bins;
@@ -47,6 +49,9 @@ template <typename KMER_T, unsigned SIZE> class CKmerBinReader {
 	bool both_strands;
 	bool use_quake;
 
+#ifdef DEVELOP_MODE
+	bool verbose_log;
+#endif
 	int64 round_up_to_alignment(int64 x)
 	{
 		return (x + ALIGNMENT-1) / ALIGNMENT * ALIGNMENT;
@@ -68,6 +73,7 @@ template <typename KMER_T, unsigned SIZE> CKmerBinReader<KMER_T, SIZE>::CKmerBin
 //	dm = Queues.dm;
 	bd = Queues.bd;
 	bq = Queues.bq;
+	sorters_manager = Queues.sorters_manager;
 	tlbq = Queues.tlbq;
 	disk_logger = Queues.disk_logger;
 
@@ -82,6 +88,10 @@ template <typename KMER_T, unsigned SIZE> CKmerBinReader<KMER_T, SIZE>::CKmerBin
 	max_x = Params.max_x;
 	s_mapper	   = Queues.s_mapper;
 	lut_prefix_len = Params.lut_prefix_len;
+
+#ifdef DEVELOP_MODE
+	verbose_log = Params.verbose_log;
+#endif
 }
 
 //----------------------------------------------------------------------------------
@@ -106,12 +116,15 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 	uint32 buffer_size;
 	uint32 kmer_len;
 
-	bd->init_random();
-	while((bin_id = bd->get_next_random_bin()) >= 0)		// Get id of the next bin to read
-	{
+	CPercentProgress percent_progress("Stage 2: ", true);
+	percent_progress.SetMaxVal(bd->get_n_rec_sum());
+	percent_progress.NotifyProgress(0);
+
+	while ((bin_id = bd->get_next_sort_bin()) >= 0)		// Get id of the next bin to read
+	{		
+		//cout << "kb_readed, next bin id: " << bin_id << "\n";
 		bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs, buffer_size, kmer_len);
 		fflush(stdout);
-
 
 		// Reserve memory necessary to process the current bin at all next stages
 		uint64 input_kmer_size;
@@ -129,7 +142,7 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 			kxmer_counter_size = 0;
 			kxmer_symbols = kmer_len;
 		}
-		uint64 max_out_recs    = (n_rec+1) / max(cutoff_min, 1u);	
+		uint64 max_out_recs    = (n_rec+1) / max(cutoff_min, 1u);
 		
 		uint64 counter_size    = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
 		if(KMER_T::QUALITY_SIZE > counter_size)
@@ -144,16 +157,17 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 		uint64 lut_recs = 1 << (2 * lut_prefix_len);
 		uint64 lut_size = lut_recs * sizeof(uint64);
 
+		// Reserve memory only for the file data
 		if (!memory_bins->init(bin_id, rec_len, round_up_to_alignment(size), round_up_to_alignment(input_kmer_size), round_up_to_alignment(out_buffer_size), round_up_to_alignment(kxmer_counter_size), round_up_to_alignment(lut_size)))
 		{
 			tlbq->insert(bin_id);
 			continue;
 		}
-
+		
 #ifdef DEBUG_MODE
 		cout << bin_id << ":  " << name << "  " << c_disk << "  " << size << "  " << n_rec << "\n";
 #else
-		cout << "*";
+		//cout << "*";
 #endif
 
 		// Process the bin if it is not empty
@@ -169,6 +183,7 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 
 			memory_bins->reserve(bin_id, data, CMemoryBins::mba_input_file);
 			//readed = fread(data, 1, size, file);
+
 			readed = file->Read(data, 1, size);
 			if(readed != size)
 			{
@@ -177,25 +192,40 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 				exit(1);
 			}
 
-			// Push bin data to a queue of bins to process
+			// Reserve memory necessary to process the whole bin
+			memory_bins->extend(bin_id, rec_len, round_up_to_alignment(size), round_up_to_alignment(input_kmer_size), round_up_to_alignment(out_buffer_size), round_up_to_alignment(kxmer_counter_size), round_up_to_alignment(lut_size));
+			memory_bins->reserve(bin_id, data, CMemoryBins::mba_input_file);
+
+			// Push bin data to a queue of bins to process			
 			bq->push(bin_id, data, size, n_rec);
+			sorters_manager->NotifyBQPush();
+
 		}
 		else
+		{
+			//reserve is allowed also for empty bins
+			memory_bins->extend(bin_id, rec_len, round_up_to_alignment(size), round_up_to_alignment(input_kmer_size), round_up_to_alignment(out_buffer_size), round_up_to_alignment(kxmer_counter_size), round_up_to_alignment(lut_size));
 			// Push empty bin to process (necessary, since all bin ids must be processed)
 			bq->push(bin_id, NULL, 0, 0);
+			sorters_manager->NotifyBQPush();
+		}
 
 		file->Close();
 		
 		//Remove temporary file
-#ifndef DEVELOP_MODE
-		file->Remove();		
+#ifdef DEVELOP_MODE
+		if(!verbose_log)
+			file->Remove();	
+#else
+		file->Remove();	
 #endif
 		disk_logger->log_remove(size);
+
+		percent_progress.NotifyProgress(n_rec);
 	}
 
-
 	bq->mark_completed();
-
+	sorters_manager->NotifyQueueCompleted();
 	fflush(stdout);
 }
 
