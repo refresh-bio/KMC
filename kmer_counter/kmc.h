@@ -1016,37 +1016,17 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 		save_bins_stats(Queues, Params, sizeof(KMER_T), KMER_T::QUALITY_SIZE, n_reads, Params.signature_len, Queues.s_mapper->GetMapSize(), Queues.s_mapper->GetMap());
 #endif
 
-	SortFunction<KMER_T> sort_func;
+	SortFunction<KMER_T> sort_func;	
+#ifdef __APPLE__
+	sort_func = RadixSort::RadixSortMSD<KMER_T, SIZE>;
+	CSmallSort<SIZE>::Adjust(384);
+#else
 	int iset = instrset_detect();
 	auto proc_name = CCpuInfo::GetBrand();
 	bool is_intel = CCpuInfo::GetVendor() == "GenuineIntel";
 	bool at_least_avx = iset >= 7;
 	std::transform(proc_name.begin(), proc_name.end(), proc_name.begin(), ::tolower);
 	bool is_xeon = proc_name.find("xeon") != string::npos;
-//#define PRINT_PROC_INFO
-#ifdef PRINT_PROC_INFO
-	if (is_xeon || (is_intel && at_least_avx))
-	{
-		if (is_xeon)
-			cout << "Xeon detected\n";
-		else
-			cout << "Some intel with at least avx\n";
-
-		if (iset >= 8)
-			sort_func = RadulsSort::RadixSortMSD_AVX2<KMER_T>, cout << "using avx2 version of RADULS\n";
-		else if (iset >= 7)
-			sort_func = RadulsSort::RadixSortMSD_AVX<KMER_T>, cout << "using avx version of RADULS\n";
-		else if (iset >= 5)
-			sort_func = RadulsSort::RadixSortMSD_SSE41<KMER_T>, cout << "using sse4.1 version of RADULS\n";
-		else if (iset >= 2)
-			sort_func = RadulsSort::RadixSortMSD_SSE2<KMER_T>, cout << "using sse2 version of RADULS\n";
-	}
-	else
-	{
-		sort_func = RadixSort::RadixSortMSD<KMER_T, SIZE>, cout << "using KMC3 radix instead of RADULS\n";
-		CSmallSort<SIZE>::Adjust(384);
-	}
-#else
 	if (is_xeon || (is_intel && at_least_avx))
 	{
 		if (iset >= 8)
