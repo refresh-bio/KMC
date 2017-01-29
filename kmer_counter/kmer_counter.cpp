@@ -139,7 +139,7 @@ void usage()
 	cout << "  -k<len> - k-mer length (k from " << MIN_K << " to " << MAX_K << "; default: 25)\n";
 	cout << "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 12\n";
 	cout << "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n";
-	cout << "  -p<par> - signature length (5, 6, 7, 8, 9, 10); default: 9\n";
+	cout << "  -p<par> - signature length (5, 6, 7, 8, 9, 10, 11); default: 9\n";
 	cout << "  -f<a/q/m> - input in FASTA format (-fa), FASTQ format (-fq) or multi FASTA (-fm); default: FASTQ\n";
 	//cout << "  -q[value] - use Quake's compatible counting with [value] representing lowest quality (default: 33)\n";
 	cout << "  -ci<value> - exclude k-mers occurring less than <value> times (default: 2)\n";
