@@ -489,7 +489,7 @@ namespace RadixSort
 		uint64 per_thread = n_recs / n_threads;
 
 		std::vector<std::thread> threads;
-		std::vector<COUNTER_TYPE[256]> histos(n_threads);
+		std::vector<std::array<COUNTER_TYPE,256>> histos(n_threads);
 		ALIGN_ARRAY COUNTER_TYPE globalHisto[256] = {};
 		for (uint32_t th_id = 0; th_id < n_threads; ++th_id)
 		{
@@ -577,7 +577,7 @@ namespace RadixSort
 		}
 
 		std::vector<uchar*> _raw_buffers(n_threads);
-		std::vector<COUNTER_TYPE[256]> threads_histos(n_threads);
+		std::vector<std::array<COUNTER_TYPE,256>> threads_histos(n_threads);
 
 		for (uint32_t th_id = 0; th_id < n_threads; ++th_id)
 		{

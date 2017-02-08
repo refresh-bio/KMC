@@ -545,7 +545,7 @@ namespace RadulsSort
 
 		std::vector<std::thread> threads;
 		//	std::vector<ALIGN_ARRAY COUNTER_TYPE[256]> histos(MAGIC_NUMBER * n_threads);
-		std::vector<COUNTER_TYPE[256]> histos(MAGIC_NUMBER * n_threads);
+		std::vector<std::array<COUNTER_TYPE, 256>> histos(MAGIC_NUMBER * n_threads);
 		ALIGN_ARRAY COUNTER_TYPE globalHisto[256] = {};
 		for (uint32_t th_id = 0; th_id < n_threads; ++th_id)
 		{
@@ -596,7 +596,7 @@ namespace RadulsSort
 
 		std::vector<uchar*> _raw_buffers(MAGIC_NUMBER * n_threads);
 		//	std::vector<ALIGN_ARRAY COUNTER_TYPE[256]> threads_histos(MAGIC_NUMBER * n_threads);
-		std::vector<COUNTER_TYPE[256]> threads_histos(MAGIC_NUMBER * n_threads);
+		std::vector<std::array<COUNTER_TYPE, 256>> threads_histos(MAGIC_NUMBER * n_threads);
 
 		for (uint32_t th_id = 0; th_id < n_threads; ++th_id)
 		{
