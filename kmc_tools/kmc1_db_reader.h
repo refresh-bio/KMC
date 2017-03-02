@@ -440,6 +440,7 @@ template<unsigned SIZE> void CKMC1DbReader<SIZE>::reload_pref_buff()
 /*****************************************************************************************************************************/
 template<unsigned SIZE> bool CKMC1DbReader<SIZE>::reload_suf_buff()
 {
+	suffix_buff_pos = 0;
 	uint64 size;
 	if (!suff_buff_queue->pop(suffix_buff, size))
 		return false;
