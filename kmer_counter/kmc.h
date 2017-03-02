@@ -471,7 +471,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	if(Params.use_quake)
 		cout << "Lowest quality value         : " << Params.lowest_quality << "\n";
 	cout << "Both strands                 : " << (Params.both_strands ? "true\n" : "false\n");	
-	cout << "RAM olny mode                : " << (Params.mem_mode ? "true\n" : "false\n");
+	cout << "RAM only mode                : " << (Params.mem_mode ? "true\n" : "false\n");
 
 	cout << "\n******* Stage 1 configuration: *******\n";
 	cout << "\n";
