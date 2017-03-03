@@ -207,7 +207,11 @@ void CParametersParser::read_filter_params()
 	{
 		if (strncmp(argv[pos], "-t", 2) == 0)
 		{
-			config.filtering_params.trim = true;
+			config.filtering_params.filter_mode = CFilteringParams::FilterMode::trim;
+		}
+		else if (strncmp(argv[pos], "-hm", 3) == 0)
+		{
+			config.filtering_params.filter_mode = CFilteringParams::FilterMode::hard_mask;
 		}
 		else
 		{
@@ -704,9 +708,9 @@ read_filter_params();
 		read_input_desc(); //kmc db
 		read_input_fastq_desc(); //fastq input
 		read_output_fastq_desc();
-		if (config.filtering_params.use_float_value && config.filtering_params.trim)
+		if (config.filtering_params.use_float_value && config.filtering_params.filter_mode != CFilteringParams::FilterMode::normal)
 		{
-			cout << " Error: trim (-t) is not compatibile with float values of cut off (-ci -cx)\n";
+			cout << " Error: trim (-t) and soft mask (-hm) are not compatibile with float values of cut off (-ci -cx)\n";
 			exit(1);
 		}
 	}
