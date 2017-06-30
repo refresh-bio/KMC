@@ -42,7 +42,6 @@ $(KMC_MAIN_DIR)/libs/libbz2.a
 
 KMC_DUMP_OBJS = \
 $(KMC_DUMP_DIR)/nc_utils.o \
-$(KMC_API_DIR)/mmer.o \
 $(KMC_DUMP_DIR)/kmc_dump.o 
 
 KMC_API_OBJS = \
