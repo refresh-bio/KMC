@@ -15,9 +15,11 @@ KMC_TOOLS_CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-a
 
 DISABLE_ASMLIB = false
 
+KMC_COMMON = \
+$(KMC_MAIN_DIR)/mmer.o \
+
 KMC_OBJS = \
 $(KMC_MAIN_DIR)/kmer_counter.o \
-$(KMC_MAIN_DIR)/mmer.o \
 $(KMC_MAIN_DIR)/mem_disk_file.o \
 $(KMC_MAIN_DIR)/rev_byte.o \
 $(KMC_MAIN_DIR)/bkb_writer.o \
@@ -45,7 +47,6 @@ $(KMC_DUMP_DIR)/nc_utils.o \
 $(KMC_DUMP_DIR)/kmc_dump.o 
 
 KMC_API_OBJS = \
-$(KMC_API_DIR)/mmer.o \
 $(KMC_API_DIR)/kmc_file.o \
 $(KMC_API_DIR)/kmer_api.o
 
@@ -75,7 +76,7 @@ else
 	$(KMC_TOOLS_DIR)/libs/libaelf64.a 
 endif 	
 
-$(KMC_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS): %.o: %.cpp
+$(KMC_OBJS) $(KMC_COMMON) $(KMC_DUMP_OBJS) $(KMC_API_OBJS): %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(KMC_TOOLS_OBJS): %.o: %.cpp
@@ -92,14 +93,14 @@ $(KMC_MAIN_DIR)/raduls_avx2.o: $(KMC_MAIN_DIR)/raduls_avx2.cpp
 $(KMC_MAIN_DIR)/instrset_detect.o: $(KMC_MAIN_DIR)/libs/vectorclass/instrset_detect.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 	
-kmc: $(KMC_OBJS) $(RADULS_OBJS) $(KMC_MAIN_DIR)/instrset_detect.o 
+kmc: $(KMC_OBJS) $(KMC_COMMON) $(RADULS_OBJS) $(KMC_MAIN_DIR)/instrset_detect.o 
 	-mkdir -p $(KMC_BIN_DIR)
 	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS)
-kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
+kmc_dump: $(KMC_DUMP_OBJS) $(KMC_COMMON) $(KMC_API_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
 	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^
 	
-kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS)
+kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_COMMON) $(KMC_API_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
 	$(CC) $(KMC_TOOLS_CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS)
 	
