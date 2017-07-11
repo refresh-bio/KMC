@@ -578,6 +578,12 @@ inline void CKmer<1>::store(uchar *buffer, int32 p, int32 n)
 // *********************************************************************
 inline void CKmer<1>::load_fast(uchar *&buffer, int32 n, bool little_endian)
 {
+	//for short k-mers n may be 0
+	if (!n)
+	{
+		data = 0;
+		return;
+	}
 	//It compiles to the same as data = *(uint64*)buffer; ->  mov	rax, QWORD PTR [rcx]
 	//i am not sure about other platforms than x86
 	memcpy(&data, buffer, sizeof(data)); 

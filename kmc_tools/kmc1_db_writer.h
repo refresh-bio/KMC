@@ -409,7 +409,7 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::calc_lut_prefix_len()
 	{
 		uint32 best_lut_prefix_len = 0;
 		uint64 best_mem_amount = 1ull << 62;
-		for (lut_prefix_len = 6; lut_prefix_len < 16; ++lut_prefix_len)
+		for (lut_prefix_len = 1; lut_prefix_len < 16; ++lut_prefix_len)
 		{
 			uint32 suffix_len = config.headers[i].kmer_len - lut_prefix_len;
 			if (suffix_len % 4)

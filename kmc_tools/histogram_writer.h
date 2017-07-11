@@ -23,7 +23,7 @@ private:
 	std::string& file_src;
 	uint32 cutoff_max;
 	uint32 cutoff_min;
-	std::vector<uint32> counters;
+	std::vector<uint64> counters;
 protected:
 	void Init()
 	{

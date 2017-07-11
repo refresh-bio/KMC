@@ -15,9 +15,16 @@ Date   : 2017-01-28
 #include "params.h"
 #include "queues.h"
 #include "percent_progress.h"
+#include <sys/stat.h>
 
 class CBinaryFilesReader
 {
+	bool is_file(const char* path) 
+	{
+		struct stat buf;
+		stat(path, &buf);
+		return (buf.st_mode & S_IFMT) == S_IFREG;	
+	}
 	uint32 part_size;
 	CInputFilesQueue* input_files_queue;
 	CMemoryPool *pmm_binary_file_reader;
@@ -70,6 +77,11 @@ public:
 		{
 			string& f_name = files_copy.front();
 			FILE* f = fopen(f_name.c_str(), "rb");
+			if(!is_file(f_name.c_str()))
+			{
+				cout << "Error: " << f_name << " is not a file\n";
+				exit(1);
+			}
 			if (!f)
 			{
 				cout << "Cannot open file: " << f_name << "\n";
