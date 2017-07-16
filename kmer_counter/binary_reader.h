@@ -19,11 +19,19 @@ Date   : 2017-01-28
 
 class CBinaryFilesReader
 {
-	bool is_file(const char* path) 
+	bool is_file(const char* path)
 	{
-		struct stat buf;
-		stat(path, &buf);
-		return (buf.st_mode & S_IFMT) == S_IFREG;	
+#ifdef WIN32
+		typedef struct _stat64 stat_struct;
+		const auto& stat_func = _stat64;
+#else
+		typedef struct stat stat_struct;
+		const auto& stat_func = stat;
+#endif
+		stat_struct buf;
+		if (stat_func(path, &buf) == -1)
+			return false;
+		return (buf.st_mode & S_IFMT) == S_IFREG;
 	}
 	uint32 part_size;
 	CInputFilesQueue* input_files_queue;
