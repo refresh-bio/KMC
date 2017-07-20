@@ -333,7 +333,8 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size)
 			{
 				pmm_binary_file_reader->free(in_data);
 				in_data = nullptr;
-				binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type);
+				if(!binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type))
+					return 0;
 				stream.avail_in = (uint32)in_data_size;
 				stream.next_in = in_data;				
 			}
