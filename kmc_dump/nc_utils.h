@@ -12,6 +12,7 @@
 */
 
 #include <string>
+#include <cmath>
 #include "../kmc_api/kmer_defs.h"
 
 #ifndef _NC_UTILS_H
