@@ -3,6 +3,7 @@
 #include "develop.h"
 #include "params.h"
 #include <iostream>
+#include <functional>
 using namespace std;
 
 void map_log(uint32 signature_len, uint32 map_size, int32* signature_map)

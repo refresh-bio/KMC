@@ -11,7 +11,6 @@
 #ifndef _RADULS_IMPL_H
 #define _RADULS_IMPL_H
 
-
 #include <cassert>
 #include <queue>
 #include <condition_variable>
