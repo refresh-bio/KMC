@@ -153,8 +153,8 @@ void usage()
 	cout << "  -sp<value> - number of splitting threads\n";
 	cout << "  -sr<value> - number of threads for 2nd stage\n";	
 	cout << "Example:\n";
-	cout << "kmc -k27 -m24 NA19238.fastq NA.res \\data\\kmc_tmp_dir\\\n";
-	cout << "kmc -k27 -m24 @files.lst NA.res \\data\\kmc_tmp_dir\\\n";
+	cout << "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n";
+	cout << "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
 }
 
 //----------------------------------------------------------------------------------
