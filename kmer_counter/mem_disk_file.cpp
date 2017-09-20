@@ -35,7 +35,7 @@ void CMemDiskFile::Open(const string& f_name)
 
 		if (!file)
 		{
-			cout << "Error: Cannot open temporary file " << f_name << "\n";
+			cerr << "Error: Cannot open temporary file " << f_name << "\n";
 			exit(1);
 		}
 		setbuf(file, nullptr);

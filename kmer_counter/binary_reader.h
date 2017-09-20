@@ -60,7 +60,7 @@ class CBinaryFilesReader
 		f = fopen(file_name.c_str(), "rb");
 		if (!f)
 		{
-			std::cout << "Cannot open file: " << file_name << " for reading\n";
+			std::cerr << "Error: cannot open file: " << file_name << " for reading\n";
 			exit(1);
 		}
 
@@ -87,12 +87,12 @@ public:
 			FILE* f = fopen(f_name.c_str(), "rb");
 			if(!is_file(f_name.c_str()))
 			{
-				cout << "Error: " << f_name << " is not a file\n";
+				cerr << "Error: " << f_name << " is not a file\n";
 				exit(1);
 			}
 			if (!f)
 			{
-				cout << "Cannot open file: " << f_name << "\n";
+				cerr << "Cannot open file: " << f_name << "\n";
 				exit(1);
 			}
 			my_fseek(f, 0, SEEK_END);

@@ -71,7 +71,7 @@ void CTokenizer::Tokenize(const std::string& _expression, std::list<Token>& toke
 		}
 		if (!valid_token)
 		{
-			std::cout << "Error: wrong output format near : " << expression << "\n";
+			std::cerr << "Error: wrong output format near : " << expression << "\n";
 			exit(1);
 		}
 	}

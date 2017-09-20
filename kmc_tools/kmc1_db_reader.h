@@ -150,7 +150,7 @@ public:
 			uint64 readed = fread(suff_buff, 1, to_read, suffix_file);
 			if (readed != to_read)
 			{
-				std::cout << "Error: some error while reading " << suffix_file_name << "\n";
+				std::cerr << "Error: some error while reading " << suffix_file_name << "\n";
 				exit(1);
 			}
 			suffix_left_to_read -= readed;
@@ -426,7 +426,7 @@ template<unsigned SIZE> void CKMC1DbReader<SIZE>::reload_pref_buff()
 
 	if (fread(prefix_buff, sizeof(uint64), to_read, prefix_file) != to_read)
 	{
-		std::cout << "Error: some error while reading " << prefix_file_name << "\n";
+		std::cerr << "Error: some error while reading " << prefix_file_name << "\n";
 		exit(1);
 	}
 	prefix_left_to_read -= to_read;
@@ -461,7 +461,7 @@ template<unsigned SIZE> void CKMC1DbReader<SIZE>::open_files()
 
 	if (!suffix_file)
 	{
-		std::cout << "Error: cannot open file: " << suffix_file_name << "\n";
+		std::cerr << "Error: cannot open file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 	setvbuf(suffix_file, NULL, _IONBF, 0);
@@ -469,13 +469,13 @@ template<unsigned SIZE> void CKMC1DbReader<SIZE>::open_files()
 	char marker[4];
 	if (fread(marker, 1, 4, suffix_file) != 4)
 	{
-		std::cout << "Error: while reading start marker in file: " << suffix_file_name << "\n";
+		std::cerr << "Error: while reading start marker in file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 
 	if (strncmp(marker, "KMCS", 4) != 0)
 	{
-		std::cout << "Error: wrong start marker in file: " << suffix_file_name << "\n";
+		std::cerr << "Error: wrong start marker in file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 
@@ -483,13 +483,13 @@ template<unsigned SIZE> void CKMC1DbReader<SIZE>::open_files()
 	my_fseek(suffix_file, -4, SEEK_END);
 	if (fread(marker, 1, 4, suffix_file) != 4)
 	{
-		std::cout << "Error: while reading end marker in file: " << suffix_file_name << "\n";
+		std::cerr << "Error: while reading end marker in file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 
 	if (strncmp(marker, "KMCS", 4) != 0)
 	{
-		std::cout << "Error: wrong end marker in file: " << suffix_file_name << "\n";
+		std::cerr << "Error: wrong end marker in file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 	my_fseek(suffix_file, 4, SEEK_SET); //skip KMCS
@@ -502,7 +502,7 @@ template<unsigned SIZE> void CKMC1DbReader<SIZE>::open_files()
 
 	if (!prefix_file)
 	{
-		std::cout << "Error: cannot open file: " << prefix_file_name << "\n";
+		std::cerr << "Error: cannot open file: " << prefix_file_name << "\n";
 		exit(1);
 	}
 	my_fseek(prefix_file, 4 + sizeof(uint64), SEEK_SET);//skip KMCP and first value as it must be 0

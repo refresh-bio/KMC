@@ -270,7 +270,7 @@ public:
 		case CounterOpType::FROM_DB2:
 			return counter2;
 		case CounterOpType::NONE://should never be here
-			std::cout << "Trying to use undefined counter calculation mode!\n";
+			std::cerr << "Error: trying to use undefined counter calculation mode!\n";
 			exit(1);
 		}
 		return 0;

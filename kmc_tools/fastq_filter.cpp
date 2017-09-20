@@ -63,7 +63,7 @@ void CFastqFilter::Process()
 			ProcessImpl<TrimFastaToFastaHelper>();
 		else
 		{
-			cout << "Error: this file type is not supported by filter operation\n";
+			cerr << "Error: this file type is not supported by filter operation\n";
 			exit(1);
 		}
 	}
@@ -76,7 +76,7 @@ void CFastqFilter::Process()
 		else if (input_file_type == CFilteringParams::file_type::fasta && output_file_type == CFilteringParams::file_type::fasta)
 			ProcessImpl<HardMaskFastaToFastaHelper>();
 		else
-			cout << "Error: this file type is not supported by filter operation\n";
+			cerr << "Error: this file type is not supported by filter operation\n";
 	}
 	else
 	{
@@ -88,7 +88,7 @@ void CFastqFilter::Process()
 			ProcessImpl<FastaToFastaHelper>();
 		else
 		{
-			cout << "Error: this file type is not supported by filter operation\n";
+			cerr << "Error: this file type is not supported by filter operation\n";
 			exit(1);
 		}
 	}

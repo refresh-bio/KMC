@@ -150,14 +150,14 @@ public:
 		prefix_file = fopen((file_src + ".kmc_pre").c_str(), "rb");
 		if (!prefix_file)
 		{
-			std::cout << "Cannot open file : " << (file_src + ".kmc_pre") << "\n";
+			std::cerr << "Error: cannot open file : " << (file_src + ".kmc_pre") << "\n";
 			exit(1);
 		}
 		file_src = input_desc.file_src;
 		suffix_file = fopen((file_src + ".kmc_suf").c_str(), "rb");
 		if (!suffix_file)
 		{
-			std::cout << "Cannot open file : " << (file_src + ".kmc_suf") << "\n";
+			std::cerr << "Error: cannot open file : " << (file_src + ".kmc_suf") << "\n";
 			exit(1);
 		}
 
@@ -192,7 +192,7 @@ public:
 		const std::string& kmer = config.check_params.kmer;
 		if (kmer.length() != header.kmer_len)
 		{
-			std::cout << "Error: invalid k-mer length\n";
+			std::cerr << "Error: invalid k-mer length\n";
 			exit(1);
 		}
 		char codes[255];
@@ -213,7 +213,7 @@ public:
 			char d = codes[(uchar)kmer[i]];
 			if (d < 0)
 			{
-				cout << "Error: invalid k-mer format\n";
+				cerr << "Error: invalid k-mer format\n";
 				exit(1);
 			}
 			prefix <<= 2;
@@ -225,7 +225,7 @@ public:
 			char d = codes[(uchar)kmer[i]];
 			if (d < 0)
 			{
-				cout << "Error: invalid k-mer format\n";
+				cerr << "Error: invalid k-mer format\n";
 				exit(1);
 			}
 			_kmer.SHL_insert_2bits(d);

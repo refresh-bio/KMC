@@ -169,7 +169,7 @@ bool CSmallKCompleter<QUAKE_MODE>::Complete(CSmallKBuf<COUNTER_TYPE> result)
 	pre_file = fopen(pre_file_name.c_str(), "wb");
 	if (!pre_file)
 	{
-		cout << "Error: Cannot create " << pre_file_name << "\n";
+		cerr << "Error: Cannot create " << pre_file_name << "\n";
 		exit(1);
 		return false;
 	}
@@ -177,7 +177,7 @@ bool CSmallKCompleter<QUAKE_MODE>::Complete(CSmallKBuf<COUNTER_TYPE> result)
 
 	if (!suf_file)
 	{
-		cout << "Error: Cannot create " << suf_file_name << "\n";
+		cerr << "Error: Cannot create " << suf_file_name << "\n";
 		fclose(pre_file);
 		exit(1);
 		return false;

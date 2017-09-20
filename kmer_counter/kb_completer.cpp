@@ -84,7 +84,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 	out_kmer = fopen(kmer_file_name.c_str(), "wb");
 	if(!out_kmer)
 	{
-		cout << "Error: Cannot create " << kmer_file_name << "\n";
+		cerr << "Error: Cannot create " << kmer_file_name << "\n";
 		exit(1);
 		return;
 	}
@@ -92,7 +92,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 	out_lut = fopen(lut_file_name.c_str(), "wb");
 	if(!out_lut)
 	{
-		cout << "Error: Cannot create " << lut_file_name << "\n";
+		cerr << "Error: Cannot create " << lut_file_name << "\n";
 		fclose(out_kmer);
 		exit(1);
 		return;
@@ -266,7 +266,7 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 	// Marker at the end
 	fwrite(s_kmc_pre, 1, 4, out_lut);
 	fclose(out_lut);
-	cout << "\n";
+	cerr << "\n";
 
 	delete[] sig_map;
 }

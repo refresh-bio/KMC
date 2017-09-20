@@ -18,7 +18,7 @@ uint32 CParametersParser::replace_zero(uint32 val, const char* param_name, uint3
 {
 	if (val == 0)
 	{
-		cout << "Warning: min value for " << param_name << " is " << value_to_set_if_zero << ". Your value will be converted to " << value_to_set_if_zero << "\n";
+		cerr << "Warning: min value for " << param_name << " is " << value_to_set_if_zero << ". Your value will be converted to " << value_to_set_if_zero << "\n";
 		return value_to_set_if_zero;
 	}
 	return val;
@@ -32,12 +32,12 @@ void CParametersParser::parse_int_or_float(bool& force_float, bool& force_int, f
 		float_value = (float)atof(argv[pos++] + 3);
 		if (float_value > 1.0f || float_value < 0.0f)
 		{
-			cout << " Error: wrong value for fastq input parameter: "<< param_name <<"\n";
+			cerr << "Error: wrong value for fastq input parameter: "<< param_name <<"\n";
 			exit(1);
 		}
 		if (force_int)
 		{
-			cout << "Error: both -ci, -cx must be specified as real number [0;1] or as integer \n";
+			cerr << "Error: both -ci, -cx must be specified as real number [0;1] or as integer \n";
 			exit(1);
 		}
 		force_float = true;
@@ -48,7 +48,7 @@ void CParametersParser::parse_int_or_float(bool& force_float, bool& force_int, f
 		int_val = atoi(argv[pos++] + 3);
 		if (force_float)
 		{
-			cout << "Error: both -ci, -cx must be specified as real number [0;1] or as integer \n";
+			cerr << "Error: both -ci, -cx must be specified as real number [0;1] or as integer \n";
 			exit(1);
 		}
 		force_int = true;
@@ -68,7 +68,7 @@ void CParametersParser::parse_global_params()
 		{
 			if (strlen(argv[pos]) < 3)
 			{
-				std::cout << "Error: -t require value\n";
+				std::cerr << "Error: -t require value\n";
 				exit(1);
 			}
 			config.avaiable_threads = atoi(argv[pos] + 2);
@@ -91,12 +91,12 @@ void CParametersParser::read_input_fastq_desc()
 {
 	if (pos >= argc)
 	{
-		cout << "Error: Input fastq files(s) missed\n";
+		cerr << "Error: Input fastq files(s) missed\n";
 		exit(1);
 	}
 	if (strncmp(argv[pos], "-", 1) == 0)
 	{
-		cout << "Error: Input fastq file(s) required, but " << argv[pos] << " found\n";
+		cerr << "Error: Input fastq file(s) required, but " << argv[pos] << " found\n";
 		exit(1);
 	}
 	string input_file_name = argv[pos++];
@@ -107,7 +107,7 @@ void CParametersParser::read_input_fastq_desc()
 		ifstream in(input_file_name.c_str() + 1);
 		if (!in.good())
 		{
-			cout << "Error: No " << input_file_name.c_str() + 1 << " file\n";
+			cerr << "Error: No " << input_file_name.c_str() + 1 << " file\n";
 			exit(1);
 		}
 		string s;
@@ -145,7 +145,7 @@ void CParametersParser::read_input_fastq_desc()
 				config.filtering_params.input_file_type = CFilteringParams::file_type::fastq;
 				break;
 			default:
-				cout << "Error: unknow parameter " << argv[pos - 1] << "\n";
+				cerr << "Error: unknow parameter " << argv[pos - 1] << "\n";
 				exit(1);
 				break;
 			}
@@ -159,12 +159,12 @@ void CParametersParser::read_output_fastq_desc()
 {
 	if (pos >= argc)
 	{
-		cout << "Error: Output fastq source missed\n";
+		cerr << "Error: Output fastq source missed\n";
 		exit(1);
 	}
 	if (strncmp(argv[pos], "-", 1) == 0)
 	{
-		cout << "Error: Output fastq source required, but " << argv[pos] << "found\n";
+		cerr << "Error: Output fastq source required, but " << argv[pos] << "found\n";
 		exit(1);
 	}
 	config.filtering_params.output_src = argv[pos++];
@@ -182,19 +182,19 @@ void CParametersParser::read_output_fastq_desc()
 				config.filtering_params.output_file_type = CFilteringParams::file_type::fasta;
 				break;
 			default:
-				cout << "Error: unknown parameter " << argv[pos] << "\n";
+				cerr << "Error: unknown parameter " << argv[pos] << "\n";
 				exit(1);
 				break;
 			}
 			if (config.filtering_params.input_file_type == CFilteringParams::file_type::fasta && config.filtering_params.output_file_type == CFilteringParams::file_type::fastq)
 			{
-				cout << "Error: cannot set -fq for output when -fa is set for input\n";
+				cerr << "Error: cannot set -fq for output when -fa is set for input\n";
 				exit(1);
 			}
 		}
 		else
 		{
-			cout << "Error: Unknown parameter: " << argv[pos] << "\n";
+			cerr << "Error: Unknown parameter: " << argv[pos] << "\n";
 			exit(1);
 		}
 		++pos;
@@ -215,7 +215,7 @@ void CParametersParser::read_filter_params()
 		}
 		else
 		{
-			cout << "Warning: Unknow parameter for filter operation: " << argv[pos] << "\n";
+			cerr << "Warning: Unknow parameter for filter operation: " << argv[pos] << "\n";
 		}
 		++pos;
 	}
@@ -225,7 +225,7 @@ void CParametersParser::read_check_params()
 {
 	if (pos >= argc)
 	{
-		std::cout << "Error: check operation require k-mer to check\n";
+		std::cerr << "Error: check operation require k-mer to check\n";
 		exit(1);
 	}
 	config.check_params.kmer = argv[pos++];
@@ -241,7 +241,7 @@ void CParametersParser::read_dump_params()
 		}
 		else
 		{
-			cout << "Warning: Unknow parameter for dump operation: " << argv[pos] << "\n";			
+			cerr << "Warning: Unknow parameter for dump operation: " << argv[pos] << "\n";			
 		}
 		++pos;
 	}
@@ -280,14 +280,14 @@ void CParametersParser::read_operation_type()
 		}
 		else
 		{
-			cout << "Unknown counter calculation mode: " << mode << ". Allowed values: min, max, sum, diff, left, right\n";
+			cerr << "Error: unknown counter calculation mode: " << mode << ". Allowed values: min, max, sum, diff, left, right\n";
 			exit(1);
 		}
 		++pos;
 
 		if (config.mode == CConfig::Mode::KMERS_SUBTRACT)
 		{
-			cout << "Error: counter calculation mode not allowed for kmers_subtract\n";
+			cerr << "Error: counter calculation mode not allowed for kmers_subtract\n";
 			exit(1);
 		}
 	}
@@ -297,12 +297,12 @@ void CParametersParser::read_input_desc()
 {
 	if (pos >= argc)
 	{
-		cout << "Error: Input database source missed\n";
+		cerr << "Error: Input database source missed\n";
 		exit(1);
 	}
 	if (strncmp(argv[pos], "-", 1) == 0)
 	{
-		cout << "Error: Input database source required, but " << argv[pos] << "found\n";
+		cerr << "Error: Input database source required, but " << argv[pos] << "found\n";
 		exit(1);
 	}
 	CInputDesc desc(argv[pos++]);
@@ -321,7 +321,7 @@ void CParametersParser::read_input_desc()
 		}
 		else
 		{
-			cout << "Error: Unknow parameter: " << argv[pos];
+			cerr << "Error: Unknow parameter: " << argv[pos];
 			exit(1);
 		}
 	}
@@ -355,7 +355,7 @@ bool CParametersParser::read_output_for_transform()
 	}
 	else
 	{
-		cout << "Unknown operation: " << argv[pos] << "\n";
+		cerr << "Error: unknown operation: " << argv[pos] << "\n";
 		Usage();
 		exit(1);
 	}
@@ -377,14 +377,14 @@ bool CParametersParser::read_output_for_transform()
 			}
 			else
 			{
-				cout << "-s parameter allowed only for dump operation\n";
+				cerr << "Error: -s parameter allowed only for dump operation\n";
 				Usage();
 				exit(1);
 			}
 		}
 		else
 		{
-			cout << "Error: unknown operation parameter: " << argv[pos] <<"\n";
+			cerr << "Error: unknown operation parameter: " << argv[pos] <<"\n";
 			exit(1);
 		}
 		++pos;
@@ -392,12 +392,12 @@ bool CParametersParser::read_output_for_transform()
 
 	if (pos >= argc)
 	{
-		cout << "Error: Output database path missed\n";
+		cerr << "Error: Output database path missed\n";
 		exit(1);
 	}
 	if (strncmp(argv[pos], "-", 1) == 0)
 	{
-		cout << "Error: Output database path required, but " << argv[pos] << " found\n";
+		cerr << "Error: Output database path required, but " << argv[pos] << " found\n";
 		exit(1);
 	}
 
@@ -424,7 +424,7 @@ bool CParametersParser::read_output_for_transform()
 		}
 		else
 		{
-			cout << "Error: Unknown parameter: " << argv[pos];
+			cerr << "Error: Unknown parameter: " << argv[pos];
 			Usage();
 			exit(1);
 		}
@@ -432,7 +432,7 @@ bool CParametersParser::read_output_for_transform()
 	if (op_type == CTransformOutputDesc::OpType::COMPACT)
 	{
 		if (config.transform_output_desc.back().counter_max)
-			cout << "Warning: -cs can not be specified for compact operation, value specified will be ignored\n";
+			cerr << "Warning: -cs can not be specified for compact operation, value specified will be ignored\n";
 		config.transform_output_desc.back().counter_max = 1;
 	}	
 	return true;
@@ -471,7 +471,7 @@ bool CParametersParser::read_output_desc_for_simple()
 	}
 	else
 	{
-		cout << "Unknown operation: " << argv[pos] << "\n";
+		cerr << "Error: unknown operation: " << argv[pos] << "\n";
 		Usage();
 		exit(1);
 	}
@@ -479,12 +479,12 @@ bool CParametersParser::read_output_desc_for_simple()
 	++pos;
 	if (pos >= argc)
 	{
-		cout << "Error: Output database path missed\n";
+		cerr << "Error: Output database path missed\n";
 		exit(1);
 	}
 	if (strncmp(argv[pos], "-", 1) == 0)
 	{
-		cout << "Error: Output database path required, but " << argv[pos] << " found\n";
+		cerr << "Error: Output database path required, but " << argv[pos] << " found\n";
 		exit(1);
 	}
 	config.simple_output_desc.emplace_back(op_type);
@@ -510,7 +510,7 @@ bool CParametersParser::read_output_desc_for_simple()
 		{
 			if (op_type == CSimpleOutputDesc::OpType::KMERS_SUBTRACTION || op_type == CSimpleOutputDesc::OpType::REVERSE_KMERS_SUBTRACTION)
 			{
-				cout << "-oc not allowed for kmers_subtract and reverse_kmers_subtract as it doesn't make sense (equal k-mers form both input will not be present in output)\n";
+				cerr << "Error: -oc not allowed for kmers_subtract and reverse_kmers_subtract as it doesn't make sense (equal k-mers form both input will not be present in output)\n";
 				exit(1);
 			}
 			char* mode = argv[pos] + 3;
@@ -540,14 +540,14 @@ bool CParametersParser::read_output_desc_for_simple()
 			}
 			else
 			{
-				cout << "Unknown counter calculation mode: " << mode << ". Allowed values: min, max, sum, diff, left, right\n";
+				cerr << "Error: unknown counter calculation mode: " << mode << ". Allowed values: min, max, sum, diff, left, right\n";
 				exit(1);
 			}
 			++pos;
 		}
 		else
 		{
-			cout << "Error: Unknow parameter: " << argv[pos];
+			cerr << "Error: Unknow parameter: " << argv[pos];
 			Usage();
 			exit(1);
 		}
@@ -560,12 +560,12 @@ void CParametersParser::read_output_desc()
 {
 	if (pos >= argc)
 	{
-		cout << "Error: Output database source missed\n";
+		cerr << "Error: Output database source missed\n";
 		exit(1);
 	}
 	if (strncmp(argv[pos], "-", 1) == 0)
 	{
-		cout << "Error: Output database source required, but " << argv[pos] << "found\n";
+		cerr << "Error: Output database source required, but " << argv[pos] << "found\n";
 		exit(1);
 	}
 	
@@ -588,7 +588,7 @@ void CParametersParser::read_output_desc()
 		}
 		else
 		{
-			cout << "Error: Unknow parameter: " << argv[pos];
+			cerr << "Error: Unknow parameter: " << argv[pos];
 			exit(1);
 		}
 	}
@@ -683,7 +683,7 @@ void CParametersParser::Parse()
 	}
 	else
 	{
-		cout << "Error: Unknow mode: " << argv[pos] << "\n";
+		cerr << "Error: Unknow mode: " << argv[pos] << "\n";
 		Usage();
 		exit(1);
 	}
@@ -710,7 +710,7 @@ read_filter_params();
 		read_output_fastq_desc();
 		if (config.filtering_params.use_float_value && config.filtering_params.filter_mode != CFilteringParams::FilterMode::normal)
 		{
-			cout << " Error: trim (-t) and soft mask (-hm) are not compatibile with float values of cut off (-ci -cx)\n";
+			cerr << "Error: trim (-t) and soft mask (-hm) are not compatibile with float values of cut off (-ci -cx)\n";
 			exit(1);
 		}
 	}
@@ -718,7 +718,7 @@ read_filter_params();
 	{
 		if (strncmp(argv[pos], "-", 1) == 0)
 		{
-			cout << "Error: operations description file expected but " << argv[2] << " found\n";
+			cerr << "Error: operations description file expected but " << argv[2] << " found\n";
 			exit(1);
 		}		
 		complex_parser = make_unique<CParser>(argv[pos]);
@@ -733,7 +733,7 @@ read_filter_params();
 
 		if (config.transform_output_desc.size() == 0)
 		{
-			cout << "Error: output missed\n";
+			cerr << "Error: output missed\n";
 			Usage();
 			exit(1);
 		}
@@ -747,7 +747,7 @@ read_filter_params();
 			;
 		if (config.simple_output_desc.size() == 0)
 		{
-			cout << "Error: output missed\n";
+			cerr << "Error: output missed\n";
 			Usage();
 			exit(1);
 		}
@@ -766,17 +766,17 @@ read_filter_params();
 		if (config.mode == CConfig::Mode::COMPACT)
 		{
 			if (config.output_desc.counter_max)
-				cout << "Warning: -cs can not be specified for compact operation, value specified will be ignored\n";
+				cerr << "Warning: -cs can not be specified for compact operation, value specified will be ignored\n";
 			config.output_desc.counter_max = 1;
 		}
 		if (config.mode == CConfig::Mode::HISTOGRAM)
 		{
 			if (config.output_desc.cutoff_max)
-				std::cout << "Warning: -cx not allowed for histogram output, value specified will be ignored\n";
+				std::cerr << "Warning: -cx not allowed for histogram output, value specified will be ignored\n";
 			if(config.output_desc.cutoff_min)
-				std::cout << "Warning: -ci not allowed for histogram output, value specified will be ignored\n";
+				std::cerr << "Warning: -ci not allowed for histogram output, value specified will be ignored\n";
 			if (config.output_desc.counter_max)
-				std::cout << "Warning: -cs not allowed for histogram output, value specified will be ignored\n";
+				std::cerr << "Warning: -cs not allowed for histogram output, value specified will be ignored\n";
 
 
 			config.output_desc.cutoff_max = config.input_desc.front().cutoff_max;
@@ -843,7 +843,7 @@ bool CParametersParser::validate_input_dbs()
 	uint32 mode = config.headers.front().mode;
 	if (mode == 1)
 	{
-		cout << "Error: quality counters are not supported in kmc tools\n"; 
+		cerr << "Error: quality counters are not supported in kmc tools\n"; 
 		return false;
 	}
 	for (uint32 i = 1; i < config.input_desc.size(); ++i)
@@ -852,12 +852,12 @@ bool CParametersParser::validate_input_dbs()
 		CKMC_header& h = config.headers.back();
 		if (h.mode != mode)
 		{
-			cout << "Error: quality/direct based counters conflict!\n"; 
+			cerr << "Error: quality/direct based counters conflict!\n";
 			return false;
 		}
 		if (h.kmer_len != kmer_len)
 		{
-			cout << "Database " << config.input_desc.front().file_src << " contains " << kmer_len << "-mers, but database " << config.input_desc[i].file_src << " contains " << h.kmer_len << "-mers\n";
+			cerr << "Database " << config.input_desc.front().file_src << " contains " << kmer_len << "-mers, but database " << config.input_desc[i].file_src << " contains " << h.kmer_len << "-mers\n";
 			return false;
 		}
 	}
@@ -920,7 +920,7 @@ bool CParametersParser::validate_input_dbs()
 			uint32 min_cutoff_min = get_min_cutoff_min();
 			config.output_desc.cutoff_min = min_cutoff_min;
 			if (config.verbose)
-				cout << "-ci was not specified for output. It will be set to " << min_cutoff_min << "\n";
+				cerr << "Warning: -ci was not specified for output. It will be set to " << min_cutoff_min << "\n";
 		}
 
 		if (config.output_desc.cutoff_max == 0)
@@ -933,14 +933,14 @@ bool CParametersParser::validate_input_dbs()
 				config.output_desc.cutoff_max = max_cutoff_max;
 			}
 			if (config.verbose)
-				cout << "-cx was not specified for output. It will be set to " << config.output_desc.cutoff_max << "\n";
+				cerr << "Warning: -cx was not specified for output. It will be set to " << config.output_desc.cutoff_max << "\n";
 		}
 		if (config.output_desc.counter_max == 0)
 		{
 			uint32 max_counter_max = get_max_counter_max();			
 			config.output_desc.counter_max = max_counter_max;
 			if (config.verbose)
-				cout << "-cs was not specified for output. It will be set to " << max_counter_max << "\n";
+				cerr << "Warning: -cs was not specified for output. It will be set to " << max_counter_max << "\n";
 		}
 	}
 	

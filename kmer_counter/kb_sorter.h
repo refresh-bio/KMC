@@ -686,9 +686,7 @@ template <unsigned SIZE> void CKmerBinSorter_Impl<CKmer<SIZE>, SIZE>::ExpandKxme
 			ptr.buffer_input[first_gap_pos++] = ptr.buffer_input[last_elem_pos--];
 		}
 		
-		ptr.n_plus_x_recs -= n_fake_recs_after_expand;	
-			
-		//cout << "ptr.n_fake_recs_after_expand / ptr.n_plus_x_recs = " << (double)ptr.n_fake_recs_after_expand / ptr.n_plus_x_recs << "\n";
+		ptr.n_plus_x_recs -= n_fake_recs_after_expand;				
 	}
 	else
 	{

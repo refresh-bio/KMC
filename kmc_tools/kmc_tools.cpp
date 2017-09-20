@@ -181,17 +181,17 @@ template<unsigned SIZE> class CTools
 	{
 		auto header = CConfig::GetInstance().headers.front();
 
-		std::cout << "k                 :  " << header.kmer_len <<"\n";
-		std::cout << "total k-mers      :  " << header.total_kmers<< "\n";
-		std::cout << "cutoff max        :  " << header.max_count << "\n";
-		std::cout << "cutoff min        :  " << header.min_count << "\n";
-		std::cout << "counter size      :  " << header.counter_size << " bytes\n";
-		std::cout << "mode              :  " << (header.mode ? "quality-aware counters" : "occurrence counters") << "\n";
-		std::cout << "both strands      :  " << (header.both_strands ? "yes" : "no") << "\n";
-		std::cout << "database format   :  " << (header.IsKMC2() ? "KMC2.x" : "KMC1.x") << "\n";
-		std::cout << "signature length  :  " << header.signature_len << "\n";
-		std::cout << "number of bins    :  " << header.no_of_bins << "\n";
-		std::cout << "lut_prefix_len    :  " << header.lut_prefix_len << "\n";
+		std::cout << "k                 :  " << header.kmer_len <<"\n"
+				  << "total k-mers      :  " << header.total_kmers<< "\n"
+				  << "cutoff max        :  " << header.max_count << "\n"
+				  << "cutoff min        :  " << header.min_count << "\n"
+				  << "counter size      :  " << header.counter_size << " bytes\n"
+				  << "mode              :  " << (header.mode ? "quality-aware counters" : "occurrence counters") << "\n"
+				  << "both strands      :  " << (header.both_strands ? "yes" : "no") << "\n"
+				  << "database format   :  " << (header.IsKMC2() ? "KMC2.x" : "KMC1.x") << "\n"
+				  << "signature length  :  " << header.signature_len << "\n"
+				  << "number of bins    :  " << header.no_of_bins << "\n"
+				  << "lut_prefix_len    :  " << header.lut_prefix_len << "\n";
 		return true;
 	}
 
@@ -217,7 +217,7 @@ template<unsigned SIZE> class CTools
 			FILE* tmp = my_fopen(p.c_str(), "rb");
 			if (!tmp)
 			{
-				cout << "Cannot open file: " << p.c_str();
+				cerr << "Error: cannot open file: " << p.c_str();
 				exit(1);
 			}
 			my_fseek(tmp, 0, SEEK_END);
@@ -268,7 +268,7 @@ template<unsigned SIZE> class CTools
 		CKMCFile kmc_api;
 		if (!kmc_api.OpenForRA(config.input_desc.front().file_src))
 		{
-			cout << "Error: cannot open: " << config.input_desc.front().file_src << " by KMC API\n";
+			cerr << "Error: cannot open: " << config.input_desc.front().file_src << " by KMC API\n";
 			exit(1);
 		}
 		kmc_api.SetMinCount(config.input_desc.front().cutoff_min);
@@ -374,7 +374,7 @@ template<unsigned SIZE> class CTools
 				if (it->op_type == CTransformOutputDesc::OpType::SORT)
 				{
 					it = config.transform_output_desc.erase(it);
-					cout << "Warning: input database is already sorted. Each sort operation will be omitted\n";
+					cerr << "Warning: input database is already sorted. Each sort operation will be omitted\n";
 				}
 				else ++it;
 			}
@@ -463,7 +463,7 @@ public:
 
 			delete db1;
 			delete db2; 
-			std::cout << "\n";
+			//std::cout << "\n";
 			if (res)
 			{
 				cout << "DB Equals\n";
@@ -592,7 +592,7 @@ int main(int argc, char**argv)
 		params_parser.SetThreads();
 		CApplication<KMER_WORDS> app(params_parser);
 		app.Process();
-		cout << "\n";
+		//cout << "\n";
 	}
 
 #ifdef ENABLE_LOGGER 

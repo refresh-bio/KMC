@@ -186,7 +186,7 @@ public:
 			my_fseek(suf_file, file_pos, SEEK_SET);
 			if (fread(buf, 1, size, suf_file) != size)
 			{
-				std::cout << "Error while reading suffix file\n";
+				std::cerr << "Error while reading suffix file\n";
 				exit(1);
 			}
 			bin_provider.notify_bin_filled(bin_id);
@@ -1514,7 +1514,7 @@ desc(desc)
 	record_size = suffix_bytes + header.counter_size;
 	if (!LUTS)
 	{
-		std::cout << "cannot allocate memory for LUTS of KMC2 database\n";
+		std::cerr << "Error: cannot allocate memory for LUTS of KMC2 database\n";
 		exit(1);
 	}
 
@@ -1522,14 +1522,14 @@ desc(desc)
 	FILE* kmc_pre = fopen(kmc_pre_file_name.c_str(), "rb");
 	if (!kmc_pre)
 	{
-		std::cout << "Cannot open kmc2 prefix file to read LUTS";
+		std::cerr << "Error: cannot open kmc2 prefix file to read LUTS";
 		exit(1);
 	}
 
 	my_fseek(kmc_pre, 4, SEEK_SET);
 	if (fread(LUTS, sizeof(uint64), lut_recs, kmc_pre) != lut_recs)
 	{
-		std::cout << "Some error occured while reading LUTS from kmc2 prefix file \n";
+		std::cerr << "Some error occured while reading LUTS from kmc2 prefix file \n";
 		exit(1);
 	}
 	fclose(kmc_pre);
@@ -1539,7 +1539,7 @@ desc(desc)
 
 	if (!kmc_suf)
 	{
-		std::cout << "Cannot open kmc2 suffix file\n";
+		std::cerr << "Error: cannot open kmc2 suffix file\n";
 		exit(1);
 	}
 	setvbuf(kmc_suf, NULL, _IONBF, 0);
@@ -1749,7 +1749,7 @@ template<unsigned SIZE> void CKCM2DbReaderSeqCounter_Base<SIZE>::open_files()
 
 	if (!suffix_file)
 	{
-		std::cout << "Error: cannot open file: " << suffix_file_name << "\n";
+		std::cerr << "Error: cannot open file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 	setvbuf(suffix_file, NULL, _IONBF, 0);
@@ -1757,13 +1757,13 @@ template<unsigned SIZE> void CKCM2DbReaderSeqCounter_Base<SIZE>::open_files()
 	char marker[4];
 	if (fread(marker, 1, 4, suffix_file) != 4)
 	{
-		std::cout << "Error: while reading start marker in file: " << suffix_file_name << "\n";
+		std::cerr << "Error: while reading start marker in file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 
 	if (strncmp(marker, "KMCS", 4) != 0)
 	{
-		std::cout << "Error: wrong start marker in file: " << suffix_file_name << "\n";
+		std::cerr << "Error: wrong start marker in file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 
@@ -1771,13 +1771,13 @@ template<unsigned SIZE> void CKCM2DbReaderSeqCounter_Base<SIZE>::open_files()
 	my_fseek(suffix_file, -4, SEEK_END);
 	if (fread(marker, 1, 4, suffix_file) != 4)
 	{
-		std::cout << "Error: while reading end marker in file: " << suffix_file_name << "\n";
+		std::cerr << "Error: while reading end marker in file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 
 	if (strncmp(marker, "KMCS", 4) != 0)
 	{
-		std::cout << "Error: wrong end marker in file: " << suffix_file_name << "\n";
+		std::cerr << "Error: wrong end marker in file: " << suffix_file_name << "\n";
 		exit(1);
 	}
 
@@ -1793,7 +1793,7 @@ template<unsigned SIZE> bool CKCM2DbReaderSeqCounter_Base<SIZE>::reload_suf_buff
 	uint64 readed = fread(suffix_buff, 1, to_read, suffix_file);
 	if (readed != to_read)
 	{
-		std::cout << "Error: some error while reading " << suffix_file_name << "\n";
+		std::cerr << "Error: some error while reading " << suffix_file_name << "\n";
 		exit(1);
 	}
 	suffix_buff_pos = 0;
@@ -1819,7 +1819,7 @@ CKCM2DbReaderSeqCounter_Base<SIZE>(header, desc)
 
 	if (!prefix_file)
 	{
-		std::cout << "Error: cannot open file: " << prefix_file_name << "\n";
+		std::cerr << "Error: cannot open file: " << prefix_file_name << "\n";
 		exit(1);
 	}
 	setvbuf(prefix_file, NULL, _IONBF, 0);
@@ -1929,7 +1929,7 @@ template<unsigned SIZE> void CKMC2DbReaderSequential<SIZE>::reload_pref_buff()
 	this->prefix_buff_pos = 0;
 	if (fread(prefix_buff, sizeof(uint64), to_read, prefix_file) != to_read)
 	{
-		std::cout << "Error: some error while reading " << prefix_file_name << "\n";
+		std::cerr << "Error: some error while reading " << prefix_file_name << "\n";
 		exit(1);
 	}
 	this->prefix_left_to_read -= to_read;
@@ -2023,7 +2023,7 @@ template<unsigned SIZE> CKMC2DbReader<SIZE>::CKMC2DbReader(const CKMC_header& he
 		db_reader_counters_only = std::make_unique<CKMC2DbReaderCountersOnly<SIZE>>(header, desc);
 		break;
 	default: //should never be here
-		std::cout << "Error: unknow open mode \n";
+		std::cerr << "Error: unknow open mode \n";
 		exit(1);
 	}
 }

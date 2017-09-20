@@ -126,7 +126,7 @@ protected:
 		file = fopen(file_src.c_str(), "wb");
 		if (!file)
 		{
-			std::cout << "Error: cannot open file: " << file_src << "\n";
+			std::cerr << "Error: cannot open file: " << file_src << "\n";
 			exit(1);
 		}
 		buf_pos = 0;

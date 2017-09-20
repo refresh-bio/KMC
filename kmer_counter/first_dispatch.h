@@ -177,13 +177,6 @@ void pierwsze_kolko_etap1(uint32_t th_id, KMER_T *kmers, uint64 n_recs, uint32_t
 		}
 
 	}
-	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	/*	if (byte == 15) {
-	radix_mid_timer.stopTimer();
-	//std::cout << "MidTime 1st step: " << radix_mid_timer.getElapsedTime() << " for thread " << th_id << "\n";
-	}*/
-	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 #ifdef MEASURE_TIMES
 	tw.stopTimer();
 
@@ -367,13 +360,6 @@ void pierwsze_kolko_etap2(uint32_t th_id, KMER_T *kmers, KMER_T* tmp,
 	times_byte_total[byte] += (uint64_t)(tw.getElapsedTime() * 1000000000.0);
 	times_satish_stages[byte][1] += (uint64_t)(tw.getElapsedTime() * 1000000000.0);
 #endif
-
-	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	/*	if (byte == 15) {
-	radix_mid_timer.stopTimer();
-	//std::cout << "MidTime 2st step: " << radix_mid_timer.getElapsedTime() << " for thread " << th_id << "\n";
-	}*/
-	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 }
 //-----------------------------------------------------------
 template <typename KMER_T, typename COUNTER_TYPE>
@@ -444,13 +430,6 @@ void pierwsze_kolko_etap3(uint32_t th_id, KMER_T *kmers, KMER_T* tmp,
 		}
 		pmm_radix_buf->free(raw_buffer);
 	}
-
-	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	/*	if (byte == 15) {
-	radix_mid_timer.stopTimer();
-	//std::cout << "MidTime 3rd step: " << radix_mid_timer.getElapsedTime() << " for thread " << th_id << "\n";
-	}*/
-	//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #ifdef MEASURE_TIMES
 	tw.stopTimer();
 

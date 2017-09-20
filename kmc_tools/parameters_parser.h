@@ -76,7 +76,7 @@ CExpressionNode<SIZE>* CParametersParser::GetExpressionRoot()
 			expression_root = new CCountersSubtractionNode<SIZE>;
 			break;
 		default:
-			std::cout << "Error: unknow operation\n";
+			std::cerr << "Error: unknow operation\n";
 			exit(1);
 		}
 		expression_root->SetCounterOpType(config.counter_op_type);
@@ -92,7 +92,7 @@ CExpressionNode<SIZE>* CParametersParser::GetExpressionRoot()
 	{
 		if (!config.headers.front().IsKMC2())
 		{
-			std::cout << "This database contains sorted k-mers already!";
+			std::cerr << "Error: This database contains sorted k-mers already!";
 			exit(1);
 		}
 		return new CInputNode<SIZE>(0);
@@ -107,9 +107,9 @@ CExpressionNode<SIZE>* CParametersParser::GetExpressionRoot()
 	}
 	else //should never be here
 	{
-		std::cout << "Error: unknow operation\n";
+		std::cerr << "Error: unknow operation\n";
 #ifdef ENABLE_DEBUG
-		std::cout << __FUNCTION__ << " line: " << __LINE__ << "\n";
+		std::cerr << __FUNCTION__ << " line: " << __LINE__ << "\n";
 #endif
 		exit(1);
 	}

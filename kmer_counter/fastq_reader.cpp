@@ -140,7 +140,7 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size)
 
 	if (part_filled >= OVERHEAD_SIZE)
 	{
-		cout << "Error: Wrong input file!\n";
+		cerr << "Error: Wrong input file!\n";
 		exit(1);
 	}
 
@@ -269,7 +269,7 @@ void CFastqReaderDataSrc::init_stream()
 		stream.next_in = Z_NULL;
 		if (inflateInit2(&stream, 31) != Z_OK)
 		{
-			cout << "Error while reading gz file\n";
+			cerr << "Error while reading gz file\n";
 			exit(1);
 		}
 		stream.avail_in = (uint32)in_data_size;
@@ -283,7 +283,7 @@ void CFastqReaderDataSrc::init_stream()
 		_bz_stram.next_in = NULL;
 		if (BZ2_bzDecompressInit(&_bz_stram, 0, 0) != BZ_OK)
 		{
-			cout << "Error while reading bz2 file\n";
+			cerr << "Error while reading bz2 file\n";
 			exit(1);
 		}
 		_bz_stram.avail_in = (uint32)in_data_size;
@@ -346,7 +346,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size)
 			case Z_NEED_DICT:
 				ret = Z_DATA_ERROR;     /* and fall through */
 			case Z_DATA_ERROR:
-				cout << "Some error while reading gzip file\n"; 
+				cerr << "Some error while reading gzip file\n"; 
 				exit(1);
 			case Z_MEM_ERROR:
 				inflateEnd(&stream);
@@ -366,7 +366,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size)
 					bool queue_end = !binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type);
 					if (!queue_end && file_part != FilePart::End)
 					{
-						cout << "Error: An internal error occurred. Please contact authors\n";
+						cerr << "Error: An internal error occurred. Please contact authors\n";
 					}
 					break;
 				}
@@ -376,12 +376,12 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size)
 				/*	inflateEnd(&stream);
 					if (inflateInit2(&stream, 31) != Z_OK) 
 					{
-						cout << "Error while reading gzip file\n";
+						cerr << "Error while reading gzip file\n";
 						exit(1);
 					}*/
 					if (inflateReset(&stream) != Z_OK)
 					{
-						cout << "Error while reading gzip file\n";
+						cerr << "Error while reading gzip file\n";
 						exit(1);
 					}
 				}
@@ -408,7 +408,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size)
 			if (ret == BZ_PARAM_ERROR || ret == BZ_DATA_ERROR || ret == BZ_DATA_ERROR_MAGIC || ret == BZ_MEM_ERROR)
 			{
 				BZ2_bzDecompressEnd(&_bz_stram);
-				cout << "bz2 reading error\n"; 
+				cerr << "bz2 reading error\n"; 
 			}
 			if (ret == BZ_STREAM_END)
 			{
@@ -423,7 +423,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size)
 					bool queue_end = !binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type);
 					if (!queue_end && file_part != FilePart::End)
 					{
-						cout << "Error: An internal error occurred. Please contact authors\n";
+						cerr << "Error: An internal error occurred. Please contact authors\n";
 					}
 					break;
 				}
@@ -432,7 +432,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size)
 					BZ2_bzDecompressEnd(&_bz_stram);
 					if (BZ2_bzDecompressInit(&_bz_stram, 0, 0) != BZ_OK)
 					{
-						cout << "Error while reading bz2 file\n";
+						cerr << "Error while reading bz2 file\n";
 						exit(1);
 					}
 				}
@@ -469,7 +469,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size)
 	}
 	else
 	{
-		cout << "Unknown compression\n";
+		cerr << "Error: unknown compression\n";
 		exit(1);
 	}
 }

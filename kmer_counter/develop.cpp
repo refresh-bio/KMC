@@ -15,7 +15,7 @@ void map_log(uint32 signature_len, uint32 map_size, int32* signature_map)
 		char symbols[] = { 'A', 'C', 'G', 'T' };
 		if (!mapLogFile)
 		{
-			cout << "Cannot save map log to file";
+			cerr << "Error: cannot save map log to file";
 			exit(1);
 		}
 		fprintf(mapLogFile, "SIGNMATURE | ACGT | BIN NO\n");
@@ -54,7 +54,7 @@ void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, u
 	sum_size = sum_n_rec = sum_n_plus_x_recs = sum_n_super_kmers = 0;
 	if (!stats_file)
 	{
-		cout << "cannot open file to store kmers per bin: " << KMERS_PER_BIN_LOG_FILE << "\n";
+		cerr << "Error: cannot open file to store kmers per bin: " << KMERS_PER_BIN_LOG_FILE << "\n";
 		exit(1);
 	}
 	fprintf(stats_file, "%s;%s;%s;%s;%s;%s\n", "bin_id", "n_rec", "n_super_kmers", "size", "2nd stage MEM", "n_singatures");

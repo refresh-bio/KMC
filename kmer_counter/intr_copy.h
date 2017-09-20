@@ -50,7 +50,7 @@ template <unsigned SIZE, unsigned MODE> struct IntrCopy128
 {
 	static inline void Copy(void *_dest, void *_src)
 	{
-		cout << "Error\n";
+		cerr << "Error\n";
 	}
 };
 
