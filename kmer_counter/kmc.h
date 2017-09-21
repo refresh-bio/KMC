@@ -104,6 +104,7 @@ public:
 	void SetParams(CKMCParams &_Params);
 	bool Process();
 	void GetStats(double &time1, double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers);
+	void SaveStatsInJSON();
 };
 
 
@@ -1325,6 +1326,62 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	_tmp_size_strict_mem = tmp_size_strict_mem;
 	_max_disk_usage = max_disk_usage;
 	_n_total_super_kmers = n_total_super_kmers;
+}
+
+template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SaveStatsInJSON()
+{	
+	if (Params.json_summary_file_name == "")
+		return;
+
+	ofstream stats(Params.json_summary_file_name);
+
+	if (!stats)
+	{
+		cerr << "Warning: Cannot open file " << Params.json_summary_file_name << " to store summary of execution in JSON format\n";
+		return;
+	}
+
+	double time1 = w1.getElapsedTime();
+	double time2 = w2.getElapsedTime();
+	double time3 = w3.getElapsedTime();
+
+	stats << "{\n"
+		<< "\t\"1st_stage\": \"" << time1 << "s\",\n"
+		<< "\t\"2nd_stage\": \"" << time2 << "s\",\n";
+	if(Params.p_strict_mem)
+		stats << "\t\"3rd_stage\": \"" << time3 << "s\",\n";
+
+	if (Params.p_strict_mem)
+		stats << "\t\"Total\": \"" << (time1 + time2 + time3) << "s\",\n";
+	else
+		stats << "\t\"Total\": \"" << (time1 + time2) << "s\",\n";
+
+
+	if (Params.p_strict_mem)
+	{
+		stats << "\t\"Tmp_size\": \"" << tmp_size / 1000000 << "MB\",\n"
+			<< "\t\"Tmp_size_strict_memory\": \"" << tmp_size_strict_mem / 1000000 << "MB\",\n"
+			<< "\t\"Tmp_total\": \"" << max_disk_usage / 1000000 << "MB\",\n";
+	}
+	else
+		stats << "\t\"Tmp_size\": \"" << tmp_size / 1000000 << "MB\",\n";
+
+	stats << "\t\"Stats\": {\n";
+	
+	stats	<< "\t\t\"#k-mers_below_min_threshold\": " << n_cutoff_min << ",\n"
+			<< "\t\t\"#k-mers_above_max_threshold\": " << n_cutoff_max << ",\n"
+			<< "\t\t\"#Unique_k-mers\": " << n_unique << ",\n"
+			<< "\t\t\"#Unique_counted_k-mers\": " << n_unique - n_cutoff_min - n_cutoff_max << ",\n"
+			<< "\t\t\"#Total no. of k-mers\": " << n_total << ",\n";
+	if (Params.p_file_type != multiline_fasta)
+		stats << "\t\t\"#Total_reads\": " << n_reads << ",\n";
+	else
+		stats << "\t\t\"#Total_sequences\": "<< n_reads << ",\n";
+	stats << "\t\t\"#Total_super-k-mers\": " << n_total_super_kmers << "\n";
+
+	stats << "\t}\n";
+	stats << "}\n";
+	stats.close();
 }
 
 #endif

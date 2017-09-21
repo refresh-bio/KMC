@@ -61,6 +61,14 @@ public:
 			delete kmc;
 	}
 
+	void SaveStatsInJSON()
+	{
+		if (is_selected)
+			kmc->SaveStatsInJSON();
+		else
+			app_1->SaveStatsInJSON();
+	}
+
 	void GetStats(double &time1, double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers) {
 		if (is_selected)
 		{
@@ -114,6 +122,12 @@ public:
 		}
 	}
 
+	void SaveStatsInJSON()
+	{
+		if (is_selected)
+			kmc->SaveStatsInJSON();
+	}
+
 	bool Process() {
 		if (is_selected)
 		{
@@ -152,6 +166,7 @@ void usage()
 		 << "  -sf<value> - number of FASTQ reading threads\n"
 		 << "  -sp<value> - number of splitting threads\n"
 		 << "  -sr<value> - number of threads for 2nd stage\n"
+		 << "  -j<file_name> - file name with execution summary in JSON format\n"
 		 << "Example:\n"
 		 << "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
 	     << "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
@@ -294,7 +309,12 @@ bool parse_parameters(int argc, char *argv[])
 			else
 				Params.p_n_bins = tmp;
 		}
-	
+		else if (strncmp(argv[i], "-j", 2) == 0)
+		{
+			Params.json_summary_file_name = &argv[i][2];
+			if (Params.json_summary_file_name == "")
+				cerr << "Warning: file name for json summary file missed (-j switch)\n";			
+		}
 		if (strncmp(argv[i], "-smso", 5) == 0)
 		{
 			tmp = atoi(&argv[i][5]);
@@ -393,6 +413,7 @@ bool parse_parameters(int argc, char *argv[])
 	return true;
 }
 
+
 //----------------------------------------------------------------------------------
 // Main function
 int _tmain(int argc, _TCHAR* argv[])
@@ -436,8 +457,11 @@ int _tmain(int argc, _TCHAR* argv[])
 			return 0;
 		}
 		app->GetStats(time1, time2, time3, n_unique, n_cutoff_min, n_cutoff_max, n_total, n_reads, tmp_size, tmp_size_strict_mem, max_disk_usage, n_total_super_kmers);
+		app->SaveStatsInJSON();
 		delete app;
 	//}
+
+	
 
 	cout << "1st stage: " << time1 << "s\n"
 	     << "2nd stage: " << time2  << "s\n";

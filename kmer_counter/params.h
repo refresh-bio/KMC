@@ -56,6 +56,8 @@ struct CKMCParams {
 	string output_file_name;
 	string working_directory;
 	input_type file_type;
+
+	string json_summary_file_name = "";
 	
 	uint32 lut_prefix_len;
 

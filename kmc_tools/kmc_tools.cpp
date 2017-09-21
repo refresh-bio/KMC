@@ -478,7 +478,6 @@ public:
 		else if (config.mode == CConfig::Mode::TRANSFORM)
 		{
 			return transform();
-
 		}
 		else if (config.mode == CConfig::Mode::SIMPLE_SET)
 		{
