@@ -167,6 +167,7 @@ void usage()
 		 << "  -sp<value> - number of splitting threads\n"
 		 << "  -sr<value> - number of threads for 2nd stage\n"
 		 << "  -j<file_name> - file name with execution summary in JSON format\n"
+		 << "  -w - without output\n"
 		 << "Example:\n"
 		 << "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
 	     << "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
@@ -332,6 +333,9 @@ bool parse_parameters(int argc, char *argv[])
 			if (Params.json_summary_file_name == "")
 				cerr << "Warning: file name for json summary file missed (-j switch)\n";			
 		}
+		else if (strncmp(argv[i], "-w", 2) == 0)	
+			Params.p_without_output = true;		
+
 		if (strncmp(argv[i], "-smso", 5) == 0)
 		{
 			tmp = atoi(&argv[i][5]);
@@ -428,17 +432,20 @@ bool parse_parameters(int argc, char *argv[])
 	}
 
 	//Check if output files may be created and if it is possible to create file in specified tmp location
-	string pre_file_name = Params.output_file_name + ".kmc_pre";
-	string suff_file_name = Params.output_file_name + ".kmc_suf";
-	if (!CanCreateFile(pre_file_name))
+	if(!Params.p_without_output)
 	{
-		cerr << "Error: Cannot create file: " << pre_file_name << "\n";
-		return false;
-	}
-	if (!CanCreateFile(suff_file_name))
-	{
-		cerr << "Error: Cannot create file: " << suff_file_name << "\n";
-		return false;
+		string pre_file_name = Params.output_file_name + ".kmc_pre";
+		string suff_file_name = Params.output_file_name + ".kmc_suf";
+		if (!CanCreateFile(pre_file_name))
+		{
+			cerr << "Error: Cannot create file: " << pre_file_name << "\n";
+			return false;
+		}
+		if (!CanCreateFile(suff_file_name))
+		{
+			cerr << "Error: Cannot create file: " << suff_file_name << "\n";
+			return false;
+		}
 	}
 	if (!CanCreateFileInPath(Params.working_directory))
 	{

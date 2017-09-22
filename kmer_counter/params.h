@@ -41,6 +41,7 @@ struct CKMCParams {
 	int p_quality;						// lowest quality
 	input_type p_file_type;				// input in FASTA format
 	bool p_verbose;						// verbose mode
+	bool p_without_output = false;		// do not create output files 
 #ifdef DEVELOP_MODE
 	bool p_verbose_log = false;         // verbose log
 #endif
@@ -58,7 +59,8 @@ struct CKMCParams {
 	input_type file_type;
 
 	string json_summary_file_name = "";
-	
+	bool without_output = false;
+
 	uint32 lut_prefix_len;
 
 	uint32 KMER_T_size;

@@ -186,6 +186,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 
 	Params.lowest_quality = Params.p_quality;
 	Params.both_strands   = Params.p_both_strands;
+	Params.without_output = Params.p_without_output;
 	Params.use_strict_mem = Params.p_strict_mem;
 	Params.mem_mode		  = Params.p_mem_mode;
 
