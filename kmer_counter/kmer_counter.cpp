@@ -172,6 +172,23 @@ void usage()
 	     << "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
 }
 
+bool CanCreateFile(const string& path)
+{
+	FILE* f = fopen(path.c_str(), "wb");
+	if (!f)
+		return false;
+	fclose(f);
+	remove(path.c_str());
+	return true;
+}
+bool CanCreateFileInPath(const string& path)
+{
+	static const string name = "kmc_test.bin"; //Some random name
+	if (path.back() == '\\' || path.back() == '/')
+		return CanCreateFile(path + name);
+	else
+		return CanCreateFile(path + '/' + name);
+}
 //----------------------------------------------------------------------------------
 // Parse the parameters
 bool parse_parameters(int argc, char *argv[])
@@ -410,6 +427,24 @@ bool parse_parameters(int argc, char *argv[])
 		}
 	}
 
+	//Check if output files may be created and if it is possible to create file in specified tmp location
+	string pre_file_name = Params.output_file_name + ".kmc_pre";
+	string suff_file_name = Params.output_file_name + ".kmc_suf";
+	if (!CanCreateFile(pre_file_name))
+	{
+		cerr << "Error: Cannot create file: " << pre_file_name << "\n";
+		return false;
+	}
+	if (!CanCreateFile(suff_file_name))
+	{
+		cerr << "Error: Cannot create file: " << suff_file_name << "\n";
+		return false;
+	}
+	if (!CanCreateFileInPath(Params.working_directory))
+	{
+		cerr << "Error: Cannot create file in specified working directory: " << Params.working_directory << "\n";
+		return false;
+	}
 	return true;
 }
 
