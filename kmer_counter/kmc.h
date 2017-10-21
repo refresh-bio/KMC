@@ -994,8 +994,8 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	
 	
 	int64 stage2_size = 0;
-	for (int i = 0; i < 4 * Params.n_sorters; ++i)
-		stage2_size += bin_sizes[i];
+	for (auto bin_size : bin_sizes)
+		stage2_size += bin_size;
 	stage2_size = MAX(stage2_size, 16 << 20);
 	Params.max_mem_stage2 = MIN(Params.max_mem_stage2, stage2_size);
 
