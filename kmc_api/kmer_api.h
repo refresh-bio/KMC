@@ -452,12 +452,20 @@ public:
 	{
 		kmer.resize(no_of_rows);
 		uint32 offset = 62 - ((kmer_length - 1 + byte_alignment) & 31) * 2;
-		for (int32 i = no_of_rows - 1; i >= 1; --i)
+		if (offset)
 		{
-			kmer[i] = kmer_data[i] >> offset;
-			kmer[i] += kmer_data[i - 1] << (64 - offset);
+			for (int32 i = no_of_rows - 1; i >= 1; --i)
+			{
+				kmer[i] = kmer_data[i] >> offset;
+				kmer[i] += kmer_data[i - 1] << (64 - offset);
+			}
+			kmer[0] = kmer_data[0] >> offset;
 		}
-		kmer[0] = kmer_data[0] >> offset;
+		else
+		{
+			for (int32 i = no_of_rows - 1; i >= 0; --i)			
+				kmer[i] = kmer_data[i];						
+		}
 	}
 
 	//-----------------------------------------------------------------------
