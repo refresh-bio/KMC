@@ -95,15 +95,15 @@ $(KMC_MAIN_DIR)/instrset_detect.o: $(KMC_MAIN_DIR)/libs/vectorclass/instrset_det
 	
 kmc: $(KMC_OBJS) $(RADULS_OBJS) $(KMC_MAIN_DIR)/instrset_detect.o 
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CXX) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS)
+	$(CXX) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS) $(CLINK)
 kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CXX) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^
-	
+	$(CXX) -o $(KMC_BIN_DIR)/$@ $^ $(CLINK)
+
 kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CXX) $(KMC_TOOLS_CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS)
-	
+	$(CXX) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS) $(KMC_TOOLS_CLINK)
+
 clean:
 	-rm $(KMC_MAIN_DIR)/*.o
 	-rm $(KMC_API_DIR)/*.o
