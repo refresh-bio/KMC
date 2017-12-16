@@ -6,12 +6,12 @@ KMC_API_DIR = kmc_api
 KMC_DUMP_DIR = kmc_dump
 KMC_TOOLS_DIR = kmc_tools
 
-CC 	= g++
-CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11 
-CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11 
+CXX 	?= g++
+CFLAGS	= $(CPPFLAGS) $(CXXFLAGS) -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11 
+CLINK	= $(LDFLAGS) -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11 
 
-KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
-KMC_TOOLS_CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
+KMC_TOOLS_CFLAGS	= $(CPPFLAGS) $(CXXFLAGS) -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
+KMC_TOOLS_CLINK	= $(LDFLAGS) -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 
 DISABLE_ASMLIB = false
 
@@ -77,32 +77,32 @@ else
 endif 	
 
 $(KMC_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS): %.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 $(KMC_TOOLS_OBJS): %.o: %.cpp
-	$(CC) $(KMC_TOOLS_CFLAGS) -c $< -o $@
+	$(CXX) $(KMC_TOOLS_CFLAGS) -c $< -o $@
 
 $(KMC_MAIN_DIR)/raduls_sse2.o: $(KMC_MAIN_DIR)/raduls_sse2.cpp
-	$(CC) $(CFLAGS) -msse2 -c $< -o $@
+	$(CXX) $(CFLAGS) -msse2 -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_sse41.o: $(KMC_MAIN_DIR)/raduls_sse41.cpp
-	$(CC) $(CFLAGS) -msse4.1 -c $< -o $@
+	$(CXX) $(CFLAGS) -msse4.1 -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_avx.o: $(KMC_MAIN_DIR)/raduls_avx.cpp
-	$(CC) $(CFLAGS) -mavx -fabi-version=0 -c $< -o $@
+	$(CXX) $(CFLAGS) -mavx -fabi-version=0 -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_avx2.o: $(KMC_MAIN_DIR)/raduls_avx2.cpp
-	$(CC) $(CFLAGS) -mavx2 -mfma -fabi-version=0 -c $< -o $@
+	$(CXX) $(CFLAGS) -mavx2 -mfma -fabi-version=0 -c $< -o $@
 $(KMC_MAIN_DIR)/instrset_detect.o: $(KMC_MAIN_DIR)/libs/vectorclass/instrset_detect.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CXX) $(CFLAGS) -c $< -o $@
 	
 kmc: $(KMC_OBJS) $(RADULS_OBJS) $(KMC_MAIN_DIR)/instrset_detect.o 
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS)
+	$(CXX) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS)
 kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^
+	$(CXX) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^
 	
 kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CC) $(KMC_TOOLS_CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS)
+	$(CXX) $(KMC_TOOLS_CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS)
 	
 clean:
 	-rm $(KMC_MAIN_DIR)/*.o

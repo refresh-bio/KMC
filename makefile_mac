@@ -6,11 +6,11 @@ KMC_API_DIR = kmc_api
 KMC_DUMP_DIR = kmc_dump
 KMC_TOOLS_DIR = kmc_tools
 
-CC = /usr/local/gcc-6.3.0/bin/g++
-CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -fopenmp -pthread -std=c++11 
-CLINK	= -lm -fopenmp -static-libgcc -static-libstdc++ -O3 -pthread -std=c++11 
-KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -pthread -std=c++14
-KMC_TOOLS_CLINK	= -lm -static-libgcc -static-libstdc++ -O3 -pthread -std=c++14
+CXX ?= /usr/local/gcc-6.3.0/bin/g++
+CFLAGS	= $(CPPFLAGS) $(CXXFLAGS) -Wall -O3 -m64 -static-libgcc -static-libstdc++ -fopenmp -pthread -std=c++11
+CLINK	= $(LDFLAGS) -lm -fopenmp -static-libgcc -static-libstdc++ -O3 -pthread -std=c++11
+KMC_TOOLS_CFLAGS	= $(CPPFLAGS) $(CXXFLAGS) -Wall -O3 -m64 -static-libgcc -static-libstdc++ -pthread -std=c++14
+KMC_TOOLS_CLINK	= $(LDFLAGS) -lm -static-libgcc -static-libstdc++ -O3 -pthread -std=c++14
 
 DISABLE_ASMLIB = false
 
@@ -72,21 +72,21 @@ else
 endif 	
 
 $(KMC_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS): %.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 $(KMC_TOOLS_OBJS): %.o: %.cpp
-	$(CC) $(KMC_TOOLS_CFLAGS) -c $< -o $@
+	$(CXX) $(KMC_TOOLS_CFLAGS) -c $< -o $@
 
 
 kmc: $(KMC_OBJS)  
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS)
+	$(CXX) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS)
 kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^
+	$(CXX) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^
 kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CC) $(KMC_TOOLS_CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS)
+	$(CXX) $(KMC_TOOLS_CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS)
 	
 clean:
 	-rm $(KMC_MAIN_DIR)/*.o
