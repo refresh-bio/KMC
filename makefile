@@ -1,4 +1,4 @@
-all: kmc
+all: kmc kmc_dump kmc_tools
 	
 KMC_BIN_DIR = bin
 KMC_MAIN_DIR = kmer_counter
