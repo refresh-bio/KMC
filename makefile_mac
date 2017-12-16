@@ -1,5 +1,5 @@
 all: kmc kmc_dump kmc_tools
-	
+
 KMC_BIN_DIR = bin
 KMC_MAIN_DIR = kmer_counter
 KMC_API_DIR = kmc_api
@@ -7,10 +7,10 @@ KMC_DUMP_DIR = kmc_dump
 KMC_TOOLS_DIR = kmc_tools
 
 CXX ?= /usr/local/gcc-6.3.0/bin/g++
-CFLAGS	= $(CPPFLAGS) $(CXXFLAGS) -Wall -O3 -m64 -static-libgcc -static-libstdc++ -fopenmp -pthread -std=c++11
-CLINK	= $(LDFLAGS) -lm -fopenmp -static-libgcc -static-libstdc++ -O3 -pthread -std=c++11
-KMC_TOOLS_CFLAGS	= $(CPPFLAGS) $(CXXFLAGS) -Wall -O3 -m64 -static-libgcc -static-libstdc++ -pthread -std=c++14
-KMC_TOOLS_CLINK	= $(LDFLAGS) -lm -static-libgcc -static-libstdc++ -O3 -pthread -std=c++14
+CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -fopenmp -pthread -std=c++11
+CLINK	= -lm -fopenmp -static-libgcc -static-libstdc++ -O3 -pthread -std=c++11
+KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -pthread -std=c++14
+KMC_TOOLS_CLINK	= -lm -static-libgcc -static-libstdc++ -O3 -pthread -std=c++14
 
 DISABLE_ASMLIB = false
 
@@ -38,7 +38,7 @@ $(KMC_MAIN_DIR)/libs/libbz2.1.0.5.dylib
 KMC_DUMP_OBJS = \
 $(KMC_DUMP_DIR)/nc_utils.o \
 $(KMC_API_DIR)/mmer.o \
-$(KMC_DUMP_DIR)/kmc_dump.o 
+$(KMC_DUMP_DIR)/kmc_dump.o
 
 KMC_API_OBJS = \
 $(KMC_API_DIR)/mmer.o \
@@ -66,27 +66,27 @@ ifeq ($(DISABLE_ASMLIB),true)
 	KMC_TOOLS_CFLAGS += -DDISABLE_ASMLIB
 else
 	KMC_LIBS += \
-	$(KMC_MAIN_DIR)/libs/libamac64.a 
+	$(KMC_MAIN_DIR)/libs/libamac64.a
 	KMC_TOOLS_LIBS += \
 	$(KMC_TOOLS_DIR)/libs/libamac64.a
-endif 	
+endif
 
 $(KMC_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS): %.o: %.cpp
-	$(CXX) $(CFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CFLAGS) -c $< -o $@
 
 $(KMC_TOOLS_OBJS): %.o: %.cpp
-	$(CXX) $(KMC_TOOLS_CFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(KMC_TOOLS_CFLAGS) -c $< -o $@
 
 
-kmc: $(KMC_OBJS)  
+kmc: $(KMC_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CXX) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS) $(CLINK)
+	$(CXX) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS) $(LDFLAGS) $(CLINK)
 kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CXX) -o $(KMC_BIN_DIR)/$@ $^ $(CLINK)
+	$(CXX) -o $(KMC_BIN_DIR)/$@ $^ $(LDFLAGS) $(CLINK)
 kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CXX) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS) $(KMC_TOOLS_CLINK)
+	$(CXX) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS) $(LDFLAGS) $(KMC_TOOLS_CLINK)
 
 clean:
 	-rm $(KMC_MAIN_DIR)/*.o
