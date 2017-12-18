@@ -32,8 +32,8 @@ using uchar = unsigned char;
 //#define ENABLE_DEBUG
 //#define ENABLE_LOGGER
 
-#define KMC_VER		"3.0.0"
-#define KMC_DATE	"2017-01-28"
+#define KMC_VER		"3.0.1"
+#define KMC_DATE	"2017-02-08"
 
 #define DEFAULT_CIRCULAL_QUEUE_CAPACITY (4)
 

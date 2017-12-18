@@ -11,8 +11,8 @@
 #ifndef _DEFS_H
 #define _DEFS_H
 
-#define KMC_VER		"3.0.0"
-#define KMC_DATE	"2017-01-28"
+#define KMC_VER		"3.0.1"
+#define KMC_DATE	"2017-02-08"
 
 #define _CRT_SECURE_NO_WARNINGS
 

@@ -23,7 +23,7 @@ private:
 	std::string& file_src;
 	uint32 cutoff_max;
 	uint32 cutoff_min;
-	std::vector<uint32> counters;
+	std::vector<uint64> counters;
 protected:
 	void Init()
 	{
@@ -39,7 +39,7 @@ protected:
 		std::ofstream file(file_src);
 		if (!file)
 		{
-			std::cout << "Error: cannot open file: " << file_src << "\n";
+			std::cerr << "Error: cannot open file: " << file_src << "\n";
 			exit(1);
 		}
 		for (uint32 i = cutoff_min; i <= cutoff_max; ++i)

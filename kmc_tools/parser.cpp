@@ -25,7 +25,7 @@ CParser::CParser(const std::string& src):
 	file.open(src);
 	if (!file.is_open())
 	{
-		std::cout << "Cannot open file: " << src << "\n";
+		std::cerr << "Error: cannot open file: " << src << "\n";
 		exit(1);
 	}
 	//input_line_pattern = "\\s*(\\w*)\\s*=\\s*(.*)$";
@@ -45,7 +45,7 @@ void CParser::ParseInputs()
 	{
 		if (!nextLine(line))
 		{
-			std::cout << "Error: 'INPUT:' missing\n";
+			std::cerr << "Error: 'INPUT:' missing\n";
 			exit(1);
 		}
 		if (line.find("INPUT:") != std::string::npos)
@@ -54,7 +54,7 @@ void CParser::ParseInputs()
 
 	if (!nextLine(line) || line.find("OUTPUT:") != std::string::npos)
 	{
-		std::cout << "Error: None input was defined\n";
+		std::cerr << "Error: None input was defined\n";
 		exit(1);
 	}
 
@@ -63,7 +63,7 @@ void CParser::ParseInputs()
 		parseInputLine(line);
 		if (!nextLine(line))
 		{
-			std::cout << "Error: 'OUTPUT:' missing\n";
+			std::cerr << "Error: 'OUTPUT:' missing\n";
 			exit(1);
 		}
 		if (line.find("OUTPUT:") != std::string::npos)
@@ -76,7 +76,7 @@ void CParser::ParseInputs()
 	std::string line;
 	if (!nextLine(line) || line.find("OUTPUT_PARAMS:") != std::string::npos)
 	{
- 		std::cout << "Error: None output was defined\n";
+ 		std::cerr << "Error: None output was defined\n";
  		exit(1);
 	}
  
@@ -108,12 +108,12 @@ void CParser::parseInputLine(const std::string& line)
 #endif
 		if (input.find(match[1]) != input.end())
 		{
-			std::cout << "Error: Name redefinition(" << match[1] << ")" << " line: " << line_no << "\n";
+			std::cerr << "Error: Name redefinition(" << match[1] << ")" << " line: " << line_no << "\n";
 			exit(1);
 		}
 		if (CTokenizer::GetKeywords().find(match[1]) != CTokenizer::GetKeywords().end())
 		{
-			std::cout << "Error: `" << match[1] << "` is not valid name, line: " << line_no << "\n";
+			std::cerr << "Error: `" << match[1] << "` is not valid name, line: " << line_no << "\n";
 			exit(1);
 		}
 		else
@@ -125,7 +125,7 @@ void CParser::parseInputLine(const std::string& line)
 
 			if (!(stream >> desc.file_src))
 			{
-				std::cout << "Error: file name for " << match[1] << " was not specified, line: "<< line_no <<"\n";
+				std::cerr << "Error: file name for " << match[1] << " was not specified, line: "<< line_no <<"\n";
 				exit(1);
 			}
 			std::string tmp;
@@ -141,7 +141,7 @@ void CParser::parseInputLine(const std::string& line)
 					desc.cutoff_max = atoi(tmp.c_str() + 3);
 					continue;
 				}
-				std::cout << "Error: Unknow parameter " << tmp << " for variable " << match[1] << ", line: "<< line_no <<"\n";
+				std::cerr << "Error: Unknow parameter " << tmp << " for variable " << match[1] << ", line: "<< line_no <<"\n";
 				exit(1);
 			}
 
@@ -151,7 +151,7 @@ void CParser::parseInputLine(const std::string& line)
 	}
 	else
 	{
-		std::cout << "Error: wrong line format, line: " << line_no << "\n";
+		std::cerr << "Error: wrong line format, line: " << line_no << "\n";
 		exit(1);
 	}
 }
@@ -177,7 +177,7 @@ void CParser::parseOutputLine(const std::string& line)
 		config.output_desc.file_src.erase(end + 1);
 		if (config.output_desc.file_src == "")
 		{
-			std::cout << "Error: wrong line format, line: " << line_no << " (output file name is not specified)\n";
+			std::cerr << "Error: wrong line format, line: " << line_no << " (output file name is not specified)\n";
 			exit(1);
 		}
 
@@ -185,7 +185,7 @@ void CParser::parseOutputLine(const std::string& line)
 	}
 	else
 	{
-		std::cout << "Error: wrong line format, line: " << line_no << "\n";
+		std::cerr << "Error: wrong line format, line: " << line_no << "\n";
 		exit(1);
 	}
 }
@@ -197,7 +197,7 @@ void CParser::parseOtuputParamsLine()
 
 	if (!nextLine(line))
 	{
-		std::cout << "Warning: OUTPUT_PARAMS exists, but no parameters are defined\n";
+		std::cerr << "Warning: OUTPUT_PARAMS exists, but no parameters are defined\n";
 	}
 	else
 	{
@@ -220,7 +220,7 @@ void CParser::parseOtuputParamsLine()
 				config.output_desc.counter_max = atoi(tmp.c_str() + 3);
 				continue;
 			}
-			std::cout << "Error: Unknow parameter " << tmp << " for variable " << tmp << ", line: " << line_no << "\n";
+			std::cerr << "Error: Unknow parameter " << tmp << " for variable " << tmp << ", line: " << line_no << "\n";
 			exit(1);
 		}
 	}

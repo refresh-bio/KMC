@@ -47,7 +47,7 @@ CKmerBinCompleter::CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues)
 	counter_max    = (uint32)Params.counter_max;
 	lut_prefix_len = Params.lut_prefix_len;
 	both_strands   = Params.both_strands;
-
+	without_output = Params.without_output;
 
 	kmer_t_size    = Params.KMER_T_size;
 	
@@ -80,24 +80,26 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 	else
 		counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));	
 	
-	// Open output file
-	out_kmer = fopen(kmer_file_name.c_str(), "wb");
-	if(!out_kmer)
+	if (!without_output)
 	{
-		cout << "Error: Cannot create " << kmer_file_name << "\n";
-		exit(1);
-		return;
-	}
+		// Open output file
+		out_kmer = fopen(kmer_file_name.c_str(), "wb");
+		if (!out_kmer)
+		{
+			cerr << "Error: Cannot create " << kmer_file_name << "\n";
+			exit(1);
+			return;
+		}
 
-	out_lut = fopen(lut_file_name.c_str(), "wb");
-	if(!out_lut)
-	{
-		cout << "Error: Cannot create " << lut_file_name << "\n";
-		fclose(out_kmer);
-		exit(1);
-		return;
+		out_lut = fopen(lut_file_name.c_str(), "wb");
+		if (!out_lut)
+		{
+			cerr << "Error: Cannot create " << lut_file_name << "\n";
+			fclose(out_kmer);
+			exit(1);
+			return;
+		}
 	}
-
 	
 	n_recs = 0;
 
@@ -107,12 +109,15 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 	char s_kmc_pre[] = "KMCP";
 	char s_kmc_suf[] = "KMCS";
 
-	// Markers at the beginning
-	fwrite(s_kmc_pre, 1, 4, out_lut);
-	fwrite(s_kmc_suf, 1, 4, out_kmer);
+	if (!without_output)
+	{
+		// Markers at the beginning
+		fwrite(s_kmc_pre, 1, 4, out_lut);
+		fwrite(s_kmc_suf, 1, 4, out_kmer);
+	}
 
 	// Process priority queue of ready-to-output bins
-	while(!kq->empty())
+	while (!kq->empty())
 	{
 		// Get the next bin
 		if (!kq->pop(bin_id, data, data_packs, lut, lut_size, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total))
@@ -128,36 +133,43 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 
 		bd->read(bin_id, file, name, raw_size, n_rec, n_plus_x_recs, n_super_kmers);
 
-		uint64 lut_recs        = lut_size / sizeof(uint64);
-		
+		uint64 lut_recs = lut_size / sizeof(uint64);
 
-		for (auto& e : data_packs)
+
+		if (!without_output)
 		{
-			// Write bin data to the output file
-#ifdef WIN32 //fwrite bug https://connect.microsoft.com/VisualStudio/feedback/details/755018/fwrite-hangs-with-large-size-count
-			uint64 write_offset = e.first;
-			uint64 left_to_write = e.second - e.first;
-			while (left_to_write)
+			for (auto& e : data_packs)
 			{
-				uint64 current_to_write = MIN(left_to_write, (4ull << 30) - 1);
-				fwrite(data + write_offset, 1, current_to_write, out_kmer);
-				write_offset += current_to_write;
-				left_to_write -= current_to_write;
-			}
+				// Write bin data to the output file
+#ifdef WIN32 //fwrite bug https://connect.microsoft.com/VisualStudio/feedback/details/755018/fwrite-hangs-with-large-size-count
+				uint64 write_offset = e.first;
+				uint64 left_to_write = e.second - e.first;
+				while (left_to_write)
+				{
+					uint64 current_to_write = MIN(left_to_write, (4ull << 30) - 1);
+					fwrite(data + write_offset, 1, current_to_write, out_kmer);
+					write_offset += current_to_write;
+					left_to_write -= current_to_write;
+				}
 #else
-			fwrite(data + e.first, 1, e.second - e.first, out_kmer);
+				fwrite(data + e.first, 1, e.second - e.first, out_kmer);
 #endif
+			}
 		}
+
 		memory_bins->free(bin_id, CMemoryBins::mba_suffix);
 
-		uint64 *ulut = (uint64*) lut;
-		for(uint64 i = 0; i < lut_recs; ++i)
+		if (!without_output)
 		{
-			uint64 x  = ulut[i];
-			ulut[i]   = n_recs;
-			n_recs   += x;
+			uint64 *ulut = (uint64*)lut;
+			for (uint64 i = 0; i < lut_recs; ++i)
+			{
+				uint64 x = ulut[i];
+				ulut[i] = n_recs;
+				n_recs += x;
+			}
+			fwrite(lut, lut_recs, sizeof(uint64), out_lut);
 		}
-		fwrite(lut, lut_recs, sizeof(uint64), out_lut);
 		//fwrite(&n_rec, 1, sizeof(uint64), out_lut);
 		memory_bins->free(bin_id, CMemoryBins::mba_lut);
 
@@ -194,7 +206,8 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 		{
 			if (data_size)
 			{
-				fwrite(data, 1, data_size, out_kmer);				
+				if(!without_output)
+					fwrite(data, 1, data_size, out_kmer);				
 				sm_pmm_merger_suff->free(data);
 			}
 			if (lut_size)
@@ -207,7 +220,8 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 					ulut[i] = n_recs;
 					n_recs += x;
 				}
-				fwrite(lut, lut_recs, sizeof(uint64), out_lut);				
+				if(!without_output)
+					fwrite(lut, lut_recs, sizeof(uint64), out_lut);				
 				sm_pmm_merger_lut->free(lut);
 			}
 			if(last_in_bin)
@@ -228,45 +242,48 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 		}
 	}
 
-	// Marker at the end
-	fwrite(s_kmc_suf, 1, 4, out_kmer);
-	fclose(out_kmer);
-
-	fwrite(&n_recs, 1, sizeof(uint64), out_lut);
-
-	//store signature mapping 
-	fwrite(sig_map, sizeof(uint32), sig_map_size, out_lut);
-
-	// Store header
-	uint32 offset = 0;
-
-	store_uint(out_lut, kmer_len, 4);				offset += 4;
-	store_uint(out_lut, (uint32)use_quake, 4);		offset += 4;	// mode: 0 (counting), 1 (Quake-compatibile counting)
-	store_uint(out_lut, counter_size, 4);			offset += 4;
-	store_uint(out_lut, lut_prefix_len, 4);			offset += 4;
-	store_uint(out_lut, signature_len, 4);			offset += 4;
-	store_uint(out_lut, cutoff_min, 4);				offset += 4;
-	store_uint(out_lut, cutoff_max, 4);				offset += 4;
-	store_uint(out_lut, n_unique - n_cutoff_min - n_cutoff_max, 8);		offset += 8;
-
-	store_uint(out_lut, both_strands ? 0 : 1, 1);			offset++;
-
-	// Space for future use
-	for (int32 i = 0; i < 27; ++i)
+	if (!without_output)
 	{
-		store_uint(out_lut, 0, 1);
-		offset ++;
+		// Marker at the end
+		fwrite(s_kmc_suf, 1, 4, out_kmer);
+		fclose(out_kmer);
+
+		fwrite(&n_recs, 1, sizeof(uint64), out_lut);
+
+		//store signature mapping 
+		fwrite(sig_map, sizeof(uint32), sig_map_size, out_lut);
+
+		// Store header
+		uint32 offset = 0;
+
+		store_uint(out_lut, kmer_len, 4);				offset += 4;
+		store_uint(out_lut, (uint32)use_quake, 4);		offset += 4;	// mode: 0 (counting), 1 (Quake-compatibile counting)
+		store_uint(out_lut, counter_size, 4);			offset += 4;
+		store_uint(out_lut, lut_prefix_len, 4);			offset += 4;
+		store_uint(out_lut, signature_len, 4);			offset += 4;
+		store_uint(out_lut, cutoff_min, 4);				offset += 4;
+		store_uint(out_lut, cutoff_max, 4);				offset += 4;
+		store_uint(out_lut, n_unique - n_cutoff_min - n_cutoff_max, 8);		offset += 8;
+
+		store_uint(out_lut, both_strands ? 0 : 1, 1);			offset++;
+
+		// Space for future use
+		for (int32 i = 0; i < 27; ++i)
+		{
+			store_uint(out_lut, 0, 1);
+			offset++;
+		}
+
+		store_uint(out_lut, 0x200, 4);
+		offset += 4;
+
+		store_uint(out_lut, offset, 4);
+
+		// Marker at the end
+		fwrite(s_kmc_pre, 1, 4, out_lut);
+		fclose(out_lut);
 	}
-
-	store_uint(out_lut, 0x200, 4);
-	offset += 4;
-
-	store_uint(out_lut, offset, 4);
-
-	// Marker at the end
-	fwrite(s_kmc_pre, 1, 4, out_lut);
-	fclose(out_lut);
-	cout << "\n";
+	cerr << "\n";
 
 	delete[] sig_map;
 }

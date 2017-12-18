@@ -55,7 +55,7 @@ void CBigKmerBinWriter::Process()
 			file = fopen(name.c_str(), "wb+");
 			if (!file)
 			{
-				cout << "Can not open file : " << name;
+				cerr << "Error: can not open file : " << name;
 				exit(1);
 			}
 			setbuf(file, nullptr);
@@ -67,7 +67,7 @@ void CBigKmerBinWriter::Process()
 			disk_logger->log_write(suff_buff_size);
 			if (fwrite(suff_buff, 1, suff_buff_size, file) != suff_buff_size)
 			{
-				cout << "Error while writing to file : " << name;
+				cerr << "Error while writing to file : " << name;
 				exit(1);
 			}
 			file_size += suff_buff_size;
@@ -79,7 +79,7 @@ void CBigKmerBinWriter::Process()
 			disk_logger->log_write(lut_size * sizeof(uint64));
 			if (fwrite(lut, sizeof(uint64), lut_size, file) != lut_size)
 			{
-				cout << "Error while writing to file : " << name;
+				cerr << "Error while writing to file : " << name;
 				exit(1);
 			}
 			file_size += lut_size * sizeof(uint64);

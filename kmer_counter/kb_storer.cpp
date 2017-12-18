@@ -84,7 +84,7 @@ void CKmerBinStorer::Release()
 	
 	delete [] tmp_buff;
 
-	cout << "\n";
+	cerr << "\n";
 }
 
 //----------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ void CKmerBinStorer::PutBinToTmpFile(uint32 n)
 		w = files[n]->Write(tmp_buff, 1, tmp_buff_pos);
 		if(w != tmp_buff_pos)
 		{
-			cout<<"Error while writing to temporary file " << n;
+			cerr << "Error while writing to temporary file " << n;
 			exit(1);
 		}		
 		total_size += w;		

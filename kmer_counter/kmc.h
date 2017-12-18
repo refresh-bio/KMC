@@ -104,6 +104,7 @@ public:
 	void SetParams(CKMCParams &_Params);
 	bool Process();
 	void GetStats(double &time1, double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers);
+	void SaveStatsInJSON();
 };
 
 
@@ -185,6 +186,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 
 	Params.lowest_quality = Params.p_quality;
 	Params.both_strands   = Params.p_both_strands;
+	Params.without_output = Params.p_without_output;
 	Params.use_strict_mem = Params.p_strict_mem;
 	Params.mem_mode		  = Params.p_mem_mode;
 
@@ -237,7 +239,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 			FILE* tmp = my_fopen(p.c_str(), "rb");
 			if (!tmp)
 			{
-				cout << "Cannot open file: " << p.c_str();
+				cerr << "Error: cannot open file: " << p.c_str();
 				exit(1);
 			}
 			my_fseek(tmp, 0, SEEK_END);
@@ -442,60 +444,60 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	if(!Params.verbose)
 		return;
 
-	cout << "\n********** Used parameters: **********\n";
+	cerr << "\n********** Used parameters: **********\n";
 
-	cout << "No. of input files           : " << Params.input_file_names.size() << "\n";
-	cout << "Output file name             : " << Params.output_file_name << "\n";
-	cout << "No. of working directories   : " << 1 << "\n";
-	cout << "Input format                 : "; 
+	cerr << "No. of input files           : " << Params.input_file_names.size() << "\n";
+	cerr << "Output file name             : " << Params.output_file_name << "\n";
+	cerr << "No. of working directories   : " << 1 << "\n";
+	cerr << "Input format                 : "; 
 	switch (Params.file_type)
 	{
 	case fasta:
-		cout << "FASTA\n";
+		cerr << "FASTA\n";
 		break;
 	case fastq:
-		cout << "FASTQ\n";
+		cerr << "FASTQ\n";
 		break;
 	case multiline_fasta:
-		cout << "MULTI LINE FASTA\n";
+		cerr << "MULTI LINE FASTA\n";
 		break;
 	}
-	cout << "\n";
-	cout << "k-mer length                 : " << Params.kmer_len << "\n";
-	cout << "Max. k-mer length            : " << MAX_K << "\n";
-	cout << "Signature length             : " << Params.signature_len << "\n"; 
-	cout << "Min. count threshold         : " << Params.cutoff_min << "\n";
-	cout << "Max. count threshold         : " << Params.cutoff_max << "\n";
-	cout << "Max. counter value           : " << Params.counter_max << "\n";
-	cout << "Type of counters             : " << (Params.use_quake ? "Quake-compatibile\n" : "direct\n");
+	cerr << "\n";
+	cerr << "k-mer length                 : " << Params.kmer_len << "\n";
+	cerr << "Max. k-mer length            : " << MAX_K << "\n";
+	cerr << "Signature length             : " << Params.signature_len << "\n"; 
+	cerr << "Min. count threshold         : " << Params.cutoff_min << "\n";
+	cerr << "Max. count threshold         : " << Params.cutoff_max << "\n";
+	cerr << "Max. counter value           : " << Params.counter_max << "\n";
+	cerr << "Type of counters             : " << (Params.use_quake ? "Quake-compatibile\n" : "direct\n");
 	if(Params.use_quake)
-		cout << "Lowest quality value         : " << Params.lowest_quality << "\n";
-	cout << "Both strands                 : " << (Params.both_strands ? "true\n" : "false\n");	
-	cout << "RAM olny mode                : " << (Params.mem_mode ? "true\n" : "false\n");
+		cerr << "Lowest quality value         : " << Params.lowest_quality << "\n";
+	cerr << "Both strands                 : " << (Params.both_strands ? "true\n" : "false\n");
+	cerr << "RAM only mode                : " << (Params.mem_mode ? "true\n" : "false\n");
 
-	cout << "\n******* Stage 1 configuration: *******\n";
-	cout << "\n";
-	cout << "No. of bins                  : " << Params.n_bins << "\n";
-	cout << "Bin part size                : " << Params.bin_part_size << "\n";
-	cout << "Input buffer size            : " << Params.fastq_buffer_size << "\n";
+	cerr << "\n******* Stage 1 configuration: *******\n";
+	cerr << "\n";
+	cerr << "No. of bins                  : " << Params.n_bins << "\n";
+	cerr << "Bin part size                : " << Params.bin_part_size << "\n";
+	cerr << "Input buffer size            : " << Params.fastq_buffer_size << "\n";
 	
-	cout << "\n";
+	cerr << "\n";
 
-	cout << "No. of readers               : " << Params.n_readers << "\n";
-	cout << "No. of splitters             : " << Params.n_splitters << "\n";
-	cout << "\n";
+	cerr << "No. of readers               : " << Params.n_readers << "\n";
+	cerr << "No. of splitters             : " << Params.n_splitters << "\n";
+	cerr << "\n";
 
-	cout << "Max. mem. size               : " << setw(5) << (Params.max_mem_size / 1000000) << "MB\n";
-	cout << "Max. mem. per storer         : " << setw(5) << (Params.max_mem_storer / 1000000) << "MB\n";
-	cout << "Max. mem. for single package : " << setw(5) << (Params.max_mem_storer_pkg / 1000000) << "MB\n";
-	cout << "\n";
+	cerr << "Max. mem. size               : " << setw(5) << (Params.max_mem_size / 1000000) << "MB\n";
+	cerr << "Max. mem. per storer         : " << setw(5) << (Params.max_mem_storer / 1000000) << "MB\n";
+	cerr << "Max. mem. for single package : " << setw(5) << (Params.max_mem_storer_pkg / 1000000) << "MB\n";
+	cerr << "\n";
 
-	cout << "Max. mem. for PMM (bin parts): " << setw(5) << (Params.mem_tot_pmm_bins / 1000000) << "MB\n";
-	cout << "Max. mem. for PMM (FASTQ)    : " << setw(5) << (Params.mem_tot_pmm_fastq / 1000000) << "MB\n";
-	cout << "Max. mem. for PMM (reads)    : " << setw(5) << (Params.mem_tot_pmm_reads / 1000000) << "MB\n";
-	cout << "Max. mem. for PMM (b. reader): " << setw(5) << (Params.mem_tot_pmm_binary_file_reader / 1000000) << "MB\n";
+	cerr << "Max. mem. for PMM (bin parts): " << setw(5) << (Params.mem_tot_pmm_bins / 1000000) << "MB\n";
+	cerr << "Max. mem. for PMM (FASTQ)    : " << setw(5) << (Params.mem_tot_pmm_fastq / 1000000) << "MB\n";
+	cerr << "Max. mem. for PMM (reads)    : " << setw(5) << (Params.mem_tot_pmm_reads / 1000000) << "MB\n";
+	cerr << "Max. mem. for PMM (b. reader): " << setw(5) << (Params.mem_tot_pmm_binary_file_reader / 1000000) << "MB\n";
 
-	cout << "\n";
+	cerr << "\n";
 }
 
 //----------------------------------------------------------------------------------
@@ -505,14 +507,14 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	if (!Params.verbose)
 		return;
 
-	cout << "\n******* Stage 2 configuration: *******\n";
+	cerr << "\n******* Stage 2 configuration: *******\n";
 
-	cout << "No. of threads               : " << Params.n_sorters << "\n";
+	cerr << "No. of threads               : " << Params.n_sorters << "\n";
 	
-	cout << "\n";
+	cerr << "\n";
 
-	cout << "Max. mem. for 2nd stage      : " << setw(5) << (Params.max_mem_stage2 / 1000000) << "MB\n";
-	cout << "\n";	
+	cerr << "Max. mem. for 2nd stage      : " << setw(5) << (Params.max_mem_stage2 / 1000000) << "MB\n";
+	cerr << "\n";	
 }
 
 //----------------------------------------------------------------------------------
@@ -716,7 +718,7 @@ bool CKMC<KMER_T, SIZE, QUAKE_MODE>::ProcessSmallKOptimization()
 	delete Queues.pmm_reads;
 	delete Queues.pmm_small_k_buf;
 	w2.stopTimer();
-	cout << "\n";
+	cerr << "\n";
 	return true;
 }
 
@@ -732,7 +734,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	{
 		if (Params.verbose)
 		{
-			cout << "\nSmall k optimization on!\n";
+			cerr << "\nInfo: Small k optimization on!\n";
 		}
 		return CSmallKWrapper<KMER_T, SIZE, QUAKE_MODE>::Process(*this);		
 	}
@@ -841,7 +843,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	Queues.s_mapper->Init(stats);
 	heuristic_time.stopTimer();
 
-	cout << "\n";
+	cerr << "\n";
 	
 	w0.stopTimer();
 
@@ -992,8 +994,8 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	
 	
 	int64 stage2_size = 0;
-	for (int i = 0; i < 4 * Params.n_sorters; ++i)
-		stage2_size += bin_sizes[i];
+	for (auto bin_size : bin_sizes)
+		stage2_size += bin_size;
 	stage2_size = MAX(stage2_size, 16 << 20);
 	Params.max_mem_stage2 = MIN(Params.max_mem_stage2, stage2_size);
 
@@ -1113,7 +1115,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 		release_thr_st2_1->join(); //need to be sure that memory_bins is released		
 		AdjustMemoryLimitsStrictMemoryMode();
 
-		cout << "\n";
+		cerr << "\n";
 
 		Queues.sm_pmm_input_file = new CMemoryPool(Params.sm_mem_tot_input_file, Params.sm_mem_part_input_file);
 		Queues.sm_pmm_expand = new CMemoryPool(Params.sm_mem_tot_expand, Params.sm_mem_part_expand);
@@ -1325,6 +1327,62 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	_tmp_size_strict_mem = tmp_size_strict_mem;
 	_max_disk_usage = max_disk_usage;
 	_n_total_super_kmers = n_total_super_kmers;
+}
+
+template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SaveStatsInJSON()
+{	
+	if (Params.json_summary_file_name == "")
+		return;
+
+	ofstream stats(Params.json_summary_file_name);
+
+	if (!stats)
+	{
+		cerr << "Warning: Cannot open file " << Params.json_summary_file_name << " to store summary of execution in JSON format\n";
+		return;
+	}
+
+	double time1 = w1.getElapsedTime();
+	double time2 = w2.getElapsedTime();
+	double time3 = w3.getElapsedTime();
+
+	stats << "{\n"
+		<< "\t\"1st_stage\": \"" << time1 << "s\",\n"
+		<< "\t\"2nd_stage\": \"" << time2 << "s\",\n";
+	if(Params.p_strict_mem)
+		stats << "\t\"3rd_stage\": \"" << time3 << "s\",\n";
+
+	if (Params.p_strict_mem)
+		stats << "\t\"Total\": \"" << (time1 + time2 + time3) << "s\",\n";
+	else
+		stats << "\t\"Total\": \"" << (time1 + time2) << "s\",\n";
+
+
+	if (Params.p_strict_mem)
+	{
+		stats << "\t\"Tmp_size\": \"" << tmp_size / 1000000 << "MB\",\n"
+			<< "\t\"Tmp_size_strict_memory\": \"" << tmp_size_strict_mem / 1000000 << "MB\",\n"
+			<< "\t\"Tmp_total\": \"" << max_disk_usage / 1000000 << "MB\",\n";
+	}
+	else
+		stats << "\t\"Tmp_size\": \"" << tmp_size / 1000000 << "MB\",\n";
+
+	stats << "\t\"Stats\": {\n";
+	
+	stats	<< "\t\t\"#k-mers_below_min_threshold\": " << n_cutoff_min << ",\n"
+			<< "\t\t\"#k-mers_above_max_threshold\": " << n_cutoff_max << ",\n"
+			<< "\t\t\"#Unique_k-mers\": " << n_unique << ",\n"
+			<< "\t\t\"#Unique_counted_k-mers\": " << n_unique - n_cutoff_min - n_cutoff_max << ",\n"
+			<< "\t\t\"#Total no. of k-mers\": " << n_total << ",\n";
+	if (Params.p_file_type != multiline_fasta)
+		stats << "\t\t\"#Total_reads\": " << n_reads << ",\n";
+	else
+		stats << "\t\t\"#Total_sequences\": "<< n_reads << ",\n";
+	stats << "\t\t\"#Total_super-k-mers\": " << n_total_super_kmers << "\n";
+
+	stats << "\t}\n";
+	stats << "}\n";
+	stats.close();
 }
 
 #endif

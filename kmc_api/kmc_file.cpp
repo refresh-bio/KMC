@@ -669,7 +669,7 @@ bool CKMCFile::RestartListing(void)
 //----------------------------------------------------------------------------------------
 bool CKMCFile::SetMinCount(uint32 x)
 {
-	if((original_min_count <= x) && (x < max_count))
+	if((original_min_count <= x) && (x <= max_count))
 	{
 		min_count = x;
 		return true;
@@ -694,7 +694,7 @@ uint32 CKMCFile::GetMinCount(void)
 //----------------------------------------------------------------------------------------
 bool CKMCFile::SetMaxCount(uint32 x)
 {
-	if((original_max_count >= x) && (x > min_count))
+	if((original_max_count >= x) && (x >= min_count))
 	{
 		max_count = x;
 		return true; 

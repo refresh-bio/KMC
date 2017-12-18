@@ -41,7 +41,7 @@ void CBigKmerBinReader::ProcessBigBin()
 	while (tlbq->get_next(bin_id))
 	{
 		bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs, buffer_size, kmer_len);
-		cout << "*";
+		cerr << "*";
 		file->Rewind();
 		end_pos = 0;
 		sm_pmm_input_file->reserve(file_buff);

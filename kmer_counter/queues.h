@@ -1071,14 +1071,14 @@ public:
 	{
 		return;			// !!! Log will be removed 
 
-		cout << info;
+		cerr << info;
 		if (size)
-			cout << " [" << size << "]: ";
+			cerr << " [" << size << "]: ";
 		else
-			cout << ": ";
+			cerr << ": ";
 		for (auto &p : map_reserved)
-			cout << "(" << p.first << ", " << p.second << ")   ";
-		cout << endl;
+			cerr << "(" << p.first << ", " << p.second << ")   ";
+		cerr << endl;
 
 	}
 
@@ -1986,14 +1986,7 @@ public:
 		}
 
 		for (uint32 i = pos; i < sorted_bins.size(); ++i)
-			n_sorters[sorted_bins[i].first] = max_sorters/*1*/;
-
-		/*cout << "bin_id;req_size;threads per bin" << endl;
-		for (auto &e : sorted_bins)
-		{
-			cout << e.first << ";" << e.second << ";" << threads_per_bin[e.first] << endl;
-		}
-		cout << "--------------------------------------------------------------------------------------------------------------\n";*/
+			n_sorters[sorted_bins[i].first] = max_sorters/*1*/;		
 	}
 
 	bool GetNext(int32 &bin_id, uchar *&part, uint64 &size, uint64 &n_rec, int& n_threads)
@@ -2017,8 +2010,7 @@ public:
 
 			int should_work_with_additional = max_sorters % n_sorters[bin_id];
 			
-			n_threads = max_sorters / n_sorters[bin_id];
-			//cout << "works_with_additional: " << working_with_additional << ", should_work_with_additional: " << should_work_with_additional << endl;
+			n_threads = max_sorters / n_sorters[bin_id];			
 			if (working_with_additional < should_work_with_additional)
 			{
 				++n_threads;
@@ -2033,8 +2025,6 @@ public:
 		if (max_sorters / n_sorters[bin_id] < n_threads)
 			++working_with_additional;
 		
-		//cout << "bin " << bin_id << ": " << threads_per_bin[bin_id] << " sorters, threads assigned: " << n_threads << endl; //TODO: remove
-
 		return true;
 	}
 
@@ -2043,9 +2033,7 @@ public:
 		lock_guard<mutex> lck(mtx);		
 		free_threads += n_threads;	
 		if (max_sorters / n_sorters[bin_id] < (int)n_threads)
-			--working_with_additional;
-
-		//cout << "Return Thread, working_with_additional: " << working_with_additional << endl;
+			--working_with_additional;		
 		cv_get_next.notify_all();
 	}
 

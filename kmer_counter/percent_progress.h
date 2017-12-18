@@ -49,8 +49,8 @@ public:
 			curr_percent = new_percent;
 			if (show_progress)
 			{
-				std::cout << "\r" << label << curr_percent << "%";
-				std::cout.flush();
+				std::cerr << "\r" << label << curr_percent << "%";
+				std::cerr.flush();
 			}
 		}
 	}

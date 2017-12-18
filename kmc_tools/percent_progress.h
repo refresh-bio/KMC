@@ -19,6 +19,7 @@
 //************************************************************************************************************
 class CPercentProgress
 {
+	bool ignore_rest = false;
 	bool hide_progress = false;
 	struct CDisplayItem
 	{

@@ -42,6 +42,7 @@ class CKmerBinCompleter {
 	CMemoryBins *memory_bins;
 
 	bool use_strict_mem;
+	
 	CBigBinKmerPartQueue* bbkpq;
 	CMemoryPool *sm_pmm_merger_lut, *sm_pmm_merger_suff;
 
@@ -54,6 +55,7 @@ class CKmerBinCompleter {
 	int32 signature_len;
 	bool use_quake;
 	bool both_strands;
+	bool without_output;
 	bool store_uint(FILE *out, uint64 x, uint32 size);	
 
 public:
@@ -100,6 +102,7 @@ class CSmallKCompleter
 	std::string output_file_name;
 	bool both_strands;
 	bool use_quake;
+	bool without_output;
 
 	bool store_uint(FILE *out, uint64 x, uint32 size);
 public:
@@ -123,6 +126,7 @@ CSmallKCompleter<QUAKE_MODE>::CSmallKCompleter(CKMCParams& Params, CKMCQueues& Q
 	both_strands = Params.both_strands;
 	kmer_len = (uint32)Params.kmer_len;
 	use_quake = Params.use_quake;
+	without_output = Params.without_output;
 
 	mem_tot_small_k_completer = Params.mem_tot_small_k_completer;
 	output_file_name = Params.output_file_name;
@@ -166,30 +170,34 @@ bool CSmallKCompleter<QUAKE_MODE>::Complete(CSmallKBuf<COUNTER_TYPE> result)
 	string pre_file_name = output_file_name + ".kmc_pre";
 	string suf_file_name = output_file_name + ".kmc_suf";
 
-	pre_file = fopen(pre_file_name.c_str(), "wb");
-	if (!pre_file)
+	if (!this->without_output)
 	{
-		cout << "Error: Cannot create " << pre_file_name << "\n";
-		exit(1);
-		return false;
-	}
-	suf_file = fopen(suf_file_name.c_str(), "wb");
+		pre_file = fopen(pre_file_name.c_str(), "wb");
+		if (!pre_file)
+		{
+			cerr << "Error: Cannot create " << pre_file_name << "\n";
+			exit(1);
+			return false;
+		}
+		suf_file = fopen(suf_file_name.c_str(), "wb");
 
-	if (!suf_file)
-	{
-		cout << "Error: Cannot create " << suf_file_name << "\n";
-		fclose(pre_file);
-		exit(1);
-		return false;
+		if (!suf_file)
+		{
+			cerr << "Error: Cannot create " << suf_file_name << "\n";
+			fclose(pre_file);
+			exit(1);
+			return false;
+		}
 	}
-
 	char s_kmc_pre[] = "KMCP";
 	char s_kmc_suf[] = "KMCS";
 
-	// Markers at the beginning
-	fwrite(s_kmc_pre, 1, 4, pre_file);
-	fwrite(s_kmc_suf, 1, 4, suf_file);
-
+	if (!this->without_output)
+	{
+		// Markers at the beginning
+		fwrite(s_kmc_pre, 1, 4, pre_file);
+		fwrite(s_kmc_suf, 1, 4, suf_file);
+	}
 
 	CKmer<1> kmer;
 	
@@ -199,16 +207,19 @@ bool CSmallKCompleter<QUAKE_MODE>::Complete(CSmallKBuf<COUNTER_TYPE> result)
 	uint64 kmer_no = 0;
 	for (kmer.data = 0; kmer.data < (1ull << 2 * kmer_len); ++kmer.data) 
 	{
-		prefix = kmer.remove_suffix(2 * (kmer_len - lut_prefix_len));
-
-		if (prefix != prev_prefix) //new prefix
+		if (!this->without_output)
 		{
-			prev_prefix = prefix;
-			lut[lut_buf_pos++] = kmer_no;
-			if (lut_buf_pos >= lut_buf_recs)
+			prefix = kmer.remove_suffix(2 * (kmer_len - lut_prefix_len));
+
+			if (prefix != prev_prefix) //new prefix
 			{
-				fwrite(lut, sizeof(uint64), lut_buf_pos, pre_file);
-				lut_buf_pos = 0;
+				prev_prefix = prefix;
+				lut[lut_buf_pos++] = kmer_no;
+				if (lut_buf_pos >= lut_buf_recs)
+				{
+					fwrite(lut, sizeof(uint64), lut_buf_pos, pre_file);
+					lut_buf_pos = 0;
+				}
 			}
 		}
 
@@ -223,63 +234,69 @@ bool CSmallKCompleter<QUAKE_MODE>::Complete(CSmallKBuf<COUNTER_TYPE> result)
 			else
 			{
 				++kmer_no;
-				if (result.buf[kmer.data] > (uint64)counter_max)
-					result.buf[kmer.data] = (COUNTER_TYPE)counter_max;
-
-				for (int32 j = (int32)kmer_suf_bytes - 1; j >= 0; --j)
-					suf[suf_pos++] = kmer.get_byte(j);
-
-				result.Store(kmer.data, suf, suf_pos, counter_size);
-
-				if (suf_pos >= suf_recs * (kmer_suf_bytes + counter_size))
+				if (!this->without_output)
 				{
-					fwrite(suf, 1, suf_pos, suf_file);
-					suf_pos = 0;
+					if (result.buf[kmer.data] > (uint64)counter_max)
+						result.buf[kmer.data] = (COUNTER_TYPE)counter_max;
+
+					for (int32 j = (int32)kmer_suf_bytes - 1; j >= 0; --j)
+						suf[suf_pos++] = kmer.get_byte(j);
+
+					result.Store(kmer.data, suf, suf_pos, counter_size);
+
+					if (suf_pos >= suf_recs * (kmer_suf_bytes + counter_size))
+					{
+						fwrite(suf, 1, suf_pos, suf_file);
+						suf_pos = 0;
+					}
 				}
 			}
 		}
 	}
 
-
-	fwrite(lut, sizeof(uint64), lut_buf_pos, pre_file);
-	fwrite(suf, 1, suf_pos, suf_file);
-
-	uint32 offset = 0;
-
-	store_uint(pre_file, kmer_len, 4);				offset += 4;
-	store_uint(pre_file, (uint32)use_quake, 4);		offset += 4;	// mode: 0 (counting), 1 (Quake-compatibile counting)
-	store_uint(pre_file, counter_size, 4);			offset += 4;
-	store_uint(pre_file, lut_prefix_len, 4);			offset += 4;
-	store_uint(pre_file, cutoff_min, 4);				offset += 4;
-	store_uint(pre_file, cutoff_max, 4);				offset += 4;
-	store_uint(pre_file, n_unique - n_cutoff_min - n_cutoff_max, 8);		offset += 8;
-
-
-	store_uint(pre_file, both_strands ? 0 : 1, 1);			offset++;
-
-	store_uint(pre_file, 0, 1);			offset++;
-	store_uint(pre_file, 0, 1);			offset++;
-	store_uint(pre_file, 0, 1);			offset++;
-
-	store_uint(pre_file, cutoff_max >> 32, 4);				offset += 4;
-	// Space for future use
-	for (int32 i = 0; i < 20; ++i)
+	if (!this->without_output)
 	{
-		store_uint(pre_file, 0, 1);
-		offset++;
+		fwrite(lut, sizeof(uint64), lut_buf_pos, pre_file);
+		fwrite(suf, 1, suf_pos, suf_file);
+	
+		uint32 offset = 0;
+
+		store_uint(pre_file, kmer_len, 4);				offset += 4;
+		store_uint(pre_file, (uint32)use_quake, 4);		offset += 4;	// mode: 0 (counting), 1 (Quake-compatibile counting)
+		store_uint(pre_file, counter_size, 4);			offset += 4;
+		store_uint(pre_file, lut_prefix_len, 4);			offset += 4;
+		store_uint(pre_file, cutoff_min, 4);				offset += 4;
+		store_uint(pre_file, cutoff_max, 4);				offset += 4;
+		store_uint(pre_file, n_unique - n_cutoff_min - n_cutoff_max, 8);		offset += 8;
+
+
+		store_uint(pre_file, both_strands ? 0 : 1, 1);			offset++;
+
+		store_uint(pre_file, 0, 1);			offset++;
+		store_uint(pre_file, 0, 1);			offset++;
+		store_uint(pre_file, 0, 1);			offset++;
+
+		store_uint(pre_file, cutoff_max >> 32, 4);				offset += 4;
+		// Space for future use
+		for (int32 i = 0; i < 20; ++i)
+		{
+			store_uint(pre_file, 0, 1);
+			offset++;
+		}
+
+		store_uint(pre_file, 0x0, 4); //KMC 1.x format
+		offset += 4;
+
+		store_uint(pre_file, offset, 4);
+
+		// Markers at the end
+		fwrite(s_kmc_pre, 1, 4, pre_file);
+		fwrite(s_kmc_suf, 1, 4, suf_file);
+		fclose(pre_file);
+		fclose(suf_file);
 	}
-
-	store_uint(pre_file, 0x0, 4); //KMC 1.x format
-	offset += 4;
-
-	store_uint(pre_file, offset, 4);
-
-	// Markers at the end
-	fwrite(s_kmc_pre, 1, 4, pre_file);
-	fwrite(s_kmc_suf, 1, 4, suf_file);
-	fclose(pre_file);
-	fclose(suf_file);
 	pmm_small_k_completer->free(raw_buffer);
+	
 
 	return true;
 }

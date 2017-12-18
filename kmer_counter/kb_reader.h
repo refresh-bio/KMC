@@ -121,8 +121,7 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 	percent_progress.NotifyProgress(0);
 
 	while ((bin_id = bd->get_next_sort_bin()) >= 0)		// Get id of the next bin to read
-	{		
-		//cout << "kb_readed, next bin id: " << bin_id << "\n";
+	{				
 		bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs, buffer_size, kmer_len);
 		fflush(stdout);
 
@@ -163,19 +162,13 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 			tlbq->insert(bin_id);
 			continue;
 		}
-		
-#ifdef DEBUG_MODE
-		cout << bin_id << ":  " << name << "  " << c_disk << "  " << size << "  " << n_rec << "\n";
-#else
-		//cout << "*";
-#endif
 
 		// Process the bin if it is not empty
 		if(size > 0)
 		{
 			if (file == NULL)
 			{
-				cout << "Error: Cannot open temporary file: " << name << "\n"; fflush(stdout);
+				cerr << "Error: Cannot open temporary file: " << name << "\n"; fflush(stdout);
 				exit(1);
 			}
 			else
@@ -187,7 +180,7 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 			readed = file->Read(data, 1, size);
 			if(readed != size)
 			{
-				cout << "Error: Corrupted file: " << name << "   " << "Real size : " << readed << "   " << "Should be : " << size << "\n";
+				cerr << "Error: Corrupted file: " << name << "   " << "Real size : " << readed << "   " << "Should be : " << size << "\n";
 				fflush(stdout);
 				exit(1);
 			}

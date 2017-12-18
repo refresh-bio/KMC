@@ -11,6 +11,7 @@
 #ifndef RADULS_H
 #define RADULS_H
 
+#include <functional>
 #include "kmer.h"
 
 #define MAGIC_NUMBER 8

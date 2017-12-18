@@ -66,7 +66,7 @@ CExpressionNode<SIZE>* COutputParser<SIZE>::Parse()
 	CExpressionNode<SIZE>* res = expr();
 	if (curr_token.second != TokenType::TERMINATOR)
 	{
-		std::cout << "Error: wrong symbol :" << curr_token.first <<"\n";
+		std::cerr << "Error: wrong symbol :" << curr_token.first <<"\n";
 		exit(1);
 	}
 #ifdef ENABLE_DEBUG
@@ -99,7 +99,7 @@ template<unsigned SIZE> CExpressionNode<SIZE>* COutputParser<SIZE>::argument()
 		auto elem = input.find(curr_token.first);
 		if (elem == input.end())
 		{
-			std::cout << "Error: variable " << curr_token.first << " was not defined\n";
+			std::cerr << "Error: variable " << curr_token.first << " was not defined\n";
 			exit(1);
 		}
 		CExpressionNode<SIZE>* res = new CInputNode<SIZE>(elem->second);
@@ -112,7 +112,7 @@ template<unsigned SIZE> CExpressionNode<SIZE>* COutputParser<SIZE>::argument()
 		CExpressionNode<SIZE>* res = expr();
 		if (curr_token.second != TokenType::PARENTHESIS_CLOSE)
 		{
-			std::cout << "Error: close  parenthesis expected, but " << curr_token.first << " found\n";
+			std::cerr << "Error: close  parenthesis expected, but " << curr_token.first << " found\n";
 			exit(1);
 		}
 		nextToken();

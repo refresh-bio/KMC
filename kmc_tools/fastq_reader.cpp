@@ -179,7 +179,7 @@ bool CFastqReader::GetPart(uchar *&_part, uint64 &_size)
 
 	if(part_filled >= OVERHEAD_SIZE)
 	{
-		cout << "Error: Wrong input file!\n";
+		cerr << "Error: Wrong input file!\n";
 		exit(1);
 	}
 

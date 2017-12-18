@@ -61,6 +61,14 @@ public:
 			delete kmc;
 	}
 
+	void SaveStatsInJSON()
+	{
+		if (is_selected)
+			kmc->SaveStatsInJSON();
+		else
+			app_1->SaveStatsInJSON();
+	}
+
 	void GetStats(double &time1, double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers) {
 		if (is_selected)
 		{
@@ -114,6 +122,12 @@ public:
 		}
 	}
 
+	void SaveStatsInJSON()
+	{
+		if (is_selected)
+			kmc->SaveStatsInJSON();
+	}
+
 	bool Process() {
 		if (is_selected)
 		{
@@ -128,35 +142,54 @@ public:
 // Show execution options of the software
 void usage()
 {
-	cout << "K-Mer Counter (KMC) ver. " << KMC_VER << " (" << KMC_DATE << ")\n";
-	cout << "Usage:\n kmc [options] <input_file_name> <output_file_name> <working_directory>\n";
-	cout << " kmc [options] <@input_file_names> <output_file_name> <working_directory>\n";
-	cout << "Parameters:\n";
-	cout << "  input_file_name - single file in FASTQ format (gziped or not)\n";
-	cout << "  @input_file_names - file name with list of input files in FASTQ format (gziped or not)\n";
-	cout << "Options:\n";
-	cout << "  -v - verbose mode (shows all parameter settings); default: false\n";
-	cout << "  -k<len> - k-mer length (k from " << MIN_K << " to " << MAX_K << "; default: 25)\n";
-	cout << "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 12\n";
-	cout << "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n";
-	cout << "  -p<par> - signature length (5, 6, 7, 8, 9, 10, 11); default: 9\n";
-	cout << "  -f<a/q/m> - input in FASTA format (-fa), FASTQ format (-fq) or multi FASTA (-fm); default: FASTQ\n";
-	//cout << "  -q[value] - use Quake's compatible counting with [value] representing lowest quality (default: 33)\n";
-	cout << "  -ci<value> - exclude k-mers occurring less than <value> times (default: 2)\n";
-	cout << "  -cs<value> - maximal value of a counter (default: 255)\n";
-	cout << "  -cx<value> - exclude k-mers occurring more of than <value> times (default: 1e9)\n";
-	cout << "  -b - turn off transformation of k-mers into canonical form\n";	
-	cout << "  -r - turn on RAM-only mode \n";
-	cout << "  -n<value> - number of bins \n";
-	cout << "  -t<value> - total number of threads (default: no. of CPU cores)\n";
-	cout << "  -sf<value> - number of FASTQ reading threads\n";
-	cout << "  -sp<value> - number of splitting threads\n";
-	cout << "  -sr<value> - number of threads for 2nd stage\n";	
-	cout << "Example:\n";
-	cout << "kmc -k27 -m24 NA19238.fastq NA.res \\data\\kmc_tmp_dir\\\n";
-	cout << "kmc -k27 -m24 @files.lst NA.res \\data\\kmc_tmp_dir\\\n";
+	cout << "K-Mer Counter (KMC) ver. " << KMC_VER << " (" << KMC_DATE << ")\n"
+		 << "Usage:\n kmc [options] <input_file_name> <output_file_name> <working_directory>\n"
+		 << " kmc [options] <@input_file_names> <output_file_name> <working_directory>\n"
+		 << "Parameters:\n"
+		 << "  input_file_name - single file in FASTQ format (gziped or not)\n"
+		 << "  @input_file_names - file name with list of input files in FASTQ format (gziped or not)\n"
+		 << "Options:\n"
+		 << "  -v - verbose mode (shows all parameter settings); default: false\n"
+		 << "  -k<len> - k-mer length (k from " << MIN_K << " to " << MAX_K << "; default: 25)\n"
+		 << "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 12\n"
+		 << "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n"
+		 << "  -p<par> - signature length (5, 6, 7, 8, 9, 10, 11); default: 9\n"
+		 << "  -f<a/q/m> - input in FASTA format (-fa), FASTQ format (-fq) or multi FASTA (-fm); default: FASTQ\n"
+	// << "  -q[value] - use Quake's compatible counting with [value] representing lowest quality (default: 33)\n"
+		 << "  -ci<value> - exclude k-mers occurring less than <value> times (default: 2)\n"
+		 << "  -cs<value> - maximal value of a counter (default: 255)\n"
+		 << "  -cx<value> - exclude k-mers occurring more of than <value> times (default: 1e9)\n"
+		 << "  -b - turn off transformation of k-mers into canonical form\n"
+		 << "  -r - turn on RAM-only mode \n"
+		 << "  -n<value> - number of bins \n"
+		 << "  -t<value> - total number of threads (default: no. of CPU cores)\n"
+		 << "  -sf<value> - number of FASTQ reading threads\n"
+		 << "  -sp<value> - number of splitting threads\n"
+		 << "  -sr<value> - number of threads for 2nd stage\n"
+		 << "  -j<file_name> - file name with execution summary in JSON format\n"
+		 << "  -w - without output\n"
+		 << "Example:\n"
+		 << "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
+	     << "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
 }
 
+bool CanCreateFile(const string& path)
+{
+	FILE* f = fopen(path.c_str(), "wb");
+	if (!f)
+		return false;
+	fclose(f);
+	remove(path.c_str());
+	return true;
+}
+bool CanCreateFileInPath(const string& path)
+{
+	static const string name = "kmc_test.bin"; //Some random name
+	if (path.back() == '\\' || path.back() == '/')
+		return CanCreateFile(path + name);
+	else
+		return CanCreateFile(path + '/' + name);
+}
 //----------------------------------------------------------------------------------
 // Parse the parameters
 bool parse_parameters(int argc, char *argv[])
@@ -181,7 +214,7 @@ bool parse_parameters(int argc, char *argv[])
 			tmp = atoi(&argv[i][2]);
 			if(tmp < MIN_K || tmp > MAX_K)
 			{
-				cout << "Wrong parameter: k must be from range <" << MIN_K << "," << MAX_K << ">\n";
+				cerr << "Wrong parameter: k must be from range <" << MIN_K << "," << MAX_K << ">\n";
 				return false;
 			}
 			else
@@ -193,7 +226,7 @@ bool parse_parameters(int argc, char *argv[])
 			tmp = atoi(&argv[i][2]);
 			if(tmp < MIN_MEM)
 			{
-				cout << "Wrong parameret: min memory must be at least " << MIN_MEM << "GB\n";
+				cerr << "Wrong parameret: min memory must be at least " << MIN_MEM << "GB\n";
 				return false;
 			}
 			else
@@ -221,7 +254,7 @@ bool parse_parameters(int argc, char *argv[])
 			tmp = atoi(&argv[i][2]);
 			if (tmp < MIN_SL || tmp > MAX_SL)
 			{
-				cout << "Wrong parameter: p must be from range <" << MIN_SL << "," << MAX_SL << ">\n";
+				cerr << "Wrong parameter: p must be from range <" << MIN_SL << "," << MAX_SL << ">\n";
 				return false;
 			}
 			else
@@ -253,7 +286,7 @@ bool parse_parameters(int argc, char *argv[])
 			tmp = atoi(&argv[i][3]);
 			if(tmp < MIN_SF || tmp > MAX_SF)
 			{
-				cout << "Wrong parameter: number of reading thread must be from range <" << MIN_SF << "," << MAX_SF << ">\n";
+				cerr << "Wrong parameter: number of reading thread must be from range <" << MIN_SF << "," << MAX_SF << ">\n";
 				return false;
 			}
 			else
@@ -265,7 +298,7 @@ bool parse_parameters(int argc, char *argv[])
 			tmp = atoi(&argv[i][3]);
 			if(tmp < MIN_SP || tmp > MAX_SP)
 			{
-				cout << "Wrong parameter: number of splitting threads must be in range <" << MIN_SP << "," << MAX_SP << "<\n";
+				cerr << "Wrong parameter: number of splitting threads must be in range <" << MIN_SP << "," << MAX_SP << "<\n";
 				return false;
 			}
 			else
@@ -277,7 +310,7 @@ bool parse_parameters(int argc, char *argv[])
 			tmp = atoi(&argv[i][3]);
 			if(tmp < MIN_SR || tmp > MAX_SR)
 			{
-				cout << "Wrong parameter: number of threads for 2nd stage must be in range <" << MIN_SR << "," << MAX_SR << "\n";
+				cerr << "Wrong parameter: number of threads for 2nd stage must be in range <" << MIN_SR << "," << MAX_SR << "\n";
 				return false;
 			}
 			else
@@ -288,19 +321,27 @@ bool parse_parameters(int argc, char *argv[])
 			tmp = atoi(&argv[i][2]);
 			if (tmp < MIN_N_BINS || tmp > MAX_N_BINS)
 			{
-				cout << "Wrong parameter: number of bins must be in range <" << MIN_N_BINS << "," << MAX_N_BINS << "\n";
+				cerr << "Wrong parameter: number of bins must be in range <" << MIN_N_BINS << "," << MAX_N_BINS << "\n";
 				return false;
 			}
 			else
 				Params.p_n_bins = tmp;
 		}
-	
+		else if (strncmp(argv[i], "-j", 2) == 0)
+		{
+			Params.json_summary_file_name = &argv[i][2];
+			if (Params.json_summary_file_name == "")
+				cerr << "Warning: file name for json summary file missed (-j switch)\n";			
+		}
+		else if (strncmp(argv[i], "-w", 2) == 0)	
+			Params.p_without_output = true;		
+
 		if (strncmp(argv[i], "-smso", 5) == 0)
 		{
 			tmp = atoi(&argv[i][5]);
 			if (tmp < MIN_SMSO || tmp > MAX_SMSO)
 			{
-				cout << "Wrong parameter: number of sorting threads per sorter in strict memory mode must be in range <" << MIN_SMSO << "," << MAX_SMSO << "\n";
+				cerr << "Wrong parameter: number of sorting threads per sorter in strict memory mode must be in range <" << MIN_SMSO << "," << MAX_SMSO << "\n";
 				return false;
 			}
 			else
@@ -311,7 +352,7 @@ bool parse_parameters(int argc, char *argv[])
 			tmp = atoi(&argv[i][5]);
 			if (tmp < MIN_SMUN || tmp > MAX_SMUN)
 			{
-				cout << "Wrong parameter: number of uncompactor threads in strict memory mode must be in range <" << MIN_SMUN << "," << MAX_SMUN << "\n";
+				cerr << "Wrong parameter: number of uncompactor threads in strict memory mode must be in range <" << MIN_SMUN << "," << MAX_SMUN << "\n";
 				return false;
 			}
 			else
@@ -322,7 +363,7 @@ bool parse_parameters(int argc, char *argv[])
 			tmp = atoi(&argv[i][5]);
 			if (tmp < MIN_SMME || tmp > MAX_SMME)
 			{
-				cout << "Wrong parameter: number of merger threads in strict memory mode must be in range <" << MIN_SMME << "," << MAX_SMME << "\n";
+				cerr << "Wrong parameter: number of merger threads in strict memory mode must be in range <" << MIN_SMME << "," << MAX_SMME << "\n";
 				return false;
 			}
 			else
@@ -345,7 +386,7 @@ bool parse_parameters(int argc, char *argv[])
 		ifstream in(input_file_name.c_str()+1);
 		if(!in.good())
 		{
-			cout << "Error: No " << input_file_name.c_str()+1 << " file\n";
+			cerr << "Error: No " << input_file_name.c_str()+1 << " file\n";
 			return false;
 		}
 
@@ -361,17 +402,17 @@ bool parse_parameters(int argc, char *argv[])
 	if (Params.p_t > Params.p_m * 64)
 	{
 		Params.p_t = Params.p_m * 64;
-		cout << "Warning: number of threads is reduced to " << Params.p_t << " (maximun numer of threads equals 64 * value of the -m parameter)\n";		
+		cerr << "Warning: number of threads is reduced to " << Params.p_t << " (maximun numer of threads equals 64 * value of the -m parameter)\n";		
 	}
 	//Validate and resolve conflicts in parameters
 	if (Params.p_strict_mem && Params.p_mem_mode)
 	{
-		cout << "Error: -sm can not be used with -r\n";
+		cerr << "Error: -sm can not be used with -r\n";
 		return false;
 	}
 	/*if (Params.p_strict_mem && Params.p_quake)
 	{
-		cout << "Warning: -sm is not supported in quake mode. -sm has no effect\n";
+		cerr << "Warning: -sm is not supported in quake mode. -sm has no effect\n";
 		Params.p_strict_mem = false;
 	}*/
 
@@ -380,18 +421,40 @@ bool parse_parameters(int argc, char *argv[])
 	{
 		if ((uint64)Params.p_cx > ((1ull << 32) - 1))
 		{
-			cout << "Warning: for k > 9 maximum value of -cx is 4294967295\n";
+			cerr << "Warning: for k > 9 maximum value of -cx is 4294967295\n";
 			Params.p_cx = 4294967295;
 		}
 		if ((uint64)Params.p_cs > ((1ull << 32) - 1))
 		{
-			cout << "Warning: for k > 9 maximum value of -cs is 4294967295\n";
+			cerr << "Warning: for k > 9 maximum value of -cs is 4294967295\n";
 			Params.p_cs = 4294967295;
 		}
 	}
 
+	//Check if output files may be created and if it is possible to create file in specified tmp location
+	if(!Params.p_without_output)
+	{
+		string pre_file_name = Params.output_file_name + ".kmc_pre";
+		string suff_file_name = Params.output_file_name + ".kmc_suf";
+		if (!CanCreateFile(pre_file_name))
+		{
+			cerr << "Error: Cannot create file: " << pre_file_name << "\n";
+			return false;
+		}
+		if (!CanCreateFile(suff_file_name))
+		{
+			cerr << "Error: Cannot create file: " << suff_file_name << "\n";
+			return false;
+		}
+	}
+	if (!CanCreateFileInPath(Params.working_directory))
+	{
+		cerr << "Error: Cannot create file in specified working directory: " << Params.working_directory << "\n";
+		return false;
+	}
 	return true;
 }
+
 
 //----------------------------------------------------------------------------------
 // Main function
@@ -418,7 +481,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		if(!app->Process())
 		{
-			cout << "Not enough memory or some other error\n";
+			cerr << "Not enough memory or some other error\n";
 			delete app;
 			return 0;
 		}
@@ -431,16 +494,19 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		if(!app->Process())
 		{
-			cout << "Not enough memory or some other error\n";
+			cerr << "Not enough memory or some other error\n";
 			delete app;
 			return 0;
 		}
 		app->GetStats(time1, time2, time3, n_unique, n_cutoff_min, n_cutoff_max, n_total, n_reads, tmp_size, tmp_size_strict_mem, max_disk_usage, n_total_super_kmers);
+		app->SaveStatsInJSON();
 		delete app;
 	//}
 
-	cout << "1st stage: " << time1 << "s\n";
-	cout << "2nd stage: " << time2  << "s\n";
+	
+
+	cout << "1st stage: " << time1 << "s\n"
+	     << "2nd stage: " << time2  << "s\n";
 	if (Params.p_strict_mem)
 		cout << "3rd stage: " << time3 << "s\n";
 	if (Params.p_strict_mem)
@@ -449,19 +515,19 @@ int _tmain(int argc, _TCHAR* argv[])
 		cout << "Total    : " << (time1+time2) << "s\n";	
 	if (Params.p_strict_mem)
 	{
-		cout << "Tmp size : " << tmp_size / 1000000 << "MB\n";
-		cout << "Tmp size strict memory : " << tmp_size_strict_mem / 1000000 << "MB\n";
-		//cout << "Tmp total: " << (tmp_size + tmp_size_strict_mem) / 1000000 << "MB\n";
-		cout << "Tmp total: " << max_disk_usage / 1000000 << "MB\n";
+		cout << "Tmp size : " << tmp_size / 1000000 << "MB\n"
+		     << "Tmp size strict memory : " << tmp_size_strict_mem / 1000000 << "MB\n"
+		//     << "Tmp total: " << (tmp_size + tmp_size_strict_mem) / 1000000 << "MB\n"
+			 << "Tmp total: " << max_disk_usage / 1000000 << "MB\n";
 	}
 	else
 		cout << "Tmp size : " << tmp_size / 1000000 << "MB\n";
-	cout << "\nStats:\n";
-	cout << "   No. of k-mers below min. threshold : " << setw(12) << n_cutoff_min << "\n";
-	cout << "   No. of k-mers above max. threshold : " << setw(12) << n_cutoff_max << "\n";
-	cout << "   No. of unique k-mers               : " << setw(12) << n_unique << "\n";
-	cout << "   No. of unique counted k-mers       : " << setw(12) << n_unique-n_cutoff_min-n_cutoff_max << "\n";
-	cout << "   Total no. of k-mers                : " << setw(12) << n_total << "\n";
+	cout << "\nStats:\n"
+		 << "   No. of k-mers below min. threshold : " << setw(12) << n_cutoff_min << "\n"
+		 << "   No. of k-mers above max. threshold : " << setw(12) << n_cutoff_max << "\n"
+		 << "   No. of unique k-mers               : " << setw(12) << n_unique << "\n"
+		 << "   No. of unique counted k-mers       : " << setw(12) << n_unique - n_cutoff_min - n_cutoff_max << "\n"
+		 << "   Total no. of k-mers                : " << setw(12) << n_total << "\n";
 	if(Params.p_file_type != multiline_fasta)
 		cout << "   Total no. of reads                 : " << setw(12) << n_reads << "\n";
 	else

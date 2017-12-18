@@ -349,8 +349,8 @@ class CKXmerMerger
 	uint32 counter_size;
 	int32 lut_prefix_len;	
 	uchar* out_buffer;
+	bool without_output;
 
-	
 	list<pair<uint64, uint64>> packs;
 public:
 
@@ -430,18 +430,21 @@ public:
 						if (count > counter_max)
 							count = counter_max;
 
-						uint64 prefix = kmer.remove_suffix(suffix_len_bits);
-						if (prefix == last_prefix)
-							++last_prefix_n_recs;
-						else if (prefix == first_prefix) 
-							++first_prefix_n_recs;
-						else
-							++lut[prefix];
+						if (!without_output)
+						{
+							uint64 prefix = kmer.remove_suffix(suffix_len_bits);
+							if (prefix == last_prefix)
+								++last_prefix_n_recs;
+							else if (prefix == first_prefix)
+								++first_prefix_n_recs;
+							else
+								++lut[prefix];
 
-						for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
-							out_buffer[out_pos++] = kmer.get_byte(j);
-						for (int32 j = 0; j < (int32)counter_size; ++j)
-							out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+							for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
+								out_buffer[out_pos++] = kmer.get_byte(j);
+							for (int32 j = 0; j < (int32)counter_size; ++j)
+								out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+						}
 					}
 					count = kxmer_counters[counter_pos];
 					kmer = next_kmer;
@@ -459,22 +462,28 @@ public:
 				if (count > counter_max)
 					count = counter_max;
 
-				uint64 prefix = kmer.remove_suffix(suffix_len_bits);
-				if (prefix == last_prefix)
-					++last_prefix_n_recs;
-				else if (prefix == first_prefix)
-					++first_prefix_n_recs;
-				else
-					++lut[prefix];
+				if (!without_output)
+				{
+					uint64 prefix = kmer.remove_suffix(suffix_len_bits);
+					if (prefix == last_prefix)
+						++last_prefix_n_recs;
+					else if (prefix == first_prefix)
+						++first_prefix_n_recs;
+					else
+						++lut[prefix];
 
-				for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
-					out_buffer[out_pos++] = kmer.get_byte(j);
-				for (int32 j = 0; j < (int32)counter_size; ++j)
-					out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;				
+					for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
+						out_buffer[out_pos++] = kmer.get_byte(j);
+					for (int32 j = 0; j < (int32)counter_size; ++j)
+						out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+				}
 			}
-			lut_updater.UpdateLut(last_prefix, last_prefix_n_recs);			
-			lut_updater.UpdateLut(first_prefix, first_prefix_n_recs);
-			packs.emplace_back(out_start, out_pos);
+			if (!without_output)
+			{
+				lut_updater.UpdateLut(last_prefix, last_prefix_n_recs);
+				lut_updater.UpdateLut(first_prefix, first_prefix_n_recs);
+				packs.emplace_back(out_start, out_pos);
+			}
 		}
 	}
 
@@ -490,7 +499,8 @@ public:
 		uint64* lut, 
 		uint32 counter_size, 
 		int32 lut_prefix_len, 
-		uchar* out_buffer)
+		uchar* out_buffer,
+		bool without_output)
 			:
 		sub_array_descs(sub_array_descs), 
 		sub_array_desc_generator(sub_array_desc_generator), 
@@ -505,7 +515,8 @@ public:
 		lut(lut),
 		counter_size(counter_size), 
 		lut_prefix_len(lut_prefix_len), 
-		out_buffer(out_buffer)
+		out_buffer(out_buffer),
+		without_output(without_output)
 	{
 		
 	}
@@ -580,7 +591,7 @@ public:
 		sub_array_descs.emplace_back(SubArrayDesc{ start, end, shr });
 	}
 
-	void Process()
+	void Process(bool without_output)
 	{
 		uint32 n_parts = 8 * n_threads;
 		
@@ -595,7 +606,7 @@ public:
 		for (uint32 i = 0; i < n_threads; ++i)
 		{
 			mergers.push_back(new CKXmerMerger<KMER_T, SIZE>(sub_array_descs, sub_array_desc_generator, lut_updater, buffer, kxmer_counters, cutoff_min, 
-				cutoff_max, counter_max, kmer_len, lut, counter_size, lut_prefix_len, out_buffer));
+				cutoff_max, counter_max, kmer_len, lut, counter_size, lut_prefix_len, out_buffer, without_output));
 			threads.push_back(thread(ref(*mergers.back())));
 		}
 

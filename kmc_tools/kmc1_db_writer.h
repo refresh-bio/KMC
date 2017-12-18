@@ -37,7 +37,7 @@ public:
 		{
 			if (fwrite(buf, 1, size, kmc_suf) != size)
 			{
-				std::cout << "Error while writing to kmc_suf file\n";
+				std::cerr << "Error while writing to kmc_suf file\n";
 				exit(1);
 			}
 			delete[] buf;
@@ -127,7 +127,7 @@ bundles_queue(DEFAULT_CIRCULAL_QUEUE_CAPACITY)
 
 	if (!kmc_pre)
 	{
-		std::cout << "Error: cannot open file : " << kmc_pre_file_name << "\n";
+		std::cerr << "Error: cannot open file : " << kmc_pre_file_name << "\n";
 		exit(1);
 	}
 	kmc_suf = fopen(kmc_suf_file_name.c_str(), "wb");
@@ -136,7 +136,7 @@ bundles_queue(DEFAULT_CIRCULAL_QUEUE_CAPACITY)
 	if (!kmc_suf)
 	{
 		fclose(kmc_pre);
-		std::cout << "Error: cannot open file : " << kmc_suf_file_name << "\n";
+		std::cerr << "Error: cannot open file : " << kmc_suf_file_name << "\n";
 		exit(1);
 	}
 
@@ -282,7 +282,7 @@ template <unsigned SIZE> template <typename T> void CKMC1DbWriter<SIZE>::write_h
 		char c = (data >> (i << 3)) & 0xff;
 		if (putc(c, kmc_pre) == EOF)
 		{
-			std::cout << "Error while writing header of kmc1\n";
+			std::cerr << "Error while writing header of kmc1\n";
 			exit(1);
 		}
 	}
@@ -293,12 +293,12 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::start_writing()
 {
 	if (fwrite("KMCP", 1, 4, kmc_pre) != 4)
 	{
-		std::cout << "Error while writing starting KMCP marker";
+		std::cerr << "Error while writing starting KMCP marker";
 		exit(1);
 	}
 	if (fwrite("KMCS", 1, 4, kmc_suf) != 4)
 	{
-		std::cout << "Error while writing starting KMCS marker";
+		std::cerr << "Error while writing starting KMCS marker";
 		exit(1);
 	}
 }
@@ -341,12 +341,12 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::finish_writing()
 
 	if (fwrite("KMCP", 1, 4, kmc_pre) != 4)
 	{
-		std::cout << "Error while writing end KMCP marker";
+		std::cerr << "Error while writing end KMCP marker";
 		exit(1);
 	}
 	if (fwrite("KMCS", 1, 4, kmc_suf) != 4)
 	{
-		std::cout << "Error while writing end KMCS marker";
+		std::cerr << "Error while writing end KMCS marker";
 		exit(1);
 	}
 	fclose(kmc_pre);
@@ -384,7 +384,7 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::store_pre_buf()
 {
 	if (fwrite(pre_buff, sizeof(uint64), pre_pos, kmc_pre) != pre_pos)
 	{
-		std::cout << "Error while writing to kmc_pre file\n";
+		std::cerr << "Error while writing to kmc_pre file\n";
 		exit(1);
 	}
 	pre_pos = 0;
@@ -409,7 +409,7 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::calc_lut_prefix_len()
 	{
 		uint32 best_lut_prefix_len = 0;
 		uint64 best_mem_amount = 1ull << 62;
-		for (lut_prefix_len = 6; lut_prefix_len < 16; ++lut_prefix_len)
+		for (lut_prefix_len = 1; lut_prefix_len < 16; ++lut_prefix_len)
 		{
 			uint32 suffix_len = config.headers[i].kmer_len - lut_prefix_len;
 			if (suffix_len % 4)

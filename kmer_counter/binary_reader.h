@@ -15,9 +15,24 @@ Date   : 2017-01-28
 #include "params.h"
 #include "queues.h"
 #include "percent_progress.h"
+#include <sys/stat.h>
 
 class CBinaryFilesReader
 {
+	bool is_file(const char* path)
+	{
+#ifdef WIN32
+		typedef struct _stat64 stat_struct;
+		const auto& stat_func = _stat64;
+#else
+		typedef struct stat stat_struct;
+		const auto& stat_func = stat;
+#endif
+		stat_struct buf;
+		if (stat_func(path, &buf) == -1)
+			return false;
+		return (buf.st_mode & S_IFMT) == S_IFREG;
+	}
 	uint32 part_size;
 	CInputFilesQueue* input_files_queue;
 	CMemoryPool *pmm_binary_file_reader;
@@ -45,7 +60,7 @@ class CBinaryFilesReader
 		f = fopen(file_name.c_str(), "rb");
 		if (!f)
 		{
-			std::cout << "Cannot open file: " << file_name << " for reading\n";
+			std::cerr << "Error: cannot open file: " << file_name << " for reading\n";
 			exit(1);
 		}
 
@@ -70,9 +85,14 @@ public:
 		{
 			string& f_name = files_copy.front();
 			FILE* f = fopen(f_name.c_str(), "rb");
+			if(!is_file(f_name.c_str()))
+			{
+				cerr << "Error: " << f_name << " is not a file\n";
+				exit(1);
+			}
 			if (!f)
 			{
-				cout << "Cannot open file: " << f_name << "\n";
+				cerr << "Cannot open file: " << f_name << "\n";
 				exit(1);
 			}
 			my_fseek(f, 0, SEEK_END);

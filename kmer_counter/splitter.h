@@ -454,8 +454,8 @@ template <bool QUAKE_MODE> void CSplitter<QUAKE_MODE>::CalcStats(uchar* _part, u
 			_stats[current_signature.get()] += 1 + len - kmer_len;
 	}
 
-	putchar('*');
-	fflush(stdout);
+	cerr << '*';
+	cerr.flush();
 
 	pmm_reads->free(seq);
 }
