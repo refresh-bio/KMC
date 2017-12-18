@@ -13,7 +13,7 @@ CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -st
 KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 KMC_TOOLS_CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 
-DISABLE_ASMLIB = false
+DISABLE_ASMLIB ?= false
 
 KMC_OBJS = \
 $(KMC_MAIN_DIR)/kmer_counter.o \
