@@ -1028,7 +1028,10 @@ template<unsigned SIZE> void CMergerParent<SIZE>::Process2Inputs()
 	bool q2_empty = !q2->pop(b2);
 
 	if (q1_empty && q2_empty)
+	{
+		output_queue.mark_completed();
 		return;
+	}
 	if (q1_empty || q2_empty)
 	{
 		CCircularQueue<SIZE>* q = q1_empty ? q2 : q1;
