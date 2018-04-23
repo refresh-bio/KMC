@@ -139,7 +139,7 @@ protected:
 		if (counter >= cutoff_min && counter <= cutoff_max)
 		{
 			if (counter > counter_max)
-				counter_max = counter_max;
+				counter = counter_max;
 			kmerToStr(kmer, buf + buf_pos);
 			buf[buf_pos + kmer_len] = '\t';
 			counter_len = CNumericConversions::Int2PChar(counter, (uchar*)(buf + buf_pos + kmer_len + 1));

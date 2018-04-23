@@ -149,6 +149,8 @@ bundles_queue(DEFAULT_CIRCULAL_QUEUE_CAPACITY)
 	calc_lut_prefix_len();
 
 	counter_size = MIN(BYTE_LOG(output_desc.counter_max), BYTE_LOG(output_desc.cutoff_max));
+	if (output_desc.counter_value)
+		counter_size = BYTE_LOG(output_desc.counter_value);
 	suffix_rec_bytes = (config.kmer_len - lut_prefix_len) / 4 + counter_size;
 	current_prefix = 0;
 	added_kmers = 0;
@@ -356,10 +358,16 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::finish_writing()
 /*****************************************************************************************************************************/
 template<unsigned SIZE> void CKMC1DbWriter<SIZE>::add_kmer(CKmer<SIZE>& kmer, uint32 counter)
 {
-	if (counter < output_desc.cutoff_min || counter > output_desc.cutoff_max)
-		return;
-	if (counter > output_desc.counter_max)
-		counter = output_desc.counter_max;
+	//if specific counter value is set use it as counter value (set_counts operation), do not check if counter is valid in term of cutoffs and counter max
+	if (output_desc.counter_value)
+		counter = static_cast<uint32>(output_desc.counter_value);
+	else
+	{
+		if (counter < output_desc.cutoff_min || counter > output_desc.cutoff_max)
+			return;
+		if (counter > output_desc.counter_max)
+			counter = output_desc.counter_max;
+	}
 	uint64 kmer_prefix = kmer.remove_suffix((config.kmer_len - lut_prefix_len) * 2);
 	while (current_prefix < kmer_prefix)
 	{

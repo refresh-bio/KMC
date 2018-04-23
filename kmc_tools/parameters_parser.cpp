@@ -333,6 +333,7 @@ bool CParametersParser::read_output_for_transform()
 		return false;
 
 	CTransformOutputDesc::OpType op_type;
+	uint64 counter_value = 0; //for set_counts only
 	if (strcmp(argv[pos], "sort") == 0)
 	{
 		op_type = CTransformOutputDesc::OpType::SORT;	
@@ -352,6 +353,39 @@ bool CParametersParser::read_output_for_transform()
 	else if (strcmp(argv[pos], "dump") == 0)
 	{
 		op_type = CTransformOutputDesc::OpType::DUMP;
+	}
+	else if (strcmp(argv[pos], "set_counts") == 0)
+	{
+		op_type = CTransformOutputDesc::OpType::SET_COUNTS;
+		++pos;
+		if (pos >= argc)
+		{
+			cerr << "Error: set_counts operation requires count value\n";
+			Usage();
+			exit(1);
+		}
+		
+		if (strncmp(argv[pos], "-", 1) == 0)
+		{
+			cerr << "Error: Count value expected, but " << argv[pos] << " found\n";
+			exit(1);
+		}
+
+		char* ptr_end = nullptr;
+		counter_value = strtoull(argv[pos], &ptr_end, 10);
+		auto len = strlen(argv[pos]);
+		if (argv[pos] + len != ptr_end)
+		{
+			cerr << "Error: Count value expected, but " << argv[pos] << " found\n";
+			exit(1);
+		}		
+
+		if (counter_value > numeric_limits<uint32>::max())
+		{
+			cerr << "Error: currenlty kmc_tools supports counter values up to " << numeric_limits<uint32>::max() << "\n";
+			exit(1);
+		}
+
 	}
 	else
 	{
@@ -401,9 +435,10 @@ bool CParametersParser::read_output_for_transform()
 		exit(1);
 	}
 
-	
-	
 	config.transform_output_desc.back().file_src = argv[pos++];
+
+	if (op_type == CTransformOutputDesc::OpType::SET_COUNTS)
+		config.transform_output_desc.back().counter_value = counter_value;
 
 	//read database params
 	while (pos < argc)
@@ -435,6 +470,15 @@ bool CParametersParser::read_output_for_transform()
 			cerr << "Warning: -cs can not be specified for compact operation, value specified will be ignored\n";
 		config.transform_output_desc.back().counter_max = 1;
 	}	
+	if (op_type == CTransformOutputDesc::OpType::SET_COUNTS)
+	{
+		auto& tmp = config.transform_output_desc.back();
+		if (tmp.counter_max || tmp.cutoff_max || tmp.cutoff_min)
+			cerr << "Warning: -cs, -cx, -ci cannot be specified for set_counts operation, values will be ignored\n";
+		tmp.counter_max = tmp.cutoff_max = numeric_limits<uint32>::max();
+		tmp.cutoff_min = 1;
+	}
+
 	return true;
 }
 
@@ -704,7 +748,7 @@ void CParametersParser::Parse()
 	}
 	else if (config.mode == CConfig::Mode::FILTER)
 	{
-read_filter_params();
+		read_filter_params();
 		read_input_desc(); //kmc db
 		read_input_fastq_desc(); //fastq input
 		read_output_fastq_desc();
@@ -898,6 +942,9 @@ bool CParametersParser::validate_input_dbs()
 
 		for (auto& desc : config.transform_output_desc)
 		{
+			if (desc.op_type == CTransformOutputDesc::OpType::SET_COUNTS)
+				continue;
+
 			if (desc.cutoff_min == 0)
 				desc.cutoff_min = min_cutoff_min;
 			if (desc.cutoff_max == 0)

@@ -66,6 +66,7 @@ struct CInputDesc : public CDescBase
 struct COutputDesc : public CDescBase
 {
 	uint32 counter_max = 0; //0 means it is not set yet
+	uint64 counter_value = 0; //only for SET_COUNTER operation, 0 means not set yet
 	COutputDesc(const std::string& file_src) :
 		CDescBase(file_src)		
 	{
@@ -103,7 +104,7 @@ struct CSimpleOutputDesc : public COutputDesc
 
 struct CTransformOutputDesc : public COutputDesc
 {
-	enum class OpType { HISTOGRAM, DUMP, SORT, REDUCE, COMPACT };
+	enum class OpType { HISTOGRAM, DUMP, SORT, REDUCE, COMPACT, SET_COUNTS };
 	OpType op_type;
 	bool sorted_output = false; //only for dump operation, rest is sorted anyway (except histo which does not print k-mers at all)
 	CTransformOutputDesc(OpType op_type) :op_type(op_type)
@@ -385,6 +386,7 @@ public:
 				  << "  compact                    - remove counters of k-mers\n"
 				  << "  histogram                  - produce histogram of k-mers occurrences\n"
 				  << "  dump                       - produce text dump of kmc database\n"
+				  << "  set_counts <value>         - set all k-mer counts to specific value\n"
 				  
 				  << " For input there are additional parameters:\n"
 				  << "  -ci<value> - exclude k-mers occurring less than <value> times \n"

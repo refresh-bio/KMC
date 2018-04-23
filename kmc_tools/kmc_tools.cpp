@@ -54,6 +54,7 @@ template<unsigned SIZE> class CTools
 			case CTransformOutputDesc::OpType::COMPACT:
 			case CTransformOutputDesc::OpType::REDUCE:
 			case CTransformOutputDesc::OpType::SORT:
+			case CTransformOutputDesc::OpType::SET_COUNTS:
 				kmc_db_writers.push_back(new CKMC1DbWriter<SIZE>(nullptr, desc));
 				kmc_db_writers.back()->MultiOptputInit();
 				bundles.push_back(new CBundle<SIZE>(nullptr));
@@ -387,7 +388,7 @@ template<unsigned SIZE> class CTools
 
 		for (auto& desc : config.transform_output_desc)
 		{
-			if (desc.op_type == CTransformOutputDesc::OpType::REDUCE || desc.op_type == CTransformOutputDesc::OpType::COMPACT || desc.op_type == CTransformOutputDesc::OpType::SORT)
+			if (desc.op_type == CTransformOutputDesc::OpType::REDUCE || desc.op_type == CTransformOutputDesc::OpType::COMPACT || desc.op_type == CTransformOutputDesc::OpType::SORT || desc.op_type == CTransformOutputDesc::OpType::SET_COUNTS)
 			{
 				kmers_needed = true;
 				sort_needed = true;
