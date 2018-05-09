@@ -165,6 +165,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="asmlib_wrapper.h" />
+    <ClInclude Include="bam_utils.h" />
     <ClInclude Include="binary_reader.h" />
     <ClInclude Include="bkb_merger.h" />
     <ClInclude Include="bkb_reader.h" />

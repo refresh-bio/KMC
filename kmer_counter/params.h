@@ -17,7 +17,7 @@
 #include <vector>
 #include <string>
 
-typedef enum {fasta, fastq, multiline_fasta} input_type;
+typedef enum {fasta, fastq, multiline_fasta, bam} input_type;
 
 
 using namespace std;
@@ -178,6 +178,8 @@ struct CKMCQueues
 
 	vector<CBinaryPackQueue*> binary_pack_queues;
 
+	CBamTaskManager* bam_task_manager = nullptr;
+
 	// Queues
 	CInputFilesQueue *input_files_queue;
 	CPartQueue *part_queue;
@@ -188,7 +190,8 @@ struct CKMCQueues
 	CExpanderPackDesc* epd;
 	CBinQueue *bq;
 	CKmerQueue *kq;
-	CMemoryPool *pmm_bins, *pmm_fastq, *pmm_reads, *pmm_radix_buf, *pmm_prob, *pmm_stats, *pmm_binary_file_reader;
+	CMemoryPool *pmm_bins, *pmm_reads, *pmm_radix_buf, *pmm_prob, *pmm_stats, *pmm_binary_file_reader;
+	CMemoryPoolWithBamSupport *pmm_fastq;
 	CMemoryBins *memory_bins;
 	CMemoryPool* pmm_small_k_buf, *pmm_small_k_completer;
 

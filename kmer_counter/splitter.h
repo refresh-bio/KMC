@@ -26,6 +26,7 @@
 #include <iostream>
 #include <vector>
 #include "small_k_buf.h"
+#include "bam_utils.h"
 
 using namespace std;
 
@@ -41,7 +42,7 @@ template <bool QUAKE_MODE> class CSplitter {
 	uint64 total_kmers = 0;
 	//CExKmer ex_kmer;
 	uchar *part;
-	uint64 part_size, part_pos;
+	uint64_t part_size, part_pos;
 	CKmerBinCollector **bins;
 	CBinPartQueue *bin_part_queue;
 	CBinDesc *bd;
@@ -263,6 +264,97 @@ template <bool QUAKE_MODE> bool CSplitter<QUAKE_MODE>::GetSeq(char *seq, uint32 
 		}
 		return true;
 		
+	}
+	else if (file_type == bam)
+	{
+		while (true)
+		{
+			if (part_pos >= part_size)
+				return false;
+
+			int32_t block_size;
+			read_int32_t(block_size, part, part_pos);
+
+			uint64_t start_pos = part_pos;
+
+			part_pos += 8;
+
+			uint32_t bin_mq_nl;
+			read_uint32_t(bin_mq_nl, part, part_pos);
+
+			uint32_t l_read_name = (bin_mq_nl & ((1 << 8) - 1));
+			uint32_t flag_nc;
+			read_uint32_t(flag_nc, part, part_pos);
+			uint32_t n_cigar_op = flag_nc & ((1ul << 16) - 1);
+			int32_t l_seq;
+			read_int32_t(l_seq, part, part_pos);
+
+			part_pos += 12;
+
+			uint32_t flags = flag_nc >> 16;
+
+			bool exclude_read = ((flags >> 8) & 1) || ((flags >> 11) & 1); //TODO: I think that is the way samtools filter out some reads (secondary and supplementary)
+
+			part_pos += l_read_name; // skip read name
+
+			part_pos += 4 * n_cigar_op;
+			if (!exclude_read)
+			{
+				bool is_rev_comp = (flags >> 4) & 1;
+
+				if (!both_strands && is_rev_comp) //if read is reversed and kmc was run to count all (not only canonical) kmers read must be transformed back
+				{
+					//static const char rev_maping[] = "=TGMCRSVAWYHKDBN";
+					static const char rev_maping[] = { -1, 3, 2, -1, 1, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1 };// "=TGMCRSVAWYHKDBN";
+					uint32 n_bytes = l_seq / 2;
+					uint64_t pos_after = pos + l_seq;
+					pos = pos_after;
+					for (uint32_t ii = 0; ii < n_bytes; ++ii)
+					{
+						unsigned char byte = part[part_pos++];
+						seq[--pos_after] = rev_maping[byte >> 4];
+						seq[--pos_after] = rev_maping[byte & 15];
+					}
+
+					if (l_seq & 1) //odd
+					{
+						unsigned char byte = part[part_pos++];
+						seq[--pos_after] = rev_maping[byte >> 4];
+					}
+				}
+				else
+				{
+					static const char maping[] = { -1, 0, 1, -1, 2, -1, -1, -1, 3, -1, -1, -1, -1, -1, -1, -1 };//"=ACMGRSVTWYHKDBN";
+					uint32 n_bytes = l_seq / 2;
+					for (uint32_t ii = 0; ii < n_bytes; ++ii)
+					{
+						unsigned char byte = part[part_pos++];
+						seq[pos++] = maping[byte >> 4];
+						seq[pos++] = maping[byte & 15];
+					}
+
+					if (l_seq & 1) //odd
+					{
+						unsigned char byte = part[part_pos++];
+						seq[pos++] = maping[byte >> 4];
+					}
+				}
+				seq_size = pos;				
+			}
+			else
+			{
+				part_pos += (l_seq + 1) / 2;
+			}
+
+			//move to next record
+			uint64_t readed = part_pos - start_pos;
+			uint64_t remaining = block_size - readed;
+			part_pos += remaining;
+
+			if (!exclude_read) //if readed successfuly return		
+				return true;
+		}
+
 	}
 
 	return (c == '\n' || c == '\r');
@@ -1315,10 +1407,11 @@ template <bool QUAKE_MODE, typename COUNTER_TYPE> void CWSmallKSplitter<QUAKE_MO
 	{
 		uchar *part;
 		uint64 size;
+
 		if (pq->pop(part, size))
-		{
-			spl->ProcessReadsSmallK(part, size, small_k_buf);
-			pmm_fastq->free(part);
+		{			
+			spl->ProcessReadsSmallK(part, size, small_k_buf);			
+			pmm_fastq->free(part);			
 		}
 	}
 	spl->Complete();

@@ -92,6 +92,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> class CKMC {
 
 	void ShowSettingsStage1();
 	void ShowSettingsStage2();
+	void ShowSettingsSmallKOpt();
 
 	friend class CSmallKWrapper<KMER_T, SIZE, QUAKE_MODE>;
 	bool AdjustMemoryLimitsSmallK();	
@@ -159,9 +160,10 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 {
 	Params = _Params;
 	Params.kmer_len	= Params.p_k;
+	Params.file_type = Params.p_file_type;
 
 	Params.n_bins = Params.p_n_bins;
-
+	
 	if (Params.kmer_len % 32 == 0)
 		Params.max_x = 0;
 	else
@@ -211,7 +213,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	//Params.max_mem_size  = NORM(((uint64) Params.p_m) << 30, (uint64) MIN_MEM << 30, 1024ull << 30);
 	Params.max_mem_size = NORM(((uint64)Params.p_m) * 1000000000ull, (uint64)MIN_MEM * 1000000000ull, 1024ull * 1000000000ull);
 
-	Params.file_type		= Params.p_file_type;
+	
 
 	Params.KMER_T_size = sizeof(KMER_T);
 
@@ -255,6 +257,10 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 			if (p > file_size_threshold)
 				++n_allowed_files;
 			Params.n_readers = MIN(n_allowed_files, MAX(1, cores / 2));
+		}
+		else if (Params.file_type == bam)
+		{
+			Params.n_readers = MAX(1, Params.n_threads / 2); //TODO: for now, split distribute threads equally for bam input, it seems to work quite well but I didnt perform detailed tests
 		}
 		else
 			Params.n_readers = 1;
@@ -461,6 +467,9 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	case multiline_fasta:
 		cerr << "MULTI LINE FASTA\n";
 		break;
+	case bam:
+		cerr << "BAM\n";
+		break;
 	}
 	cerr << "\n";
 	cerr << "k-mer length                 : " << Params.kmer_len << "\n";
@@ -518,6 +527,62 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 }
 
 //----------------------------------------------------------------------------------
+// Show the settings of the KMC (in verbose mode only)
+template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::ShowSettingsSmallKOpt()
+{
+	if (!Params.verbose)
+		return;
+
+	cerr << "\n******* configuration for small k mode: *******\n";
+
+	cerr << "No. of input files           : " << Params.input_file_names.size() << "\n";
+	cerr << "Output file name             : " << Params.output_file_name << "\n";
+	cerr << "Input format                 : ";
+	switch (Params.file_type)
+	{
+	case fasta:
+		cerr << "FASTA\n";
+		break;
+	case fastq:
+		cerr << "FASTQ\n";
+		break;
+	case multiline_fasta:
+		cerr << "MULTI LINE FASTA\n";
+		break;
+	case bam:
+		cerr << "BAM\n";
+		break;
+	}
+	cerr << "\n";
+	cerr << "k-mer length                 : " << Params.kmer_len << "\n";
+	cerr << "Max. k-mer length            : " << MAX_K << "\n";
+	cerr << "Min. count threshold         : " << Params.cutoff_min << "\n";
+	cerr << "Max. count threshold         : " << Params.cutoff_max << "\n";
+	cerr << "Max. counter value           : " << Params.counter_max << "\n";
+	
+	cerr << "Both strands                 : " << (Params.both_strands ? "true\n" : "false\n");
+	cerr << "Input buffer size            : " << Params.fastq_buffer_size << "\n";
+
+	cerr << "\n";
+
+	cerr << "No. of readers               : " << Params.n_readers << "\n";
+	cerr << "No. of splitters             : " << Params.n_splitters << "\n";
+	cerr << "\n";
+
+	cerr << "Max. mem. size               : " << setw(5) << (Params.max_mem_size / 1000000) << "MB\n";
+	cerr << "\n";
+
+	cerr << "Max. mem. for PMM (FASTQ)    : " << setw(5) << (Params.mem_tot_pmm_fastq / 1000000) << "MB\n";
+	cerr << "Part. mem. for PMM (FASTQ)   : " << setw(5) << (Params.mem_part_pmm_fastq / 1000000) << "MB\n";
+	cerr << "Max. mem. for PMM (reads)    : " << setw(5) << (Params.mem_tot_pmm_reads / 1000000) << "MB\n";
+	cerr << "Part. mem. for PMM (reads)   : " << setw(5) << (Params.mem_part_pmm_reads / 1000000) << "MB\n";
+	cerr << "Max. mem. for PMM (b. reader): " << setw(5) << (Params.mem_tot_pmm_binary_file_reader / 1000000) << "MB\n";
+	cerr << "Part. mem. for PMM (b. reader): " << setw(5) << (Params.mem_part_pmm_binary_file_reader / 1000000) << "MB\n";
+
+	cerr << "\n";
+
+}
+//----------------------------------------------------------------------------------
 template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZE, QUAKE_MODE>::AdjustMemoryLimitsSmallK() 
 {
 	if (Params.kmer_len > 13) 
@@ -542,7 +607,8 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 
 	int64 mim_mem_for_readers = tmp_n_readers * (16 << 20);
 	
-	tmp_fastq_buffer_size = 1 << 24;
+	//tmp_fastq_buffer_size = 1 << 24; 
+	tmp_fastq_buffer_size = 32 << 20; //important for bam reading performance, previously 1 << 24
 	tmp_mem_part_pmm_fastq = tmp_fastq_buffer_size + CFastqReader::OVERHEAD_SIZE;
 	tmp_mem_tot_pmm_fastq = tmp_mem_part_pmm_fastq * (tmp_n_readers + tmp_n_splitters + 96);
 
@@ -584,14 +650,15 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> 
 template<typename COUNTER_TYPE>
 bool CKMC<KMER_T, SIZE, QUAKE_MODE>::ProcessSmallKOptimization()
-{		
+{	
+	ShowSettingsSmallKOpt();
 	vector<CWSmallKSplitter<QUAKE_MODE, COUNTER_TYPE>*> w_small_k_splitters; //For small k values only
 
 	w1.startTimer();
 	Queues.input_files_queue = new CInputFilesQueue(Params.input_file_names);
 	Queues.part_queue = new CPartQueue(Params.n_readers);
 
-	Queues.pmm_fastq = new CMemoryPool(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
+	Queues.pmm_fastq = new CMemoryPoolWithBamSupport(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
 	Queues.pmm_binary_file_reader = new CMemoryPool(Params.mem_tot_pmm_binary_file_reader, Params.mem_part_pmm_binary_file_reader);
 	Queues.pmm_reads = new CMemoryPool(Params.mem_tot_pmm_reads, Params.mem_part_pmm_reads);
 	Queues.pmm_small_k_buf = new CMemoryPool(Params.mem_tot_small_k_buf, Params.mem_part_small_k_buf);
@@ -605,18 +672,32 @@ bool CKMC<KMER_T, SIZE, QUAKE_MODE>::ProcessSmallKOptimization()
 	}
 
 	w_fastqs.resize(Params.n_readers);
-	Queues.binary_pack_queues.resize(Params.n_readers);
-	for (int i = 0; i < Params.n_readers; ++i)
+	if (Params.file_type != bam)
 	{
-		Queues.binary_pack_queues[i] = new CBinaryPackQueue;
-		w_fastqs[i] = new CWFastqReader(Params, Queues, Queues.binary_pack_queues[i]);
-		gr1_1.push_back(thread(std::ref(*w_fastqs[i])));
+		Queues.binary_pack_queues.resize(Params.n_readers);
+		for (int i = 0; i < Params.n_readers; ++i)
+		{
+			Queues.binary_pack_queues[i] = new CBinaryPackQueue;
+			w_fastqs[i] = new CWFastqReader(Params, Queues, Queues.binary_pack_queues[i]);
+			gr1_1.push_back(thread(std::ref(*w_fastqs[i])));
+		}
 	}
+	else
+	{
+		Queues.bam_task_manager = new CBamTaskManager;
+		for (int i = 0; i < Params.n_readers; ++i)
+		{			
+			w_fastqs[i] = new CWFastqReader(Params, Queues, nullptr);
+			gr1_1.push_back(thread(std::ref(*w_fastqs[i])));
+		}
+	}
+
 	w_bin_file_reader = new CWBinaryFilesReader(Params, Queues);
 	thread bin_file_reader_th(std::ref(*w_bin_file_reader));
 
 	for (auto& t : gr1_1)
 		t.join();
+
 	for (auto& t : gr1_2)
 		t.join();
 
@@ -627,6 +708,9 @@ bool CKMC<KMER_T, SIZE, QUAKE_MODE>::ProcessSmallKOptimization()
 	delete w_bin_file_reader;
 	for (auto& ptr : Queues.binary_pack_queues)
 		delete ptr;
+
+	if (Params.file_type == bam)
+		delete Queues.bam_task_manager;
 
 	vector<CSmallKBuf<COUNTER_TYPE>> results(Params.n_splitters);
 
@@ -765,22 +849,26 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	Queues.epd = new CExpanderPackDesc(Params.n_bins);
 	Queues.bq = new CBinQueue(1);
 
-	
-	
 
 	// Create memory manager
 	Queues.pmm_binary_file_reader = new CMemoryPool(Params.mem_tot_pmm_binary_file_reader, Params.mem_part_pmm_binary_file_reader);
 	Queues.pmm_bins = new CMemoryPool(Params.mem_tot_pmm_bins, Params.mem_part_pmm_bins);
-	Queues.pmm_fastq = new CMemoryPool(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
+	Queues.pmm_fastq = new CMemoryPoolWithBamSupport(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
 	Queues.pmm_reads = new CMemoryPool(Params.mem_tot_pmm_reads, Params.mem_part_pmm_reads);
 	Queues.pmm_stats = new CMemoryPool(Params.mem_tot_pmm_stats, Params.mem_part_pmm_stats);
 
-	Queues.binary_pack_queues.resize(Params.n_readers);
-	for (int i = 0; i < Params.n_readers; ++i)
+	if (Params.file_type != bam)
 	{
-		Queues.binary_pack_queues[i] = new CBinaryPackQueue;
+		Queues.binary_pack_queues.resize(Params.n_readers);
+		for (int i = 0; i < Params.n_readers; ++i)
+		{
+			Queues.binary_pack_queues[i] = new CBinaryPackQueue;
+		}
 	}
-
+	else //for bam
+	{
+		Queues.bam_task_manager = new CBamTaskManager;
+	}
 	w_bin_file_reader = new CWBinaryFilesReader(Params, Queues, false);
 	Queues.stats_part_queue = new CStatsPartQueue(Params.n_readers, MAX(STATS_FASTQ_SIZE, w_bin_file_reader->GetPredictedSize() / 100));
 
@@ -803,7 +891,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	w_stats_fastqs.resize(Params.n_readers);
 	for (int i = 0; i < Params.n_readers; ++i)
 	{
-		w_stats_fastqs[i] = new CWStatsFastqReader(Params, Queues, Queues.binary_pack_queues[i]);
+		w_stats_fastqs[i] = new CWStatsFastqReader(Params, Queues,  Params.file_type == bam ? nullptr : Queues.binary_pack_queues[i]);
 		gr0_1.push_back(thread(std::ref(*w_stats_fastqs[i])));
 	}	
 	thread bin_file_reader_th(std::ref(*w_bin_file_reader));
@@ -816,9 +904,12 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 
 	bin_file_reader_th.join();
 	delete w_bin_file_reader;
+
 	for (auto& ptr : Queues.binary_pack_queues)
 		delete ptr;
 
+	if (Params.file_type == bam)
+		delete Queues.bam_task_manager;
 
 	uint32 *stats;
 	Queues.pmm_stats->reserve(stats);
@@ -868,12 +959,24 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	gr1_3.push_back(thread(std::ref(*w_storer)));
 
 	w_fastqs.resize(Params.n_readers);
-	Queues.binary_pack_queues.resize(Params.n_readers);
-	for(int i = 0; i < Params.n_readers; ++i)
+	if (Params.file_type != bam)
 	{
-		Queues.binary_pack_queues[i] = new CBinaryPackQueue;
-		w_fastqs[i] = new CWFastqReader(Params, Queues, Queues.binary_pack_queues[i]);
-		gr1_1.push_back(thread(std::ref(*w_fastqs[i])));
+		Queues.binary_pack_queues.resize(Params.n_readers);
+		for (int i = 0; i < Params.n_readers; ++i)
+		{
+			Queues.binary_pack_queues[i] = new CBinaryPackQueue;
+			w_fastqs[i] = new CWFastqReader(Params, Queues, Queues.binary_pack_queues[i]);
+			gr1_1.push_back(thread(std::ref(*w_fastqs[i])));
+		}
+	}
+	else //bam
+	{
+		Queues.bam_task_manager = new CBamTaskManager;
+		for (int i = 0; i < Params.n_readers; ++i)
+		{			
+			w_fastqs[i] = new CWFastqReader(Params, Queues, nullptr);
+			gr1_1.push_back(thread(std::ref(*w_fastqs[i])));
+		}
 	}
 
 	w_bin_file_reader = new CWBinaryFilesReader(Params, Queues);
@@ -889,6 +992,9 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 
 	for (auto& ptr : Queues.binary_pack_queues)
 		delete ptr;
+
+	if (Params.file_type == bam)
+		delete Queues.bam_task_manager;
 
 	Queues.pmm_fastq->release();
 	Queues.pmm_reads->release();

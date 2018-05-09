@@ -154,7 +154,7 @@ void usage()
 		 << "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 12\n"
 		 << "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n"
 		 << "  -p<par> - signature length (5, 6, 7, 8, 9, 10, 11); default: 9\n"
-		 << "  -f<a/q/m> - input in FASTA format (-fa), FASTQ format (-fq) or multi FASTA (-fm); default: FASTQ\n"
+		 << "  -f<a/q/m/bam> - input in FASTA format (-fa), FASTQ format (-fq), multi FASTA (-fm) or BAM (-fbam); default: FASTQ\n"
 	// << "  -q[value] - use Quake's compatible counting with [value] representing lowest quality (default: 33)\n"
 		 << "  -ci<value> - exclude k-mers occurring less than <value> times (default: 2)\n"
 		 << "  -cs<value> - maximal value of a counter (default: 255)\n"
@@ -209,10 +209,10 @@ bool parse_parameters(int argc, char *argv[])
 			Params.p_t = atoi(&argv[i][2]);
 //		else 
 		// k-mer length
-		if(strncmp(argv[i], "-k", 2) == 0)
+		if (strncmp(argv[i], "-k", 2) == 0)
 		{
 			tmp = atoi(&argv[i][2]);
-			if(tmp < MIN_K || tmp > MAX_K)
+			if (tmp < MIN_K || tmp > MAX_K)
 			{
 				cerr << "Wrong parameter: k must be from range <" << MIN_K << "," << MAX_K << ">\n";
 				return false;
@@ -221,10 +221,10 @@ bool parse_parameters(int argc, char *argv[])
 				Params.p_k = tmp;
 		}
 		// Memory limit
-		else if(strncmp(argv[i], "-m", 2) == 0)
+		else if (strncmp(argv[i], "-m", 2) == 0)
 		{
 			tmp = atoi(&argv[i][2]);
-			if(tmp < MIN_MEM)
+			if (tmp < MIN_MEM)
 			{
 				cerr << "Wrong parameret: min memory must be at least " << MIN_MEM << "GB\n";
 				return false;
@@ -233,13 +233,13 @@ bool parse_parameters(int argc, char *argv[])
 				Params.p_m = tmp;
 		}
 		// Minimum counter threshold
-		else if(strncmp(argv[i], "-ci", 3) == 0)
+		else if (strncmp(argv[i], "-ci", 3) == 0)
 			Params.p_ci = atoi(&argv[i][3]);
 		// Maximum counter threshold
-		else if(strncmp(argv[i], "-cx", 3) == 0)
+		else if (strncmp(argv[i], "-cx", 3) == 0)
 			Params.p_cx = atoll(&argv[i][3]);
 		// Maximal counter value
-		else if(strncmp(argv[i], "-cs", 3) == 0)
+		else if (strncmp(argv[i], "-cs", 3) == 0)
 			Params.p_cs = atoll(&argv[i][3]);
 		// Quake mode
 		/*else if(strncmp(argv[i], "-q", 2) == 0)
@@ -261,13 +261,15 @@ bool parse_parameters(int argc, char *argv[])
 				Params.p_p1 = tmp;
 		}
 		// FASTA input files
-		else if(strncmp(argv[i], "-fa", 3) == 0)
+		else if (strncmp(argv[i], "-fa", 3) == 0)
 			Params.p_file_type = fasta;
 		// FASTQ input files
-		else if(strncmp(argv[i], "-fq", 3) == 0)
+		else if (strncmp(argv[i], "-fq", 3) == 0)
 			Params.p_file_type = fastq;
-		else if(strncmp(argv[i], "-fm", 3) == 0)
+		else if (strncmp(argv[i], "-fm", 3) == 0)
 			Params.p_file_type = multiline_fasta;
+		else if (strncmp(argv[i], "-fbam", 5) == 0)
+			Params.p_file_type = bam;
 #ifdef DEVELOP_MODE
 		else if (strncmp(argv[i], "-vl", 3) == 0)
 			Params.p_verbose_log = true;

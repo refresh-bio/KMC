@@ -76,13 +76,17 @@ public:
 //************************************************************************************************************
 // FASTA/FASTQ reader class
 //************************************************************************************************************
-class CFastqReader {
-	
+class CFastqReader {	
 	CBinaryPackQueue* binary_pack_queue;
 
-	CMemoryMonitor *mm;
-	CMemoryPool *pmm_fastq;
+	CBamTaskManager* bam_task_manager = nullptr; //only for bam input
+
+	CMemoryMonitor *mm;	
+	CMemoryPoolWithBamSupport* pmm_fastq;
+
 	CMemoryPool *pmm_binary_file_reader;
+	CPartQueue *part_queue;
+	CStatsPartQueue *stats_part_queue;
 
 	string input_file_name;
 	input_type file_type;
@@ -99,8 +103,11 @@ class CFastqReader {
 
 	bool SkipNextEOL(uchar *part, int64 &pos, int64 max_pos);
 
+	
+	void ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uint32 file_no);
+	void PreparePartForSplitter(uchar* data, uint64 size, uint32 id, uint32 file_no);
 public:
-	CFastqReader(CMemoryMonitor *_mm, CMemoryPool *_pmm_fastq, input_type _file_type, int _kmer_len, CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader);
+	CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_fastq, input_type _file_type, int _kmer_len, CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader, CBamTaskManager* _bam_task_manager, CPartQueue* _part_queue, CStatsPartQueue* _stats_part_queue);
 	~CFastqReader();
 
 	static uint64 OVERHEAD_SIZE;
@@ -110,6 +117,9 @@ public:
 	bool OpenFiles();
 
 	bool GetPartFromMultilneFasta(uchar *&_part, uint64 &_size);
+	
+	void ProcessBam();	
+
 	bool GetPart(uchar *&_part, uint64 &_size);
 
 	bool GetPartNew(uchar *&_part, uint64 &_size);
@@ -131,13 +141,16 @@ public:
 //************************************************************************************************************
 class CWFastqReader {
 	CMemoryMonitor *mm;
-	CMemoryPool *pmm_fastq;
+	CMemoryPoolWithBamSupport *pmm_fastq;
 	CMemoryPool *pmm_binary_file_reader;
 
 	CFastqReader *fqr;
 	uint64 part_size;
 	CBinaryPackQueue* binary_pack_queue;
+	CBamTaskManager* bam_task_manager = nullptr; //only for bam input
 	CPartQueue *part_queue;
+	CStatsPartQueue *stats_part_queue;
+
 	input_type file_type;	
 	int kmer_len;
 
@@ -155,10 +168,11 @@ public:
 //************************************************************************************************************
 class CWStatsFastqReader {
 	CMemoryMonitor *mm;
-	CMemoryPool *pmm_fastq;
+	CMemoryPoolWithBamSupport *pmm_fastq;
 	CMemoryPool *pmm_binary_file_reader;
 	CFastqReader *fqr;
 	uint64 part_size;
+	CBamTaskManager* bam_task_manager = nullptr; //only for bam input
 	CStatsPartQueue *stats_part_queue;
 	input_type file_type;	
 	int kmer_len;

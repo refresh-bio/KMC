@@ -15,6 +15,7 @@ Date   : 2017-01-28
 #include "params.h"
 #include "queues.h"
 #include "percent_progress.h"
+#include "bam_utils.h"
 #include <sys/stat.h>
 
 class CBinaryFilesReader
@@ -37,9 +38,12 @@ class CBinaryFilesReader
 	CInputFilesQueue* input_files_queue;
 	CMemoryPool *pmm_binary_file_reader;
 	vector<CBinaryPackQueue*> binary_pack_queues;
+	CBamTaskManager* bam_task_manager = nullptr;
 	uint64 total_size;
 	uint64 predicted_size;	
 	CPercentProgress percent_progress;
+
+	bool bam_input = false; //for bam input behaviour of this class is quite different, for example only one file is readed at once
 	
 	void notify_readed(uint64 readed)
 	{		
@@ -69,6 +73,152 @@ class CBinaryFilesReader
 		// Set mode according to the extension of the file name
 		mode = get_compression_type(file_name);
 	}
+
+	uint64_t skipSingleBGZFBlock(uchar* buff)
+	{
+		uint64_t pos = 0;
+		if (buff[0] == 0x1f && buff[1] == 0x8b)
+			;
+		else
+		{
+			cerr << "Fail: this is not gzip file\n";
+			exit(1);
+		}
+
+		if (buff[2] != 8)
+		{
+			cerr << "Error: CM flag is set to " << buff[2] << " instead of 8 \n";
+			exit(1);
+		}
+
+		if (!((buff[3] >> 2) & 1))
+		{
+			cerr << "Error: FLG.FEXTRA is not set\n";
+			exit(1);
+		}
+
+		pos = 10;
+
+		uint16_t XLEN;
+		read_uint16_t(XLEN, buff, pos);
+
+		uchar SI1 = buff[pos++];
+		uchar SI2 = buff[pos++];
+		if (SI1 != 66 || SI2 != 67)
+		{
+			cerr << "Error: SI1 != 66 || SI2 != 67\n";
+			exit(1);
+		}
+		uint16_t LEN;
+		read_uint16_t(LEN, buff, pos);
+		if (LEN != 2)
+		{
+			cerr << "Error: SLEN is " << LEN << " instead of 2\n";
+			exit(1);
+		}
+
+		uint16_t BGZF_block_size_tmp;
+		read_uint16_t(BGZF_block_size_tmp, buff, pos);
+
+		uint64_t BGZF_block_size = BGZF_block_size_tmp + 1ull;  //This integer gives the size of the containing BGZF block minus one.
+		return BGZF_block_size;
+	}
+
+	uint64_t findLastBGZFBlockEnd(uchar* data, uint64_t size)
+	{
+		//header of BGZF block is 18 Bytes long
+		uint64_t pos = 0;
+		while (pos + 18 < size)
+		{
+			uint64_t npos = skipSingleBGZFBlock(data + pos);
+			if (pos + npos > size)
+				break;
+			pos += npos;
+		}
+		return pos;
+	}
+
+	void ProcessSingleBamFile(const string& fname, uint32 file_no, uint32& id, bool& forced_to_finish)
+	{
+		FILE* file = fopen(fname.c_str(), "rb");
+		if (!file)
+		{
+			cerr << "Error: cannot open file " << fname << "\n";
+			exit(1);
+		}
+		setvbuf(file, nullptr, _IONBF, 0);
+
+		unsigned char eof_marker[] = { 0x1f, 0x8b, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x06, 0x00, 0x42, 0x43, 0x02, 0x00, 0x1b, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+		unsigned char eof_to_chech[sizeof(eof_marker)];
+		fseek(file, -sizeof(eof_marker), SEEK_END);
+		if (sizeof(eof_marker) != fread(eof_to_chech, 1, sizeof(eof_marker), file))
+		{
+			cerr << "Error: cannot check EOF marker of BAM file: " << fname << "\n";
+			exit(1);
+		}
+		if (!equal(begin(eof_marker), end(eof_marker), begin(eof_to_chech)))
+		{
+			cerr << "Error: wrong EOF marker of BAM file: " << fname << "\n";
+			exit(1);
+		}
+		fseek(file, 0, SEEK_SET);
+
+		uchar* data;
+		pmm_binary_file_reader->reserve(data);
+
+		uint64 size = 0;
+		
+		uint64 readed;
+		
+		while (!forced_to_finish && (readed = fread(data + size, 1, part_size - size, file)))
+		{
+			notify_readed(readed);
+			size += readed;
+			uint64_t lastBGFBlockEnd = findLastBGZFBlockEnd(data, size);
+			uchar* newData;
+			pmm_binary_file_reader->reserve(newData);
+
+			uint64_t tail = size - lastBGFBlockEnd;
+			memcpy(newData, data + lastBGFBlockEnd, tail);
+			size = lastBGFBlockEnd;
+			
+			if (!bam_task_manager->PushBinaryPack(data, size, id, file_no))
+			{
+				pmm_binary_file_reader->free(data);
+				forced_to_finish = true;
+			}
+			else
+				id++;
+			
+			data = newData;
+			size = tail;
+		}
+		if (!bam_task_manager->PushBinaryPack(data, size, id, file_no)) //last, possibly empty
+		{
+			pmm_binary_file_reader->free(data);			
+			forced_to_finish = true;
+		}
+		else
+			id++;
+		fclose(file);
+	}
+
+	void ProcessBam()
+	{
+		uint32 file_no = 0;
+		uint32 id = 0;
+		string fname;
+		bool forced_to_finish = false;
+		
+		while (!forced_to_finish && input_files_queue->pop(fname))
+		{
+			ProcessSingleBamFile(fname, file_no, id, forced_to_finish);
+			++file_no;
+		}
+		bam_task_manager->NotifyBinaryReaderCompleted(id-1);		
+	}
+
 public:
 	CBinaryFilesReader(CKMCParams &Params, CKMCQueues &Queues, bool _show_progress)
 		:
@@ -78,9 +228,12 @@ public:
 		input_files_queue = Queues.input_files_queue;
 		pmm_binary_file_reader = Queues.pmm_binary_file_reader;
 		binary_pack_queues = Queues.binary_pack_queues;		
+		bam_task_manager = Queues.bam_task_manager;
 		auto files_copy = input_files_queue->GetCopy();		
 		total_size = 0;
 		predicted_size = 0;
+		bam_input = Params.file_type == bam;
+
 		while (!files_copy.empty())
 		{
 			string& f_name = files_copy.front();
@@ -97,20 +250,27 @@ public:
 			}
 			my_fseek(f, 0, SEEK_END);
 			total_size += my_ftell(f);
-			CompressionType compression = get_compression_type(f_name);
-			switch (compression)
+			if (bam_input)
 			{
-			case CompressionType::plain:
-				predicted_size += my_ftell(f);
-				break;
-			case CompressionType::gzip:
-				predicted_size += (uint64)(3.2 * my_ftell(f));
-				break;
-			case CompressionType::bzip2:
-				predicted_size += (uint64)(4.0 * my_ftell(f));
-				break;
-			default:
-				break;
+				predicted_size += (uint64)(0.7 * my_ftell(f)); //TODO: is this correct?
+			}
+			else
+			{
+				CompressionType compression = get_compression_type(f_name);
+				switch (compression)
+				{
+				case CompressionType::plain:
+					predicted_size += my_ftell(f);
+					break;
+				case CompressionType::gzip:
+					predicted_size += (uint64)(3.2 * my_ftell(f));
+					break;
+				case CompressionType::bzip2:
+					predicted_size += (uint64)(4.0 * my_ftell(f));
+					break;
+				default:
+					break;
+				}
 			}
 			fclose(f);
 			files_copy.pop();
@@ -128,6 +288,11 @@ public:
 
 	void Process()
 	{
+		if (bam_input)
+		{
+			ProcessBam();
+			return;
+		}
 		std::string file_name;
 		vector<tuple<FILE*, CBinaryPackQueue*, CompressionType>> files;
 		files.reserve(binary_pack_queues.size());

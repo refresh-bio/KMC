@@ -13,6 +13,7 @@
 #include "defs.h"
 #include "fastq_reader.h"
 #include "asmlib_wrapper.h"
+#include "bam_utils.h"
 //************************************************************************************************************
 // CFastqReader	- reader class
 //************************************************************************************************************
@@ -23,9 +24,13 @@ uint64 CFastqReader::OVERHEAD_SIZE = 1 << 16;
 // Constructor of FASTA/FASTQ reader
 // Parameters:
 //    * _mm - pointer to memory monitor (to check the memory limits)
-CFastqReader::CFastqReader(CMemoryMonitor *_mm, CMemoryPool *_pmm_fastq, input_type _file_type, int _kmer_len, CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader)
+CFastqReader::CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_fastq, input_type _file_type, int _kmer_len, CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader, CBamTaskManager* _bam_task_manager, CPartQueue* _part_queue, CStatsPartQueue* _stats_part_queue)
 {
 	binary_pack_queue = _binary_pack_queue;
+
+	bam_task_manager = _bam_task_manager;
+	part_queue = _part_queue;
+	stats_part_queue = _stats_part_queue;
 
 	mm		  = _mm;
 	pmm_fastq = _pmm_fastq;
@@ -63,6 +68,312 @@ bool CFastqReader::SetPartSize(uint64 _part_size)
 	return true;
 }
 
+void CFastqReader::ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uint32 file_no)
+{	
+	pmm_fastq->bam_reserve_gunzip(part, id);
+	
+	part_filled = 0;
+	
+	uint64_t inpos = 0;
+	while (inpos < size)
+	{
+		inpos += 16;
+
+		uint16_t BGZF_block_size_tmp;
+		read_uint16_t(BGZF_block_size_tmp, data, inpos);
+
+		uint64_t BGZF_block_size = BGZF_block_size_tmp + 1ull;  //This integer gives the size of the containing BGZF block minus one.
+
+		uint64_t ISIZE_pos = inpos - 18 + BGZF_block_size - 4;
+		uint32_t ISIZE;
+		read_uint32_t(ISIZE, data, ISIZE_pos);
+
+		if (part_filled + ISIZE > part_size)
+		{
+			if (!bam_task_manager->PushGunzippedPart(part, part_filled, id, file_no))
+			{
+				pmm_fastq->free(part);
+				part = nullptr;
+				return;
+			}			
+
+			uchar* prepare_for_splitter_data;
+			uint64 prepare_for_splitter_size;
+			uint32 prepare_for_splitter_id;
+			uint32 prepare_for_splitter_file_no;
+			while (bam_task_manager->TakeNextPrepareForSplitterTaskIfExists(prepare_for_splitter_data, prepare_for_splitter_size, prepare_for_splitter_id, prepare_for_splitter_file_no))
+			{
+				PreparePartForSplitter(prepare_for_splitter_data, prepare_for_splitter_size, prepare_for_splitter_id, prepare_for_splitter_file_no);
+				bam_task_manager->NotifySplitterPrepareTaskDone();
+			}
+
+			pmm_fastq->bam_reserve_gunzip(part, id);
+			part_filled = 0;
+		}
+
+		z_stream stream;
+		stream.zalloc = Z_NULL;
+		stream.zfree = Z_NULL;
+		stream.opaque = Z_NULL;
+		stream.avail_in = BGZF_block_size - 18;
+		stream.next_in = data + inpos;
+		stream.avail_out = part_size - part_filled;
+		stream.next_out = part + part_filled;
+		if (inflateInit2(&stream, -15) != Z_OK)
+		{
+			cerr << "Error: inflateInit2\n";
+			exit(1);
+		}
+
+		int ret = inflate(&stream, Z_NO_FLUSH);
+		switch (ret)
+		{
+		case Z_NEED_DICT:
+			ret = Z_DATA_ERROR;     /* and fall through */
+		case Z_DATA_ERROR:
+			cerr << "Some error (Z_DATA_ERROR) while reading bam file, please contact authors, CODE: FastqReader_" << __LINE__ << "\n";
+			exit(1);
+		case Z_MEM_ERROR:
+			inflateEnd(&stream);
+			exit(ret);
+		}
+		if (ret == Z_STREAM_END)
+			inflateEnd(&stream);
+		else
+		{
+			cerr << "Error: Some error in bam file decompression, please contact authors, CODE: FastqReader_" << __LINE__ << "\n";
+			exit(1);
+		}
+		if (stream.avail_in != 8)
+		{
+			//cerr << "Err avail_in != 8:" << stream.avail_in << "\n";
+			cerr << "Error: Some error in bam file decompression, please contact authors, CODE: FastqReader_" << __LINE__ << "\n";
+			exit(1);
+		}
+
+		part_filled += ISIZE;
+
+		inpos += BGZF_block_size_tmp - 18 + 1;
+
+		//TODO: check CRC? in the future I may want to use libdeflate for bam decompression and crc checks
+
+		uint64_t CRC_pos = inpos - 8;
+		uint32_t CRC;
+		read_uint32_t(CRC, data, CRC_pos);
+		
+		uLong crc = crc32(0L, Z_NULL, 0);
+		crc = crc32(crc, part + part_filled - ISIZE, ISIZE);
+		if (crc != CRC)
+		{
+			cerr << "Error: BGZF CRC check error. Input file may be corrupted\n";
+			exit(1);
+		}
+		
+	}
+	if (!bam_task_manager->PushGunzippedPart(part, part_filled, id, file_no))
+		pmm_fastq->free(part);
+	part = nullptr;
+}
+
+void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 id, uint32 file_no)
+{
+	auto& state = bam_task_manager->splitter_prepare_state;
+	uint64_t bpos = 0;
+	//if first in file, skip header
+	if (file_no != state.current_file_no)
+	{
+		state.current_file_no = file_no;
+
+		if (strncmp((const char*)data, "BAM\1", 4) != 0)
+		{
+			cerr << "BAM\\1 magic string missed\n";
+			exit(1);
+		}
+
+		int32_t l_text = 0;
+		bpos = 4;
+		read_int32_t(l_text, data, bpos);
+
+		bpos += l_text;
+		int32_t n_ref = 0;
+
+		read_int32_t(n_ref, data, bpos);
+		for (int32_t i = 0; i < n_ref; ++i)
+		{
+			int32_t l_name = 0;
+			read_int32_t(l_name, data, bpos);
+			bpos += l_name;
+			bpos += 4;
+		}
+
+		uint64 skip_header_offset = bpos;
+		//if contain header, remove it
+
+		memmove(data, data + skip_header_offset, size - skip_header_offset);
+		size -= skip_header_offset;
+		skip_header_offset = 0;
+		bpos = 0;
+	}
+
+	if (state.prev_part_size)
+	{
+		//assure block size present in prev_part
+		if (state.prev_part_size < 4)
+		{
+			memcpy(state.prev_part_data + state.prev_part_size, data, 4 - state.prev_part_size);
+			bpos += 4 - state.prev_part_size;
+			state.prev_part_size += 4 - state.prev_part_size;
+		}
+		int32_t prev_block_size;
+		uint64_t prev_bpos = 0;
+		read_int32_t(prev_block_size, state.prev_part_data, prev_bpos);
+
+
+		uint64_t missing = prev_block_size - (state.prev_part_size - 4);
+		memcpy(state.prev_part_data + state.prev_part_size, data + bpos, missing);
+		state.prev_part_size += missing;
+		bpos += missing;
+
+		if (part_queue)
+		{
+			part_queue->push(state.prev_part_data, state.prev_part_size);
+		}
+		else if (stats_part_queue)
+		{
+			if (!stats_part_queue->push(state.prev_part_data, state.prev_part_size))
+			{
+				pmm_fastq->free(state.prev_part_data);
+				pmm_fastq->free(data);
+				state.prev_part_data = nullptr;
+				state.prev_part_size = 0;
+				bam_task_manager->IgnoreRest(pmm_fastq, pmm_binary_file_reader);
+				return;
+			}
+		}
+		else
+		{
+			cerr << "Error: Should never be here, please contact authors, CODE: FastqReader_" << __LINE__ << "\n";
+			exit(1);
+		}
+
+		//TODO: this memmove could be avoided, the part queue could store starting pos, apropriate changes will be required in splitters
+		//The amount of moved data here may be quite large (close to size)
+		//on the other hand bam records should rare span multiple bgzf blocks and in case of newer BAM files it should not happen
+		//so for now I will let it be this way
+		memmove(data, data + bpos, size - bpos);
+		size -= bpos;
+		bpos = 0;
+		state.prev_part_data = nullptr;
+		state.prev_part_size = 0;
+	}
+
+	while (true)
+	{
+		if (bpos == size) // this pack contains full records, may be passed 
+		{
+
+			if (part_queue)
+			{			
+				part_queue->push(data, size);
+			}
+			else if (stats_part_queue)
+			{
+				if (!stats_part_queue->push(data, size))
+				{
+					pmm_fastq->free(data);
+					bam_task_manager->IgnoreRest(pmm_fastq, pmm_binary_file_reader);
+					return;
+				}
+			}
+			else
+			{
+				cerr << "Error: Should never be here, please contact authors, CODE: FastqReader_" << __LINE__ << "\n";
+				exit(1);
+			}
+			break;
+		}
+
+		bool span_multiple_bgzf_blocks = false;
+
+		int32_t block_size;
+		if (bpos + 4 > size) //part of block_size is in the next gunzipped part
+		{
+			span_multiple_bgzf_blocks = true;
+		}
+		else
+		{
+			read_int32_t(block_size, data, bpos);
+
+			if (bpos + block_size > size)
+			{
+				span_multiple_bgzf_blocks = true;
+				bpos -= 4;
+			}
+		}
+
+		if (span_multiple_bgzf_blocks)
+		{			
+			pmm_fastq->reserve(state.prev_part_data);
+			memcpy(state.prev_part_data, data + bpos, size - bpos);
+			state.prev_part_size = size - bpos;
+			if (part_queue)
+			{
+				part_queue->push(data, bpos);
+			}
+			else if (stats_part_queue)
+			{
+				if (!stats_part_queue->push(data, bpos))
+				{
+					pmm_fastq->free(data);
+					pmm_fastq->free(state.prev_part_data);
+					state.prev_part_data = nullptr;
+					state.prev_part_size = 0;
+					bam_task_manager->IgnoreRest(pmm_fastq, pmm_binary_file_reader);
+					return;
+				}
+			}
+			else
+			{
+				cerr << "Error: Should never be here, please contact authors, CODE: FastqReader_" << __LINE__ << "\n";
+				exit(1);
+			}
+			break;
+		}
+
+		bpos += block_size;
+	}
+}
+
+//----------------------------------------------------------------------------------
+// Read a part of the file in bam file format
+void CFastqReader::ProcessBam()
+{
+	CBamTaskManager::TaskType taskType;
+	uchar* data = nullptr;
+	uint64 size = 0;
+	uint32 id = (uint32)(-1);
+	uint32 file_no = (uint32)(-1);
+
+	while (bam_task_manager->PopTask(taskType, data, size, id, file_no))
+	{
+		if (taskType == CBamTaskManager::TaskType::Gunzip)
+		{			
+			ProcessBamBinaryPart(data, size, id, file_no);
+			pmm_binary_file_reader->free(data);
+			bam_task_manager->NotifyIdFinished(id);			
+			pmm_fastq->bam_notify_id_finished(id);
+		}
+		else if (taskType == CBamTaskManager::TaskType::PrepareForSplitter)
+		{
+			PreparePartForSplitter(data, size, id, file_no);
+			bam_task_manager->NotifySplitterPrepareTaskDone();
+		}		
+		else
+		{
+			cerr << "Error: should never be here, plase contact authors, CODE: FastqReader_" << __LINE__ << "\n";
+		}
+	}
+}
 
 //----------------------------------------------------------------------------------
 // Read a part of the file in multi line fasta format
@@ -487,6 +798,7 @@ CWFastqReader::CWFastqReader(CKMCParams &Params, CKMCQueues &Queues, CBinaryPack
 	pmm_binary_file_reader = Queues.pmm_binary_file_reader;
 	//input_files_queue = Queues.input_files_queue;
 	binary_pack_queue = _binary_pack_queue;
+	bam_task_manager = Queues.bam_task_manager;
 	part_size		  = Params.fastq_buffer_size;
 	part_queue		  = Queues.part_queue;
 	file_type         = Params.file_type;
@@ -507,12 +819,18 @@ void CWFastqReader::operator()()
 	uchar *part;
 	uint64 part_filled;
 
-	fqr = new CFastqReader(mm, pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader);
+	fqr = new CFastqReader(mm, pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader, bam_task_manager, part_queue, nullptr);
 	fqr->SetPartSize(part_size);
-	fqr->Init();
-	while (fqr->GetPartNew(part, part_filled))
-		part_queue->push(part, part_filled);
-	
+	if (file_type == bam)
+	{
+		fqr->ProcessBam();
+	}
+	else
+	{
+		fqr->Init();
+		while (fqr->GetPartNew(part, part_filled))
+			part_queue->push(part, part_filled);
+	}
 	delete fqr;
 	part_queue->mark_completed();
 }
@@ -529,7 +847,8 @@ CWStatsFastqReader::CWStatsFastqReader(CKMCParams &Params, CKMCQueues &Queues, C
 	pmm_binary_file_reader = Queues.pmm_binary_file_reader;
 
 	binary_pack_queue = _binary_pack_queue;
-	
+	bam_task_manager = Queues.bam_task_manager;
+
 	part_size = Params.fastq_buffer_size;
 	stats_part_queue = Queues.stats_part_queue;
 	file_type = Params.file_type;
@@ -549,22 +868,28 @@ void CWStatsFastqReader::operator()()
 	uchar *part;
 	uint64 part_filled;
 
-	fqr = new CFastqReader(mm, pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader);
+	fqr = new CFastqReader(mm, pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader, bam_task_manager, nullptr, stats_part_queue);
 	fqr->SetPartSize(part_size);
-	fqr->Init();
-	bool finished = false;
-	while (fqr->GetPartNew(part, part_filled) && !finished)
+	if (file_type == bam)
 	{
-		if (!stats_part_queue->push(part, part_filled))
+		fqr->ProcessBam();
+	}
+	else
+	{
+		fqr->Init();
+		bool finished = false;
+		while (fqr->GetPartNew(part, part_filled) && !finished)
 		{
-			finished = true;
-			pmm_fastq->free(part);
-			binary_pack_queue->ignore_rest();
-			fqr->IgnoreRest();			
-			break;
+			if (!stats_part_queue->push(part, part_filled))
+			{
+				finished = true;
+				pmm_fastq->free(part);
+				binary_pack_queue->ignore_rest();
+				fqr->IgnoreRest();
+				break;
+			}
 		}
 	}
-
 	delete fqr;
 	stats_part_queue->mark_completed();
 }
