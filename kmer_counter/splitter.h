@@ -91,7 +91,8 @@ public:
 	~CSplitter();
 };
 
-template <bool QUAKE_MODE> uint32 CSplitter<QUAKE_MODE>::MAX_LINE_SIZE = 1 << 14;
+//template <bool QUAKE_MODE> uint32 CSplitter<QUAKE_MODE>::MAX_LINE_SIZE = 1 << 14;
+template <bool QUAKE_MODE> uint32 CSplitter<QUAKE_MODE>::MAX_LINE_SIZE = 1 << 16;
 
 
 //************************************************************************************************************

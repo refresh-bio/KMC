@@ -103,6 +103,7 @@ class CFastqReader {
 
 	bool SkipNextEOL(uchar *part, int64 &pos, int64 max_pos);
 
+	void GetFullLineFromEnd(int64& line_sart, int64& line_end, uchar* buff, int64& pos);
 	
 	void ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uint32 file_no);
 	void PreparePartForSplitter(uchar* data, uint64 size, uint32 id, uint32 file_no);

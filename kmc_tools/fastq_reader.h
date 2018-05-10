@@ -53,6 +53,9 @@ class CFastqReader {
 
 	bool SkipNextEOL(uchar *part, int64 &pos, int64 max_pos);
 
+	void GetFullLineFromEnd(int64& line_sart, int64& line_end, uchar* buff, int64& pos);
+	
+	
 	bool IsEof();
 
 public:

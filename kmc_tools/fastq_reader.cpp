@@ -166,22 +166,16 @@ bool CFastqReader::GetPart(uchar *&_part, uint64 &_size)
 	
 	// Read data
 	if(mode == m_plain)
-		readed = fread(part+part_filled, 1, part_size, in);
+		readed = fread(part+part_filled, 1, part_size - part_filled, in);
 	else if(mode == m_gzip)
-		readed = gzread(in_gzip, part+part_filled, (int) part_size);
+		readed = gzread(in_gzip, part+part_filled, (int) (part_size - part_filled));
 	else if(mode == m_bzip2)
-		readed = BZ2_bzRead(&bzerror, in_bzip2, part+part_filled, (int) part_size);
+		readed = BZ2_bzRead(&bzerror, in_bzip2, part+part_filled, (int) (part_size - part_filled));
 	else
 		readed = 0;				// Never should be here
 
 	int64 total_filled = part_filled + readed;
 	int64 i;
-
-	if(part_filled >= OVERHEAD_SIZE)
-	{
-		cerr << "Error: Wrong input file!\n";
-		exit(1);
-	}
 
 	if(IsEof())
 	{
@@ -196,70 +190,83 @@ bool CFastqReader::GetPart(uchar *&_part, uint64 &_size)
 	if(file_type == CFilteringParams::file_type::fasta)			// FASTA files
 	{
 		// Looking for a FASTA record at the end of the area
-		int64 line_start[3];
-		int32 j;
-
-		i = total_filled - OVERHEAD_SIZE / 2;
-		for(j = 0; j < 3; ++j)
+		i = total_filled - 1;
+		int64 start, end;
+		int64 line_start[4], line_end[4];
+		int readed_lines = 0;
+		bool success = false;
+		int k;
+		while (i >= 0 && readed_lines < 4)
 		{
-			if(!SkipNextEOL(part, i, total_filled))
-				break;
-			line_start[j] = i;
-		}
+			GetFullLineFromEnd(start, end, part, i);
 
-		_part = part;
-		if(j < 3)
-			_size = 0;
-		else
-		{
-			int k;
-			for(k = 0; k < 2; ++k)
-				if(part[line_start[k]+0] == '>')
+			line_start[4 - readed_lines - 1] = start;
+			line_end[4 - readed_lines - 1] = end;
+			++readed_lines;
+
+			if (readed_lines >= 2)
+			{
+				k = 4 - readed_lines;
+				if (part[line_start[k]] == '>')
+				{
+					success = true;
 					break;
 
-			if(k == 2)
-				_size = 0;
-			else
-				_size = line_start[k];
-		}	
-	}
-	else			// FASTQ file
-	{
+				}
+			}
+		}
 		// Looking for a FASTQ record at the end of the area
-		int64 line_start[9];
-		int32 j;
-
-		i = total_filled - OVERHEAD_SIZE / 2;
-		for(j = 0; j < 9; ++j)
+		if (!success)
 		{
-			if(!SkipNextEOL(part, i, total_filled))
-				break;
-			line_start[j] = i;
+			cerr << "Error: Wrong input file!\n";
+			exit(1);
 		}
 
 		_part = part;
-		if(j < 9)
-			_size = 0;
-		else
+		_size = line_end[k + 1];
+	}
+	else
+	{
+		i = total_filled - 1;
+		int64 start, end;
+		int64 line_start[8], line_end[8];
+		int readed_lines = 0;
+		bool success = false;
+		int k;
+		while (i >= 0 && readed_lines < 8)
 		{
-			int k;
-			for(k = 0; k < 4; ++k)
+			GetFullLineFromEnd(start, end, part, i);
+			line_start[8 - readed_lines - 1] = start;
+			line_end[8 - readed_lines - 1] = end;
+			++readed_lines;
+
+			if (readed_lines >= 4)
 			{
-				if(part[line_start[k]+0] == '@' && part[line_start[k+2]+0] == '+')
+				k = 8 - readed_lines;
+				if (part[line_start[k]] == '@' && part[line_start[k + 2]] == '+')
 				{
-					if(part[line_start[k+2]+1] == '\n' || part[line_start[k+2]+1] == '\r')
+					if (part[line_start[k + 2] + 1] == '\n' || part[line_start[k + 2] + 1] == '\r')
+					{
+						success = true;
 						break;
-					if(line_start[k+1]-line_start[k] == line_start[k+3]-line_start[k+2] && 
-						memcmp(part+line_start[k]+1, part+line_start[k+2]+1, line_start[k+3]-line_start[k+2]-1) == 0)
+					}
+					if (line_start[k + 1] - line_start[k] == line_start[k + 3] - line_start[k + 2] &&
+						memcmp(part + line_start[k] + 1, part + line_start[k + 2] + 1, line_start[k + 3] - line_start[k + 2] - 1) == 0)
+					{
+						success = true;
 						break;
+					}
 				}
 			}
-
-			if(k == 4)
-				_size = 0;
-			else
-				_size = line_start[k];
 		}
+
+		if (!success)
+		{
+			cerr << "Error: Wrong input file!\n";
+			exit(1);
+		}
+		_part = part;
+		_size = line_end[k + 3];
 	}
 	// Allocate new memory for the buffer
 
@@ -287,6 +294,17 @@ bool CFastqReader::SkipNextEOL(uchar *part, int64 &pos, int64 max_pos)
 	return true;
 }
 
+void CFastqReader::GetFullLineFromEnd(int64& line_sart, int64& line_end, uchar* buff, int64& pos)
+{
+	while (pos >= 0 && buff[pos] != '\n' && buff[pos] != '\r')
+		--pos;
+	line_end = pos + 1;
+	while (pos >= 0 && (buff[pos] == '\n' || buff[pos] == '\r'))
+		--pos;
+	while (pos >= 0 && buff[pos] != '\n' && buff[pos] != '\r')
+		--pos;
+	line_sart = pos + 1;
+};
 //----------------------------------------------------------------------------------
 // Check whether there is an EOF
 bool CFastqReader::IsEof()
