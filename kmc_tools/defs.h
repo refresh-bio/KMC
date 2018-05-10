@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 3.0.0
-  Date   : 2017-01-28
+  Version: 3.1.0
+  Date   : 2018-05-10
 */
 
 #ifndef _DEFS_H
@@ -32,8 +32,8 @@ using uchar = unsigned char;
 //#define ENABLE_DEBUG
 //#define ENABLE_LOGGER
 
-#define KMC_VER		"3.0.1"
-#define KMC_DATE	"2017-02-08"
+#define KMC_VER		"3.1.0"
+#define KMC_DATE	"2018-05-10"
 
 #define DEFAULT_CIRCULAL_QUEUE_CAPACITY (4)
 
