@@ -19,8 +19,29 @@
 
 void print_info(void);
 
+
+//----------------------------------------------------------------------------------
+// Check if --help or --version was used
+bool help_or_version(int argc, char** argv)
+{
+	const std::string version = "--version";
+	const std::string help = "--help";
+	for (int i = 1; i < argc; ++i)
+	{
+		if (argv[i] == version || argv[i] == help)
+			return true;
+	}
+	return false;
+}
+
 int _tmain(int argc, char* argv[])
 {
+	if (argc == 1 || help_or_version(argc, argv))
+	{
+		print_info();
+		return 0;
+	}
+
 	CKMCFile kmer_data_base;
 	int32 i;
 	uint32 min_count_to_set = 0;

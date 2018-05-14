@@ -457,6 +457,19 @@ bool parse_parameters(int argc, char *argv[])
 	return true;
 }
 
+//----------------------------------------------------------------------------------
+// Check if --help or --version was used
+bool help_or_version(int argc, char** argv)
+{
+	const string version = "--version";
+	const string help = "--help";
+	for (int i = 1; i < argc; ++i)
+	{
+		if (argv[i] == version || argv[i] == help)
+			return true;
+	}
+	return false;
+}
 
 //----------------------------------------------------------------------------------
 // Main function
@@ -470,6 +483,12 @@ int _tmain(int argc, _TCHAR* argv[])
 #ifdef WIN32
 	_setmaxstdio(2040);
 #endif
+
+	if (argc == 1 || help_or_version(argc, argv))
+	{
+		usage();
+		return 0;
+	}
 
 	if(!parse_parameters(argc, argv))
 	{

@@ -577,6 +577,19 @@ public:
 	}
 };
 
+//----------------------------------------------------------------------------------
+// Check if --help or --version was used
+bool help_or_version(int argc, char** argv)
+{
+	const string version = "--version";
+	const string help = "--help";
+	for (int i = 1; i < argc; ++i)
+	{
+		if (argv[i] == version || argv[i] == help)
+			return true;
+	}
+	return false;
+}
 
 int main(int argc, char**argv)
 {
@@ -584,6 +597,12 @@ int main(int argc, char**argv)
 	CTimer timer;
 	timer.start();
 #endif 
+
+	if (argc == 1 || help_or_version(argc, argv))
+	{
+		CGeneralUsageDisplayer{}.Display();
+		return 0;
+	}
 
 	CParametersParser params_parser(argc, argv);
 	params_parser.Parse();

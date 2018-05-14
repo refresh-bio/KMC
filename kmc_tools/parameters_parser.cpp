@@ -74,15 +74,20 @@ void CParametersParser::parse_global_params()
 			config.avaiable_threads = atoi(argv[pos] + 2);
 			continue;
 		}
-		if (argv[pos][1] == 'v')
+		else if (argv[pos][1] == 'v')
 		{
 			config.verbose = true;
 			continue;
 		}
-		if (strncmp(argv[pos], "-hp", 3) == 0)
+		else if (strncmp(argv[pos], "-hp", 3) == 0)
 		{
 			config.percent_progress.Hide();
 			continue;
+		}
+		else
+		{
+			std::cerr << "Error: unknown global option " << argv[pos] << "\n";
+			exit(1);
 		}
 	}
 }
