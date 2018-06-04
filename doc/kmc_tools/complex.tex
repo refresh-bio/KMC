@@ -1,0 +1,71 @@
+\clearpage
+\section{complex operation}
+\label{sec:complex}
+
+Complex operation allows to define operations for more than 2 input $k$-mer sets. \\
+Command-line syntax: \\
+kmc\_tools [global\_params] complex $<$operations\_definition\_file$>$ \\
+
+where \textsf{operations\_definition\_file} is a path to the file which defines input sets and operations. It is a text file with the following syntax: \\ \\
+\fbox{
+	\parbox{\textwidth}{
+		INPUT:\\
+		$<$input1$>$ = $<$input1\_db\_path$>$ [params]\\
+		$<$input2$>$ = $<$input2\_db\_path$>$ [params]\\
+		...\\
+		$<$inputN$>$ = $<$inputN\_db\_path$>$ [params]\\
+		OUTPUT:\\
+		$<$out\_db\_path$>$ = $<$ref\_input$>$ $<$oper [c\_mode]$>$ $<$ref\_input$>$ [$<$oper[c\_mode]$>$ $<$ref\_input$>$ [...]] \\
+		\textbf{[}OUTPUT\_PARAMS: \\
+		$<$output\_params$>$]
+		
+	}
+}\\ 
+
+where: 
+\begin{itemize}
+	\item \textsf{input1, input2, ..., inputN} --- names of inputs used to define operation,
+	\item \textsf{input1\_db\_path, input2\_db\_path, inputN\_db\_path} --- paths of $k$-mer sets,
+	\item \textsf{out\_db\_path} --- path of the output database,
+	\item \textsf{ref\_input} is one of \textsf{input1, input2, ..., inputN}, 
+	\item \textsf{oper} is one of \textsf{\{*,-,$\sim$,+\}}, the meaning is as follows:
+	\begin{itemize}
+		\item[\tiny$\bullet$] \textsf{*} --- intersect,
+		\item[\tiny$\bullet$] \textsf{-} --- kmers\_subtract,
+		\item[\tiny$\bullet$] \textsf{$\sim$} --- counters\_subtract,
+		\item[\tiny$\bullet$] \textsf{+} --- union.
+	\end{itemize}
+	\item \textsf{c\_mode} --- redefine default counter calculation mode (available values: min, max, diff, sum, left, right).
+\end{itemize}
+
+For detailed description about operations and counter calculation mode see \hyperref[sec:simple]{section \ref{sec:simple}}
+
+For each input there are additional parameters which can be set:
+\begin{itemize}
+	\item \textsf{-ci<value>} --- exclude $k$-mers occurring less than <value> times,
+	\item \textsf{-cx<value>} --- exclude $k$-mers occurring more than <value> times.	
+\end{itemize}
+
+If additional parameters are not given they are taken from the appropriate input database. 
+Operator \textsf{*} has the highest priority. Other operators has equal priorities. Order of operations can be changed with parentheses.
+
+Available \textsf{output\_params}:
+\begin{itemize}
+	\item \textsf{-ci$<$value$>$} --- exclude $k$-mers occurring less than <value> times,
+	\item \textsf{-cx$<$value$>$} --- exclude $k$-mers occurring more than <value> times,
+	\item \textsf{-cs$<$value$>$} --- maximal value of a counter.
+\end{itemize}
+If the \textsf{output\_params} are not specified they are deduced based on input parameters.
+\subsection*{example}
+\fbox{
+	\parbox{\textwidth}{
+		INPUT:\\
+		set1 = kmc\_o1 -ci5\\
+		set2 = kmc\_o2\\
+		set3 = kmc\_o3 -ci10 -cx100\\
+		OUTPUT:\\
+		result = (set3 + min set1) * set2 \\	
+		OUTPUT\_PARAMS: \\
+		-ci4 -cx80 -cs1000 \\
+	}
+}\\ \\

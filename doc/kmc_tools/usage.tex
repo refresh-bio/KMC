@@ -1,0 +1,24 @@
+\clearpage
+\section{kmc\_tools usage}
+\label{sec:usage}
+
+\textsf{kmc\_tools} provides a number of operations that can be used to work with $k$-mer sets. The number of input and output sets is depended on operation itself. Configuration of \textsf{kmc\_tools} is done via command-line parameters. \\
+The general syntax is: \\
+kmc\_tools [global\_params] $<$operation$>$ <operation\_params> \\ 
+
+Global parameters are independent of operation type. There are:
+\begin{itemize}
+	\item \textsf{-t$<$value$>$} --- total number of threads (default: no. of CPU cores),
+	\item \textsf{-v} --- enable verbose mode (shows some information) (default: false),
+	\item \textsf{-hp} --- hide percentage progress (default: false).
+\end{itemize}
+
+Avaiable operations:
+
+\begin{itemize}
+	\item \textsf{simple} --- simple operations for two input sets (can produce multiple output sets),
+	\item \textsf{complex} --- complex set operations for 2 or more input $k$-mer sets (can produce one output set),
+	\item \textsf{transform} --- transform single $k$-mers set to other format (\textsf{KMC} database or text file, can produce multiple output sets),
+	\item \textsf{filter} --- filter out reads with too small number of $k$-mers.
+\end{itemize}
+\textsf{simple} performs typical set operations with two input sets and may produce many output sets (e.g. one output for intersection and another one for union). This operation is described in \hyperref[sec:simple]{next section}. \textsf{complex} is able to perform user defined set operations with many inputs (see \hyperref[sec:complex]{section \ref{sec:complex}}). \textsf{transform} operation converts single input $k$-mer set to another. This operation allows to multiple convertions (resulting multiple output files). For details see \hyperref[sec:transform]{section \ref{sec:transform}}. The last operation takes as input \textsf{KMC} database and set of reads (e.g. FASTQ files) and keep only reads that contains at least specified number of $k$-mers (see \hyperref[sec:filter_operation]{section \ref{sec:filter_operation}}).

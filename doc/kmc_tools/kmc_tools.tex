@@ -1,0 +1,169 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{palatino}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{color}
+\usepackage[hidelinks]{hyperref}
+
+
+\usepackage{xcolor}
+\hypersetup{
+	colorlinks,
+	linkcolor={blue!80!black},
+	citecolor={blue!80!black},
+	urlcolor={blue!80!black}
+}
+
+\usepackage{cleveref}
+%% \usepackage{tikz}
+%% \usetikzlibrary{arrows}
+
+%\usepackage{rotating}
+
+\urlstyle{sf}
+
+\setlength\oddsidemargin{-0.5in}
+\setlength\evensidemargin{-0.5in}
+
+\setlength\textheight{\paperheight}
+\addtolength\textheight{-\topmargin}
+\addtolength\textheight{-\headheight}
+\addtolength\textheight{-\headsep}
+\addtolength\textheight{-2in}
+\setlength\textwidth{\paperwidth}
+\addtolength\textwidth{-1in}
+
+\setlength\topmargin{0in} 
+\emergencystretch=5pt 
+
+% ***********************************************************
+\lstset{language=C++}
+\lstset{basicstyle=\scriptsize\sffamily}
+\lstset{keywordstyle=\bfseries}
+\lstset{morekeywords={__shared__,__global__,uint2,uint4}}
+\lstset{numbers=left}
+\lstset{numberstyle=\sffamily\tiny}
+\lstset{tabsize=2}
+
+
+\newcommand{\q}{\phantom0}
+\newcommand{\qq}{\phantom{00}}
+\newcommand{\qqq}{\phantom{000}}
+\newcommand{\qqqq}{\phantom{0000}}
+\newcommand{\qqqqq}{\phantom{00000}}
+\newcommand{\qc}{\phantom{0,}}
+\newcommand{\qcq}{\phantom{0,0}}
+\newcommand{\qcqq}{\phantom{0,00}}
+\newcommand{\qcqqq}{\phantom{0,000}}
+\newcommand{\qcqqqc}{\phantom{0,000,}}
+\newcommand{\qcqqqcq}{\phantom{0,000,0}}
+\newcommand{\qqc}{\phantom{00,}}
+\newcommand{\GDCra}[2]{GDC-ra-$2^{#1}$-$2^{#2}$}
+\newcommand{\qa}{\phantom{$^*$}}
+
+\newcommand{\mcOT}{\multicolumn{3}{c}{\em out of time ($>10$ hours)}}
+\newcommand{\mcOM}{\multicolumn{3}{c}{\em out of memory}}
+\newcommand{\mcOD}{\multicolumn{3}{c}{\em out of disk ($>650$\,GB)}}
+\newcommand{\mcNS}{\multicolumn{3}{c}{\em unsupported $k$}}
+\newcommand{\mcF}{\multicolumn{3}{c}{\em failed}}
+
+\newcommand{\comment}[1]{{\color{red} #1}}
+
+\newcommand{\algname}[1]{\textsc{#1}}
+\newcommand{\algdef}[1]{\textsc{#1}\label{algdef:#1}}
+
+\newcounter{lnoc}
+\newenvironment{algorithm}[1]{%
+\hrule height 0.8pt \vspace{0.6ex} \small#1\vspace{0.6ex}\hrule height 0.5pt \vspace{-2.25ex}
+\setcounter{lnoc}{0}
+\small
+\begin{tabbing}
+00000\=XX\=XX\=XX\=XX\=XX\=XX\=\kill
+}{%
+\end{tabbing}
+\vspace{-2.5ex}\hrule height 0.8pt\vspace{1ex}}
+\newcommand{\lno}[1][0]{{\footnotesize\sffamily 
+\ifnum#1=0
+\stepcounter{lnoc} 
+\ifnum\thelnoc<10
+\phantom0%
+\fi
+\thelnoc
+\else
+\thelnoc.#1
+\fi
+}\>}
+
+\newcommand{\pcfor}{{\bfseries for~}}
+\newcommand{\pcforall}{{\bfseries for all~}}
+\newcommand{\pcforeach}{{\bfseries for each~}}
+\newcommand{\pcto}{{\bfseries to~}}
+\newcommand{\pcdownto}{{\bfseries downto~}}
+\newcommand{\pcdo}{{\bfseries do~}}
+\newcommand{\pcif}{{\bfseries if~}}
+\newcommand{\pcthen}{{\bfseries then~}}
+\newcommand{\pcelse}{{\bfseries else~}}
+\newcommand{\pcelseif}{{\bfseries else if~}}
+\newcommand{\pcwhile}{{\bfseries while~}}
+\newcommand{\pcbreak}{{\bfseries break}}
+\newcommand{\pcand}{{\bfseries and~}}
+\newcommand{\pcor}{{\bfseries or~}}
+\newcommand{\pcnot}{{\bfseries not~}}
+\newcommand{\pcreturn}{{\bfseries return~}}
+\newcommand{\pcphreturn}{\phantom{\pcreturn}}
+\newcommand{\pcfun}[1]{\mbox{\textrm{#1}}}
+\newcommand{\pccomment}[1]{\qqq\{\textit{#1}\}}
+\newcommand{\pctrue}{\mbox{\textrm{\bfseries true}}}
+\newcommand{\pcfalse}{\mbox{\textrm{\bfseries false}}}
+\newcommand{\pcdiv}{\mbox{\bfseries div~}}
+\newcommand{\pcmod}{\mbox{\bfseries mod~}}
+\newcommand{\pcinput}[1]{Input: \textit{#1}}
+\newcommand{\pcinpute}[1]{\phantom{Input:} \textit{#1}}
+\newcommand{\pcoutput}[1]{Output: \textit{#1}}
+\newcommand{\pcoutpute}[1]{\phantom{Output:} \textit{#1}}
+\newcommand{\pcendparam}{%
+\end{tabbing}
+\vspace{-0.7cm}
+\hrule height 0.5pt
+\vspace{-0.3cm}
+\begin{tabbing}
+00000\=XX\=XX\=XX\=XX\=XX\=XX\=\kill
+}
+
+\begin{document}
+
+\centerline{\bfseries\LARGE\itshape kmc\_tools documentation}
+\bigskip
+\bigskip
+\centerline{\bfseries\Large for v. 3.0.0}
+\bigskip
+\bigskip
+\bigskip
+\bigskip
+
+\tableofcontents
+
+\input{intro.tex}
+
+\input{usage.tex}
+
+%\input{set_operations.tex}
+
+\input{simple.tex}
+
+\input{complex.tex}
+
+%\input{one_input_operations}
+
+\input{transform}
+
+\input{filter_operation}
+
+
+
+\end{document}
