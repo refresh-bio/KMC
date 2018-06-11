@@ -33,7 +33,8 @@ struct CSmallKBuf<float>
 		uint32 c;
 		memcpy(&c, &buf[index], 4);
 		for (int32 j = 0; j < 4; ++j)
-			_buf[buf_pos++] = (c >> (j * 8)) & 0xFF;		
+			_buf[buf_pos++] = (c >> (j * 8)) & 0xFF;
+        std::ignore = counter_size;
 	}
 };
 

@@ -74,7 +74,9 @@ struct ParentFinder<KMER_T, SIZE, PARENT, Range<(PARENT > 56)> >
 {
 	FORCE_INLINE static uint32 Execute(CKXmerSet<KMER_T, SIZE>& ptr, const KMER_T& kmer)
 	{		
-		return PARENT;		
+		return PARENT;
+		std::ignore = ptr;
+		std::ignore = kmer;
 	}
 };
 
@@ -588,7 +590,7 @@ public:
 	}
 	void InitAdd(uint64 start, uint64 end, uint32 shr)
 	{
-		sub_array_descs.emplace_back(SubArrayDesc{ start, end, shr });
+		sub_array_descs.emplace_back(SubArrayDesc{ start, end, shr, 0 });
 	}
 
 	void Process(bool without_output)

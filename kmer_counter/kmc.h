@@ -275,6 +275,7 @@ template<typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE
 		Params.n_sorters = Params.n_threads;
 		Params.n_sorting_threads.assign(Params.n_sorters, 1);
 	}
+	std::ignore = sorted_sizes;
 }
 //----------------------------------------------------------------------------------
 template<typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SetThreadsStrictMemoryMode()
