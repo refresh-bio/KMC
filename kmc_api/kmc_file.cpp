@@ -1357,7 +1357,7 @@ bool CKMCFile::GetCountersForRead_kmc2(const std::string& read, std::vector<uint
 //---------------------------------------------------------------------------------
 bool CKMCFile::BinarySearch(int64 index_start, int64 index_stop, const CKmerAPI& kmer, uint64& counter, uint32 pattern_offset)
 {
-	if (index_start >= total_kmers)
+	if (index_start >= static_cast<int64>(total_kmers))
 		return false;
 	uchar *sufix_byte_ptr = nullptr;
 	uint64 sufix = 0;

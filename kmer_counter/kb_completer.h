@@ -165,7 +165,8 @@ bool CSmallKCompleter<QUAKE_MODE>::Complete(CSmallKBuf<COUNTER_TYPE> result)
 	uint64* lut = (uint64*)raw_buffer;
 	uchar* suf = raw_buffer + lut_buf_recs * sizeof(uint64);
 
-	FILE* suf_file, *pre_file;
+	FILE* suf_file = NULL;
+	FILE* pre_file = NULL;
 
 	string pre_file_name = output_file_name + ".kmc_pre";
 	string suf_file_name = output_file_name + ".kmc_suf";

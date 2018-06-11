@@ -1061,7 +1061,7 @@ public:
 		return (x + ALIGNMENT - 1) / ALIGNMENT * ALIGNMENT;
 	}
 
-	void parallel_memory_init(uchar *ptr, uint64 size)
+	void parallel_memory_init()
 	{
 		// Initialize the memory in parallel
 		vector<thread> v_thr;
@@ -1090,7 +1090,7 @@ public:
 		while (((uint64)buffer) % ALIGNMENT)
 			buffer++;
 
-		parallel_memory_init(buffer, total_size);
+		parallel_memory_init();
 
 		map_reserved.clear();
 		map_reserved[total_size] = 0;							// guard
@@ -1282,7 +1282,7 @@ public:
 				while (((uint64)buffer) % ALIGNMENT)
 					buffer++;
 
-				parallel_memory_init(buffer, total_size);
+				parallel_memory_init();
 
 				map_reserved.clear();
 				map_reserved[total_size] = 0;
@@ -1435,8 +1435,6 @@ public:
 			if (sorting_phases % 2 == 0)				// Must move input data
 				A_memcpy(base_ptr + part1_size, base_ptr, file_size);
 			// Sub-Case 2b - nothing has to be done with input data
-			else
-				;
 
 			log("Ext-e end");
 			return true;
