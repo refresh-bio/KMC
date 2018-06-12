@@ -100,9 +100,9 @@ public:
 };
 
 template <typename KMER_T, typename COUNTER_TYPE>
-void pierwsze_kolko_etap1(uint32_t th_id, KMER_T *kmers, uint64 n_recs, uint32_t n_threads,
+void pierwsze_kolko_etap1(uint32_t /*th_id*/, KMER_T *kmers, uint64 /*n_recs*/, uint32_t /*n_threads*/,
 	//	uint64_t per_thread, std::vector<ALIGN_ARRAY COUNTER_TYPE[256]> &histos,
-	uint64_t per_thread, std::vector<std::array<COUNTER_TYPE, 256>> &histos,
+	uint64_t /*per_thread*/, std::vector<std::array<COUNTER_TYPE, 256>> &histos,
 	uint32 byte, CRangeQueue& rq)
 	//(std::thread([th_id, kmers, n_recs, n_threads, per_thread, &histos, byte]
 {
@@ -188,8 +188,8 @@ void pierwsze_kolko_etap1(uint32_t th_id, KMER_T *kmers, uint64 n_recs, uint32_t
 
 //----------------------------------------------------------------------
 template <typename KMER_T, typename COUNTER_TYPE>
-void pierwsze_kolko_etap2(uint32_t th_id, KMER_T *kmers, KMER_T* tmp,
-	uint64 n_recs, uint32_t n_threads, uint64_t per_thread, uint32 byte,
+void pierwsze_kolko_etap2(uint32_t /*th_id*/, KMER_T *kmers, KMER_T* tmp,
+	uint64 /*n_recs*/, uint32_t /*n_threads*/, uint64_t /*per_thread*/, uint32 byte,
 	//	std::vector<ALIGN_ARRAY COUNTER_TYPE[256]> &histos,
 	std::vector<std::array<COUNTER_TYPE, 256>> &histos,
 	std::vector<uchar*> &_raw_buffers,
@@ -363,8 +363,8 @@ void pierwsze_kolko_etap2(uint32_t th_id, KMER_T *kmers, KMER_T* tmp,
 }
 //-----------------------------------------------------------
 template <typename KMER_T, typename COUNTER_TYPE>
-void pierwsze_kolko_etap3(uint32_t th_id, KMER_T *kmers, KMER_T* tmp,
-	uint64 n_recs, uint32_t n_threads, uint64_t per_thread, uint32 byte,
+void pierwsze_kolko_etap3(uint32_t /*th_id*/, KMER_T */*kmers*/, KMER_T* tmp,
+	uint64 /*n_recs*/, uint32_t /*n_threads*/, uint64_t /*per_thread*/, uint32 /*byte*/,
 	//	std::vector<ALIGN_ARRAY COUNTER_TYPE[256]> &histos,
 	std::vector<std::array<COUNTER_TYPE, 256>> &histos,
 	std::vector<uchar*> &_raw_buffers,

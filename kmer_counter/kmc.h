@@ -83,7 +83,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> class CKMC {
 	CWKmerBinCompleter *w_completer;
 
 	void SetThreads1Stage();
-	void SetThreads2Stage(vector<int64>& sorted_sizes);
+	void SetThreads2Stage();
 	void SetThreadsStrictMemoryMode();
 
 	void AdjustMemoryLimitsStrictMemoryMode();
@@ -268,7 +268,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	}
 }
 //----------------------------------------------------------------------------------
-template<typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SetThreads2Stage(vector<int64>& sorted_sizes)
+template<typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SetThreads2Stage()
 {	
 	if (!Params.p_sf || !Params.p_sp || !Params.p_sr)
 	{
@@ -1083,7 +1083,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	
 	sort(bin_sizes.begin(), bin_sizes.end(), greater<int64>());
 	
-	SetThreads2Stage(bin_sizes);
+	SetThreads2Stage();
 	AdjustMemoryLimitsStage2();
 
 	if (Params.use_strict_mem)

@@ -321,7 +321,9 @@ public:
 			if (op == CSimpleOutputDesc::OpType::UNION || op == CSimpleOutputDesc::OpType::REVERSE_KMERS_SUBTRACTION || op == CSimpleOutputDesc::OpType::REVERSE_COUNTERS_SUBTRACTION)
 				outputs_for_2nd_lower.push_back(o);
 			else
-				; //should never be here
+			{
+				//should never be here
+			}
 		}
 	}
 
@@ -342,7 +344,7 @@ public:
 	};
 	struct CEqNotifierEmpty
 	{
-		static void Notify(CSimpleOperation<SIZE>& operation, CKmer<SIZE>& kmer, uint32 counter1, uint32 counter2){}
+		static void Notify(CSimpleOperation<SIZE>& /*operation*/, CKmer<SIZE>& /*kmer*/, uint32 /*counter1*/, uint32 /*counter2*/){}
 	};
 
 	struct C1stLowerNotifier
@@ -355,7 +357,7 @@ public:
 	};
 	struct CLowerNotifierEmpty
 	{
-		static void Notify(CSimpleOperation<SIZE>& operation, CKmer<SIZE>& kmer, uint32 counter){}
+		static void Notify(CSimpleOperation<SIZE>& /*operation*/, CKmer<SIZE>& /*kmer*/, uint32 /*counter*/){}
 	};
 
 	struct C2ndLowerNotifier

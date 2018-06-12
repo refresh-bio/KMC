@@ -310,7 +310,7 @@ bool CKmerBinCompleter::store_uint(FILE *out, uint64 x, uint32 size)
 
 //----------------------------------------------------------------------------------
 //Init memory pools for 2nd stage
-void CKmerBinCompleter::InitStage2(CKMCParams& Params, CKMCQueues& Queues)
+void CKmerBinCompleter::InitStage2(CKMCParams& /*Params*/, CKMCQueues& Queues)
 {
 	sm_pmm_merger_lut = Queues.sm_pmm_merger_lut;
 	sm_pmm_merger_suff = Queues.sm_pmm_merger_suff;

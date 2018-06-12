@@ -503,13 +503,13 @@ inline void CKmer<1>::set_byte(const uint32 p, uchar x)
 }
 
 // *********************************************************************
-inline void CKmer<1>::set_bytes(const uint32 p, const uint32 n, uint32 x)
+inline void CKmer<1>::set_bytes(const uint32 p, const uint32 /*n*/, uint32 x)
 {
 	data += ((uint64) x) << (p << 3);
 }
 
 // *********************************************************************
-inline void CKmer<1>::set_bits(const uint32 p, const uint32 n, uint64 x)
+inline void CKmer<1>::set_bits(const uint32 p, const uint32 /*n*/, uint64 x)
 {
 	//	data |= x << p;
 	data += x << p;
@@ -641,7 +641,7 @@ char CKmer<1>::get_symbol(int p)
 }
 
 // *********************************************************************
-void CKmer<1>::set_prefix(CKmer<1>& rhs, uint32 suffix_bytes)
+void CKmer<1>::set_prefix(CKmer<1>& rhs, uint32 /*suffix_bytes*/)
 {
 	data += rhs.data;
 }

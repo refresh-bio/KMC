@@ -37,7 +37,7 @@ void map_log(uint32 signature_len, uint32 map_size, int32* signature_map)
 
 
 
-void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, uint32 quality_size, uint64 n_reads, uint32 signature_len, uint32 map_size, int32* signature_map)
+void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, uint32 quality_size, uint64 n_reads, uint32 /*signature_len*/, uint32 map_size, int32* signature_map)
 {
 #ifdef KMERS_PER_BIN_LOG_FILE
 	int32 bin_id;

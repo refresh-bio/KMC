@@ -28,7 +28,7 @@ template<>
 struct CSmallKBuf<float>
 {
 	float* buf;
-	void Store(uint64 index, uchar* _buf, uint32& buf_pos, uint64 counter_size)//counter_size should be always 4 here
+	void Store(uint64 index, uchar* _buf, uint32& buf_pos, uint64 /*counter_size*/)//counter_size should be always 4 here
 	{
 		uint32 c;
 		memcpy(&c, &buf[index], 4);

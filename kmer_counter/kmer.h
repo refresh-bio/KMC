@@ -519,7 +519,7 @@ inline void CKmer<1>::set_byte(const uint32 p, uchar x)
 }
 
 // *********************************************************************
-inline void CKmer<1>::set_bits(const uint32 p, const uint32 n, uint64 x)
+inline void CKmer<1>::set_bits(const uint32 p, const uint32 /*n*/, uint64 x)
 {
 	data += x << p;
 }
@@ -609,7 +609,7 @@ inline void CKmer<1>::fill_T()
 }
 
 // *********************************************************************
-inline void CKmer<1>::random_init(uint32 pos, uint64 value)
+inline void CKmer<1>::random_init(uint32 /*pos*/, uint64 value)
 {
 	data = value;
 }
@@ -930,7 +930,7 @@ template<> struct CKmerQuake<1> {
 		data = ~0ull;
 	}
 
-	inline void random_init(uint32 pos, uint64 value)
+	inline void random_init(uint32 /*pos*/, uint64 /*value*/)
 	{}
 };
 
@@ -983,7 +983,7 @@ inline void CKmerQuake<1>::set_byte(const uint32 p, uchar x)
 }
 
 // *********************************************************************
-inline void CKmerQuake<1>::set_bits(const uint32 p, const uint32 n, uint64 x)
+inline void CKmerQuake<1>::set_bits(const uint32 p, const uint32 /*n*/, uint64 x)
 {
 //	data |= x << p;
 	data += x << p;

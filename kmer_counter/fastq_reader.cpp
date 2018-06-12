@@ -175,7 +175,7 @@ void CFastqReader::ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uin
 	part = nullptr;
 }
 
-void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 id, uint32 file_no)
+void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 /*id*/, uint32 file_no)
 {
 	auto& state = bam_task_manager->splitter_prepare_state;
 	uint64_t bpos = 0;
