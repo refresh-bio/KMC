@@ -284,11 +284,12 @@ public:
 
 	uint64 GetCumSum(uint64 pos)
 	{
+		if (pos == 0)
+			return 0;
+		--pos;
 		uint64 res = 0;
 		if (pos / COMPACT_CUMSUM_PART_SIZE > 0)
 			res = cumsum[pos / COMPACT_CUMSUM_PART_SIZE - 1];
-		if (pos == n_kxmer_counters)
-			--pos;
 		for (uint64 i = pos / COMPACT_CUMSUM_PART_SIZE * COMPACT_CUMSUM_PART_SIZE; i <= pos; ++i)
 			res += kxmer_counters[i];
 		return res;
