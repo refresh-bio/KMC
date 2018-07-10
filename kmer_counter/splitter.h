@@ -143,7 +143,7 @@ template <bool QUAKE_MODE> bool CSplitter<QUAKE_MODE>::GetSeq(char *seq, uint32 
 			return false;
 
 		c = part[part_pos++];
-		if(c >= 32)
+		if(c >= 32 || c == part[part_pos - 2]) //read may be empty
 			part_pos--;
 		else if(part_pos >= part_size)
 			return false;
@@ -184,7 +184,7 @@ template <bool QUAKE_MODE> bool CSplitter<QUAKE_MODE>::GetSeq(char *seq, uint32 
 			return false;
 
 		c = part[part_pos++];
-		if(c >= 32)
+		if(c >= 32 || c == part[part_pos - 2]) //read may be empty
 			part_pos--;
 		else if(part_pos >= part_size)
 			return false;
@@ -222,7 +222,7 @@ template <bool QUAKE_MODE> bool CSplitter<QUAKE_MODE>::GetSeq(char *seq, uint32 
 			return false;
 
 		c = part[part_pos++];
-		if(c >= 32)
+		if(c >= 32 || c == part[part_pos - 2]) //qual may be empty
 			part_pos--;
 		else if(part_pos >= part_size)
 			return false;
