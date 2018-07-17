@@ -588,6 +588,8 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	if (Params.kmer_len > 13) 
 		return false;
 
+	bool small_k_opt_required = Params.kmer_len < Params.signature_len;	
+
 	uint32 counter_size = 4; //in bytes
 	if ((uint64)Params.cutoff_max > ((1ull << 32) - 1))
 		counter_size = 8;
@@ -605,32 +607,45 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	int64 tmp_mem_part_small_k_buf = (1ll << 2 * Params.kmer_len) * counter_size;//no of possible k-mers * counter size
 	int64 tmp_mem_tot_small_k_buf = 0;
 
-	int64 mim_mem_for_readers = tmp_n_readers * (16 << 20);
-	
-	//tmp_fastq_buffer_size = 1 << 24; 
-	tmp_fastq_buffer_size = 32 << 20; //important for bam reading performance, previously 1 << 24
-	tmp_mem_part_pmm_fastq = tmp_fastq_buffer_size + CFastqReader::OVERHEAD_SIZE;
-	tmp_mem_tot_pmm_fastq = tmp_mem_part_pmm_fastq * (tmp_n_readers + tmp_n_splitters + 96);
+	int64 additional_buffers = 96;
 
-	tmp_mem_part_pmm_binary_file_reader = 1ll << 27;
-	tmp_mem_tot_pmm_binary_file_reader = tmp_mem_part_pmm_binary_file_reader * tmp_n_readers * 3;
-
-	int64 mem_rest = Params.max_mem_size - tmp_mem_tot_pmm_fastq - tmp_mem_tot_pmm_binary_file_reader;
-
-	while (tmp_n_splitters)
+	while (true)
 	{
+		int64 mim_mem_for_readers = tmp_n_readers * (16 << 20);
+		tmp_fastq_buffer_size = 32 << 20; //important for bam reading performance, previously 1 << 24
+		tmp_mem_part_pmm_fastq = tmp_fastq_buffer_size + CFastqReader::OVERHEAD_SIZE;
+		tmp_mem_tot_pmm_fastq = tmp_mem_part_pmm_fastq * (tmp_n_readers + tmp_n_splitters + additional_buffers);
+
+		tmp_mem_part_pmm_binary_file_reader = 1ll << 27;
+		tmp_mem_tot_pmm_binary_file_reader = tmp_mem_part_pmm_binary_file_reader * tmp_n_readers * 3;
+
+		int64 mem_rest = Params.max_mem_size - tmp_mem_tot_pmm_fastq - tmp_mem_tot_pmm_binary_file_reader;
+
 		tmp_mem_tot_pmm_reads = tmp_mem_part_pmm_reads * 3 * tmp_n_splitters;
 		tmp_mem_tot_small_k_buf = tmp_mem_part_small_k_buf * tmp_n_splitters;
 
 		if (tmp_mem_tot_pmm_reads + tmp_mem_tot_small_k_buf + mim_mem_for_readers < mem_rest)
 			break;
 
-		--tmp_n_splitters;
+		if (additional_buffers)
+			additional_buffers = additional_buffers / 2 + additional_buffers / 4;
+		else if (tmp_n_readers < tmp_n_splitters)
+			--tmp_n_splitters;
+		else
+			--tmp_n_readers;
+
+		if (!tmp_n_readers || !tmp_n_splitters)
+		{
+			if (small_k_opt_required)
+			{
+				//Should never be here
+				cerr << "Error: Internal error occurred during small k adjustment, please report this via https://github.com/refresh-bio/KMC/issues";
+				exit(1);
+			}
+			return false;
+		}
 	}
 
-	if (!tmp_n_splitters)
-		return false;
-	
 	Params.n_splitters = tmp_n_splitters;
 	Params.n_readers = tmp_n_readers;
 	Params.fastq_buffer_size = tmp_fastq_buffer_size;
