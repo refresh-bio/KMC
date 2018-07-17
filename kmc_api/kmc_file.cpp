@@ -45,7 +45,7 @@ bool CKMCFile::OpenForRA(const std::string &file_name)
 
 	sufix_file_buf = new uchar[size];
 	result = fread(sufix_file_buf, 1, size, file_suf);
-	if (result == 0)
+	if (result != size)
 		return false;
 
 	fclose(file_suf);
