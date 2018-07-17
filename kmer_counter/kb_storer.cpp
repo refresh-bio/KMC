@@ -70,11 +70,15 @@ void CKmerBinStorer::Release()
 	if(!files)
 		return;
 	for(int i = 0; i < n_bins; ++i)
-		if(buffer[i])
+		if(buffer[i]) 
 			delete buffer[i];
 
 	delete[] buffer;
 	buffer = NULL;	
+
+	for(int i = 0; i < n_bins; ++i)
+	  if(files[i])
+	    delete files[i];
 
 	delete[] files;
 	files = NULL;
