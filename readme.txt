@@ -40,7 +40,7 @@ After compilation you will obtain two binaries:
 
 
 ***** License *****
-* KMC software distributed under GNU GPL 2 licence.
+* KMC software distributed under GNU GPL 3 licence.
 
 * libbzip2 is open-source (BSD-style license)
 
