@@ -76,6 +76,17 @@ public:
 		return true;
 	}
 
+	bool peek_next_pack(uchar* &data, uint64 &size)
+	{
+		std::unique_lock<std::mutex> lck(mtx);
+		cv_pop.wait(lck, [this] {return !q.empty() || completed; });
+		if (q.empty())
+			return false;
+		data = get<0>(q.front());
+		size = get<1>(q.front());
+		return get<2>(q.front()) != FilePart::End;
+	}
+
 	bool is_next_last()
 	{
 		std::unique_lock<std::mutex> lck(mtx);

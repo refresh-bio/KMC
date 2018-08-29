@@ -686,9 +686,39 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size)
 			}
 
 			if (ret == Z_STREAM_END)
-			{
-				bool multistream = stream.avail_in || !binary_pack_queue->is_next_last();
-				if (!multistream)
+			{				
+				uchar* tmp_data = nullptr;
+				uint64 tmp_size = 0;
+				bool multistream = stream.avail_in || binary_pack_queue->peek_next_pack(tmp_data, tmp_size);
+				bool garbage = false;
+				if (multistream)
+				{
+					if (stream.avail_in + tmp_size < 2)
+					{
+						cerr << "Some error while reading gzip file\n";
+						exit(1);
+					}
+					uchar b1, b2;
+					if (stream.avail_in >= 2)
+					{
+						b1 = stream.next_in[0];
+						b2 = stream.next_in[1];
+					}
+					else if (stream.avail_in == 1)
+					{
+						b1 = stream.next_in[0];
+						b2 = tmp_data[0];
+					}
+					else
+					{
+						b1 = tmp_data[0];
+						b2 = tmp_data[1];
+					}
+					garbage = b1 != 0x1f || b2 != 0x8b;
+				}
+				
+				//bool multistream = stream.avail_in || !binary_pack_queue->is_next_last();				
+				if (!multistream || garbage)
 				{
 					pmm_binary_file_reader->free(in_data);
 					in_data = nullptr;
@@ -696,21 +726,23 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size)
 					in_progress = false;
 					//pull end
 					bool queue_end = !binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type);
-					if (!queue_end && file_part != FilePart::End)
+					if (!queue_end && file_part != FilePart::End && !garbage)
 					{
 						cerr << "Error: An internal error occurred. Please contact authors\n";
 					}
+					if (garbage)
+						binary_pack_queue->ignore_rest();
 					break;
 				}
 				else //multiple streams in one file
 				{
 					//equivalent of inflateReset 
-				/*	inflateEnd(&stream);
-					if (inflateInit2(&stream, 31) != Z_OK)
-					{
-						cerr << "Error while reading gzip file\n";
-						exit(1);
-					}*/
+					//inflateEnd(&stream);
+					//if (inflateInit2(&stream, 31) != Z_OK)
+					//{
+					//	cerr << "Error while reading gzip file\n";
+					//	exit(1);
+					//}
 					if (inflateReset(&stream) != Z_OK)
 					{
 						cerr << "Error while reading gzip file\n";
