@@ -15,7 +15,9 @@
 #define KMC_VER		"3.1.0"
 #define KMC_DATE	"2018-05-10"
 
+#ifndef MIN
 #define MIN(x,y)	((x) < (y) ? (x) : (y))
+#endif
 
 #ifndef WIN32
 	#include <stdint.h>
