@@ -202,7 +202,9 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size)
 		result = fread(&signature_len, 1, sizeof(uint32), file_pre);
 		result = fread(&min_count, 1, sizeof(uint32), file_pre);
 		original_min_count = min_count;
-		result = fread(&max_count, 1, sizeof(uint32), file_pre);
+		uint32 max_count_uint32;
+		result = fread(&max_count_uint32, 1, sizeof(uint32), file_pre);
+		max_count = max_count_uint32;
 		original_max_count = max_count;
 		result = fread(&total_kmers, 1, sizeof(uint64), file_pre);
 		result = fread(&both_strands, 1, 1, file_pre);
