@@ -41,3 +41,12 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# Object files
+*.o
+
+# Binaries
+bin/
+
+# Editor backup filels
+*~
