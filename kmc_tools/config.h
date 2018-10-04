@@ -396,7 +396,11 @@ public:
 				  << "  -ci<value> - exclude k-mers occurring less than <value> times \n"
 				  << "  -cx<value> - exclude k-mers occurring more of than <value> times\n"
 				  << "  -cs<value> - maximal value of a counter\n"
-				  
+			
+				  << " For histogram operation there are additional output_params:\n"
+				  << "  -ci<value> - minimum value of counter to be stored in the otput file\n"
+				  << "  -cx<value> - maximum value of counter to be stored in the otput file\n"
+
 				  << " For dump operation there are additional oper_params:\n"
 				  << "  -s - sorted output\n"
 				  << "Example:\n"

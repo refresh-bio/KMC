@@ -41,6 +41,12 @@ For \textsf{sort}, \textsf{reduce} and \textsf{dump} operations additional \text
 
 If these parameters are not specified they are deduced based on input database. \\
 
+For \textsf{histogram} operation additional \textsf{output\_params} are available:
+\begin{itemize}
+	\item \textsf{-ci<vaule>} --- minimum value of a counter to be stored in the output file (default value is a cutoff min stored in the database),
+	\item \textsf{-cx<value>} --- maximum value of a counter to be stored in the output file (default value is a minimum of tree: $10^4$, cutoff max stored in the database, $2^{8\mathrm{CS}}-1$, where CS is the number of bytes used to store counters in the database)
+\end{itemize}
+
 For dump operation there are additional \textsf{oper\_params}:
 \begin{itemize}
 	\item \textsf{-s} --- force sorted output (default: false). \\
