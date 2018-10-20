@@ -394,7 +394,7 @@ bool CFastqReader::GetPartFromMultilneFasta(uchar *&_part, uint64 &_size)
 	int64 pos = 0;
 	for (int64 i = 0; i < total_filled; ++i)//find last '>' and remove EOLs
 	{
-		if (part[i] == '>')
+		while (part[i] == '>') //issue 116, (if -> while) USE CASE: when there is empty seqence (only header, no data)
 		{
 			int64 tmp = i;
 			bool next_line = SkipNextEOL(part, i, total_filled);
