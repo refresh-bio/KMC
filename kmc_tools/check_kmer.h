@@ -213,7 +213,7 @@ public:
 			char d = codes[(uchar)kmer[i]];
 			if (d < 0)
 			{
-				cerr << "Error: invalid k-mer format\n";
+				std::cerr << "Error: invalid k-mer format\n";
 				exit(1);
 			}
 			prefix <<= 2;
@@ -225,7 +225,7 @@ public:
 			char d = codes[(uchar)kmer[i]];
 			if (d < 0)
 			{
-				cerr << "Error: invalid k-mer format\n";
+				std::cerr << "Error: invalid k-mer format\n";
 				exit(1);
 			}
 			_kmer.SHL_insert_2bits(d);
@@ -235,7 +235,7 @@ public:
 		get_lower_upper(prefix, _kmer, lower, upper);
 		_kmer.mask(mask);
 		uint32 counter = check_in_suffix_file(lower, upper, _kmer);
-		cout << counter << "\n";
+		std::cout << counter << "\n";
 		return true;
 	}
 };
