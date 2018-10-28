@@ -37,7 +37,6 @@
 	#include <stdio.h>
 	#include <ext/algorithm>
 	#include <iostream>
-	using namespace std;
 
 #else
 	#define my_fopen    fopen
