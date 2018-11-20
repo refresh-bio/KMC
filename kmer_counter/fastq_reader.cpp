@@ -448,6 +448,9 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size)
 
 	int64 total_filled = part_filled + readed;
 	int64 i;
+	
+	if (!total_filled) //issue 95 (empty input file)
+		return false;
 
 	if (data_src.Finished())
 	{
