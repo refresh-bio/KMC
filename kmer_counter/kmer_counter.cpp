@@ -61,12 +61,12 @@ public:
 			delete kmc;
 	}
 
-	void SaveStatsInJSON()
+	void SaveStatsInJSON(bool was_small_k_opt)
 	{
 		if (is_selected)
-			kmc->SaveStatsInJSON();
+			kmc->SaveStatsInJSON(was_small_k_opt);
 		else
-			app_1->SaveStatsInJSON();
+			app_1->SaveStatsInJSON(was_small_k_opt);
 	}
 
 	void GetStats(double &time1, double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers, bool& _was_small_k_opt) {
@@ -122,10 +122,10 @@ public:
 		}
 	}
 
-	void SaveStatsInJSON()
+	void SaveStatsInJSON(bool was_small_k_opt)
 	{
 		if (is_selected)
-			kmc->SaveStatsInJSON();
+			kmc->SaveStatsInJSON(was_small_k_opt);
 	}
 
 	bool Process() {
@@ -520,7 +520,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			return 0;
 		}
 		app->GetStats(time1, time2, time3, n_unique, n_cutoff_min, n_cutoff_max, n_total, n_reads, tmp_size, tmp_size_strict_mem, max_disk_usage, n_total_super_kmers, was_small_k_opt);
-		app->SaveStatsInJSON();
+		app->SaveStatsInJSON(was_small_k_opt);
 		delete app;
 	//}
 
