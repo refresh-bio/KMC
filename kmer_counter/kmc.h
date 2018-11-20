@@ -67,6 +67,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> class CKMC {
 	vector<thread> gr2_1, gr2_2, gr2_3;						// thread groups for 2nd stage
 
 	uint64 n_unique, n_cutoff_min, n_cutoff_max, n_total, n_reads, tmp_size, tmp_size_strict_mem, max_disk_usage, n_total_super_kmers;
+	bool was_small_k_opt;
 
 	// Threads
 	vector<CWStatsFastqReader*> w_stats_fastqs;
@@ -104,7 +105,7 @@ public:
 	
 	void SetParams(CKMCParams &_Params);
 	bool Process();
-	void GetStats(double &time1, double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers);
+	void GetStats(double &time1, double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers, bool& _was_small_k_opt);
 	void SaveStatsInJSON();
 };
 
@@ -828,9 +829,10 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	if (!initialized)
 		return false;
 
-
+	was_small_k_opt = false;
 	if (AdjustMemoryLimitsSmallK())
 	{
+		was_small_k_opt = true;
 		if (Params.verbose)
 		{
 			cerr << "\nInfo: Small k optimization on!\n";
@@ -1434,7 +1436,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 //----------------------------------------------------------------------------------
 // Return statistics
 template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::GetStats(double &time1,
-	double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers)
+	double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers, bool& _was_small_k_opt)
 {
 	time1 = w1.getElapsedTime();
 	time2 = w2.getElapsedTime();
@@ -1448,6 +1450,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	_tmp_size_strict_mem = tmp_size_strict_mem;
 	_max_disk_usage = max_disk_usage;
 	_n_total_super_kmers = n_total_super_kmers;
+	_was_small_k_opt = was_small_k_opt;
 }
 
 template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SaveStatsInJSON()

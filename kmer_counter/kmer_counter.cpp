@@ -69,13 +69,13 @@ public:
 			app_1->SaveStatsInJSON();
 	}
 
-	void GetStats(double &time1, double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers) {
+	void GetStats(double &time1, double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers, bool& _was_small_k_opt) {
 		if (is_selected)
 		{
-			kmc->GetStats(time1, time2, time3, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total, _n_reads, _tmp_size, _tmp_size_strict_mem, _max_disk_usage, _n_total_super_kmers);
+			kmc->GetStats(time1, time2, time3, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total, _n_reads, _tmp_size, _tmp_size_strict_mem, _max_disk_usage, _n_total_super_kmers, _was_small_k_opt);
 		}
 		else
-			app_1->GetStats(time1, time2, time3, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total, _n_reads, _tmp_size, _tmp_size_strict_mem, _max_disk_usage, _n_total_super_kmers);
+			app_1->GetStats(time1, time2, time3, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total, _n_reads, _tmp_size, _tmp_size_strict_mem, _max_disk_usage, _n_total_super_kmers, _was_small_k_opt);
 	}
 
 	bool Process() {
@@ -114,11 +114,11 @@ public:
 			delete kmc;
 	};
 
-	void GetStats(double &time1, double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers) {
+	void GetStats(double &time1, double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers, bool& _was_small_k_opt) {
 		if (is_selected)
 		{
 			if(kmc)
-				kmc->GetStats(time1, time2, time3, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total, _n_reads, _tmp_size, _tmp_size_strict_mem, _max_disk_usage, _n_total_super_kmers);
+				kmc->GetStats(time1, time2, time3, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total, _n_reads, _tmp_size, _tmp_size_strict_mem, _max_disk_usage, _n_total_super_kmers, _was_small_k_opt);
 		}
 	}
 
@@ -478,7 +478,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	CStopWatch w0, w1;
 	double time1, time2, time3;
 	uint64 n_unique, n_cutoff_min, n_cutoff_max, n_total, n_reads, tmp_size, tmp_size_strict_mem, max_disk_usage, n_total_super_kmers;
-
+	bool was_small_k_opt;
 
 #ifdef WIN32
 	_setmaxstdio(2040);
@@ -519,7 +519,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			delete app;
 			return 0;
 		}
-		app->GetStats(time1, time2, time3, n_unique, n_cutoff_min, n_cutoff_max, n_total, n_reads, tmp_size, tmp_size_strict_mem, max_disk_usage, n_total_super_kmers);
+		app->GetStats(time1, time2, time3, n_unique, n_cutoff_min, n_cutoff_max, n_total, n_reads, tmp_size, tmp_size_strict_mem, max_disk_usage, n_total_super_kmers, was_small_k_opt);
 		app->SaveStatsInJSON();
 		delete app;
 	//}
@@ -528,13 +528,16 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	cout << "1st stage: " << time1 << "s\n"
 	     << "2nd stage: " << time2  << "s\n";
-	if (Params.p_strict_mem)
-		cout << "3rd stage: " << time3 << "s\n";
-	if (Params.p_strict_mem)
+
+	bool display_strict_mem_stats = Params.p_strict_mem && !was_small_k_opt;
+	if (display_strict_mem_stats)
+	{
+		cout << "3rd stage: " << time3 << "s\n";	
 		cout << "Total    : " << (time1 + time2 + time3) << "s\n";
+	}
 	else
 		cout << "Total    : " << (time1+time2) << "s\n";	
-	if (Params.p_strict_mem)
+	if (display_strict_mem_stats)
 	{
 		cout << "Tmp size : " << tmp_size / 1000000 << "MB\n"
 		     << "Tmp size strict memory : " << tmp_size_strict_mem / 1000000 << "MB\n"
