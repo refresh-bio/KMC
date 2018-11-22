@@ -413,7 +413,7 @@ bool CFastqReader::GetPartFromMultilneFasta(uchar *&_part, uint64 &_size)
 	}
 
 	_part = part;
-	if (last_header_pos == 0)//data in block belong to one seq
+	if (last_header_pos == 0)//data in block belong to one seq ('>' is the first symbol or do not occur at all)
 	{
 		part_filled = kmer_len - 1;
 		_size = pos;
@@ -448,9 +448,6 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size)
 
 	int64 total_filled = part_filled + readed;
 	int64 i;
-	
-	if (!total_filled) //issue 95 (empty input file)
-		return false;
 
 	if (data_src.Finished())
 	{
@@ -461,8 +458,12 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size)
 		return true;
 	}
 
-	// Look for the end of the last complete record in a buffer
-	if (file_type == fasta)			// FASTA files
+	if (!total_filled) //better fix for issue 95
+	{
+		_part = part;
+		_size = 0;
+	}									// Look for the end of the last complete record in a buffer
+	else if (file_type == fasta)			// FASTA files
 	{
 		// Looking for a FASTA record at the end of the area
 		i = total_filled - 1;
