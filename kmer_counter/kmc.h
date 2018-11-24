@@ -1383,6 +1383,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	while((bin_id = Queues.bd->get_next_bin()) >= 0)
 	{
 		Queues.bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs, n_super_kmers);		
+		delete file;
 		tmp_size += size;
 		n_total_super_kmers += n_super_kmers;
 	}

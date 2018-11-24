@@ -56,7 +56,6 @@ public:
 #else
 #include <sys/time.h>
 #include <sys/resource.h>
-
 typedef struct {
 	timeval start;
 	timeval stop;
@@ -67,7 +66,7 @@ class CStopWatch {
 private:
 	stopWatch timer;
 public:
-	CStopWatch() {};
+	CStopWatch();
 	void startTimer();
 	void stopTimer();
 	double getElapsedTime();

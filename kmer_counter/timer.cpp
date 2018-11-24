@@ -104,7 +104,11 @@ double CThreadWatch::getElapsedTime()
 
 
 #else
+#include <cstring>
 
+CStopWatch::CStopWatch() {
+	memset(&timer, 0, sizeof(timer));
+}
 void CStopWatch::startTimer() {
 	gettimeofday(&(timer.start), NULL);
 }
