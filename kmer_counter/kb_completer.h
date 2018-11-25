@@ -102,13 +102,13 @@ class CSmallKCompleter
 	bool both_strands;	
 	bool without_output;
 
-	bool store_uint(FILE *out, uint64 x, uint32 size);
+	inline bool store_uint(FILE *out, uint64 x, uint32 size);
 public:
-	CSmallKCompleter(CKMCParams& Params, CKMCQueues& Queues);
+	inline CSmallKCompleter(CKMCParams& Params, CKMCQueues& Queues);
 
 	template<typename COUNTER_TYPE>
 	bool Complete(CSmallKBuf<COUNTER_TYPE> results);
-	void GetTotal(uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max);
+	inline void GetTotal(uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max);
 
 };
 
