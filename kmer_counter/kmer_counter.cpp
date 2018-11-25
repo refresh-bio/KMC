@@ -30,12 +30,11 @@ CKMCParams Params;
 //----------------------------------------------------------------------------------
 // Application class
 // Template parameters:
-//    * KMER_TPL - k-mer class
 //    * SIZE     - maximal size of the k-mer (divided by 32)
-template<template<unsigned X> class KMER_TPL, unsigned SIZE, bool QUAKE_MODE> class CApplication
+template<unsigned SIZE> class CApplication
 {
-	CApplication<KMER_TPL, SIZE - 1, QUAKE_MODE> *app_1;
-	CKMC<KMER_TPL<SIZE>, SIZE, QUAKE_MODE> *kmc;
+	CApplication<SIZE - 1> *app_1;
+	CKMC<SIZE> *kmc;
 	int p_k;
 	bool is_selected;
 
@@ -44,15 +43,15 @@ public:
 		p_k = Params.p_k;
 		is_selected = p_k <= (int32) SIZE * 32 && p_k > ((int32) SIZE-1)*32;
 
-		app_1 = new CApplication<KMER_TPL, SIZE - 1, QUAKE_MODE>(Params);
+		app_1 = new CApplication<SIZE - 1>(Params);
 		if(is_selected)
 		{			
-			kmc = new CKMC<KMER_TPL<SIZE>, SIZE, QUAKE_MODE>;
+			kmc = new CKMC<SIZE>;
 			kmc->SetParams(Params);
 		}
 		else
 		{
-			kmc = NULL;
+			kmc = nullptr;
 		}
 	};
 	~CApplication() {
@@ -90,9 +89,9 @@ public:
 
 //----------------------------------------------------------------------------------
 // Specialization of the application class for the SIZE=1
-template<template<unsigned X> class KMER_TPL, bool QUAKE_MODE> class CApplication<KMER_TPL, 1, QUAKE_MODE>
+template<> class CApplication<1>
 {
-	CKMC<KMER_TPL<1>, 1, QUAKE_MODE> *kmc;
+	CKMC<1> *kmc;
 	int p_k;
 	bool is_selected;
 
@@ -101,12 +100,12 @@ public:
 		is_selected = Params.p_k <= 32;
 		if(is_selected)
 		{
-			kmc = new CKMC<KMER_TPL<1>, 1, QUAKE_MODE>;
+			kmc = new CKMC<1>;
 			kmc->SetParams(Params);
 		}
 		else
 		{
-			kmc = NULL;
+			kmc = nullptr;
 		}
 	};
 	~CApplication() {
@@ -154,8 +153,7 @@ void usage()
 		 << "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 12\n"
 		 << "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n"
 		 << "  -p<par> - signature length (5, 6, 7, 8, 9, 10, 11); default: 9\n"
-		 << "  -f<a/q/m/bam> - input in FASTA format (-fa), FASTQ format (-fq), multi FASTA (-fm) or BAM (-fbam); default: FASTQ\n"
-	// << "  -q[value] - use Quake's compatible counting with [value] representing lowest quality (default: 33)\n"
+		 << "  -f<a/q/m/bam> - input in FASTA format (-fa), FASTQ format (-fq), multi FASTA (-fm) or BAM (-fbam); default: FASTQ\n"	
 		 << "  -ci<value> - exclude k-mers occurring less than <value> times (default: 2)\n"
 		 << "  -cs<value> - maximal value of a counter (default: 255)\n"
 		 << "  -cx<value> - exclude k-mers occurring more of than <value> times (default: 1e9)\n"
@@ -240,14 +238,7 @@ bool parse_parameters(int argc, char *argv[])
 			Params.p_cx = atoll(&argv[i][3]);
 		// Maximal counter value
 		else if (strncmp(argv[i], "-cs", 3) == 0)
-			Params.p_cs = atoll(&argv[i][3]);
-		// Quake mode
-		/*else if(strncmp(argv[i], "-q", 2) == 0)
-		{
-			Params.p_quake = true;
-			if(strlen(argv[i]) > 2)
-				Params.p_quality = atoi(argv[i]+2);
-		}*/
+			Params.p_cs = atoll(&argv[i][3]);		
 		// Set p1
 		else if (strncmp(argv[i], "-p", 2) == 0)
 		{
@@ -412,13 +403,7 @@ bool parse_parameters(int argc, char *argv[])
 		cerr << "Error: -sm can not be used with -r\n";
 		return false;
 	}
-	/*if (Params.p_strict_mem && Params.p_quake)
-	{
-		cerr << "Warning: -sm is not supported in quake mode. -sm has no effect\n";
-		Params.p_strict_mem = false;
-	}*/
-
-
+	
 	if (Params.p_k > 9)
 	{
 		if ((uint64)Params.p_cx > ((1ull << 32) - 1))
@@ -495,36 +480,18 @@ int _tmain(int argc, _TCHAR* argv[])
 		usage();
 		return 0;
 	}
-
-	/*if(Params.p_quake)
-	{
-		CApplication<CKmerQuake, KMER_WORDS, true> *app = new CApplication<CKmerQuake, KMER_WORDS, true>(Params);
-
-		if(!app->Process())
-		{
-			cerr << "Not enough memory or some other error\n";
-			delete app;
-			return 0;
-		}
-		app->GetStats(time1, time2, time3, n_unique, n_cutoff_min, n_cutoff_max, n_total, n_reads, tmp_size, tmp_size_strict_mem, max_disk_usage, n_total_super_kmers);
-		delete app;
-	}
-	else
-	{*/
-		CApplication<CKmer, KMER_WORDS, false> *app = new CApplication<CKmer, KMER_WORDS, false>(Params);
-
-		if(!app->Process())
-		{
-			cerr << "Not enough memory or some other error\n";
-			delete app;
-			return 0;
-		}
-		app->GetStats(time1, time2, time3, n_unique, n_cutoff_min, n_cutoff_max, n_total, n_reads, tmp_size, tmp_size_strict_mem, max_disk_usage, n_total_super_kmers, was_small_k_opt);
-		app->SaveStatsInJSON(was_small_k_opt);
-		delete app;
-	//}
-
 	
+	CApplication<KMER_WORDS> *app = new CApplication<KMER_WORDS>(Params);
+
+	if(!app->Process())
+	{
+		cerr << "Not enough memory or some other error\n";
+		delete app;
+		return 0;
+	}
+	app->GetStats(time1, time2, time3, n_unique, n_cutoff_min, n_cutoff_max, n_total, n_reads, tmp_size, tmp_size_strict_mem, max_disk_usage, n_total_super_kmers, was_small_k_opt);
+	app->SaveStatsInJSON(was_small_k_opt);
+	delete app;
 
 	cout << "1st stage: " << time1 << "s\n"
 	     << "2nd stage: " << time2  << "s\n";

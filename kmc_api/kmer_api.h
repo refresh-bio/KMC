@@ -670,9 +670,7 @@ public:
 				 min_mmr = cur_mmr;
 		 }
 		 return min_mmr.get();
-	 }
-	
-	 
+	 }	
 };
 
 

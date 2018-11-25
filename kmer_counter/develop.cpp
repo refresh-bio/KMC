@@ -37,7 +37,7 @@ void map_log(uint32 signature_len, uint32 map_size, int32* signature_map)
 
 
 
-void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, uint32 quality_size, uint64 n_reads, uint32 /*signature_len*/, uint32 map_size, int32* signature_map)
+void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, uint64 n_reads, uint32 /*signature_len*/, uint32 map_size, int32* signature_map)
 {
 #ifdef KMERS_PER_BIN_LOG_FILE
 	int32 bin_id;
@@ -66,7 +66,7 @@ void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, u
 		uint64 input_kmer_size;
 		int64 kxmer_counter_size;
 		uint32 kxmer_symbols;
-		if (Params.max_x && !Params.use_quake)
+		if (Params.max_x)
 		{
 			input_kmer_size = n_plus_x_recs * kmer_size;
 			kxmer_counter_size = n_plus_x_recs * sizeof(uint32);
@@ -83,9 +83,7 @@ void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, u
 		std::function<int64(int64)> round_up_to_alignment = [](int64 x){ return (x + ALIGNMENT - 1) / ALIGNMENT * ALIGNMENT; };
 
 
-		uint64 counter_size = min(BYTE_LOG(Params.cutoff_max), BYTE_LOG(Params.counter_max));
-		if (quality_size > counter_size)
-			counter_size = quality_size;
+		uint64 counter_size = min(BYTE_LOG(Params.cutoff_max), BYTE_LOG(Params.counter_max));		
 
 		uint32 kmer_symbols = Params.kmer_len - Params.lut_prefix_len;
 		uint64 kmer_bytes = kmer_symbols / 4;

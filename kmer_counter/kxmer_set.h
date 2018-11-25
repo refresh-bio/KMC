@@ -19,28 +19,28 @@ using namespace std;
 
 #define MAX_FOR_X_3 112
 
-template <typename KMER_T, unsigned SIZE>
+template <unsigned SIZE>
 class CKXmerSet;
 
 template<bool> struct Range;
 
-template<typename KMER_T, unsigned SIZE, unsigned PARENT, typename = Range<true> >
+template<unsigned SIZE, unsigned PARENT, typename = Range<true> >
 struct ParentFinder
 {
-	static uint32 Execute(CKXmerSet<KMER_T, SIZE>& ptr, const KMER_T& kmer);
+	static uint32 Execute(CKXmerSet<SIZE>& ptr, const CKmer<SIZE>& kmer);
 };
 
-template<typename KMER_T, unsigned SIZE, unsigned PARENT>
-struct ParentFinder<KMER_T, SIZE, PARENT, Range<(PARENT < 56)> >
+template<unsigned SIZE, unsigned PARENT>
+struct ParentFinder<SIZE, PARENT, Range<(PARENT < 56)> >
 {
-	FORCE_INLINE static uint32 Execute(CKXmerSet<KMER_T, SIZE>& ptr, const KMER_T& kmer)
+	FORCE_INLINE static uint32 Execute(CKXmerSet<SIZE>& ptr, const CKmer<SIZE>& kmer)
 	{
 		if (ptr.data[PARENT * 2].first < ptr.data[PARENT * 2 + 1].first)
 		{
 			if (ptr.data[PARENT * 2].first < kmer)
 			{
 				ptr.data[PARENT] = ptr.data[PARENT * 2];
-				return ParentFinder<KMER_T, SIZE, PARENT * 2>::Execute(ptr, kmer);
+				return ParentFinder<SIZE, PARENT * 2>::Execute(ptr, kmer);
 			}
 		}
 		else
@@ -48,17 +48,17 @@ struct ParentFinder<KMER_T, SIZE, PARENT, Range<(PARENT < 56)> >
 			if (ptr.data[PARENT * 2 + 1].first < kmer)
 			{
 				ptr.data[PARENT] = ptr.data[PARENT * 2 + 1];
-				return ParentFinder<KMER_T, SIZE, PARENT * 2 + 1>::Execute(ptr, kmer);
+				return ParentFinder<SIZE, PARENT * 2 + 1>::Execute(ptr, kmer);
 			}
 		}
 		return PARENT;
 	}
 };
 
-template<typename KMER_T, unsigned SIZE, unsigned PARENT>
-struct ParentFinder<KMER_T, SIZE, PARENT, Range<(PARENT == 56)> >
+template<unsigned SIZE, unsigned PARENT>
+struct ParentFinder<SIZE, PARENT, Range<(PARENT == 56)> >
 {
-	FORCE_INLINE static uint32 Execute(CKXmerSet<KMER_T, SIZE>& ptr, const KMER_T& kmer)
+	FORCE_INLINE static uint32 Execute(CKXmerSet<SIZE>& ptr, const CKmer<SIZE>& kmer)
 	{
 		if (ptr.data[PARENT * 2].first < kmer)
 		{
@@ -69,20 +69,20 @@ struct ParentFinder<KMER_T, SIZE, PARENT, Range<(PARENT == 56)> >
 	}
 };
 
-template<typename KMER_T, unsigned SIZE, unsigned PARENT>
-struct ParentFinder<KMER_T, SIZE, PARENT, Range<(PARENT > 56)> >
+template<unsigned SIZE, unsigned PARENT>
+struct ParentFinder<SIZE, PARENT, Range<(PARENT > 56)> >
 {
-	FORCE_INLINE static uint32 Execute(CKXmerSet<KMER_T, SIZE>& /*ptr*/, const KMER_T& /*kmer*/)
+	FORCE_INLINE static uint32 Execute(CKXmerSet<SIZE>& /*ptr*/, const CKmer<SIZE>& /*kmer*/)
 	{		
 		return PARENT;		
 	}
 };
 
-template <typename KMER_T, unsigned SIZE>
+template <unsigned SIZE>
 class CKXmerSet
 {
 	typedef tuple<uint64, uint64, uint32> elem_desc_t; //start_pos, end_pos, shr
-	typedef pair<KMER_T, uint32> heap_elem_t; //kxmer val, desc_id
+	typedef pair<CKmer<SIZE>, uint32> heap_elem_t; //kxmer val, desc_id
 	elem_desc_t data_desc[KXMER_SET_SIZE];
 	
 public: 
@@ -90,13 +90,13 @@ public:
 private:
 	uint32 pos;
 	uint32 desc_pos;
-	KMER_T mask;
-	KMER_T* buffer;
+	CKmer<SIZE> mask;
+	CKmer<SIZE>* buffer;
 
 	inline void update_heap()
 	{
 		uint32 desc_id = data[1].second;
-		KMER_T kmer;
+		CKmer<SIZE> kmer;
 		if (++get<0>(data_desc[desc_id]) < get<1>(data_desc[desc_id]))
 		{
 			kmer.from_kxmer(buffer[get<0>(data_desc[desc_id])], get<2>(data_desc[desc_id]), mask);
@@ -108,7 +108,7 @@ private:
 			data[pos].first.fill_T();		
 		}
 
-		uint32 parent = ParentFinder<KMER_T, SIZE, 1>::Execute(*this, kmer);
+		uint32 parent = ParentFinder<SIZE, 1>::Execute(*this, kmer);
 
 		data[parent] = make_pair(kmer, desc_id);
 	}
@@ -135,7 +135,7 @@ public:
 		}
 		++desc_pos;
 	}
-	inline void set_buffer(KMER_T* _buffer)
+	inline void set_buffer(CKmer<SIZE>* _buffer)
 	{
 		buffer = _buffer;
 	}
@@ -150,7 +150,7 @@ public:
 		}
 	}
 
-	inline bool get_min(uint64& _pos, KMER_T& kmer)
+	inline bool get_min(uint64& _pos, CKmer<SIZE>& kmer)
 	{
 		if (pos <= 1)		
 			return false;				
@@ -171,7 +171,7 @@ struct SubArrayDesc
 	uint64 counters_sum;
 };
 
-template<typename KMER_T>
+template<unsigned SIZE>
 class CSubArrayDescGenerator
 {
 	uint32 kmer_len;
@@ -179,7 +179,7 @@ class CSubArrayDescGenerator
 	uint32 parts_left;
 	const vector<SubArrayDesc>& sub_array_descs;
 	queue<vector<SubArrayDesc>> data;
-	KMER_T* buffer;
+	CKmer<SIZE>* buffer;
 	mutable std::mutex mtx;	
 	uint64 out_start = 0;
 	uint32 cutoff_min;
@@ -189,7 +189,7 @@ class CSubArrayDescGenerator
 	uint64 n_kxmer_counters;
 	uint32 n_threads;
 public:	
-	CSubArrayDescGenerator(uint32 kmer_len, uint32 n_parts, const vector<SubArrayDesc>& sub_array_descs, KMER_T* buffer, uint32 cutoff_min, uint32 rec_len, uint32* kxmer_counters, uint64 n_kxmer_counters, uint32 n_threads) :
+	CSubArrayDescGenerator(uint32 kmer_len, uint32 n_parts, const vector<SubArrayDesc>& sub_array_descs, CKmer<SIZE>* buffer, uint32 cutoff_min, uint32 rec_len, uint32* kxmer_counters, uint64 n_kxmer_counters, uint32 n_threads) :
 		kmer_len(kmer_len),
 		n_parts(n_parts),
 		parts_left(n_parts),
@@ -246,21 +246,21 @@ public:
 
 		vector<SubArrayDesc> sub_array_desc_copy(sub_array_descs.begin(), sub_array_descs.end());
 
-		KMER_T mask;
+		CKmer<SIZE> mask;
 		mask.set_n_1(kmer_len * 2);		
 		while (parts_left > 1)
 		{
 			uint64 end_in_biggest = (sub_array_desc_copy[biggest_id].end - sub_array_desc_copy[biggest_id].start - start_in_biggest) / parts_left + sub_array_desc_copy[biggest_id].start;
-			KMER_T kmer;
+			CKmer<SIZE> kmer;
 			kmer.from_kxmer(buffer[end_in_biggest], sub_array_desc_copy[biggest_id].shr, mask);
 
 			vector<SubArrayDesc> current;
 			for (auto& e : sub_array_desc_copy)
 			{
 				uint32 shr = e.shr;
-				uint64 new_end = std::lower_bound(buffer + e.start , buffer + e.end, kmer, [shr, mask](const KMER_T& k1, const KMER_T& k2)
+				uint64 new_end = std::lower_bound(buffer + e.start , buffer + e.end, kmer, [shr, mask](const CKmer<SIZE>& k1, const CKmer<SIZE>& k2)
 				{
-					KMER_T val;
+					CKmer<SIZE> val;
 					val.from_kxmer(k1, shr, mask);
 					return val < k2;
 				}) - buffer;
@@ -328,24 +328,24 @@ public:
 	}
 };
 
-template<typename KMER_T, unsigned SIZE>
+template<unsigned SIZE>
 class CKXmerMerger
 {
 	const vector<SubArrayDesc>& sub_array_descs;
-	CSubArrayDescGenerator<KMER_T>& sub_array_desc_generator;	
+	CSubArrayDescGenerator<SIZE>& sub_array_desc_generator;
 	CLutUpdater& lut_updater;
 	uint64 n_total = 0;
 	uint64 n_unique = 0;
 	uint64 n_cutoff_min = 0;
 	uint64 n_cutoff_max = 0;
 
-	KMER_T* buffer = nullptr;
+	CKmer<SIZE>* buffer = nullptr;
 	uint32* kxmer_counters = nullptr;
 	uint32 cutoff_min;
 	uint32 cutoff_max;
 	uint32 counter_max;
 	uint32 kmer_len;	
-	CKXmerSet<KMER_T, SIZE> kxmer_set;
+	CKXmerSet<SIZE> kxmer_set;
 	uint64* lut;
 	uint32 counter_size;
 	int32 lut_prefix_len;	
@@ -368,18 +368,18 @@ public:
 		kxmer_set.clear();
 		kxmer_set.set_buffer(buffer);
 
-		KMER_T mask;
+		CKmer<SIZE> mask;
 		mask.set_n_1(kmer_len * 2);
 		
 		uint64 last_prefix = 0;
 		uint64 last_prefix_n_recs = 0;
-		uint64 first_prefix = 1 << 2 * lut_prefix_len;
+		uint64 first_prefix = 1ull << 2 * lut_prefix_len;
 		uint64 first_prefix_n_recs = 0;
 
 		uint32 suffix_len_bits = (kmer_len - lut_prefix_len) * 2;
 		uint64 kmer_bytes = suffix_len_bits / 8;
 
-		KMER_T candidate_min, candidate_max;
+		CKmer<SIZE> candidate_min, candidate_max;
 		for (auto &d : desc)
 		{
 			if (d.end > d.start)
@@ -489,9 +489,9 @@ public:
 	}
 
 	CKXmerMerger(const vector<SubArrayDesc>& sub_array_descs, 
-		CSubArrayDescGenerator<KMER_T>& sub_array_desc_generator, 
+		CSubArrayDescGenerator<SIZE>& sub_array_desc_generator, 
 		CLutUpdater& lut_updater, 
-		KMER_T* buffer, 
+		CKmer<SIZE>* buffer,
 		uint32* kxmer_counters, 
 		uint32 cutoff_min, 
 		uint32 cutoff_max, 
@@ -538,11 +538,11 @@ public:
 	}
 };
 
-template<typename KMER_T, unsigned SIZE>
+template<unsigned SIZE>
 class CKXmerSetMultiThreaded
 {	
 	vector<SubArrayDesc> sub_array_descs;
-	KMER_T* buffer;
+	CKmer<SIZE>* buffer;
 	uint32* kxmer_counters;
 	uint64 n_kxmer_counters;
 	uint32 cutoff_min;
@@ -562,7 +562,7 @@ class CKXmerSetMultiThreaded
 	list<pair<uint64, uint64>> output_packs_desc;
 
 public:
-	CKXmerSetMultiThreaded(KMER_T* buffer,
+	CKXmerSetMultiThreaded(CKmer<SIZE>* buffer,
 		uint32* kxmer_counters, 
 		uint64 n_kxmer_counters,
 		uint32 cutoff_min, 
@@ -598,15 +598,15 @@ public:
 		
 		CLutUpdater lut_updater(lut);
 		vector<thread> threads;
-		vector<CKXmerMerger<KMER_T, SIZE>*> mergers;
+		vector<CKXmerMerger<SIZE>*> mergers;
 		uint32 counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
 
 		uint32 rec_len = (kmer_len - lut_prefix_len) / 4 + counter_size;
 
-		CSubArrayDescGenerator<KMER_T> sub_array_desc_generator(kmer_len, n_parts, sub_array_descs, buffer, cutoff_min, rec_len, kxmer_counters, n_kxmer_counters, n_threads);
+		CSubArrayDescGenerator<SIZE> sub_array_desc_generator(kmer_len, n_parts, sub_array_descs, buffer, cutoff_min, rec_len, kxmer_counters, n_kxmer_counters, n_threads);
 		for (uint32 i = 0; i < n_threads; ++i)
 		{
-			mergers.push_back(new CKXmerMerger<KMER_T, SIZE>(sub_array_descs, sub_array_desc_generator, lut_updater, buffer, kxmer_counters, cutoff_min, 
+			mergers.push_back(new CKXmerMerger<SIZE>(sub_array_descs, sub_array_desc_generator, lut_updater, buffer, kxmer_counters, cutoff_min, 
 				cutoff_max, counter_max, kmer_len, lut, counter_size, lut_prefix_len, out_buffer, without_output));
 			threads.push_back(thread(ref(*mergers.back())));
 		}

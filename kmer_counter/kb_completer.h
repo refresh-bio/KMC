@@ -52,8 +52,7 @@ class CKmerBinCompleter {
 	uint32 cutoff_min, cutoff_max;
 	uint32 counter_max;
 	int32 kmer_len;
-	int32 signature_len;
-	bool use_quake;
+	int32 signature_len;	
 	bool both_strands;
 	bool without_output;
 	bool store_uint(FILE *out, uint64 x, uint32 size);	
@@ -89,7 +88,7 @@ public:
 //************************************************************************************************************
 // SmallKCompleter - completer for small k optimization
 //************************************************************************************************************
-template<bool QUAKE_MODE>
+//TODO: remove quake move implementation to cpp file
 class CSmallKCompleter
 {
 	CMemoryPool *pmm_small_k_completer;
@@ -100,8 +99,7 @@ class CSmallKCompleter
 	uint32 kmer_len;
 	int64 mem_tot_small_k_completer;
 	std::string output_file_name;
-	bool both_strands;
-	bool use_quake;
+	bool both_strands;	
 	bool without_output;
 
 	bool store_uint(FILE *out, uint64 x, uint32 size);
@@ -114,8 +112,7 @@ public:
 
 };
 
-template<bool QUAKE_MODE>
-CSmallKCompleter<QUAKE_MODE>::CSmallKCompleter(CKMCParams& Params, CKMCQueues& Queues)
+CSmallKCompleter::CSmallKCompleter(CKMCParams& Params, CKMCQueues& Queues)
 {
 	pmm_small_k_completer = Queues.pmm_small_k_completer;
 	n_unique = n_cutoff_min = n_cutoff_max = 0;
@@ -125,15 +122,13 @@ CSmallKCompleter<QUAKE_MODE>::CSmallKCompleter(CKMCParams& Params, CKMCQueues& Q
 	counter_max = Params.counter_max;
 	both_strands = Params.both_strands;
 	kmer_len = (uint32)Params.kmer_len;
-	use_quake = Params.use_quake;
 	without_output = Params.without_output;
 
 	mem_tot_small_k_completer = Params.mem_tot_small_k_completer;
 	output_file_name = Params.output_file_name;
 }
 
-template<bool QUAKE_MODE>
-bool CSmallKCompleter<QUAKE_MODE>::store_uint(FILE *out, uint64 x, uint32 size)
+bool CSmallKCompleter::store_uint(FILE *out, uint64 x, uint32 size)
 {
 	for (uint32 i = 0; i < size; ++i)
 		putc((x >> (i * 8)) & 0xFF, out);
@@ -141,16 +136,13 @@ bool CSmallKCompleter<QUAKE_MODE>::store_uint(FILE *out, uint64 x, uint32 size)
 	return true;
 }
 
-template<bool QUAKE_MODE>
 template<typename COUNTER_TYPE>
-bool CSmallKCompleter<QUAKE_MODE>::Complete(CSmallKBuf<COUNTER_TYPE> result)
+bool CSmallKCompleter::Complete(CSmallKBuf<COUNTER_TYPE> result)
 {
 	uchar* raw_buffer;
 	uint64 counter_size = 0;
-	if (use_quake)
-		counter_size = 4;
-	else
-		counter_size = min(BYTE_LOG_ULL((uint64)cutoff_max), BYTE_LOG_ULL((uint64)counter_max));
+
+	counter_size = min(BYTE_LOG_ULL((uint64)cutoff_max), BYTE_LOG_ULL((uint64)counter_max));
 	uint64 kmer_suf_bytes = (kmer_len - lut_prefix_len) / 4;
 
 
@@ -165,8 +157,8 @@ bool CSmallKCompleter<QUAKE_MODE>::Complete(CSmallKBuf<COUNTER_TYPE> result)
 	uint64* lut = (uint64*)raw_buffer;
 	uchar* suf = raw_buffer + lut_buf_recs * sizeof(uint64);
 
-	FILE* suf_file = NULL;
-	FILE* pre_file = NULL;
+	FILE* suf_file = nullptr;
+	FILE* pre_file = nullptr;
 
 	string pre_file_name = output_file_name + ".kmc_pre";
 	string suf_file_name = output_file_name + ".kmc_suf";
@@ -262,9 +254,9 @@ bool CSmallKCompleter<QUAKE_MODE>::Complete(CSmallKBuf<COUNTER_TYPE> result)
 	
 		uint32 offset = 0;
 
-		store_uint(pre_file, kmer_len, 4);				offset += 4;
-		store_uint(pre_file, (uint32)use_quake, 4);		offset += 4;	// mode: 0 (counting), 1 (Quake-compatibile counting)
-		store_uint(pre_file, counter_size, 4);			offset += 4;
+		store_uint(pre_file, kmer_len, 4);					offset += 4;
+		store_uint(pre_file, (uint32)0, 4);					offset += 4;	// mode: 0 (counting), 1 (Quake-compatibile counting, not supported anymore)
+		store_uint(pre_file, counter_size, 4);				offset += 4;
 		store_uint(pre_file, lut_prefix_len, 4);			offset += 4;
 		store_uint(pre_file, cutoff_min, 4);				offset += 4;
 		store_uint(pre_file, cutoff_max, 4);				offset += 4;
@@ -302,8 +294,7 @@ bool CSmallKCompleter<QUAKE_MODE>::Complete(CSmallKBuf<COUNTER_TYPE> result)
 	return true;
 }
 
-template<bool QUAKE_MODE>
-void CSmallKCompleter<QUAKE_MODE>::GetTotal(uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max)
+void CSmallKCompleter::GetTotal(uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max)
 {
 	_n_unique = n_unique;
 	_n_cutoff_min = n_cutoff_min;

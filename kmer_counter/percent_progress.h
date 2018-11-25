@@ -41,7 +41,7 @@ public:
 		curr_val += val;
 		int32 new_percent = 0;
 		if (max_val)
-			new_percent = (curr_val * 100) / max_val;
+			new_percent = static_cast<int32>((curr_val * 100) / max_val);
 		else
 			new_percent = 100;
 		if (new_percent > curr_percent)

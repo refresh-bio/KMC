@@ -19,7 +19,7 @@ using namespace std;
 CMemDiskFile::CMemDiskFile(bool _memory_mode)
 {
 	memory_mode = _memory_mode;
-	file = NULL;
+	file = nullptr;
 }
 
 //----------------------------------------------------------------------------------

@@ -51,8 +51,7 @@ class CKmerBinCollector
 	CMemoryPool *pmm_bins;
 	uint32 n_recs;
 	uint32 n_plus_x_recs;
-	uint32 n_super_kmers;
-	int lowest_quality;
+	uint32 n_super_kmers;	
 	uint32 max_x;
 
 	uint32 kmer_bytes;
@@ -62,8 +61,7 @@ class CKmerBinCollector
 
 public:
 	CKmerBinCollector(CKMCQueues& Queues, CKMCParams& Params, uint32 _buffer_size, uint32 _bin_no);
-	void PutExtendedKmer(char* seq, uint32 n);
-	void PutExtendedKmer(char* seq, char* quals, uint32 n);//for quake mode
+	void PutExtendedKmer(char* seq, uint32 n);	
 	inline void Flush();
 };
 
@@ -77,8 +75,7 @@ CKmerBinCollector::CKmerBinCollector(CKMCQueues& Queues, CKMCParams& Params, uin
 	kmer_len		= Params.kmer_len;
 	bd				= Queues.bd;
 	buffer_size		= _buffer_size;	
-	pmm_bins		= Queues.pmm_bins;
-	lowest_quality  = Params.lowest_quality;
+	pmm_bins		= Queues.pmm_bins;	
 	max_x				= Params.max_x;
 	
 	bin_no			= _bin_no;
@@ -204,33 +201,6 @@ template<unsigned DIVIDE_FACTOR> void CKmerBinCollector::update_n_plus_x_recs(ch
 }
 
 //---------------------------------------------------------------------------------
-void CKmerBinCollector::PutExtendedKmer(char* seq, char* quals, uint32 n)
-{
-	uint32 bytes = n + 1;
-	if (buffer_pos + bytes > buffer_size)
-	{
-		Flush();
-
-		pmm_bins->reserve(buffer);
-		buffer_pos	= 0;
-		n_recs		= 0;
-		n_super_kmers	= 0;
-	}
-
-	n_recs += n - kmer_len + 1;
-	++n_super_kmers;
-	buffer[buffer_pos++] = n - kmer_len;
-	char qual;
-	for (uint32 i = 0; i < n; ++i)
-	{
-		qual = quals[i] - lowest_quality;
-		if (qual > 63)
-			qual = 63;
-		buffer[buffer_pos++] = (seq[i] << 6) + qual;
-	}
-}
-
-//---------------------------------------------------------------------------------
 void CKmerBinCollector::Flush()
 {
 	if (prev_pos < buffer_pos)
@@ -243,7 +213,7 @@ void CKmerBinCollector::Flush()
 
 	bin_part_queue->push(bin_no, buffer, buffer_pos, buffer_size, expander_parts);
 	expander_parts.clear();
-	bd->insert(bin_no, NULL, "", buffer_pos, n_recs, n_plus_x_recs, n_super_kmers);
+	bd->insert(bin_no, nullptr, "", buffer_pos, n_recs, n_plus_x_recs, n_super_kmers);
 }
 
 #endif

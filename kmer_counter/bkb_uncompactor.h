@@ -15,13 +15,11 @@
 #include "kmer.h"
 #include "rev_byte.h"
 
-//************************************************************************************************************
-template<typename KMER_T, unsigned SIZE> class CBigKmerBinUncompactor_Impl;
 
 //************************************************************************************************************
 // CBigKmerBinUncompactor - Unpacking super k-mers to k+x-mers, only in strict memory mode
 //************************************************************************************************************
-template<typename KMER_T, unsigned SIZE>
+template<unsigned SIZE>
 class CBigKmerBinUncompactor
 {
 	CBigBinPartQueue* bbpq;
@@ -31,7 +29,7 @@ class CBigKmerBinUncompactor
 	bool both_strands;
 	uint32 kmer_len;
 
-	KMER_T* kxmers;
+	CKmer<SIZE>* kxmers;
 	int64 sm_mem_part_expand;
 	uint32 kxmers_size;
 	int32 bin_id;
@@ -39,7 +37,13 @@ class CBigKmerBinUncompactor
 	uchar* input_data;
 	uint64 input_data_size;
 
-	friend class CBigKmerBinUncompactor_Impl<KMER_T, SIZE>;
+	void GetNextSymb(uchar& symb, uchar& byte_shift, uint64& pos, uchar* data_p);
+	void Uncompact();
+	void ExpandKxmersBoth();
+	void ExpandKxmersAll();
+	void ExpandKmersBoth();
+	void ExpandKmersAll();
+
 	public:
 	CBigKmerBinUncompactor(CKMCParams& Params, CKMCQueues& Queues);
 	~CBigKmerBinUncompactor();
@@ -48,42 +52,12 @@ class CBigKmerBinUncompactor
 };
 
 //************************************************************************************************************
-// CBigKmerBinUncompactor_Impl - implementation of k-mer type- and size-dependent functions
-//************************************************************************************************************
-template<typename KMER_T, unsigned SIZE>
-class CBigKmerBinUncompactor_Impl
-{
-public:
-	static void Uncompact(CBigKmerBinUncompactor<KMER_T, SIZE>& ptr);
-};
-
-template<unsigned SIZE>
-class CBigKmerBinUncompactor_Impl < CKmer<SIZE>, SIZE >
-{
-public:
-	static void GetNextSymb(uchar& symb, uchar& byte_shift, uint64& pos, uchar* data_p);
-	static void Uncompact(CBigKmerBinUncompactor<CKmer<SIZE>, SIZE>& ptr);
-	static void ExpandKxmersBoth(CBigKmerBinUncompactor<CKmer<SIZE>, SIZE>& ptr);
-	static void ExpandKxmersAll(CBigKmerBinUncompactor<CKmer<SIZE>, SIZE>& ptr);
-	static void ExpandKmersBoth(CBigKmerBinUncompactor<CKmer<SIZE>, SIZE>& ptr);
-	static void ExpandKmersAll(CBigKmerBinUncompactor<CKmer<SIZE>, SIZE>& ptr);
-};
-
-
-template<unsigned SIZE>
-class CBigKmerBinUncompactor_Impl < CKmerQuake<SIZE>, SIZE >
-{
-public:
-	static void Uncompact(CBigKmerBinUncompactor<CKmerQuake<SIZE>, SIZE>& ptr);
-};
-
-//************************************************************************************************************
 // CBigKmerBinUncompactor
 //************************************************************************************************************
 
 
 //----------------------------------------------------------------------------------
-template<typename KMER_T, unsigned SIZE> CBigKmerBinUncompactor<KMER_T, SIZE>::CBigKmerBinUncompactor(CKMCParams& Params, CKMCQueues& Queues)
+template<unsigned SIZE> CBigKmerBinUncompactor<SIZE>::CBigKmerBinUncompactor(CKMCParams& Params, CKMCQueues& Queues)
 {	
 	sm_pmm_expand = Queues.sm_pmm_expand;
 	bbpq = Queues.bbpq;
@@ -92,30 +66,27 @@ template<typename KMER_T, unsigned SIZE> CBigKmerBinUncompactor<KMER_T, SIZE>::C
 	max_x = Params.max_x;
 	both_strands = Params.both_strands;
 	sm_mem_part_expand = Params.sm_mem_part_expand;
-	kxmers_size = (uint32)(sm_mem_part_expand / sizeof(KMER_T)); 
+	kxmers_size = (uint32)(sm_mem_part_expand / sizeof(CKmer<SIZE>)); 
 }
 
 //----------------------------------------------------------------------------------
-template<typename KMER_T, unsigned SIZE> void CBigKmerBinUncompactor<KMER_T, SIZE>::Uncompact(int32 _bin_id, uchar* _data, uint64 _size)
+template<unsigned SIZE> void CBigKmerBinUncompactor<SIZE>::Uncompact(int32 _bin_id, uchar* _data, uint64 _size)
 {
 	bin_id = _bin_id;
 	input_data = _data;
 	input_data_size = _size;
-	CBigKmerBinUncompactor_Impl<KMER_T, SIZE>::Uncompact(*this);
+	Uncompact();
 }
 
 //----------------------------------------------------------------------------------
-template<typename KMER_T, unsigned SIZE> CBigKmerBinUncompactor<KMER_T, SIZE>::~CBigKmerBinUncompactor()
+template<unsigned SIZE> CBigKmerBinUncompactor<SIZE>::~CBigKmerBinUncompactor()
 {
 
 }
 
-//************************************************************************************************************
-// CBigKmerBinUncompactor_Impl
-//************************************************************************************************************
 
 //----------------------------------------------------------------------------------
-template <unsigned SIZE> inline void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::GetNextSymb(uchar& symb, uchar& byte_shift, uint64& pos, uchar* data_p)
+template <unsigned SIZE> inline void CBigKmerBinUncompactor<SIZE>::GetNextSymb(uchar& symb, uchar& byte_shift, uint64& pos, uchar* data_p)
 {
 	symb = (data_p[pos] >> byte_shift) & 3;
 	if (byte_shift == 0)
@@ -128,28 +99,28 @@ template <unsigned SIZE> inline void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SI
 }
 
 //----------------------------------------------------------------------------------
-template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::ExpandKxmersBoth(CBigKmerBinUncompactor<CKmer<SIZE>, SIZE>& ptr)
+template<unsigned SIZE> void CBigKmerBinUncompactor<SIZE>::ExpandKxmersBoth()
 {
 	uchar* _raw_buffer;
-	ptr.sm_pmm_expand->reserve(_raw_buffer);
-	ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+	sm_pmm_expand->reserve(_raw_buffer);
+	kxmers = (CKmer<SIZE>*)_raw_buffer;
 
 	CKmer<SIZE> kmer, rev_kmer, kmer_mask;
 	CKmer<SIZE> kxmer_mask;
 	bool kmer_lower;
 	uint32 x, additional_symbols;
 	uchar symb;
-	uint32 kmer_bytes = (ptr.kmer_len + 3) / 4;
-	uint32 rev_shift = ptr.kmer_len * 2 - 2;
-	uchar* data_p = ptr.input_data;
-	kmer_mask.set_n_1(ptr.kmer_len * 2);
-	uint32 kmer_shr = SIZE * 32 - ptr.kmer_len;
+	uint32 kmer_bytes = (kmer_len + 3) / 4;
+	uint32 rev_shift = kmer_len * 2 - 2;
+	uchar* data_p = input_data;
+	kmer_mask.set_n_1(kmer_len * 2);
+	uint32 kmer_shr = SIZE * 32 - kmer_len;
 
-	kxmer_mask.set_n_1((ptr.kmer_len + ptr.max_x + 1) * 2);
+	kxmer_mask.set_n_1((kmer_len + max_x + 1) * 2);
 
 	uint64 kxmers_pos = 0;
 	uint64 pos = 0;
-	while (pos < ptr.input_data_size)
+	while (pos < input_data_size)
 	{
 		kmer.clear();
 		rev_kmer.clear();
@@ -163,7 +134,7 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 		}
 		pos += kmer_bytes;
 
-		uchar byte_shift = 6 - (ptr.kmer_len % 4) * 2;
+		uchar byte_shift = 6 - (kmer_len % 4) * 2;
 		if (byte_shift != 6)
 			--pos;
 
@@ -177,9 +148,9 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 		x = 0;
 
 		if (kmer_lower)
-			ptr.kxmers[kxmers_pos].set(kmer);
+			kxmers[kxmers_pos].set(kmer);
 		else
-			ptr.kxmers[kxmers_pos].set(rev_kmer);
+			kxmers[kxmers_pos].set(rev_kmer);
 
 		uint32 symbols_left = additional_symbols;
 		while (symbols_left)
@@ -194,20 +165,20 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 			{
 				if (kmer < rev_kmer)
 				{
-					ptr.kxmers[kxmers_pos].SHL_insert_2bits(symb);
+					kxmers[kxmers_pos].SHL_insert_2bits(symb);
 					++x;
-					if (x == ptr.max_x)
+					if (x == max_x)
 					{
 						if(!symbols_left)
 							break;
 
-						ptr.kxmers[kxmers_pos++].set_2bits(x, ptr.kmer_len * 2 + ptr.max_x * 2);
-						if (kxmers_pos >= ptr.kxmers_size)
+						kxmers[kxmers_pos++].set_2bits(x, kmer_len * 2 + max_x * 2);
+						if (kxmers_pos >= kxmers_size)
 						{
-							ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+							bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 							kxmers_pos = 0;
-							ptr.sm_pmm_expand->reserve(_raw_buffer);
-							ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+							sm_pmm_expand->reserve(_raw_buffer);
+							kxmers = (CKmer<SIZE>*)_raw_buffer;
 						}
 						x = 0;
 
@@ -219,45 +190,45 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 
 						kmer_lower = kmer < rev_kmer;
 						if (kmer_lower)
-							ptr.kxmers[kxmers_pos].set(kmer);
+							kxmers[kxmers_pos].set(kmer);
 						else
-							ptr.kxmers[kxmers_pos].set(rev_kmer);
+							kxmers[kxmers_pos].set(rev_kmer);
 					}
 				}
 				else
 				{
-					ptr.kxmers[kxmers_pos++].set_2bits(x, ptr.kmer_len * 2 + ptr.max_x * 2);
-					if (kxmers_pos >= ptr.kxmers_size)
+					kxmers[kxmers_pos++].set_2bits(x, kmer_len * 2 + max_x * 2);
+					if (kxmers_pos >= kxmers_size)
 					{
-						ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+						bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 						kxmers_pos = 0;
-						ptr.sm_pmm_expand->reserve(_raw_buffer);
-						ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+						sm_pmm_expand->reserve(_raw_buffer);
+						kxmers = (CKmer<SIZE>*)_raw_buffer;
 					}
 					x = 0;
 
 					kmer_lower = false;
-					ptr.kxmers[kxmers_pos].set(rev_kmer);
+					kxmers[kxmers_pos].set(rev_kmer);
 				}
 			}
 			else
 			{
 				if (!(kmer < rev_kmer))
 				{
-					ptr.kxmers[kxmers_pos].set_2bits(3 - symb, ptr.kmer_len * 2 + x * 2);
+					kxmers[kxmers_pos].set_2bits(3 - symb, kmer_len * 2 + x * 2);
 					++x;
-					if (x == ptr.max_x)
+					if (x == max_x)
 					{
 						if(!symbols_left)
 							break;
 
-						ptr.kxmers[kxmers_pos++].set_2bits(x, ptr.kmer_len * 2 + ptr.max_x * 2);
-						if (kxmers_pos >= ptr.kxmers_size)
+						kxmers[kxmers_pos++].set_2bits(x, kmer_len * 2 + max_x * 2);
+						if (kxmers_pos >= kxmers_size)
 						{
-							ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+							bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 							kxmers_pos = 0;
-							ptr.sm_pmm_expand->reserve(_raw_buffer);
-							ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+							sm_pmm_expand->reserve(_raw_buffer);
+							kxmers = (CKmer<SIZE>*)_raw_buffer;
 						}
 						x = 0;
 
@@ -270,36 +241,36 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 						kmer_lower = kmer < rev_kmer;
 
 						if (kmer_lower)
-							ptr.kxmers[kxmers_pos].set(kmer);
+							kxmers[kxmers_pos].set(kmer);
 						else
-							ptr.kxmers[kxmers_pos].set(rev_kmer);
+							kxmers[kxmers_pos].set(rev_kmer);
 					}
 				}
 				else
 				{
-					ptr.kxmers[kxmers_pos++].set_2bits(x, ptr.kmer_len * 2 + ptr.max_x * 2);
-					if (kxmers_pos >= ptr.kxmers_size)
+					kxmers[kxmers_pos++].set_2bits(x, kmer_len * 2 + max_x * 2);
+					if (kxmers_pos >= kxmers_size)
 					{
-						ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+						bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 						kxmers_pos = 0;
-						ptr.sm_pmm_expand->reserve(_raw_buffer);
-						ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+						sm_pmm_expand->reserve(_raw_buffer);
+						kxmers = (CKmer<SIZE>*)_raw_buffer;
 					}
 					x = 0;
 					
-					ptr.kxmers[kxmers_pos].set(kmer);
+					kxmers[kxmers_pos].set(kmer);
 					kmer_lower = true;
 				}
 			}
 
 		}
-		ptr.kxmers[kxmers_pos++].set_2bits(x, ptr.kmer_len * 2 + ptr.max_x * 2);
-		if (kxmers_pos >= ptr.kxmers_size)
+		kxmers[kxmers_pos++].set_2bits(x, kmer_len * 2 + max_x * 2);
+		if (kxmers_pos >= kxmers_size)
 		{
-			ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+			bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 			kxmers_pos = 0;
-			ptr.sm_pmm_expand->reserve(_raw_buffer);
-			ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+			sm_pmm_expand->reserve(_raw_buffer);
+			kxmers = (CKmer<SIZE>*)_raw_buffer;
 		}
 		if (byte_shift != 6)
 			++pos;
@@ -307,36 +278,36 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 
 	if (kxmers_pos)
 	{
-		ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+		bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 	}
 	else
 	{
-		ptr.sm_pmm_expand->free(_raw_buffer);
+		sm_pmm_expand->free(_raw_buffer);
 	}
 }
 
 //----------------------------------------------------------------------------------
-template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::ExpandKxmersAll(CBigKmerBinUncompactor<CKmer<SIZE>, SIZE>& ptr)
+template<unsigned SIZE> void CBigKmerBinUncompactor<SIZE>::ExpandKxmersAll()
 {
 	uchar* _raw_buffer;
-	ptr.sm_pmm_expand->reserve(_raw_buffer);
-	ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+	sm_pmm_expand->reserve(_raw_buffer);
+	kxmers = (CKmer<SIZE>*)_raw_buffer;
 
 	uint64 pos = 0;
 	CKmer<SIZE> kmer_mask, kxmer, kxmer_mask;
-	kxmer_mask.set_n_1((ptr.kmer_len + ptr.max_x) * 2);
-	uchar *data_p = ptr.input_data;
+	kxmer_mask.set_n_1((kmer_len + max_x) * 2);
+	uchar *data_p = input_data;
 
-	kmer_mask.set_n_1(ptr.kmer_len * 2);
+	kmer_mask.set_n_1(kmer_len * 2);
 	uint64 kxmers_pos = 0;
 
-	while (pos < ptr.input_data_size)
+	while (pos < input_data_size)
 	{		
 		kxmer.clear();
 		uint32 additional_symbols = data_p[pos++];
 		uchar symb;
 
-		uint32 kmer_bytes = (ptr.kmer_len + 3) / 4;
+		uint32 kmer_bytes = (kmer_len + 3) / 4;
 
 		//building kmer
 		for (uint32 i = 0, kmer_pos = 8 * SIZE - 1; i < kmer_bytes; ++i, --kmer_pos)
@@ -345,57 +316,57 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 		}
 
 		pos += kmer_bytes;
-		uchar byte_shift = 6 - (ptr.kmer_len % 4) * 2;
+		uchar byte_shift = 6 - (kmer_len % 4) * 2;
 		if (byte_shift != 6)
 			--pos;
 
-		uint32 kmer_shr = SIZE * 32 - ptr.kmer_len;
+		uint32 kmer_shr = SIZE * 32 - kmer_len;
 
 		if (kmer_shr)
 			kxmer.SHR(kmer_shr);
 
 		kxmer.mask(kmer_mask);
 
-		uint32 tmp = MIN(ptr.max_x, additional_symbols);
+		uint32 tmp = MIN(max_x, additional_symbols);
 
 		for (uint32 i = 0; i < tmp; ++i)
 		{
 			GetNextSymb(symb, byte_shift, pos, data_p);
 			kxmer.SHL_insert_2bits(symb);
 		}
-		kxmer.set_2bits(tmp, (ptr.kmer_len + ptr.max_x) * 2);
+		kxmer.set_2bits(tmp, (kmer_len + max_x) * 2);
 
-		ptr.kxmers[kxmers_pos++].set(kxmer);
-		if (kxmers_pos >= ptr.kxmers_size)
+		kxmers[kxmers_pos++].set(kxmer);
+		if (kxmers_pos >= kxmers_size)
 		{
-			ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+			bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 			kxmers_pos = 0;
-			ptr.sm_pmm_expand->reserve(_raw_buffer);
-			ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+			sm_pmm_expand->reserve(_raw_buffer);
+			kxmers = (CKmer<SIZE>*)_raw_buffer;
 		}
 		additional_symbols -= tmp;
 
-		uint32 kxmers_count = additional_symbols / (ptr.max_x + 1);
-		uint32 kxmer_rest = additional_symbols % (ptr.max_x + 1);
+		uint32 kxmers_count = additional_symbols / (max_x + 1);
+		uint32 kxmer_rest = additional_symbols % (max_x + 1);
 
 		for (uint32 j = 0; j < kxmers_count; ++j)
 		{
-			for (uint32 i = 0; i < ptr.max_x + 1; ++i)
+			for (uint32 i = 0; i < max_x + 1; ++i)
 			{
 				GetNextSymb(symb, byte_shift, pos, data_p);
 				kxmer.SHL_insert_2bits(symb);
 			}
 			kxmer.mask(kxmer_mask);
 
-			kxmer.set_2bits(ptr.max_x, (ptr.kmer_len + ptr.max_x) * 2);
+			kxmer.set_2bits(max_x, (kmer_len + max_x) * 2);
 
-			ptr.kxmers[kxmers_pos++].set(kxmer);
-			if (kxmers_pos >= ptr.kxmers_size)
+			kxmers[kxmers_pos++].set(kxmer);
+			if (kxmers_pos >= kxmers_size)
 			{
-				ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+				bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 				kxmers_pos = 0;
-				ptr.sm_pmm_expand->reserve(_raw_buffer);
-				ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+				sm_pmm_expand->reserve(_raw_buffer);
+				kxmers = (CKmer<SIZE>*)_raw_buffer;
 			}
 		}
 		if (kxmer_rest)
@@ -411,16 +382,16 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 				kxmer.SHL_insert_2bits(symb);
 			}
 
-			kxmer.set_2bits(kxmer_rest, (ptr.kmer_len + ptr.max_x) * 2);
+			kxmer.set_2bits(kxmer_rest, (kmer_len + max_x) * 2);
 
-			ptr.kxmers[kxmers_pos++].set(kxmer);
-			if (kxmers_pos >= ptr.kxmers_size)
+			kxmers[kxmers_pos++].set(kxmer);
+			if (kxmers_pos >= kxmers_size)
 			{
 				
-				ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+				bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 				kxmers_pos = 0;
-				ptr.sm_pmm_expand->reserve(_raw_buffer);
-				ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+				sm_pmm_expand->reserve(_raw_buffer);
+				kxmers = (CKmer<SIZE>*)_raw_buffer;
 			}
 		}
 		if (byte_shift != 6)
@@ -428,34 +399,34 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 	}
 	if (kxmers_pos)
 	{
-		ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+		bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 	}
 	else
 	{
-		ptr.sm_pmm_expand->free(_raw_buffer);
+		sm_pmm_expand->free(_raw_buffer);
 	}
 
 }
 
 //----------------------------------------------------------------------------------
-template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::ExpandKmersBoth(CBigKmerBinUncompactor<CKmer<SIZE>, SIZE>& ptr)
+template<unsigned SIZE> void CBigKmerBinUncompactor<SIZE>::ExpandKmersBoth()
 {
 	uchar* _raw_buffer;
-	ptr.sm_pmm_expand->reserve(_raw_buffer);
-	ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+	sm_pmm_expand->reserve(_raw_buffer);
+	kxmers = (CKmer<SIZE>*)_raw_buffer;
 
 	CKmer<SIZE> kmer, rev_kmer, kmer_can, kmer_mask;
 
-	uint32 kmer_bytes = (ptr.kmer_len + 3) / 4;
-	uint32 kmer_len_shift = (ptr.kmer_len - 1) * 2;
-	kmer_mask.set_n_1(ptr.kmer_len * 2);
-	uchar *data_p = ptr.input_data;
+	uint32 kmer_bytes = (kmer_len + 3) / 4;
+	uint32 kmer_len_shift = (kmer_len - 1) * 2;
+	kmer_mask.set_n_1(kmer_len * 2);
+	uchar *data_p = input_data;
 
 	uint64 kxmers_pos = 0;
 	uint64 pos = 0;
 
 
-	while (pos < ptr.input_data_size)
+	while (pos < input_data_size)
 	{
 		kmer.clear();
 		rev_kmer.clear();
@@ -469,11 +440,11 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 			rev_kmer.set_byte(kmer_rev_pos, CRev_byte::lut[data_p[pos + i]]);
 		}
 		pos += kmer_bytes;
-		uchar byte_shift = 6 - (ptr.kmer_len % 4) * 2;
+		uchar byte_shift = 6 - (kmer_len % 4) * 2;
 		if (byte_shift != 6)
 			--pos;
 
-		uint32 kmer_shr = SIZE * 32 - ptr.kmer_len;
+		uint32 kmer_shr = SIZE * 32 - kmer_len;
 
 		if (kmer_shr)
 			kmer.SHR(kmer_shr);
@@ -482,13 +453,13 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 		rev_kmer.mask(kmer_mask);
 
 		kmer_can = kmer < rev_kmer ? kmer : rev_kmer;
-		ptr.kxmers[kxmers_pos++].set(kmer_can);
-		if (kxmers_pos >= ptr.kxmers_size)
+		kxmers[kxmers_pos++].set(kmer_can);
+		if (kxmers_pos >= kxmers_size)
 		{
-			ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+			bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 			kxmers_pos = 0;
-			ptr.sm_pmm_expand->reserve(_raw_buffer);
-			ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+			sm_pmm_expand->reserve(_raw_buffer);
+			kxmers = (CKmer<SIZE>*)_raw_buffer;
 		}
 
 		for (uint32 i = 0; i < additional_symbols; ++i)
@@ -505,13 +476,13 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 			kmer.mask(kmer_mask);
 			rev_kmer.SHR_insert_2bits(3 - symb, kmer_len_shift);
 			kmer_can = kmer < rev_kmer ? kmer : rev_kmer;
-			ptr.kxmers[kxmers_pos++].set(kmer_can);
-			if (kxmers_pos >= ptr.kxmers_size)
+			kxmers[kxmers_pos++].set(kmer_can);
+			if (kxmers_pos >= kxmers_size)
 			{
-				ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+				bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 				kxmers_pos = 0;
-				ptr.sm_pmm_expand->reserve(_raw_buffer);
-				ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+				sm_pmm_expand->reserve(_raw_buffer);
+				kxmers = (CKmer<SIZE>*)_raw_buffer;
 			}
 		}
 		if (byte_shift != 6)
@@ -519,31 +490,31 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 	}
 	if (kxmers_pos)
 	{
-		ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+		bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 	}
 	else
 	{
-		ptr.sm_pmm_expand->free(_raw_buffer);
+		sm_pmm_expand->free(_raw_buffer);
 	}
 }
 
 //----------------------------------------------------------------------------------
-template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::ExpandKmersAll(CBigKmerBinUncompactor<CKmer<SIZE>, SIZE>& ptr)
+template<unsigned SIZE> void CBigKmerBinUncompactor<SIZE>::ExpandKmersAll()
 {	
 	uchar* _raw_buffer;
-	ptr.sm_pmm_expand->reserve(_raw_buffer);
-	ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+	sm_pmm_expand->reserve(_raw_buffer);
+	kxmers = (CKmer<SIZE>*)_raw_buffer;
 
 	uint64 kxmers_pos = 0;
 	uint64 pos = 0;
 	CKmer<SIZE> kmer;
-	uint32 kmer_bytes = (ptr.kmer_len + 3) / 4;
+	uint32 kmer_bytes = (kmer_len + 3) / 4;
 
 	CKmer<SIZE> kmer_mask;
-	kmer_mask.set_n_1(ptr.kmer_len * 2);
-	uchar *data_p = ptr.input_data;
+	kmer_mask.set_n_1(kmer_len * 2);
+	uchar *data_p = input_data;
 
-	while (pos < ptr.input_data_size)
+	while (pos < input_data_size)
 	{
 		kmer.clear();
 		uint32 additional_symbols = data_p[pos++];		
@@ -552,23 +523,23 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 			kmer.set_byte(kmer_pos, data_p[pos + i]);
 		}
 		pos += kmer_bytes;
-		uchar byte_shift = 6 - (ptr.kmer_len % 4) * 2;
+		uchar byte_shift = 6 - (kmer_len % 4) * 2;
 		if (byte_shift != 6)
 			--pos;
 
-		uint32 kmer_shr = SIZE * 32 - ptr.kmer_len;
+		uint32 kmer_shr = SIZE * 32 - kmer_len;
 
 		if (kmer_shr)
 			kmer.SHR(kmer_shr);
 
 		kmer.mask(kmer_mask);
-		ptr.kxmers[kxmers_pos++].set(kmer);
-		if (kxmers_pos >= ptr.kxmers_size)
+		kxmers[kxmers_pos++].set(kmer);
+		if (kxmers_pos >= kxmers_size)
 		{
-			ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+			bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 			kxmers_pos = 0;
-			ptr.sm_pmm_expand->reserve(_raw_buffer);
-			ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+			sm_pmm_expand->reserve(_raw_buffer);
+			kxmers = (CKmer<SIZE>*)_raw_buffer;
 		}
 		for (uint32 i = 0; i < additional_symbols; ++i)
 		{
@@ -582,13 +553,13 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 				byte_shift -= 2;
 			kmer.SHL_insert_2bits(symb);
 			kmer.mask(kmer_mask);
-			ptr.kxmers[kxmers_pos++].set(kmer);
-			if (kxmers_pos >= ptr.kxmers_size)
+			kxmers[kxmers_pos++].set(kmer);
+			if (kxmers_pos >= kxmers_size)
 			{
-				ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+				bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 				kxmers_pos = 0;
-				ptr.sm_pmm_expand->reserve(_raw_buffer);
-				ptr.kxmers = (CKmer<SIZE>*)_raw_buffer;
+				sm_pmm_expand->reserve(_raw_buffer);
+				kxmers = (CKmer<SIZE>*)_raw_buffer;
 			}
 		}
 		if (byte_shift != 6)
@@ -597,47 +568,41 @@ template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Exp
 
 	if (kxmers_pos)
 	{
-		ptr.bbkq->push(ptr.bin_id, (uchar*)ptr.kxmers, kxmers_pos);
+		bbkq->push(bin_id, (uchar*)kxmers, kxmers_pos);
 	}
 	else
 	{
-		ptr.sm_pmm_expand->free(_raw_buffer);
+		sm_pmm_expand->free(_raw_buffer);
 	}
 }
 
 //----------------------------------------------------------------------------------
-template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmer<SIZE>, SIZE>::Uncompact(CBigKmerBinUncompactor<CKmer<SIZE>, SIZE>& ptr)
+template<unsigned SIZE> void CBigKmerBinUncompactor<SIZE>::Uncompact()
 {
-	if (ptr.max_x)
+	if (max_x)
 	{
-		if (ptr.both_strands)
-			ExpandKxmersBoth(ptr);
+		if (both_strands)
+			ExpandKxmersBoth();
 		else
-			ExpandKxmersAll(ptr);
+			ExpandKxmersAll();
 	}
 	else
 	{
-		if (ptr.both_strands)
-			ExpandKmersBoth(ptr);
+		if (both_strands)
+			ExpandKmersBoth();
 		else
-			ExpandKmersAll(ptr);
+			ExpandKmersAll();
 	}
-}
-
-//----------------------------------------------------------------------------------
-template<unsigned SIZE> void CBigKmerBinUncompactor_Impl<CKmerQuake<SIZE>, SIZE>::Uncompact(CBigKmerBinUncompactor<CKmerQuake<SIZE>, SIZE>& ptr)
-{
-	//"Not supported in current release"
 }
 
 
 //************************************************************************************************************
 // CWBigKmerBinUncompactor - wrapper for multithreading purposes
 //************************************************************************************************************
-template<typename KMER_T, unsigned SIZE>
+template<unsigned SIZE>
 class CWBigKmerBinUncompactor
 {
-	CBigKmerBinUncompactor<KMER_T, SIZE>* bkb_uncompactor;
+	CBigKmerBinUncompactor<SIZE>* bkb_uncompactor;
 	CBigBinPartQueue* bbpq;
 	CBigBinKXmersQueue* bbkq;
 	CMemoryPool* sm_pmm_input_file;
@@ -649,10 +614,10 @@ public:
 
 //----------------------------------------------------------------------------------
 // Constructor
-template<typename KMER_T, unsigned SIZE>
-CWBigKmerBinUncompactor<KMER_T, SIZE>::CWBigKmerBinUncompactor(CKMCParams& Params, CKMCQueues& Queues)
+template<unsigned SIZE>
+CWBigKmerBinUncompactor<SIZE>::CWBigKmerBinUncompactor(CKMCParams& Params, CKMCQueues& Queues)
 {
-	bkb_uncompactor = new CBigKmerBinUncompactor<KMER_T, SIZE>(Params, Queues);
+	bkb_uncompactor = new CBigKmerBinUncompactor<SIZE>(Params, Queues);
 	bbpq = Queues.bbpq;
 	bbkq = Queues.bbkq;
 	sm_pmm_input_file = Queues.sm_pmm_input_file;
@@ -660,16 +625,16 @@ CWBigKmerBinUncompactor<KMER_T, SIZE>::CWBigKmerBinUncompactor(CKMCParams& Param
 
 //----------------------------------------------------------------------------------
 // Destructor
-template<typename KMER_T, unsigned SIZE>
-CWBigKmerBinUncompactor<KMER_T, SIZE>::~CWBigKmerBinUncompactor()
+template<unsigned SIZE>
+CWBigKmerBinUncompactor<SIZE>::~CWBigKmerBinUncompactor()
 {
 	delete bkb_uncompactor;
 }
 
 //----------------------------------------------------------------------------------
 // Execution
-template<typename KMER_T, unsigned SIZE>
-void CWBigKmerBinUncompactor<KMER_T, SIZE>::operator()()
+template<unsigned SIZE>
+void CWBigKmerBinUncompactor<SIZE>::operator()()
 {
 	int32 bin_id;
 	uchar* data;

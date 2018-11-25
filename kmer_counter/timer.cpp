@@ -110,11 +110,11 @@ CStopWatch::CStopWatch() {
 	memset(&timer, 0, sizeof(timer));
 }
 void CStopWatch::startTimer() {
-	gettimeofday(&(timer.start), NULL);
+	gettimeofday(&(timer.start), nullptr);
 }
 
 void CStopWatch::stopTimer() {
-	gettimeofday(&(timer.stop), NULL);
+	gettimeofday(&(timer.stop), nullptr);
 }
 
 double CStopWatch::getElapsedTime() {

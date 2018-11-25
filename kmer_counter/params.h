@@ -34,11 +34,9 @@ struct CKMCParams {
 	int p_sr;							// no. of threads for 2nd stage
 	int p_ci;							// do not count k-mers occurring less than
 	int64 p_cx;							// do not count k-mers occurring more than
-	int64 p_cs;							// maximal counter value
-	bool p_quake;						// use Quake-compatibile counting
+	int64 p_cs;							// maximal counter value	
 	bool p_strict_mem;					// use strict memory limit mode
-	bool p_mem_mode;					// use RAM instead of disk
-	int p_quality;						// lowest quality
+	bool p_mem_mode;					// use RAM instead of disk	
 	input_type p_file_type;				// input in FASTA format
 	bool p_verbose;						// verbose mode
 	bool p_without_output = false;		// do not create output files 
@@ -78,9 +76,7 @@ struct CKMCParams {
 	int64 mem_part_pmm_reads;
 	int64 mem_tot_pmm_reads;
 	int64 mem_part_pmm_radix_buf;
-	int64 mem_tot_pmm_radix_buf;
-	int64 mem_part_pmm_prob;
-	int64 mem_tot_pmm_prob;
+	int64 mem_tot_pmm_radix_buf;	
 	int64 mem_part_pmm_cnts_sort;	
 	int64 mem_tot_pmm_stats;
 	int64 mem_part_pmm_stats;
@@ -101,10 +97,8 @@ struct CKMCParams {
 	int signature_len;
 	int cutoff_min;			// exclude k-mers occurring less than times
 	int64 cutoff_max;			// exclude k-mers occurring more than times
-	int64 counter_max;		// maximal counter value
-	bool use_quake;			// use Quake's counting based on qualities
+	int64 counter_max;		// maximal counter value	
 	bool use_strict_mem;	// use strict memory limit mode
-	int lowest_quality;		// lowest quality value	    
 	bool both_strands;		// find canonical representation of each k-mer
 	bool mem_mode;			// use RAM instead of disk
 
@@ -155,11 +149,9 @@ struct CKMCParams {
 		p_smme = p_smso = p_smun = 0;
 		p_ci = 2;
 		p_cx = 1000000000;
-		p_cs = 255;
-		p_quake = false;
+		p_cs = 255;		
 		p_strict_mem = false;
-		p_mem_mode = false;
-		p_quality = 33;
+		p_mem_mode = false;		
 		p_file_type = fastq;
 		p_verbose = false;
 		p_both_strands = true;
@@ -190,7 +182,7 @@ struct CKMCQueues
 	CExpanderPackDesc* epd;
 	CBinQueue *bq;
 	CKmerQueue *kq;
-	CMemoryPool *pmm_bins, *pmm_reads, *pmm_radix_buf, *pmm_prob, *pmm_stats, *pmm_binary_file_reader;
+	CMemoryPool *pmm_bins, *pmm_reads, *pmm_radix_buf, *pmm_stats, *pmm_binary_file_reader;
 	CMemoryPoolWithBamSupport *pmm_fastq;
 	CMemoryBins *memory_bins;
 	CMemoryPool* pmm_small_k_buf, *pmm_small_k_completer;

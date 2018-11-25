@@ -12,9 +12,5 @@
 #include "defs.h"
 #include "kmer.h"
 
-uint32 CKmer<1>::QUALITY_SIZE      = 0;
-uint32 CKmerQuake<1>::QUALITY_SIZE = 4;
-
 uint32 CKmer<1>::KMER_SIZE = 1;
-uint32 CKmerQuake<1>::KMER_SIZE = 1;
 // ***** EOF

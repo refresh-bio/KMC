@@ -196,7 +196,6 @@
     <ClInclude Include="meta_oper.h" />
     <ClInclude Include="mmer.h" />
     <ClInclude Include="percent_progress.h" />
-    <ClInclude Include="prob_qual.h" />
     <ClInclude Include="raduls.h" />
     <ClInclude Include="raduls_impl.h" />
     <ClInclude Include="rev_byte.h" />
@@ -227,7 +226,6 @@
     </ClCompile>
     <ClCompile Include="mem_disk_file.cpp" />
     <ClCompile Include="mmer.cpp" />
-    <ClCompile Include="prob_qual.cpp" />
     <ClCompile Include="raduls_avx.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/arch:AVX %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/arch:AVX %(AdditionalOptions)</AdditionalOptions>

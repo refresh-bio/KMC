@@ -31,13 +31,13 @@ CBigKmerBinWriter::CBigKmerBinWriter(CKMCParams& Params, CKMCQueues& Queues)
 void CBigKmerBinWriter::Process()
 {	
 	int32 curr_bin_id = -1;
-	uchar* suff_buff = NULL;
+	uchar* suff_buff = nullptr;
 	uint64 suff_buff_size;
-	uint64* lut = NULL;
+	uint64* lut = nullptr;
 	uint64 lut_size = 0;
 	bool last_one_in_sub_bin;
 	bool first_in_sub_bin = true;
-	FILE* file = NULL;
+	FILE* file = nullptr;
 	string name;
 	uint64 file_size = 0;
 	while (bbspq->pop(bin_id, sub_bin_id, suff_buff, suff_buff_size, lut, lut_size, last_one_in_sub_bin))

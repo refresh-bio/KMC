@@ -50,8 +50,7 @@ CKmerBinCompleter::CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues)
 	without_output = Params.without_output;
 
 	kmer_t_size    = Params.KMER_T_size;
-	
-	use_quake      = Params.use_quake;
+		
 }
 
 //----------------------------------------------------------------------------------
@@ -65,20 +64,18 @@ CKmerBinCompleter::~CKmerBinCompleter()
 void CKmerBinCompleter::ProcessBinsFirstStage()
 {
 	int32 bin_id = 0;
-	uchar *data = NULL;
+	uchar *data = nullptr;
 	//uint64 data_size = 0;
 	list<pair<uint64, uint64>> data_packs;
-	uchar *lut = NULL;
+	uchar *lut = nullptr;
 	uint64 lut_size = 0;
 	counter_size = 0;
 	sig_map_size = (1 << (signature_len * 2)) + 1;
 	sig_map = new uint32[sig_map_size];
 	fill_n(sig_map, sig_map_size, 0);
 	lut_pos = 0;
-	if(use_quake)
-		counter_size = 4;
-	else
-		counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));	
+	
+	counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));	
 	
 	if (!without_output)
 	{
@@ -197,9 +194,9 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 	if (use_strict_mem)
 	{
 		int32 bin_id;
-		uchar *data = NULL;
+		uchar *data = nullptr;
 		uint64 data_size = 0;
-		uchar *lut = NULL;
+		uchar *lut = nullptr;
 		uint64 lut_size = 0;		
 		bool last_in_bin = false;
 		while (bbkpq->pop(bin_id, data, data_size, lut, lut_size, _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total, last_in_bin))
@@ -257,7 +254,7 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 		uint32 offset = 0;
 
 		store_uint(out_lut, kmer_len, 4);				offset += 4;
-		store_uint(out_lut, (uint32)use_quake, 4);		offset += 4;	// mode: 0 (counting), 1 (Quake-compatibile counting)
+		store_uint(out_lut, (uint32)0, 4);				offset += 4;	// mode: 0 (counting), 1 (Quake-compatibile counting) which is now not supported
 		store_uint(out_lut, counter_size, 4);			offset += 4;
 		store_uint(out_lut, lut_prefix_len, 4);			offset += 4;
 		store_uint(out_lut, signature_len, 4);			offset += 4;

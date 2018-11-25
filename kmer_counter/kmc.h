@@ -47,10 +47,7 @@
 
 using namespace std;
 
-template<typename KMER_T, unsigned SIZE, bool QUAKE_MODE>
-class CSmallKWrapper;
-
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> class CKMC {
+template <unsigned SIZE> class CKMC {
 	bool initialized;
 
 	CStopWatch w0, heuristic_time , w1, w2, w3;//w3 - strict memory time
@@ -71,16 +68,16 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> class CKMC {
 
 	// Threads
 	vector<CWStatsFastqReader*> w_stats_fastqs;
-	vector<CWStatsSplitter<false>*> w_stats_splitters;
+	vector<CWStatsSplitter*> w_stats_splitters;
 	vector<CWFastqReader*> w_fastqs;
-	vector<CWSplitter<QUAKE_MODE>*> w_splitters;
+	vector<CWSplitter*> w_splitters;
 
 	CWBinaryFilesReader* w_bin_file_reader;
 
 	CWKmerBinStorer *w_storer;
 
-	CWKmerBinReader<KMER_T, SIZE>* w_reader;
-	vector<CWKmerBinSorter<KMER_T, SIZE>*> w_sorters;
+	CWKmerBinReader<SIZE>* w_reader;
+	vector<CWKmerBinSorter<SIZE>*> w_sorters;
 	CWKmerBinCompleter *w_completer;
 
 	void SetThreads1Stage();
@@ -95,7 +92,6 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> class CKMC {
 	void ShowSettingsStage2();
 	void ShowSettingsSmallKOpt();
 
-	friend class CSmallKWrapper<KMER_T, SIZE, QUAKE_MODE>;
 	bool AdjustMemoryLimitsSmallK();	
 	template<typename COUNTER_TYPE>	bool ProcessSmallKOptimization();
 	
@@ -109,55 +105,25 @@ public:
 	void SaveStatsInJSON(bool was_small_k_opt);
 };
 
-
-template<typename KMER_T, unsigned SIZE>
-class CSmallKWrapper<KMER_T, SIZE, true>
-{
-public:
-	static bool Process(CKMC<KMER_T, SIZE, true>& ptr);
-};
-
-template<typename KMER_T, unsigned SIZE>
-class CSmallKWrapper<KMER_T, SIZE, false>
-{
-public:
-	static bool Process(CKMC<KMER_T, SIZE, false>& ptr);
-};
-
-template<typename KMER_T, unsigned SIZE>
-bool CSmallKWrapper<KMER_T, SIZE, true>::Process(CKMC<KMER_T, SIZE, true>& ptr)
-{
-	return ptr.template ProcessSmallKOptimization<float>();
-}
-
-template<typename KMER_T, unsigned SIZE>
-bool CSmallKWrapper<KMER_T, SIZE, false>::Process(CKMC<KMER_T, SIZE, false>& ptr)
-{
-	if ((uint64)ptr.Params.cutoff_max > ((1ull << 32) - 1))
-		return ptr.template ProcessSmallKOptimization<uint64>();
-	else
-		return ptr.template ProcessSmallKOptimization<uint32>();
-}
-
 //----------------------------------------------------------------------------------
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> CKMC<KMER_T, SIZE, QUAKE_MODE>::CKMC()
+template <unsigned SIZE> CKMC<SIZE>::CKMC()
 {
 	initialized   = false;
 	Params.kmer_len      = 0;
 	Params.n_readers     = 1;
 	Params.n_splitters   = 1;
 	Params.n_sorters     = 1;	
-	Queues.s_mapper = NULL;
+	Queues.s_mapper = nullptr;
 }
 
 //----------------------------------------------------------------------------------
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> CKMC<KMER_T, SIZE, QUAKE_MODE>::~CKMC()
+template <unsigned SIZE> CKMC<SIZE>::~CKMC()
 {
 }
 
 //----------------------------------------------------------------------------------
 // Set params of the k-mer counter
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SetParams(CKMCParams &_Params)
+template <unsigned SIZE> void CKMC<SIZE>::SetParams(CKMCParams &_Params)
 {
 	Params = _Params;
 	Params.kmer_len	= Params.p_k;
@@ -184,10 +150,8 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	// Thresholds for counters
 	Params.cutoff_min   = Params.p_ci;
 	Params.cutoff_max   = Params.p_cx;
-	Params.counter_max  = Params.p_cs;
-	Params.use_quake    = Params.p_quake;
+	Params.counter_max  = Params.p_cs;	
 
-	Params.lowest_quality = Params.p_quality;
 	Params.both_strands   = Params.p_both_strands;
 	Params.without_output = Params.p_without_output;
 	Params.use_strict_mem = Params.p_strict_mem;
@@ -216,7 +180,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 
 	
 
-	Params.KMER_T_size = sizeof(KMER_T);
+	Params.KMER_T_size = sizeof(CKmer<SIZE>);
 
 	initialized = true; 
 
@@ -224,7 +188,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 }
 
 //----------------------------------------------------------------------------------
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SetThreads1Stage()
+template <unsigned SIZE> void CKMC<SIZE>::SetThreads1Stage()
 {
 	if (!Params.p_sf || !Params.p_sp || !Params.p_sr)
 	{
@@ -269,7 +233,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	}
 }
 //----------------------------------------------------------------------------------
-template<typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SetThreads2Stage()
+template<unsigned SIZE> void CKMC<SIZE>::SetThreads2Stage()
 {	
 	if (!Params.p_sf || !Params.p_sp || !Params.p_sr)
 	{
@@ -278,7 +242,7 @@ template<typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE
 	}
 }
 //----------------------------------------------------------------------------------
-template<typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SetThreadsStrictMemoryMode()
+template<unsigned SIZE> void CKMC<SIZE>::SetThreadsStrictMemoryMode()
 {
 	Params.sm_n_mergers = Params.p_smme;
 	Params.sm_n_uncompactors = Params.p_smun;
@@ -293,7 +257,7 @@ template<typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE
 
 //----------------------------------------------------------------------------------
 
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::AdjustMemoryLimitsStrictMemoryMode()
+template <unsigned SIZE> void CKMC<SIZE>::AdjustMemoryLimitsStrictMemoryMode()
 {
 	int64 m_rest = Params.max_mem_size;
 
@@ -345,29 +309,20 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 }
 
 //----------------------------------------------------------------------------------
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::AdjustMemoryLimitsStage2()
+template <unsigned SIZE> void CKMC<SIZE>::AdjustMemoryLimitsStage2()
 {
 	// Memory for 2nd stage
 	// Settings for memory manager of radix internal buffers
-	Params.mem_part_pmm_radix_buf = (256 * BUFFER_WIDTHS[sizeof(KMER_T)/8] + ALIGNMENT) * sizeof(KMER_T);
+	Params.mem_part_pmm_radix_buf = (256 * BUFFER_WIDTHS[sizeof(CKmer<SIZE>)/8] + ALIGNMENT) * sizeof(CKmer<SIZE>);
 
 	Params.mem_tot_pmm_radix_buf = Params.mem_part_pmm_radix_buf * Params.n_sorters * MAGIC_NUMBER;
 
-
-	if (Params.use_quake)
-	{
-		Params.mem_part_pmm_prob = (CKmerBinSorter<KMER_T, SIZE>::PROB_BUF_SIZE + 1) * sizeof(double);
-		Params.mem_tot_pmm_prob = Params.n_sorters * Params.mem_part_pmm_prob;
-	}
-	else
-		Params.mem_part_pmm_prob = Params.mem_tot_pmm_prob = 0;		
-
-	Params.max_mem_stage2 = Params.max_mem_size - Params.mem_tot_pmm_radix_buf - Params.mem_tot_pmm_prob;
+	Params.max_mem_stage2 = Params.max_mem_size - Params.mem_tot_pmm_radix_buf;
 }
 
 //----------------------------------------------------------------------------------
 // Adjust the memory limits for queues and other large data structures
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZE, QUAKE_MODE>::AdjustMemoryLimits()
+template <unsigned SIZE> bool CKMC<SIZE>::AdjustMemoryLimits()
 {
 	// Memory for splitter internal buffers
 	int64 m_rest = Params.max_mem_size;  
@@ -405,10 +360,10 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	m_rest -= Params.mem_tot_pmm_binary_file_reader;
 
 	// Subtract memory for bin collectors internal buffers
-	m_rest -= Params.n_splitters * Params.bin_part_size * sizeof(KMER_T);
+	m_rest -= Params.n_splitters * Params.bin_part_size * sizeof(CKmer<SIZE>);
 
 	// Settings for memory manager of reads
-	Params.mem_part_pmm_reads = (CSplitter<QUAKE_MODE>::MAX_LINE_SIZE + 1) * sizeof(double);
+	Params.mem_part_pmm_reads = (CSplitter::MAX_LINE_SIZE + 1) * sizeof(double);
 	Params.mem_tot_pmm_reads  = Params.mem_part_pmm_reads * 2 * Params.n_splitters;
 	m_rest -= Params.mem_tot_pmm_reads;
 
@@ -446,7 +401,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 
 //----------------------------------------------------------------------------------
 // Show the settings of the KMC (in verbose mode only)
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::ShowSettingsStage1()
+template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage1()
 {
 	if(!Params.verbose)
 		return;
@@ -478,10 +433,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	cerr << "Signature length             : " << Params.signature_len << "\n"; 
 	cerr << "Min. count threshold         : " << Params.cutoff_min << "\n";
 	cerr << "Max. count threshold         : " << Params.cutoff_max << "\n";
-	cerr << "Max. counter value           : " << Params.counter_max << "\n";
-	cerr << "Type of counters             : " << (Params.use_quake ? "Quake-compatibile\n" : "direct\n");
-	if(Params.use_quake)
-		cerr << "Lowest quality value         : " << Params.lowest_quality << "\n";
+	cerr << "Max. counter value           : " << Params.counter_max << "\n";	
 	cerr << "Both strands                 : " << (Params.both_strands ? "true\n" : "false\n");
 	cerr << "RAM only mode                : " << (Params.mem_mode ? "true\n" : "false\n");
 
@@ -512,7 +464,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 
 //----------------------------------------------------------------------------------
 // Show the settings of the KMC (in verbose mode only)
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::ShowSettingsStage2()
+template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage2()
 {
 	if (!Params.verbose)
 		return;
@@ -529,7 +481,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 
 //----------------------------------------------------------------------------------
 // Show the settings of the KMC (in verbose mode only)
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::ShowSettingsSmallKOpt()
+template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsSmallKOpt()
 {
 	if (!Params.verbose)
 		return;
@@ -584,7 +536,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 
 }
 //----------------------------------------------------------------------------------
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZE, QUAKE_MODE>::AdjustMemoryLimitsSmallK() 
+template <unsigned SIZE> bool CKMC<SIZE>::AdjustMemoryLimitsSmallK() 
 {
 	if (Params.kmer_len > 13) 
 		return false;
@@ -600,7 +552,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	int tmp_fastq_buffer_size = 0;
 	int64 tmp_mem_part_pmm_fastq = 0;
 	int64 tmp_mem_tot_pmm_fastq = 0;
-	int64 tmp_mem_part_pmm_reads = (CSplitter<QUAKE_MODE>::MAX_LINE_SIZE + 1) * sizeof(double);
+	int64 tmp_mem_part_pmm_reads = (CSplitter::MAX_LINE_SIZE + 1) * sizeof(double);
 	int64 tmp_mem_tot_pmm_reads = 0;
 	int64 tmp_mem_part_pmm_binary_file_reader = 0;
 	int64 tmp_mem_tot_pmm_binary_file_reader = 0;
@@ -663,12 +615,12 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 }
 
 //----------------------------------------------------------------------------------
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> 
+template <unsigned SIZE> 
 template<typename COUNTER_TYPE>
-bool CKMC<KMER_T, SIZE, QUAKE_MODE>::ProcessSmallKOptimization()
+bool CKMC<SIZE>::ProcessSmallKOptimization()
 {	
 	ShowSettingsSmallKOpt();
-	vector<CWSmallKSplitter<QUAKE_MODE, COUNTER_TYPE>*> w_small_k_splitters; //For small k values only
+	vector<CWSmallKSplitter<COUNTER_TYPE>*> w_small_k_splitters; //For small k values only
 
 	w1.startTimer();
 	Queues.input_files_queue = new CInputFilesQueue(Params.input_file_names);
@@ -683,7 +635,7 @@ bool CKMC<KMER_T, SIZE, QUAKE_MODE>::ProcessSmallKOptimization()
 
 	for (int i = 0; i < Params.n_splitters; ++i)
 	{
-		w_small_k_splitters[i] = new CWSmallKSplitter<QUAKE_MODE, COUNTER_TYPE>(Params, Queues);
+		w_small_k_splitters[i] = new CWSmallKSplitter<COUNTER_TYPE>(Params, Queues);
 		gr1_2.push_back(thread(std::ref(*w_small_k_splitters[i])));
 	}
 
@@ -777,10 +729,8 @@ bool CKMC<KMER_T, SIZE, QUAKE_MODE>::ProcessSmallKOptimization()
 
 	
 	uint32 counter_size = 0;
-	if (Params.use_quake)
-		counter_size = 4;
-	else
-		counter_size = min(BYTE_LOG(Params.cutoff_max), BYTE_LOG(Params.counter_max));
+
+	counter_size = min(BYTE_LOG(Params.cutoff_max), BYTE_LOG(Params.counter_max));
 
 	for (Params.lut_prefix_len = 1; Params.lut_prefix_len < 16; ++Params.lut_prefix_len)
 	{
@@ -807,7 +757,7 @@ bool CKMC<KMER_T, SIZE, QUAKE_MODE>::ProcessSmallKOptimization()
 
 	Queues.pmm_small_k_completer = new CMemoryPool(Params.mem_tot_small_k_completer, Params.mem_part_small_k_completer);
 
-	CSmallKCompleter<QUAKE_MODE> small_k_completer(Params, Queues);
+	CSmallKCompleter small_k_completer(Params, Queues);
 	small_k_completer.Complete(results[0]);
 	small_k_completer.GetTotal(n_unique, n_cutoff_min, n_cutoff_max);
 
@@ -824,7 +774,7 @@ bool CKMC<KMER_T, SIZE, QUAKE_MODE>::ProcessSmallKOptimization()
 
 //----------------------------------------------------------------------------------
 // Run the counter
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZE, QUAKE_MODE>::Process()
+template <unsigned SIZE> bool CKMC<SIZE>::Process()
 {
 	if (!initialized)
 		return false;
@@ -837,7 +787,10 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 		{
 			cerr << "\nInfo: Small k optimization on!\n";
 		}
-		return CSmallKWrapper<KMER_T, SIZE, QUAKE_MODE>::Process(*this);		
+		if ((uint64)Params.cutoff_max > ((1ull << 32) - 1))
+			return ProcessSmallKOptimization<uint64>();
+		else
+			return ProcessSmallKOptimization<uint32>();		
 	}
 
 	int32 bin_id;
@@ -901,7 +854,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	
 	for (int i = 0; i < Params.n_splitters; ++i)
 	{
-		w_stats_splitters[i] = new CWStatsSplitter<false>(Params, Queues);
+		w_stats_splitters[i] = new CWStatsSplitter(Params, Queues);
 		gr0_2.push_back(thread(std::ref(*w_stats_splitters[i])));
 	}
 
@@ -943,7 +896,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	}		
 
 	delete Queues.stats_part_queue;
-	Queues.stats_part_queue = NULL;
+	Queues.stats_part_queue = nullptr;
 	delete Queues.input_files_queue;
 	Queues.input_files_queue = new CInputFilesQueue(Params.input_file_names);
 
@@ -959,7 +912,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	Queues.pmm_stats->free(stats);
 	Queues.pmm_stats->release();
 	delete Queues.pmm_stats;
-	Queues.pmm_stats = NULL;
+	Queues.pmm_stats = nullptr;
 
 	// ***** Stage 1 *****
 	ShowSettingsStage1();
@@ -968,7 +921,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 
 	for(int i = 0; i < Params.n_splitters; ++i)
 	{
-		w_splitters[i] = new CWSplitter<QUAKE_MODE>(Params, Queues);
+		w_splitters[i] = new CWSplitter(Params, Queues);
 		gr1_2.push_back(thread(std::ref(*w_splitters[i])));
 	}
 	
@@ -1093,9 +1046,9 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	{
 		Queues.bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs, n_super_kmers);
 		if (Params.max_x)
-			bin_sizes.push_back(n_plus_x_recs * 2 * sizeof(KMER_T));			// estimation of RAM for sorting bins
+			bin_sizes.push_back(n_plus_x_recs * 2 * sizeof(CKmer<SIZE>));			// estimation of RAM for sorting bins
 		else
-			bin_sizes.push_back(n_rec * 2 * sizeof(KMER_T));
+			bin_sizes.push_back(n_rec * 2 * sizeof(CKmer<SIZE>));
 	}
 	
 	sort(bin_sizes.begin(), bin_sizes.end(), greater<int64>());
@@ -1111,8 +1064,8 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	}
 	else
 	{
-		Queues.tlbq = NULL;
-		Queues.bbkpq = NULL;
+		Queues.tlbq = nullptr;
+		Queues.bbkpq = nullptr;
 	}
 	
 	
@@ -1128,22 +1081,18 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	Queues.bd->reset_reading();
 	Queues.pmm_radix_buf = new CMemoryPool(Params.mem_tot_pmm_radix_buf, Params.mem_part_pmm_radix_buf );		
 	Queues.memory_bins    = new CMemoryBins(Params.max_mem_stage2, Params.n_bins, Params.use_strict_mem, Params.n_threads);
-	if (Params.use_quake)
-		Queues.pmm_prob = new CMemoryPool(Params.mem_tot_pmm_prob, Params.mem_part_pmm_prob);
-	else
-		Queues.pmm_prob = NULL;
-
-	auto sorted_bins = Queues.bd->get_sorted_req_sizes(Params.max_x, sizeof(KMER_T), Params.cutoff_min, Params.cutoff_max, Params.counter_max, Params.lut_prefix_len);
+	
+	auto sorted_bins = Queues.bd->get_sorted_req_sizes(Params.max_x, sizeof(CKmer<SIZE>), Params.cutoff_min, Params.cutoff_max, Params.counter_max, Params.lut_prefix_len);
 	Queues.bd->init_sort(sorted_bins);
 
 #ifdef DEVELOP_MODE
 	if(Params.verbose_log)
-		save_bins_stats(Queues, Params, sizeof(KMER_T), KMER_T::QUALITY_SIZE, n_reads, Params.signature_len, Queues.s_mapper->GetMapSize(), Queues.s_mapper->GetMap());
+		save_bins_stats(Queues, Params, sizeof(CKmer<SIZE>), n_reads, Params.signature_len, Queues.s_mapper->GetMapSize(), Queues.s_mapper->GetMap());
 #endif
 
-	SortFunction<KMER_T> sort_func;	
+	SortFunction<CKmer<SIZE>> sort_func;	
 #ifdef __APPLE__
-	sort_func = RadixSort::RadixSortMSD<KMER_T, SIZE>;
+	sort_func = RadixSort::RadixSortMSD<CKmer<SIZE>, SIZE>;
 	CSmallSort<SIZE>::Adjust(384);
 #else
 	int iset = instrset_detect();
@@ -1155,17 +1104,17 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	if (is_xeon || (is_intel && at_least_avx))
 	{
 		if (iset >= 8)
-			sort_func = RadulsSort::RadixSortMSD_AVX2<KMER_T>;
+			sort_func = RadulsSort::RadixSortMSD_AVX2<CKmer<SIZE>>;
 		else if (iset >= 7)
-			sort_func = RadulsSort::RadixSortMSD_AVX<KMER_T>;
+			sort_func = RadulsSort::RadixSortMSD_AVX<CKmer<SIZE>>;
 		else if (iset >= 5)
-			sort_func = RadulsSort::RadixSortMSD_SSE41<KMER_T>;
+			sort_func = RadulsSort::RadixSortMSD_SSE41<CKmer<SIZE>>;
 		else if (iset >= 2)
-			sort_func = RadulsSort::RadixSortMSD_SSE2<KMER_T>;
+			sort_func = RadulsSort::RadixSortMSD_SSE2<CKmer<SIZE>>;
 	}
 	else
 	{
-		sort_func = RadixSort::RadixSortMSD<KMER_T, SIZE>;
+		sort_func = RadixSort::RadixSortMSD<CKmer<SIZE>, SIZE>;
 		CSmallSort<SIZE>::Adjust(384);
 	}
 #endif
@@ -1188,21 +1137,13 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 		
 		for (uint32 i = 0; i < _2nd_stage_threads; ++i)
 		{
-			w_sorters[i] = new CWKmerBinSorter<KMER_T, SIZE>(Params, Queues, sort_func);
+			w_sorters[i] = new CWKmerBinSorter<SIZE>(Params, Queues, sort_func);
 			gr2_2.push_back(thread(std::ref(*w_sorters[i])));
 		}
 	}
 
-	w_reader = new CWKmerBinReader<KMER_T, SIZE>(Params, Queues);
+	w_reader = new CWKmerBinReader<SIZE>(Params, Queues);
 	gr2_1.push_back(thread(std::ref(*w_reader)));
-
-	//w_sorters.resize(Params.n_sorters);
-	//
-	//for(int i = 0; i < Params.n_sorters; ++i)
-	//{
-	//	w_sorters[i] = new CWKmerBinSorter<KMER_T, SIZE>(Params, Queues, i);
-	//	gr2_2.push_back(thread(std::ref(*w_sorters[i])));
-	//}
 
 	w_completer = new CWKmerBinCompleter(Params, Queues);
 	gr2_3.push_back(thread(std::ref(*w_completer), true));
@@ -1229,7 +1170,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 	});
 
 	//process big bins if necessary (only in strict memory limit mode)
-	thread* release_thr_sm = NULL;
+	thread* release_thr_sm = nullptr;
 
 	if (Params.use_strict_mem)
 	{
@@ -1260,25 +1201,25 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 		CWBigKmerBinReader* w_bkb_reader = new CWBigKmerBinReader(Params, Queues);
 		thread bkb_reader(std::ref(*w_bkb_reader));
 
-		vector<CWBigKmerBinUncompactor<KMER_T, SIZE>*> w_bkb_uncompactors(Params.sm_n_uncompactors);
+		vector<CWBigKmerBinUncompactor<SIZE>*> w_bkb_uncompactors(Params.sm_n_uncompactors);
 		vector<thread> bkb_uncompactors;
 		for (int32 i = 0; i < Params.sm_n_uncompactors; ++i)
 		{
-			w_bkb_uncompactors[i] = new CWBigKmerBinUncompactor<KMER_T, SIZE>(Params, Queues);
+			w_bkb_uncompactors[i] = new CWBigKmerBinUncompactor<SIZE>(Params, Queues);
 			bkb_uncompactors.push_back(thread(std::ref(*w_bkb_uncompactors[i])));
 		}
 
-		CWBigKmerBinSorter<KMER_T, SIZE>* w_bkb_sorter = new CWBigKmerBinSorter<KMER_T, SIZE>(Params, Queues, sort_func);
+		CWBigKmerBinSorter<SIZE>* w_bkb_sorter = new CWBigKmerBinSorter<SIZE>(Params, Queues, sort_func);
 		thread bkb_sorter(std::ref(*w_bkb_sorter));
 		
 		CWBigKmerBinWriter* w_bkb_writer = new CWBigKmerBinWriter(Params, Queues);
 		thread bkb_writer(std::ref(*w_bkb_writer));
 		
-		vector<CWBigKmerBinMerger<KMER_T, SIZE>*> w_bkb_mergers(Params.sm_n_mergers);
+		vector<CWBigKmerBinMerger<SIZE>*> w_bkb_mergers(Params.sm_n_mergers);
 		vector<thread> bkb_mergers;
 		for (int32 i = 0; i < Params.sm_n_mergers; ++i)
 		{
-			w_bkb_mergers[i] = new CWBigKmerBinMerger<KMER_T, SIZE>(Params, Queues);
+			w_bkb_mergers[i] = new CWBigKmerBinMerger<SIZE>(Params, Queues);
 			bkb_mergers.push_back(thread(std::ref(*w_bkb_mergers[i])));
 		}
 
@@ -1407,7 +1348,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 		uint64 n_kmers = 0;
 		uint64 file_size = 0;
 		uint32 size = 0;
-		FILE* file = NULL;		
+		FILE* file = nullptr;
 		while (Queues.bbd->next_bin(bin_id, size))
 		{			
 			while (Queues.bbd->next_sub_bin(bin_id, sub_bin_id, lut_prefix_len, n_kmers, file, name, file_size))
@@ -1436,7 +1377,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> bool CKMC<KMER_T, SIZ
 
 //----------------------------------------------------------------------------------
 // Return statistics
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::GetStats(double &time1,
+template <unsigned SIZE> void CKMC<SIZE>::GetStats(double &time1,
 	double &time2, double &time3, uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max, uint64 &_n_total, uint64 &_n_reads, uint64 &_tmp_size, uint64 &_tmp_size_strict_mem, uint64 &_max_disk_usage, uint64& _n_total_super_kmers, bool& _was_small_k_opt)
 {
 	time1 = w1.getElapsedTime();
@@ -1454,7 +1395,7 @@ template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZ
 	_was_small_k_opt = was_small_k_opt;
 }
 
-template <typename KMER_T, unsigned SIZE, bool QUAKE_MODE> void CKMC<KMER_T, SIZE, QUAKE_MODE>::SaveStatsInJSON(bool was_small_k_opt)
+template <unsigned SIZE> void CKMC<SIZE>::SaveStatsInJSON(bool was_small_k_opt)
 {	
 	if (Params.json_summary_file_name == "")
 		return;

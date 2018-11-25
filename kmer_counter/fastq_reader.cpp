@@ -41,7 +41,7 @@ CFastqReader::CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_
 
 	// Size and pointer for the buffer
 	part_size = 1 << 23;
-	part = NULL;
+	part = nullptr;
 
 	containsNextChromosome = false;
 
@@ -456,7 +456,7 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size)
 		_part = part;
 		_size = total_filled;
 
-		part = NULL;
+		part = nullptr;
 		return true;
 	}
 
@@ -614,11 +614,11 @@ void CFastqReaderDataSrc::init_stream()
 		stream.next_in = in_data;
 		break;
 	case CompressionType::bzip2:
-		_bz_stram.bzalloc = NULL;
-		_bz_stram.bzfree = NULL;
-		_bz_stram.opaque = NULL;
+		_bz_stram.bzalloc = nullptr;
+		_bz_stram.bzfree = nullptr;
+		_bz_stram.opaque = nullptr;
 		_bz_stram.avail_in = 0;
-		_bz_stram.next_in = NULL;
+		_bz_stram.next_in = nullptr;
 		if (BZ2_bzDecompressInit(&_bz_stram, 0, 0) != BZ_OK)
 		{
 			cerr << "Error while reading bz2 file\n";
@@ -864,7 +864,7 @@ CWFastqReader::CWFastqReader(CKMCParams &Params, CKMCQueues &Queues, CBinaryPack
 	kmer_len = Params.p_k;
 
 
-	fqr = NULL;
+	fqr = nullptr;
 }
 
 //----------------------------------------------------------------------------------
@@ -913,7 +913,7 @@ CWStatsFastqReader::CWStatsFastqReader(CKMCParams &Params, CKMCQueues &Queues, C
 	file_type = Params.file_type;
 	kmer_len = Params.p_k;
 
-	fqr = NULL;
+	fqr = nullptr;
 }
 
 //----------------------------------------------------------------------------------

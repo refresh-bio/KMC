@@ -28,7 +28,7 @@
 //************************************************************************************************************
 // CKmerBinReader - reader of bins from distribution phase
 //************************************************************************************************************
-template <typename KMER_T, unsigned SIZE> class CKmerBinReader {
+template <unsigned SIZE> class CKmerBinReader {
 	CMemoryMonitor *mm;
 	CSignatureMapper* s_mapper;
 
@@ -46,8 +46,7 @@ template <typename KMER_T, unsigned SIZE> class CKmerBinReader {
 	int32 lut_prefix_len;
 	uint32 max_x;
 
-	bool both_strands;
-	bool use_quake;
+	bool both_strands;	
 
 #ifdef DEVELOP_MODE
 	bool verbose_log;
@@ -67,7 +66,7 @@ public:
 
 //----------------------------------------------------------------------------------
 // Assign monitors and queues
-template <typename KMER_T, unsigned SIZE> CKmerBinReader<KMER_T, SIZE>::CKmerBinReader(CKMCParams &Params, CKMCQueues &Queues)
+template <unsigned SIZE> CKmerBinReader<SIZE>::CKmerBinReader(CKMCParams &Params, CKMCQueues &Queues)
 {
 	mm = Queues.mm;
 //	dm = Queues.dm;
@@ -84,7 +83,6 @@ template <typename KMER_T, unsigned SIZE> CKmerBinReader<KMER_T, SIZE>::CKmerBin
 	cutoff_max	   = (uint32)Params.cutoff_max;
 	counter_max    = (uint32)Params.counter_max;
 	both_strands   = Params.both_strands;
-	use_quake = Params.use_quake;
 	max_x = Params.max_x;
 	s_mapper	   = Queues.s_mapper;
 	lut_prefix_len = Params.lut_prefix_len;
@@ -95,14 +93,14 @@ template <typename KMER_T, unsigned SIZE> CKmerBinReader<KMER_T, SIZE>::CKmerBin
 }
 
 //----------------------------------------------------------------------------------
-template <typename KMER_T, unsigned SIZE> CKmerBinReader<KMER_T, SIZE>::~CKmerBinReader()
+template <unsigned SIZE> CKmerBinReader<SIZE>::~CKmerBinReader()
 {
 	
 }
 
 //----------------------------------------------------------------------------------
 // Read all bins from temporary HDD
-template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::ProcessBins()
+template <unsigned SIZE> void CKmerBinReader<SIZE>::ProcessBins()
 {
 	uchar *data;
 	uint64 readed;
@@ -129,23 +127,21 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 		uint64 input_kmer_size;
 		uint64 kxmer_counter_size;
 		uint32 kxmer_symbols;
-		if (max_x && !use_quake)
+		if (max_x)
 		{
-			input_kmer_size = n_plus_x_recs * sizeof(KMER_T);
+			input_kmer_size = n_plus_x_recs * sizeof(CKmer<SIZE>);
 			kxmer_counter_size = n_plus_x_recs * sizeof(uint32);
 			kxmer_symbols = kmer_len + max_x + 1;
 		}
 		else
 		{
-			input_kmer_size = n_rec * sizeof(KMER_T); 
+			input_kmer_size = n_rec * sizeof(CKmer<SIZE>); 
 			kxmer_counter_size = 0;
 			kxmer_symbols = kmer_len;
 		}
 		uint64 max_out_recs    = (n_rec+1) / max(cutoff_min, 1u);
 		
 		uint64 counter_size    = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
-		if(KMER_T::QUALITY_SIZE > counter_size)
-			counter_size = KMER_T::QUALITY_SIZE;
 
 		uint32 kmer_symbols = kmer_len - lut_prefix_len;
 		uint64 kmer_bytes = kmer_symbols / 4;
@@ -153,7 +149,7 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 			
 		uint32 rec_len         = (kxmer_symbols + 3) / 4;
 
-		uint64 lut_recs = 1 << (2 * lut_prefix_len);
+		uint64 lut_recs = 1ull << (2 * lut_prefix_len);
 		uint64 lut_size = lut_recs * sizeof(uint64);
 
 		// Reserve memory only for the file data
@@ -166,7 +162,7 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 		// Process the bin if it is not empty
 		if(size > 0)
 		{
-			if (file == NULL)
+			if (file == nullptr)
 			{
 				cerr << "Error: Cannot open temporary file: " << name << "\n"; fflush(stdout);
 				exit(1);
@@ -199,7 +195,7 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 			//reserve is allowed also for empty bins
 			memory_bins->extend(bin_id, rec_len, round_up_to_alignment(size), round_up_to_alignment(input_kmer_size), round_up_to_alignment(out_buffer_size), round_up_to_alignment(kxmer_counter_size), round_up_to_alignment(lut_size));
 			// Push empty bin to process (necessary, since all bin ids must be processed)
-			bq->push(bin_id, NULL, 0, 0);
+			bq->push(bin_id, nullptr, 0, 0);
 			sorters_manager->NotifyBQPush();
 		}
 
@@ -228,8 +224,8 @@ template <typename KMER_T, unsigned SIZE> void CKmerBinReader<KMER_T, SIZE>::Pro
 //************************************************************************************************************
 
 //----------------------------------------------------------------------------------
-template <typename KMER_T, unsigned SIZE> class CWKmerBinReader {
-	CKmerBinReader<KMER_T, SIZE> *kbr;
+template <unsigned SIZE> class CWKmerBinReader {
+	CKmerBinReader<SIZE> *kbr;
 
 public:
 	CWKmerBinReader(CKMCParams &Params, CKMCQueues &Queues);
@@ -240,21 +236,21 @@ public:
 
 //----------------------------------------------------------------------------------
 // Constructor
-template <typename KMER_T, unsigned SIZE> CWKmerBinReader<KMER_T, SIZE>::CWKmerBinReader(CKMCParams &Params, CKMCQueues &Queues)
+template <unsigned SIZE> CWKmerBinReader<SIZE>::CWKmerBinReader(CKMCParams &Params, CKMCQueues &Queues)
 {
-	kbr = new CKmerBinReader<KMER_T, SIZE>(Params, Queues);
+	kbr = new CKmerBinReader<SIZE>(Params, Queues);
 }
 
 //----------------------------------------------------------------------------------
 // Destructor
-template <typename KMER_T, unsigned SIZE> CWKmerBinReader<KMER_T, SIZE>::~CWKmerBinReader()
+template <unsigned SIZE> CWKmerBinReader<SIZE>::~CWKmerBinReader()
 {
 	delete kbr;
 }
 
 //----------------------------------------------------------------------------------
 // Execution
-template <typename KMER_T, unsigned SIZE> void CWKmerBinReader<KMER_T, SIZE>::operator()()
+template <unsigned SIZE> void CWKmerBinReader<SIZE>::operator()()
 {
 	kbr->ProcessBins();
 }

@@ -37,8 +37,8 @@ CKmerBinStorer::CKmerBinStorer(CKMCParams &Params, CKMCQueues &Queues)
 
 	s_mapper			= Queues.s_mapper;
 	disk_logger			= Queues.disk_logger;
-	files                  = NULL;
-	buf_sizes		       = NULL;
+	files                  = nullptr;
+	buf_sizes		       = nullptr;
 	buffer_size_bytes      = 0;
 	max_buf_size		   = 0;
 	max_buf_size_id		   = 0;
@@ -49,7 +49,7 @@ CKmerBinStorer::CKmerBinStorer(CKMCParams &Params, CKMCQueues &Queues)
 	
 	buffer = new elem_t*[n_bins];
 	for(int i = 0; i < n_bins; ++i)
-		buffer[i] = NULL;
+		buffer[i] = nullptr;
 
 
 	total_size = 0 ; 
@@ -74,13 +74,13 @@ void CKmerBinStorer::Release()
 			delete buffer[i];
 
 	delete[] buffer;
-	buffer = NULL;	
+	buffer = nullptr;
 
 	delete[] files;
-	files = NULL;
+	files = nullptr;
 
 	delete[] buf_sizes;
-	buf_sizes = NULL;
+	buf_sizes = nullptr;
 	
 	delete [] tmp_buff;
 
@@ -99,7 +99,7 @@ void CKmerBinStorer::ReleaseBuffer()
 		if(buffer[i])
 		{
 			delete buffer[i];
-			buffer[i] = NULL;
+			buffer[i] = nullptr;
 		}
 }
 

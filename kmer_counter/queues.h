@@ -485,7 +485,7 @@ public:
 
 			uint32 rec_len = (kxmer_symbols + 3) / 4;
 
-			uint64 lut_recs = 1 << (2 * lut_prefix_len);
+			uint64 lut_recs = 1ull << (2 * lut_prefix_len);
 			uint64 lut_size = lut_recs * sizeof(uint64);
 
 			auto req_size = get_req_size(rec_len, round_up_to_alignment(size), round_up_to_alignment(input_kmer_size), round_up_to_alignment(out_buffer_size), round_up_to_alignment(kxmer_counter_size), round_up_to_alignment(lut_size));
@@ -848,9 +848,9 @@ protected:
 
 public:
 	CMemoryPool(int64 _total_size, int64 _part_size) {
-		raw_buffer = NULL;
-		buffer = NULL;
-		stack  = NULL;
+		raw_buffer = nullptr;
+		buffer = nullptr;
+		stack  = nullptr;
 		prepare(_total_size, _part_size);
 	}
 	~CMemoryPool() {
@@ -879,12 +879,12 @@ public:
 	void release(void) {
 		if(raw_buffer)
 			delete[] raw_buffer;
-		raw_buffer = NULL;
-		buffer     = NULL;
+		raw_buffer = nullptr;
+		buffer     = nullptr;
 
 		if(stack)
 			delete[] stack;
-		stack = NULL;
+		stack = nullptr;
 	}
 
 	// Allocate memory buffer - uchar*
@@ -1051,9 +1051,9 @@ private:
 
 public:
 	CMemoryBins(int64 _total_size, uint32 _n_bins, bool _use_strict_mem, uint32 _n_threads) {
-		raw_buffer = NULL;
-		buffer = NULL;
-		bin_ptrs = NULL;
+		raw_buffer = nullptr;
+		buffer = nullptr;
+		bin_ptrs = nullptr;
 		use_strict_mem = _use_strict_mem;
 		n_threads = _n_threads;
 		prepare(_total_size, _n_bins);
@@ -1110,12 +1110,12 @@ public:
 	void release(void) {
 		if (raw_buffer)
 			::free(raw_buffer);
-		raw_buffer = NULL;
-		buffer = NULL;
+		raw_buffer = nullptr;
+		buffer = nullptr;
 
 		if (bin_ptrs)
 			delete[] bin_ptrs;
-		bin_ptrs = NULL;
+		bin_ptrs = nullptr;
 	}
 
 	void log(string info, uint64 size = 0)
@@ -1216,7 +1216,7 @@ public:
 		if (kxmer_counter_size)
 			get<6>(bin_ptrs[bin_id]) = base_ptr + kxmers_size;								//kxmers counter
 		else
-			get<6>(bin_ptrs[bin_id]) = NULL;
+			get<6>(bin_ptrs[bin_id]) = nullptr;
 		free_size -= req_size;
 		get<7>(bin_ptrs[bin_id]) = req_size;
 
@@ -1335,7 +1335,7 @@ public:
 			if (kxmer_counter_size)
 				get<6>(bin_ptrs[bin_id]) = base_ptr + kxmers_size;								// kxmers counter
 			else
-				get<6>(bin_ptrs[bin_id]) = NULL;
+				get<6>(bin_ptrs[bin_id]) = nullptr;
 			get<7>(bin_ptrs[bin_id]) = req_size;
 
 			free_size -= req_size;
@@ -1435,7 +1435,7 @@ public:
 			if (kxmer_counter_size)
 				get<6>(bin_ptrs[bin_id]) = base_ptr + kxmers_size;								//kxmers counter
 			else
-				get<6>(bin_ptrs[bin_id]) = NULL;
+				get<6>(bin_ptrs[bin_id]) = nullptr;
 			
 			get<7>(bin_ptrs[bin_id]) = req_size;
 
@@ -1479,7 +1479,7 @@ public:
 		if (kxmer_counter_size)
 			get<6>(bin_ptrs[bin_id]) = base_ptr + kxmers_size;								//kxmers counter
 		else
-			get<6>(bin_ptrs[bin_id]) = NULL;
+			get<6>(bin_ptrs[bin_id]) = nullptr;
 		get<7>(bin_ptrs[bin_id]) = req_size;
 
 		free_size += file_size;
@@ -1518,17 +1518,17 @@ public:
 	{		
 		unique_lock<mutex> lck(mtx);
 		if (t == mba_input_file)
-			get<1>(bin_ptrs[bin_id]) = NULL;
+			get<1>(bin_ptrs[bin_id]) = nullptr;
 		else if (t == mba_input_array)
-			get<2>(bin_ptrs[bin_id]) = NULL;
+			get<2>(bin_ptrs[bin_id]) = nullptr;
 		else if (t == mba_tmp_array)
-			get<3>(bin_ptrs[bin_id]) = NULL;
+			get<3>(bin_ptrs[bin_id]) = nullptr;
 		else if (t == mba_suffix)
-			get<4>(bin_ptrs[bin_id]) = NULL;
+			get<4>(bin_ptrs[bin_id]) = nullptr;
 		else if (t == mba_lut)
-			get<5>(bin_ptrs[bin_id]) = NULL;
+			get<5>(bin_ptrs[bin_id]) = nullptr;
 		else if (t == mba_kxmer_counters)
-			get<6>(bin_ptrs[bin_id]) = NULL;
+			get<6>(bin_ptrs[bin_id]) = nullptr;
 
 		if (!get<1>(bin_ptrs[bin_id]) && !get<2>(bin_ptrs[bin_id]) && !get<3>(bin_ptrs[bin_id]) && !get<4>(bin_ptrs[bin_id]) &&
 			!get<5>(bin_ptrs[bin_id]) && !get<6>(bin_ptrs[bin_id]))
@@ -1537,7 +1537,7 @@ public:
 
 			log("Free");
 
-			get<0>(bin_ptrs[bin_id]) = NULL;
+			get<0>(bin_ptrs[bin_id]) = nullptr;
 			free_size += get<7>(bin_ptrs[bin_id]);
 			cv.notify_all();
 		}

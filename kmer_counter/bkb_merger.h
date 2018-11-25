@@ -16,11 +16,11 @@
 //************************************************************************************************************
 // CBigKmerBinMerger - merger sorted k-mers from number of subbins 
 //************************************************************************************************************
-template<typename KMER_T, unsigned SIZE>
+template<unsigned SIZE>
 class CBigKmerBinMerger
 {
-	vector<CSubBin<KMER_T, SIZE>*> sub_bins;
-	std::vector<std::tuple<KMER_T, uint32, uint32>> curr_min;
+	vector<CSubBin<SIZE>*> sub_bins;
+	std::vector<std::tuple<CKmer<SIZE>, uint32, uint32>> curr_min;
 	CDiskLogger* disk_logger;
 	uint32 size;
 	CBigBinDesc* bbd;
@@ -35,14 +35,14 @@ class CBigKmerBinMerger
 public:
 	CBigKmerBinMerger(CKMCParams& Params, CKMCQueues& Queues);
 	void init(int32 bin_id, uint32 _size);
-	bool get_min(KMER_T& kmer, uint32& count);
+	bool get_min(CKmer<SIZE>& kmer, uint32& count);
 	void Process();
 	~CBigKmerBinMerger();
 };
 
 //----------------------------------------------------------------------------------
-template<typename KMER_T, unsigned SIZE>
-CBigKmerBinMerger<KMER_T,SIZE>::CBigKmerBinMerger(CKMCParams& Params, CKMCQueues& Queues) 
+template<unsigned SIZE>
+CBigKmerBinMerger<SIZE>::CBigKmerBinMerger(CKMCParams& Params, CKMCQueues& Queues) 
 {
 	disk_logger = Queues.disk_logger;
 	bbd = Queues.bbd;
@@ -67,8 +67,8 @@ CBigKmerBinMerger<KMER_T,SIZE>::CBigKmerBinMerger(CKMCParams& Params, CKMCQueues
 }
 
 //----------------------------------------------------------------------------------
-template<typename KMER_T, unsigned SIZE>
-CBigKmerBinMerger<KMER_T, SIZE>::~CBigKmerBinMerger()
+template<unsigned SIZE>
+CBigKmerBinMerger<SIZE>::~CBigKmerBinMerger()
 {
 	for (auto p : sub_bins)
 		delete p;
@@ -77,8 +77,8 @@ CBigKmerBinMerger<KMER_T, SIZE>::~CBigKmerBinMerger()
 }
 
 //----------------------------------------------------------------------------------
-template<typename KMER_T, unsigned SIZE>
-void CBigKmerBinMerger<KMER_T, SIZE>::init(int32 bin_id, uint32 _size)
+template<unsigned SIZE>
+void CBigKmerBinMerger<SIZE>::init(int32 bin_id, uint32 _size)
 {
 	size = _size;
 	uint32 prev_size = (uint32)sub_bins.size();
@@ -89,14 +89,14 @@ void CBigKmerBinMerger<KMER_T, SIZE>::init(int32 bin_id, uint32 _size)
 		curr_min.resize(size);
 		for (uint32 i = prev_size; i < size; ++i)
 		{
-			sub_bins[i] = new CSubBin<KMER_T, SIZE>(disk_logger);
+			sub_bins[i] = new CSubBin<SIZE>(disk_logger);
 		}
 	}
 
 	uint32 lut_prefix_len = 0;;
 	uint64 n_kmers = 0;
 	uint64 file_size = 0;
-	FILE* file = NULL;
+	FILE* file = nullptr;
 	string name;
 	uint32 per_sub_bin_lut_size = (uint32)(sm_mem_part_sub_bin_lut / size);
 	uint32 per_sub_bin_suff_size = (uint32)(sm_mem_part_sub_bin_suff / size);
@@ -110,8 +110,8 @@ void CBigKmerBinMerger<KMER_T, SIZE>::init(int32 bin_id, uint32 _size)
 }
 
 //----------------------------------------------------------------------------------
-template<typename KMER_T, unsigned SIZE>
-bool CBigKmerBinMerger<KMER_T, SIZE>::get_min(KMER_T& kmer, uint32& count)
+template<unsigned SIZE>
+bool CBigKmerBinMerger<SIZE>::get_min(CKmer<SIZE>& kmer, uint32& count)
 {
 	if (!size)
 		return false;
@@ -130,8 +130,8 @@ bool CBigKmerBinMerger<KMER_T, SIZE>::get_min(KMER_T& kmer, uint32& count)
 }
 
 //----------------------------------------------------------------------------------
-template<typename KMER_T, unsigned SIZE>
-void CBigKmerBinMerger<KMER_T, SIZE>::Process()
+template<unsigned SIZE>
+void CBigKmerBinMerger<SIZE>::Process()
 {
 	int32 bin_id;
 	uint32 size = 0;
@@ -143,7 +143,7 @@ void CBigKmerBinMerger<KMER_T, SIZE>::Process()
 	uint64 suff_buff_size = sm_mem_part_merger_suff / suff_rec_bytes * suff_rec_bytes;
 	uint64 suff_buff_pos = 0;
 	uint64 n_unique, n_cutoff_min, n_cutoff_max, n_total;
-	KMER_T kmer, next_kmer;
+	CKmer<SIZE> kmer, next_kmer;
 	kmer.clear();
 	next_kmer.clear();
 	uint32 count_tmp = 0, count = 0;
@@ -187,7 +187,7 @@ void CBigKmerBinMerger<KMER_T, SIZE>::Process()
 					prefix = kmer.remove_suffix(2 * kmer_symbols);
 					if (prefix >= max_in_lut + lut_offset)
 					{
-						bbkpq->push(bin_id, NULL, 0, raw_lut, max_in_lut * sizeof(uint64), 0, 0, 0, 0, false);
+						bbkpq->push(bin_id, nullptr, 0, raw_lut, max_in_lut * sizeof(uint64), 0, 0, 0, 0, false);
 						lut_offset += max_in_lut;
 						sm_pmm_merger_lut->reserve(raw_lut);
 						lut = (uint64*)raw_lut;
@@ -203,7 +203,7 @@ void CBigKmerBinMerger<KMER_T, SIZE>::Process()
 
 					if (suff_buff_pos >= suff_buff_size)
 					{
-						bbkpq->push(bin_id, suff_buff, suff_buff_pos, NULL, 0, 0, 0, 0, 0, false);
+						bbkpq->push(bin_id, suff_buff, suff_buff_pos, nullptr, 0, 0, 0, 0, 0, false);
 						suff_buff_pos = 0;
 						sm_pmm_merger_suff->reserve(suff_buff);
 					}
@@ -241,10 +241,10 @@ void CBigKmerBinMerger<KMER_T, SIZE>::Process()
 //************************************************************************************************************
 // CWBigKmerBinMerger - wrapper for multithreading purposes
 //************************************************************************************************************
-template<typename KMER_T, unsigned SIZE>
+template<unsigned SIZE>
 class CWBigKmerBinMerger
 {
-	CBigKmerBinMerger<KMER_T, SIZE> *merger;
+	CBigKmerBinMerger<SIZE> *merger;
 public:
 	CWBigKmerBinMerger(CKMCParams& Params, CKMCQueues& Queues);
 	~CWBigKmerBinMerger();
@@ -253,16 +253,16 @@ public:
 
 //----------------------------------------------------------------------------------
 // Constructor
-template<typename KMER_T, unsigned SIZE>
-CWBigKmerBinMerger<KMER_T, SIZE>::CWBigKmerBinMerger(CKMCParams& Params, CKMCQueues& Queues)
+template<unsigned SIZE>
+CWBigKmerBinMerger<SIZE>::CWBigKmerBinMerger(CKMCParams& Params, CKMCQueues& Queues)
 {
-	merger = new CBigKmerBinMerger<KMER_T, SIZE>(Params, Queues);
+	merger = new CBigKmerBinMerger<SIZE>(Params, Queues);
 }
 
 //----------------------------------------------------------------------------------
 // Destructor
-template<typename KMER_T, unsigned SIZE>
-CWBigKmerBinMerger<KMER_T, SIZE>::~CWBigKmerBinMerger()
+template<unsigned SIZE>
+CWBigKmerBinMerger<SIZE>::~CWBigKmerBinMerger()
 {
 	delete merger;
 }
@@ -271,8 +271,8 @@ CWBigKmerBinMerger<KMER_T, SIZE>::~CWBigKmerBinMerger()
 
 //----------------------------------------------------------------------------------
 // Execution
-template<typename KMER_T, unsigned SIZE>
-void CWBigKmerBinMerger<KMER_T, SIZE>::operator()()
+template<unsigned SIZE>
+void CWBigKmerBinMerger<SIZE>::operator()()
 {
 	merger->Process();
 }
