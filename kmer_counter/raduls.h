@@ -35,3 +35,5 @@ namespace RadulsSort
 }
 
 #endif // RADULS_H
+
+// ***** EOF

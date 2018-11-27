@@ -183,3 +183,5 @@ bool hasAVX512ER(void) {
 #ifdef VCL_NAMESPACE
 }
 #endif
+
+// ***** EOF

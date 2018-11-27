@@ -551,3 +551,4 @@ void CSmallSort<SIZE>::shell_sort_1_10(CKmer<SIZE>* ptr, uint32 size)
 
 #endif
 	
+// ***** EOF

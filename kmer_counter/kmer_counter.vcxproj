@@ -161,9 +161,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="asmlib_wrapper.h" />
     <ClInclude Include="bam_utils.h" />
     <ClInclude Include="binary_reader.h" />
@@ -216,6 +213,7 @@
     <ClCompile Include="cpu_info.cpp" />
     <ClCompile Include="develop.cpp" />
     <ClCompile Include="fastq_reader.cpp" />
+    <ClCompile Include="kb_collector.cpp" />
     <ClCompile Include="kb_completer.cpp" />
     <ClCompile Include="kb_storer.cpp" />
     <ClCompile Include="kmer.cpp" />
@@ -246,6 +244,7 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/arch:sse2 -D__SSE4_1__ %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ClCompile Include="rev_byte.cpp" />
+    <ClCompile Include="splitter.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

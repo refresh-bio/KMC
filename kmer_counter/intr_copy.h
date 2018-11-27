@@ -88,3 +88,5 @@ template <unsigned SIZE> struct IntrCopy128<SIZE, 0>
 
 
 #endif
+
+// ***** EOF

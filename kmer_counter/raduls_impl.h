@@ -759,16 +759,16 @@ namespace RadulsSort
 	};
 
 	template<>
-	class InstantiateTempl<1>
+	class InstantiateTempl<0>
 	{
-		friend class InstantiateTempl<1 + 1>;
+		friend class InstantiateTempl<0 + 1>;
 		void inst()
 		{
-			volatile auto ptr = RADULS_RADIX_SORT_FUNNAME<CKmer<1>>;
-			(void)ptr; //suppress `unused` warning
 		}
 	};
 	template class InstantiateTempl<KMER_WORDS>;
 }
 
 #endif
+
+// ***** EOF

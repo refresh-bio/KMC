@@ -28,7 +28,9 @@ $(KMC_MAIN_DIR)/timer.o \
 $(KMC_MAIN_DIR)/develop.o \
 $(KMC_MAIN_DIR)/kb_completer.o \
 $(KMC_MAIN_DIR)/kb_storer.o \
-$(KMC_MAIN_DIR)/kmer.o 
+$(KMC_MAIN_DIR)/kmer.o \
+$(KMC_MAIN_DIR)/splitter.o \
+$(KMC_MAIN_DIR)/kb_collector.o 
 RADULS_OBJS = \
 $(KMC_MAIN_DIR)/raduls_sse2.o \
 $(KMC_MAIN_DIR)/raduls_sse41.o \

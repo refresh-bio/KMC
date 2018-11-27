@@ -13,3 +13,5 @@
 
 uchar CRev_byte::lut[256];
 CRev_byte::_si CRev_byte::_init;
+
+// ***** EOF

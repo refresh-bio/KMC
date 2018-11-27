@@ -25,3 +25,5 @@ struct CSmallKBuf
 };
 
 #endif
+
+// ***** EOF

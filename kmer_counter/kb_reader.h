@@ -258,5 +258,3 @@ template <unsigned SIZE> void CWKmerBinReader<SIZE>::operator()()
 #endif
 
 // ***** EOF
-
-

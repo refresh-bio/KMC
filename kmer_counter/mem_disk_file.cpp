@@ -115,3 +115,5 @@ size_t CMemDiskFile::Write(const uchar * ptr, size_t size, size_t count)
 		return fwrite(ptr, size, count, file);
 	}
 }
+
+// ***** EOF

@@ -93,3 +93,5 @@ std::string CCpuInfo::GetBrand()
 	}
 	return brand_;
 }
+
+// ***** EOF

@@ -462,8 +462,8 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	CStopWatch w0, w1;
 	double time1, time2, time3;
-	uint64 n_unique, n_cutoff_min, n_cutoff_max, n_total, n_reads, tmp_size, tmp_size_strict_mem, max_disk_usage, n_total_super_kmers;
-	bool was_small_k_opt;
+	uint64 n_unique{}, n_cutoff_min{}, n_cutoff_max{}, n_total{}, n_reads{}, tmp_size{}, tmp_size_strict_mem{}, max_disk_usage{}, n_total_super_kmers{};
+	bool was_small_k_opt{};
 
 #ifdef WIN32
 	_setmaxstdio(2040);

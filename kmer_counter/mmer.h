@@ -195,3 +195,5 @@ inline void CMmer::insert(const char* seq)
 
 
 #endif
+
+// ***** EOF

@@ -139,9 +139,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\kmc_api\kmc_file.h" />
     <ClInclude Include="..\kmc_api\kmer_api.h" />
     <ClInclude Include="..\kmc_api\kmer_defs.h" />

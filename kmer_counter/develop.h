@@ -14,3 +14,5 @@ void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, u
 
 
 #endif
+
+// ***** EOF

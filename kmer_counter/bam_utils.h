@@ -34,3 +34,5 @@ static inline void read_uint16_t(uint16_t& out, uint8_t* in, uint64_t& pos)
 		out |= (uint16_t)in[pos++] << (j * 8);
 }
 #endif
+
+// ***** EOF

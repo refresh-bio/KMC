@@ -616,5 +616,3 @@ inline void CKmer<1>::random_init(uint32 /*pos*/, uint64 value)
 #endif
 
 // ***** EOF
-
-

@@ -13,4 +13,5 @@
 #include "kmer.h"
 
 uint32 CKmer<1>::KMER_SIZE = 1;
+
 // ***** EOF
