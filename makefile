@@ -1,19 +1,19 @@
-all: kmc
-	
+all: kmc kmc_dump kmc_tools
+
 KMC_BIN_DIR = bin
 KMC_MAIN_DIR = kmer_counter
 KMC_API_DIR = kmc_api
 KMC_DUMP_DIR = kmc_dump
 KMC_TOOLS_DIR = kmc_tools
 
-CC 	= g++
-CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11 
-CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11 
+CXX 	?= g++
+CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11
+CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11
 
 KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 KMC_TOOLS_CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 
-DISABLE_ASMLIB = false
+DISABLE_ASMLIB ?= false
 
 KMC_OBJS = \
 $(KMC_MAIN_DIR)/kmer_counter.o \
@@ -35,7 +35,7 @@ RADULS_OBJS = \
 $(KMC_MAIN_DIR)/raduls_sse2.o \
 $(KMC_MAIN_DIR)/raduls_sse41.o \
 $(KMC_MAIN_DIR)/raduls_avx2.o \
-$(KMC_MAIN_DIR)/raduls_avx.o 
+$(KMC_MAIN_DIR)/raduls_avx.o
 
 KMC_LIBS = \
 $(KMC_MAIN_DIR)/libs/libz.a \
@@ -64,46 +64,46 @@ $(KMC_TOOLS_DIR)/percent_progress.o
 
 KMC_TOOLS_LIBS = \
 $(KMC_TOOLS_DIR)/libs/libz.a \
-$(KMC_TOOLS_DIR)/libs/libbz2.a 
+$(KMC_TOOLS_DIR)/libs/libbz2.a
 
 ifeq ($(DISABLE_ASMLIB),true)
 	CFLAGS += -DDISABLE_ASMLIB
 	KMC_TOOLS_CFLAGS += -DDISABLE_ASMLIB
 else
 	KMC_LIBS += \
-	$(KMC_MAIN_DIR)/libs/libaelf64.a 
+	$(KMC_MAIN_DIR)/libs/libaelf64.a
 	KMC_TOOLS_LIBS += \
-	$(KMC_TOOLS_DIR)/libs/libaelf64.a 
-endif 	
+	$(KMC_TOOLS_DIR)/libs/libaelf64.a
+endif
 
 $(KMC_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS): %.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CFLAGS) -c $< -o $@
 
 $(KMC_TOOLS_OBJS): %.o: %.cpp
-	$(CC) $(KMC_TOOLS_CFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(KMC_TOOLS_CFLAGS) -c $< -o $@
 
 $(KMC_MAIN_DIR)/raduls_sse2.o: $(KMC_MAIN_DIR)/raduls_sse2.cpp
-	$(CC) $(CFLAGS) -msse2 -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CFLAGS) -msse2 -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_sse41.o: $(KMC_MAIN_DIR)/raduls_sse41.cpp
-	$(CC) $(CFLAGS) -msse4.1 -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CFLAGS) -msse4.1 -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_avx.o: $(KMC_MAIN_DIR)/raduls_avx.cpp
-	$(CC) $(CFLAGS) -mavx -fabi-version=0 -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CFLAGS) -mavx -fabi-version=0 -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_avx2.o: $(KMC_MAIN_DIR)/raduls_avx2.cpp
-	$(CC) $(CFLAGS) -mavx2 -mfma -fabi-version=0 -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CFLAGS) -mavx2 -mfma -fabi-version=0 -c $< -o $@
 $(KMC_MAIN_DIR)/instrset_detect.o: $(KMC_MAIN_DIR)/libs/vectorclass/instrset_detect.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
-	
-kmc: $(KMC_OBJS) $(RADULS_OBJS) $(KMC_MAIN_DIR)/instrset_detect.o 
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CFLAGS) -c $< -o $@
+
+kmc: $(KMC_OBJS) $(RADULS_OBJS) $(KMC_MAIN_DIR)/instrset_detect.o
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS)
+	$(CXX) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS) $(LDFLAGS) $(CLINK)
 kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^
-	
+	$(CXX) -o $(KMC_BIN_DIR)/$@ $^ $(LDFLAGS) $(CLINK)
+
 kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
-	$(CC) $(KMC_TOOLS_CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS)
-	
+	$(CXX) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS) $(LDFLAGS) $(KMC_TOOLS_CLINK)
+
 clean:
 	-rm $(KMC_MAIN_DIR)/*.o
 	-rm $(KMC_API_DIR)/*.o
