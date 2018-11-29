@@ -151,7 +151,7 @@ class CBinaryFilesReader
 		unsigned char eof_marker[] = { 0x1f, 0x8b, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x06, 0x00, 0x42, 0x43, 0x02, 0x00, 0x1b, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 		unsigned char eof_to_chech[sizeof(eof_marker)];
-		fseek(file, -sizeof(eof_marker), SEEK_END);
+		fseek(file, -static_cast<int>(sizeof(eof_marker)), SEEK_END);
 		if (sizeof(eof_marker) != fread(eof_to_chech, 1, sizeof(eof_marker), file))
 		{
 			cerr << "Error: cannot check EOF marker of BAM file: " << fname << "\n";

@@ -78,10 +78,8 @@ $(KMC_MAIN_DIR)/raduls_avx.o: $(KMC_MAIN_DIR)/raduls_avx.cpp
 	$(CC) $(CFLAGS) -mavx -fabi-version=0 -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_avx2.o: $(KMC_MAIN_DIR)/raduls_avx2.cpp
 	$(CC) $(CFLAGS) -mavx2 -mfma -fabi-version=0 -c $< -o $@
-$(KMC_MAIN_DIR)/instrset_detect.o: $(KMC_MAIN_DIR)/libs/vectorclass/instrset_detect.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
 	
-kmc: $(KMC_OBJS) $(RADULS_OBJS) $(KMC_MAIN_DIR)/instrset_detect.o 
+kmc: $(KMC_OBJS) $(RADULS_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
 	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS)
 kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)

@@ -16,9 +16,6 @@
     <ClCompile Include="fastq_reader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="libs\vectorclass\instrset_detect.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="kb_completer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

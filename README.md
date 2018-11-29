@@ -11,7 +11,6 @@ The following libraries come with KMC in a binary (64-bit compiled for x86 platf
 If your system needs other binary formats, you should put the following libraries in kmer_counter/libs:
 * libbzip2 - for support for bzip2-compressed input FASTQ/FASTA files (http://www.bzip.org/)
 * zlib - for support for gzip-compressed input FASTQ/FASTA files (http://www.zlib.net/)
-* vcl (C++ vector class library) - for detection of processor extensions (SSE, AVX, etc.)
 
 If needed, you can also redefine maximal length of k-mer, which is 256 in the current version.
 
@@ -63,9 +62,6 @@ License
 * gzip is free, open-source
 
 In case of doubt, please consult the original documentations.
-
-* vcl is under the licence GNU GPL 3 or higher 
-Node: for commercial usage of vcl follow the instructions in 'License' section (http://www.agner.org/optimize/vectorclass.pdf)
 
 Warranty
 =
