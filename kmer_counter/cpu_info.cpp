@@ -68,9 +68,10 @@ static struct CpuInfoImpl {
 		}
 		char _vendor[0x20]{};
 
-		*reinterpret_cast<int*>(_vendor) = data_[0][1];
-		*reinterpret_cast<int*>(_vendor + 4) = data_[0][3];
-		*reinterpret_cast<int*>(_vendor + 8) = data_[0][2];
+		memcpy(_vendor, &data_[0][1], sizeof(int));
+		memcpy(_vendor + 4, &data_[0][3], sizeof(int));
+		memcpy(_vendor + 8, &data_[0][2], sizeof(int));
+
 		vendor = _vendor;
 		if (nIds_ > 0)
 		{
