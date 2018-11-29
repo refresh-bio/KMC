@@ -724,22 +724,6 @@ namespace RadulsSort
 		}
 	}
 
-
-////#if   INSTRSET == 2                    // SSE2
-//#if defined(__SSE2__) || defined(__x86_64__)
-//#define RADULS_RADIX_SORT_FUNNAME RadixSortMSD_SSE2
-////#elif INSTRSET == 5                    // SSE4.1
-//#elif defined(__SSE4_1__)
-//#define RADULS_RADIX_SORT_FUNNAME RadixSortMSD_SSE41
-////#elif INSTRET == 7                    // AVX
-//#elif defined (__AVX__)
-//#define RADULS_RADIX_SORT_FUNNAME RadixSortMSD_AVX
-////#elif INSTRSET == 8                    // AVX2
-//#elif defined(__AVX2__)
-//#define RADULS_RADIX_SORT_FUNNAME RadixSortMSD_AVX2
-//#endif
-//
-//
 #if defined(__AVX2__)
 #define RADULS_RADIX_SORT_FUNNAME RadixSortMSD_AVX2
 #elif defined (__AVX__)
