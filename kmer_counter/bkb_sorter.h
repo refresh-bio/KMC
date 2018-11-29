@@ -104,7 +104,7 @@ template<unsigned SIZE> void CBigKmerBinSorter<SIZE>::Process()
 
 		if (kxmers_pos + size < kxmers_size)
 		{			
-			A_memcpy(kxmers + kxmers_pos, data, size * sizeof(CKmer<SIZE>));
+			memcpy(kxmers + kxmers_pos, data, size * sizeof(CKmer<SIZE>));
 			sm_pmm_expand->free(data);
 			kxmers_pos += size;
 		}
@@ -113,7 +113,7 @@ template<unsigned SIZE> void CBigKmerBinSorter<SIZE>::Process()
 			Sort();
 			PostProcessSort();
 			++sub_bin_id;
-			A_memcpy(kxmers, data, size * sizeof(CKmer<SIZE>));
+			memcpy(kxmers, data, size * sizeof(CKmer<SIZE>));
 			sm_pmm_expand->free(data);
 			kxmers_pos = size;
 		}

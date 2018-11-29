@@ -7,13 +7,11 @@ KMC_DUMP_DIR = kmc_dump
 KMC_TOOLS_DIR = kmc_tools
 
 CC 	= g++
-CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11 
-CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11 
+CFLAGS	= -Wall -O3 -m64 -pthread -std=c++11 
+CLINK	= -lm -O3 -lpthread -std=c++11 
 
 KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 KMC_TOOLS_CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
-
-DISABLE_ASMLIB = false
 
 KMC_OBJS = \
 $(KMC_MAIN_DIR)/kmer_counter.o \
@@ -65,16 +63,6 @@ $(KMC_TOOLS_DIR)/percent_progress.o
 KMC_TOOLS_LIBS = \
 $(KMC_TOOLS_DIR)/libs/libz.a \
 $(KMC_TOOLS_DIR)/libs/libbz2.a 
-
-ifeq ($(DISABLE_ASMLIB),true)
-	CFLAGS += -DDISABLE_ASMLIB
-	KMC_TOOLS_CFLAGS += -DDISABLE_ASMLIB
-else
-	KMC_LIBS += \
-	$(KMC_MAIN_DIR)/libs/libaelf64.a 
-	KMC_TOOLS_LIBS += \
-	$(KMC_TOOLS_DIR)/libs/libaelf64.a 
-endif 	
 
 $(KMC_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS): %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@

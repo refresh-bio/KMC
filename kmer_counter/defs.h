@@ -24,9 +24,6 @@
 
 #include <time.h>
 
-//uncomment below line to disable asmlib
-//#define DISABLE_ASMLIB
-
 //#define DEBUG_MODE
 //#define DEVELOP_MODE 
 
@@ -84,12 +81,6 @@
 typedef float	count_t;
 
 #define KMER_WORDS		((MAX_K + 31) / 32)
-
-#ifdef _DEBUG
-#define A_memcpy	memcpy
-#define A_memset	memset
-#endif
-
 
 
 #ifdef WIN32

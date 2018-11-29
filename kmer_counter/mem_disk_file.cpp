@@ -10,7 +10,6 @@
 */
 
 #include "mem_disk_file.h"
-#include "asmlib_wrapper.h"
 #include <iostream>
 using namespace std;
 
@@ -87,7 +86,7 @@ size_t CMemDiskFile::Read(uchar * ptr, size_t size, size_t count)
 		uint64 pos = 0;
 		for(auto& p : container)
 		{
-			A_memcpy(ptr + pos, p.first, p.second);
+			memcpy(ptr + pos, p.first, p.second);
 			pos += p.second;
 			delete[] p.first;
 		}
@@ -106,7 +105,7 @@ size_t CMemDiskFile::Write(const uchar * ptr, size_t size, size_t count)
 	if(memory_mode)
 	{
 		uchar *buf = new uchar[size * count];
-		A_memcpy(buf, ptr, size * count);
+		memcpy(buf, ptr, size * count);
 		container.push_back(make_pair(buf, size * count));
 		return size * count;
 	}

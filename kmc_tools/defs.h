@@ -27,8 +27,6 @@ using uchar = unsigned char;
 #define BYTE_LOG(x) (((x) < (1 << 8)) ? 1 : ((x) < (1 << 16)) ? 2 : ((x) < (1 << 24)) ? 3 : 4)
 
 
-//#define DISABLE_ASMLIB
-
 //#define ENABLE_DEBUG
 //#define ENABLE_LOGGER
 

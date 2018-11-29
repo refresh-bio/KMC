@@ -210,8 +210,6 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::ProcessBins()
 	uint64 tmp_n_rec;
 	CMemDiskFile *file;
 	
-	SetMemcpyCacheLimit(8);
-
 	while (sorters_manager->GetNext(bin_id, data, size, n_rec, n_sorting_threads))
 	{
 		// Get bin data
@@ -363,7 +361,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::ExpandKmersBoth(uint64 tmp_s
 template <unsigned SIZE> void CKmerBinSorter<SIZE>::FromChildThread(CKmer<SIZE>* thread_buffer, uint64 size)
 {
 	lock_guard<mutex> lcx(expander_mtx);
-	A_memcpy(buffer_input + input_pos, thread_buffer, size * sizeof(CKmer<SIZE>));
+	memcpy(buffer_input + input_pos, thread_buffer, size * sizeof(CKmer<SIZE>));
 	input_pos += size;
 }
 
@@ -906,8 +904,8 @@ template<unsigned SIZE> void CKmerBinSorter<SIZE>::PreCompactKxmers(uint64& comp
 
 			if (n_threads < 2 || n_elems < 4096) //size limit achieved experimentally
 			{
-				A_memmove(kmers_dest, kmers_src, n_elems * sizeof(CKmer<SIZE>));
-				A_memmove(counters_dest, counters_src, n_elems * sizeof(uint32));
+				memmove(kmers_dest, kmers_src, n_elems * sizeof(CKmer<SIZE>));
+				memmove(counters_dest, counters_src, n_elems * sizeof(uint32));
 			}
 			else
 			{
@@ -915,14 +913,14 @@ template<unsigned SIZE> void CKmerBinSorter<SIZE>::PreCompactKxmers(uint64& comp
 				{
 					auto _kmers_dest = kmers_dest;
 					auto _kmers_src = kmers_src;
-					A_memmove(_kmers_dest, _kmers_src, n_elems * sizeof(CKmer<SIZE>));
+					memmove(_kmers_dest, _kmers_src, n_elems * sizeof(CKmer<SIZE>));
 				});
 
 				std::thread th2([counters_dest, counters_src, n_elems]
 				{
 					auto _counters_dest = counters_dest;
 					auto _counters_src = counters_src;
-					A_memmove(_counters_dest, _counters_src, n_elems * sizeof(uint32));
+					memmove(_counters_dest, _counters_src, n_elems * sizeof(uint32));
 				});
 				th1.join();
 				th2.join();

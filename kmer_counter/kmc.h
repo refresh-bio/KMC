@@ -30,7 +30,6 @@
 #include "kb_storer.h"
 #include "s_mapper.h"
 #include "splitter.h"
-#include "asmlib_wrapper.h"
 #include "cpu_info.h"
 #include "small_sort.h"
 
@@ -183,8 +182,6 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParams(CKMCParams &_Params)
 	Params.KMER_T_size = sizeof(CKmer<SIZE>);
 
 	initialized = true; 
-
-	SetMemcpyCacheLimit(8);			// Sets the asmlib's memcpy function to make copy without use of cache memory
 }
 
 //----------------------------------------------------------------------------------

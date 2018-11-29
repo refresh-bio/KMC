@@ -151,7 +151,6 @@
     <ClInclude Include="..\kmc_api\kmc_file.h" />
     <ClInclude Include="..\kmc_api\kmer_api.h" />
     <ClInclude Include="..\kmc_api\mmer.h" />
-    <ClInclude Include="asmlib_wrapper.h" />
     <ClInclude Include="bundle.h" />
     <ClInclude Include="check_kmer.h" />
     <ClInclude Include="config.h" />
@@ -167,7 +166,6 @@
     <ClInclude Include="kmc2_db_reader.h" />
     <ClInclude Include="kmc_header.h" />
     <ClInclude Include="kmer.h" />
-    <ClInclude Include="libs\asmlib.h" />
     <ClInclude Include="libs\bzlib.h" />
     <ClInclude Include="libs\bzlib_private.h" />
     <ClInclude Include="libs\zconf.h" />
@@ -209,7 +207,6 @@
     <ClCompile Include="tokenizer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="libs\libacof64.lib" />
     <Library Include="libs\libbzip2.lib" />
     <Library Include="libs\zlibstat.lib" />
   </ItemGroup>

@@ -20,8 +20,8 @@ Date   : 2018-05-10
 #include "defs.h"
 #include "timer.h"
 #include <thread>
-#include "asmlib_wrapper.h"
 #include "small_sort.h"
+#include "intr_copy.h"
 
 namespace RadixSort
 {
@@ -304,7 +304,13 @@ namespace RadixSort
 			}
 			else
 			{
-				const int32 BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
+				//const int32 BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
+
+				constexpr uint32_t BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
+				constexpr uint32_t BUFFER_WIDTH_IN_128BIT_WORDS = BUFFER_WIDTH * sizeof(KMER_T) / 16;
+				constexpr uint32_t BUFFER_16B_ALIGNED = sizeof(KMER_T) % 16 == 0;
+
+
 				uchar* raw_buffer;
 				pmm_radix_buf->reserve(raw_buffer);
 				uchar* buffer = raw_buffer;
@@ -325,7 +331,7 @@ namespace RadixSort
 				//	globalHisto[byteValue]++;
 
 				//	if (index_x == (BUFFER_WIDTH - 1))
-				//		A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+				//		memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 
 				//	ptr += sizeof(KMER_T);
 				//} //end_for
@@ -338,24 +344,24 @@ namespace RadixSort
 					index_x = globalHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[(n_recs % 4) - 3];
 					globalHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 				case 2:
 					byteValue = *ptr;
 					index_x = globalHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[(n_recs % 4) - 2];
 					globalHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 				case 1:
 					byteValue = *ptr;
 					index_x = globalHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[(n_recs % 4) - 1];
 					globalHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 				}
 
@@ -365,32 +371,32 @@ namespace RadixSort
 					index_x = globalHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i];
 					globalHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 
 					byteValue = *ptr;
 					index_x = globalHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i + 1];
 					globalHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 
 					byteValue = *ptr;
 					index_x = globalHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i + 2];
 					globalHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 
 					byteValue = *ptr;
 					index_x = globalHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i + 3];
 					globalHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))												
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 
 				}
@@ -413,8 +419,9 @@ namespace RadixSort
 					else
 						elemInBuffer = index_stop - index_start;
 
-					if (elemInBuffer != 0)
-						A_memcpy(&tmp[globalHisto[private_i] - elemInBuffer], &Buffer[private_i * BUFFER_WIDTH + (globalHisto[private_i] - elemInBuffer) % BUFFER_WIDTH], (elemInBuffer)*sizeof(KMER_T));
+					if (elemInBuffer != 0)						
+						IntrCopy64fun(&tmp[globalHisto[private_i] - elemInBuffer],
+							&Buffer[private_i * BUFFER_WIDTH + (globalHisto[private_i] - elemInBuffer) % BUFFER_WIDTH], elemInBuffer * sizeof(KMER_T) / 8);
 				}
 
 				pmm_radix_buf->free(raw_buffer);
@@ -489,7 +496,7 @@ namespace RadixSort
 		uint64 per_thread = n_recs / n_threads;
 
 		std::vector<std::thread> threads;
-		std::vector<std::array<COUNTER_TYPE,256>> histos(n_threads);
+		std::vector<std::array<COUNTER_TYPE, 256>> histos(n_threads);
 		ALIGN_ARRAY COUNTER_TYPE globalHisto[256] = {};
 		for (uint32_t th_id = 0; th_id < n_threads; ++th_id)
 		{
@@ -577,7 +584,7 @@ namespace RadixSort
 		}
 
 		std::vector<uchar*> _raw_buffers(n_threads);
-		std::vector<std::array<COUNTER_TYPE,256>> threads_histos(n_threads);
+		std::vector<std::array<COUNTER_TYPE, 256>> threads_histos(n_threads);
 
 		for (uint32_t th_id = 0; th_id < n_threads; ++th_id)
 		{
@@ -595,7 +602,10 @@ namespace RadixSort
 
 				KMER_T* src = kmers + th_id*per_thread;
 
-				const int32 BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
+				//const int32 BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
+				constexpr uint32_t BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
+				constexpr uint32_t BUFFER_WIDTH_IN_128BIT_WORDS = BUFFER_WIDTH * sizeof(KMER_T) / 16;
+				constexpr uint32_t BUFFER_16B_ALIGNED = sizeof(KMER_T) % 16 == 0;
 
 				uchar* raw_buffer;
 				pmm_radix_buf->reserve(raw_buffer);
@@ -618,7 +628,7 @@ namespace RadixSort
 				//	myHisto[byteValue]++;
 
 				//	if (index_x == (BUFFER_WIDTH - 1))
-				//		A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+				//		memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 
 				//	ptr += sizeof(KMER_T);
 				//} //end_for
@@ -630,24 +640,24 @@ namespace RadixSort
 					index_x = myHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[(n % 4) - 3];
 					myHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 				case 2:
 					byteValue = *ptr;
 					index_x = myHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[(n % 4) - 2];
 					myHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 				case 1:
 					byteValue = *ptr;
 					index_x = myHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[(n % 4) - 1];
 					myHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 				}
 
@@ -657,32 +667,32 @@ namespace RadixSort
 					index_x = myHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i];
 					myHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 
 					byteValue = *ptr;
 					index_x = myHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i + 1];
 					myHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 
 					byteValue = *ptr;
 					index_x = myHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i + 2];
 					myHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 
 					byteValue = *ptr;
 					index_x = myHisto[byteValue] % BUFFER_WIDTH;
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i + 3];
 					myHisto[byteValue]++;
-					if (index_x == (BUFFER_WIDTH - 1))
-						A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+					if (index_x == (BUFFER_WIDTH - 1))						
+						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 				}
 
@@ -694,7 +704,6 @@ namespace RadixSort
 		for (auto& t : threads)
 			t.join();
 		threads.clear();
-
 
 
 		for (uint32_t th_id = 0; th_id < n_threads; ++th_id)
@@ -728,8 +737,9 @@ namespace RadixSort
 					else
 						elemInBuffer = index_stop - index_start;
 
-					if (elemInBuffer != 0)
-						A_memcpy(&tmp[myHisto[private_i] - elemInBuffer], &Buffer[private_i * BUFFER_WIDTH + (myHisto[private_i] - elemInBuffer) % BUFFER_WIDTH], (elemInBuffer)*sizeof(KMER_T));
+					if (elemInBuffer != 0)						
+						IntrCopy64fun(&tmp[myHisto[private_i] - elemInBuffer],
+							&Buffer[private_i * BUFFER_WIDTH + (myHisto[private_i] - elemInBuffer) % BUFFER_WIDTH], elemInBuffer * sizeof(KMER_T) / 8);
 				}
 				pmm_radix_buf->free(raw_buffer);
 			}));

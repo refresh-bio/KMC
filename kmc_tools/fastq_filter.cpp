@@ -10,7 +10,6 @@ Date   : 2018-05-10
 
 #include "stdafx.h"
 #include "fastq_filter.h"
-#include "asmlib_wrapper.h"
 #include <numeric>
 
 using namespace std;
@@ -389,9 +388,9 @@ public:
 	}
 	void SendToOutBuf() const
 	{
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.quality_header_start - owner.seq_desc.read_header_start + 1);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.quality_header_start - owner.seq_desc.read_header_start + 1);
 		owner.output_part_pos += owner.seq_desc.quality_header_start - owner.seq_desc.read_header_start + 1;
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.quality_header_end, owner.seq_desc.end - owner.seq_desc.quality_header_end);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.quality_header_end, owner.seq_desc.end - owner.seq_desc.quality_header_end);
 		owner.output_part_pos += owner.seq_desc.end - owner.seq_desc.quality_header_end;
 	}
 
@@ -419,7 +418,7 @@ public:
 	void SendToOutBuf() const
 	{
 		owner.input_part[owner.seq_desc.read_header_start] = '>';
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.quality_header_start - owner.seq_desc.read_header_start);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.quality_header_start - owner.seq_desc.read_header_start);
 		owner.output_part_pos += owner.seq_desc.quality_header_start - owner.seq_desc.read_header_start;
 	}
 	bool NextSeq() const
@@ -446,7 +445,7 @@ public:
 
 	void SendToOutBuf() const
 	{
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.end - owner.seq_desc.read_header_start);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.end - owner.seq_desc.read_header_start);
 		owner.output_part_pos += owner.seq_desc.end - owner.seq_desc.read_header_start;
 	}
 	bool NextSeq() const
@@ -472,15 +471,15 @@ public:
 	}
 	void SendToOutBuf() const
 	{
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.read_header_end - owner.seq_desc.read_header_start);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.read_header_end - owner.seq_desc.read_header_start);
 		owner.output_part_pos += owner.seq_desc.read_header_end - owner.seq_desc.read_header_start;
 		owner.output_part[owner.output_part_pos++] = '\n';
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_start, owner.trim_len);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_start, owner.trim_len);
 		owner.output_part_pos += owner.trim_len;
 		owner.output_part[owner.output_part_pos++] = '\n';
 		owner.output_part[owner.output_part_pos++] = '+';
 		owner.output_part[owner.output_part_pos++] = '\n';
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.quality_start, owner.trim_len);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.quality_start, owner.trim_len);
 		owner.output_part_pos += owner.trim_len;
 		owner.output_part[owner.output_part_pos++] = '\n';
 	}
@@ -509,11 +508,11 @@ public:
 	}
 	void SendToOutBuf() const
 	{
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.read_header_end - owner.seq_desc.read_header_start);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.read_header_end - owner.seq_desc.read_header_start);
 		owner.output_part[owner.output_part_pos] = '>';
 		owner.output_part_pos += owner.seq_desc.read_header_end - owner.seq_desc.read_header_start;
 		owner.output_part[owner.output_part_pos++] = '\n';
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_start, owner.trim_len);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_start, owner.trim_len);
 		owner.output_part_pos += owner.trim_len;
 		owner.output_part[owner.output_part_pos++] = '\n';
 	}
@@ -543,10 +542,10 @@ public:
 	}
 	void SendToOutBuf() const
 	{
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.read_header_end - owner.seq_desc.read_header_start);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.read_header_end - owner.seq_desc.read_header_start);
 		owner.output_part_pos += owner.seq_desc.read_header_end - owner.seq_desc.read_header_start;
 		owner.output_part[owner.output_part_pos++] = '\n';
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_start, owner.trim_len);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_start, owner.trim_len);
 		owner.output_part_pos += owner.trim_len;
 		owner.output_part[owner.output_part_pos++] = '\n';
 	}
@@ -576,13 +575,13 @@ public:
 	}
 	void SendToOutBuf() const
 	{
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.read_header_end - owner.seq_desc.read_header_start);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.read_header_end - owner.seq_desc.read_header_start);
 		owner.output_part_pos += owner.seq_desc.read_header_end - owner.seq_desc.read_header_start;
 		owner.output_part[owner.output_part_pos++] = '\n';
 		owner.HardMask();
 		owner.output_part[owner.output_part_pos++] = '+';
 		owner.output_part[owner.output_part_pos++] = '\n';
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.quality_start, owner.seq_desc.quality_end - owner.seq_desc.quality_start);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.quality_start, owner.seq_desc.quality_end - owner.seq_desc.quality_start);
 		owner.output_part_pos += owner.seq_desc.quality_end - owner.seq_desc.quality_start;
 		owner.output_part[owner.output_part_pos++] = '\n';		
 	}
@@ -608,7 +607,7 @@ public:
 	void SendToOutBuf() const
 	{
 		owner.input_part[owner.seq_desc.read_header_start] = '>';
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.read_header_end - owner.seq_desc.read_header_start);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.read_header_end - owner.seq_desc.read_header_start);
 		owner.output_part_pos += owner.seq_desc.read_header_end - owner.seq_desc.read_header_start;
 		owner.output_part[owner.output_part_pos++] = '\n';
 		owner.HardMask();		
@@ -634,7 +633,7 @@ public:
 	}
 	void SendToOutBuf() const
 	{
-		A_memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.read_header_end - owner.seq_desc.read_header_start);
+		memcpy(owner.output_part + owner.output_part_pos, owner.input_part + owner.seq_desc.read_header_start, owner.seq_desc.read_header_end - owner.seq_desc.read_header_start);
 		owner.output_part_pos += owner.seq_desc.read_header_end - owner.seq_desc.read_header_start;
 		owner.output_part[owner.output_part_pos++] = '\n';
 		owner.HardMask();	

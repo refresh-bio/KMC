@@ -111,12 +111,6 @@
     <ClInclude Include="fastq_writer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="asmlib_wrapper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="libs\asmlib.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="timer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -176,7 +170,6 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="libs\zlibstat.lib" />
-    <Library Include="libs\libacof64.lib" />
     <Library Include="libs\libbzip2.lib" />
   </ItemGroup>
 </Project>

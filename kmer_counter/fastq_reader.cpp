@@ -12,7 +12,6 @@
 #include <algorithm>
 #include "defs.h"
 #include "fastq_reader.h"
-#include "asmlib_wrapper.h"
 #include "bam_utils.h"
 //************************************************************************************************************
 // CFastqReader	- reader class
@@ -831,7 +830,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size)
 			uint64 in_left = in_data_size - in_data_pos;
 			uint64 out_left = size - out_pos;
 			uint64 n_copy = min(in_left, out_left);
-			A_memcpy(buff + out_pos, in_data + in_data_pos, n_copy);
+			memcpy(buff + out_pos, in_data + in_data_pos, n_copy);
 			in_data_pos += n_copy;
 			out_pos += n_copy;
 		} while (out_pos < size);

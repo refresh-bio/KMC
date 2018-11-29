@@ -156,7 +156,7 @@ void CKmerBinStorer::PutBinToTmpFile(uint32 n)
 		{
 			buf = get<0>(*p);
 			size = get<1>(*p);
-			A_memcpy(tmp_buff + tmp_buff_pos, buf, size);
+			memcpy(tmp_buff + tmp_buff_pos, buf, size);
 			tmp_buff_pos += size;
 			pmm_bins->free(buf);
 		}

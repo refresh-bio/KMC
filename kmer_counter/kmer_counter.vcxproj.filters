@@ -68,12 +68,6 @@
   <ItemGroup>
     <ClInclude Include="libs\zconf.h" />
     <ClInclude Include="libs\zlib.h" />
-    <ClInclude Include="libs\asmlib.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="asmlib_wrapper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="bam_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -199,7 +193,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="libs\libacof64.lib" />
     <Library Include="libs\libbzip2.lib" />
     <Library Include="libs\zlibstat.lib" />
   </ItemGroup>

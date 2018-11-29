@@ -161,7 +161,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="asmlib_wrapper.h" />
     <ClInclude Include="bam_utils.h" />
     <ClInclude Include="binary_reader.h" />
     <ClInclude Include="bkb_merger.h" />
@@ -184,7 +183,6 @@
     <ClInclude Include="kmc.h" />
     <ClInclude Include="kmer.h" />
     <ClInclude Include="kxmer_set.h" />
-    <ClInclude Include="libs\asmlib.h" />
     <ClInclude Include="libs\bzlib.h" />
     <ClInclude Include="libs\bzlib_private.h" />
     <ClInclude Include="libs\zconf.h" />
@@ -261,7 +259,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="libs\libacof64.lib" />
     <Library Include="libs\libbzip2.lib" />
     <Library Include="libs\zlibstat.lib" />
   </ItemGroup>

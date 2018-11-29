@@ -10,7 +10,6 @@
 
 #include "stdafx.h"
 #include "bkb_reader.h"
-#include "asmlib_wrapper.h"
 
 
 //************************************************************************************************************
@@ -51,7 +50,7 @@ void CBigKmerBinReader::ProcessBigBin()
 			for (; end_pos + 1 + (file_buff[end_pos] + kmer_len + 3) / 4 <= in_buffer; end_pos += 1 + (file_buff[end_pos] + kmer_len + 3) / 4);
 			uint64 rest = in_buffer - end_pos;
 			sm_pmm_input_file->reserve(tmp);
-			A_memcpy(tmp, file_buff + end_pos, rest);
+			memcpy(tmp, file_buff + end_pos, rest);
 			bbpq->push(bin_id, file_buff, end_pos);
 			file_buff = tmp;
 			end_pos = rest;

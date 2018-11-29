@@ -21,7 +21,6 @@
 #include <map>
 #include <string>
 #include "mem_disk_file.h"
-#include "asmlib_wrapper.h"
 
 using namespace std;
 
@@ -1444,7 +1443,7 @@ public:
 			
 			// Sub-Case 2a - input data must be moved to correct position
 			if (sorting_phases % 2 == 0)				// Must move input data
-				A_memcpy(base_ptr + part1_size, base_ptr, file_size);
+				memcpy(base_ptr + part1_size, base_ptr, file_size);
 			// Sub-Case 2b - nothing has to be done with input data
 			else
 			{
@@ -1486,7 +1485,7 @@ public:
 		free_size -= req_size;
 
 		// Make a copy of the readed part
-		A_memcpy(get<1>(bin_ptrs[bin_id]), readed_part, file_size);
+		memcpy(get<1>(bin_ptrs[bin_id]), readed_part, file_size);
 
 		// Remove the memory of the already copied part of data
 		map_reserved.erase(present_pos);

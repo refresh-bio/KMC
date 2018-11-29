@@ -22,7 +22,6 @@ Date   : 2018-05-10
 #include "timer.h"
 #include <thread>
 #include <array>
-#include "asmlib_wrapper.h"
 #include "intr_copy.h"
 
 
@@ -268,7 +267,7 @@ void pierwsze_kolko_etap2(uint32_t /*th_id*/, KMER_T *kmers, KMER_T* tmp,
 		//	myHisto[byteValue]++;
 
 		//	if (index_x == (BUFFER_WIDTH - 1))
-		//		A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+		//		memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 
 		//	ptr += sizeof(KMER_T);
 		//} //end_for
@@ -281,7 +280,7 @@ void pierwsze_kolko_etap2(uint32_t /*th_id*/, KMER_T *kmers, KMER_T* tmp,
 			Buffer[byteValue * BUFFER_WIDTH + index_x] = src[(n % 4) - 3];
 			myHisto[byteValue]++;
 			if (index_x == (BUFFER_WIDTH - 1))
-				//				A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+				//				memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 				IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 
 			ptr += sizeof(KMER_T);
@@ -291,7 +290,7 @@ void pierwsze_kolko_etap2(uint32_t /*th_id*/, KMER_T *kmers, KMER_T* tmp,
 			Buffer[byteValue * BUFFER_WIDTH + index_x] = src[(n % 4) - 2];
 			myHisto[byteValue]++;
 			if (index_x == (BUFFER_WIDTH - 1))
-				//				A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+				//				memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 				IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 
 			ptr += sizeof(KMER_T);
@@ -301,7 +300,7 @@ void pierwsze_kolko_etap2(uint32_t /*th_id*/, KMER_T *kmers, KMER_T* tmp,
 			Buffer[byteValue * BUFFER_WIDTH + index_x] = src[(n % 4) - 1];
 			myHisto[byteValue]++;
 			if (index_x == (BUFFER_WIDTH - 1))
-				//				A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+				//				memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 				IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 
 			ptr += sizeof(KMER_T);
@@ -314,7 +313,7 @@ void pierwsze_kolko_etap2(uint32_t /*th_id*/, KMER_T *kmers, KMER_T* tmp,
 			Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i];
 			myHisto[byteValue]++;
 			if (index_x == (BUFFER_WIDTH - 1))
-				//				A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+				//				memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 				IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 
 			ptr += sizeof(KMER_T);
@@ -324,7 +323,7 @@ void pierwsze_kolko_etap2(uint32_t /*th_id*/, KMER_T *kmers, KMER_T* tmp,
 			Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i + 1];
 			myHisto[byteValue]++;
 			if (index_x == (BUFFER_WIDTH - 1))
-				//				A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+				//				memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 				IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 
 			ptr += sizeof(KMER_T);
@@ -334,7 +333,7 @@ void pierwsze_kolko_etap2(uint32_t /*th_id*/, KMER_T *kmers, KMER_T* tmp,
 			Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i + 2];
 			myHisto[byteValue]++;
 			if (index_x == (BUFFER_WIDTH - 1))
-				//				A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+				//				memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 				IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 
 			ptr += sizeof(KMER_T);
@@ -344,7 +343,7 @@ void pierwsze_kolko_etap2(uint32_t /*th_id*/, KMER_T *kmers, KMER_T* tmp,
 			Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i + 3];
 			myHisto[byteValue]++;
 			if (index_x == (BUFFER_WIDTH - 1))
-				//				A_memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+				//				memcpy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 				IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[myHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 
 			ptr += sizeof(KMER_T);
@@ -424,7 +423,7 @@ void pierwsze_kolko_etap3(uint32_t /*th_id*/, KMER_T */*kmers*/, KMER_T* tmp,
 				elemInBuffer = index_stop - index_start;
 
 			if (elemInBuffer != 0)
-				//				A_memcpy(&tmp[myHisto[private_i] - elemInBuffer], &Buffer[private_i * BUFFER_WIDTH + (myHisto[private_i] - elemInBuffer) % BUFFER_WIDTH], (elemInBuffer)*sizeof(KMER_T));
+				//				memcpy(&tmp[myHisto[private_i] - elemInBuffer], &Buffer[private_i * BUFFER_WIDTH + (myHisto[private_i] - elemInBuffer) % BUFFER_WIDTH], (elemInBuffer)*sizeof(KMER_T));
 				IntrCopy64fun(&tmp[myHisto[private_i] - elemInBuffer],
 					&Buffer[private_i * BUFFER_WIDTH + (myHisto[private_i] - elemInBuffer) % BUFFER_WIDTH], elemInBuffer * sizeof(KMER_T) / 8);
 		}

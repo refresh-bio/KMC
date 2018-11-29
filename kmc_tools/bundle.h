@@ -13,7 +13,6 @@
 #include "config.h"
 #include "defs.h"
 #include "kmer.h"
-#include "libs/asmlib.h"
 
 //************************************************************************************************************
 // CBundle and CInput are CORE classes of this application. CInputs are nodes of binary tree which 
@@ -103,7 +102,7 @@ public:
 	//deprecated
 	//void CopyFrom(CBundleData<SIZE>& rhs) //similar to assign operator but I want assign operator deleted, this method should be used carefully. this->size and rhs.size must quals
 	//{
-	//	A_memcpy(kmers_with_counters, rhs.kmers_with_counters, rhs.insert_pos * sizeof(CKmerWithCounter));
+	//	memcpy(kmers_with_counters, rhs.kmers_with_counters, rhs.insert_pos * sizeof(CKmerWithCounter));
 	//	insert_pos = rhs.insert_pos;
 	//	get_pos = 0;
 	//}

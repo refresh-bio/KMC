@@ -22,7 +22,6 @@
 #include "kmer.h"
 #include "timer.h"
 #include <thread>
-#include "asmlib_wrapper.h"
 #include "first_dispatch.h"
 #include "intr_copy.h"
 #include "raduls.h"
@@ -346,7 +345,7 @@ namespace RadulsSort
 				//	Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i];
 				//	globalHisto[byteValue]++;
 				//	if (index_x == (BUFFER_WIDTH - 1))
-				//		A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+				//		memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 				//	ptr += sizeof(KMER_T);
 				//} //end_for
 
@@ -359,7 +358,7 @@ namespace RadulsSort
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[(n_recs % 4) - 3];
 					globalHisto[byteValue]++;
 					if (index_x == (BUFFER_WIDTH - 1))
-						//					A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+						//					memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 				case 2:
@@ -368,7 +367,7 @@ namespace RadulsSort
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[(n_recs % 4) - 2];
 					globalHisto[byteValue]++;
 					if (index_x == (BUFFER_WIDTH - 1))
-						//					A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+						//					memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 				case 1:
@@ -377,7 +376,7 @@ namespace RadulsSort
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[(n_recs % 4) - 1];
 					globalHisto[byteValue]++;
 					if (index_x == (BUFFER_WIDTH - 1))
-						//					A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+						//					memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 				}
@@ -389,7 +388,7 @@ namespace RadulsSort
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i];
 					globalHisto[byteValue]++;
 					if (index_x == (BUFFER_WIDTH - 1))
-						//					A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+						//					memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 
@@ -398,7 +397,7 @@ namespace RadulsSort
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i + 1];
 					globalHisto[byteValue]++;
 					if (index_x == (BUFFER_WIDTH - 1))
-						//					A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+						//					memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 
@@ -407,7 +406,7 @@ namespace RadulsSort
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i + 2];
 					globalHisto[byteValue]++;
 					if (index_x == (BUFFER_WIDTH - 1))
-						//					A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+						//					memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 
@@ -416,7 +415,7 @@ namespace RadulsSort
 					Buffer[byteValue * BUFFER_WIDTH + index_x] = src[i + 3];
 					globalHisto[byteValue]++;
 					if (index_x == (BUFFER_WIDTH - 1))
-						//					A_memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
+						//					memcpy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH], BUFFER_WIDTH *sizeof(KMER_T));
 						IntrCopy128<BUFFER_WIDTH_IN_128BIT_WORDS, BUFFER_16B_ALIGNED>::Copy(&tmp[globalHisto[byteValue] - (BUFFER_WIDTH)], &Buffer[byteValue * BUFFER_WIDTH]);
 					ptr += sizeof(KMER_T);
 				}
@@ -449,7 +448,7 @@ namespace RadulsSort
 						elemInBuffer = index_stop - index_start;
 
 					if (elemInBuffer != 0)
-						//					A_memcpy(&tmp[globalHisto[private_i] - elemInBuffer], &Buffer[private_i * BUFFER_WIDTH + (globalHisto[private_i] - elemInBuffer) % BUFFER_WIDTH], (elemInBuffer)*sizeof(KMER_T));
+						//					memcpy(&tmp[globalHisto[private_i] - elemInBuffer], &Buffer[private_i * BUFFER_WIDTH + (globalHisto[private_i] - elemInBuffer) % BUFFER_WIDTH], (elemInBuffer)*sizeof(KMER_T));
 						IntrCopy64fun(&tmp[globalHisto[private_i] - elemInBuffer],
 							&Buffer[private_i * BUFFER_WIDTH + (globalHisto[private_i] - elemInBuffer) % BUFFER_WIDTH], elemInBuffer * sizeof(KMER_T) / 8);
 				}
