@@ -75,9 +75,9 @@ $(KMC_MAIN_DIR)/raduls_sse2.o: $(KMC_MAIN_DIR)/raduls_sse2.cpp
 $(KMC_MAIN_DIR)/raduls_sse41.o: $(KMC_MAIN_DIR)/raduls_sse41.cpp
 	$(CC) $(CFLAGS) -msse4.1 -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_avx.o: $(KMC_MAIN_DIR)/raduls_avx.cpp
-	$(CC) $(CFLAGS) -mavx -fabi-version=0 -c $< -o $@
+	$(CC) $(CFLAGS) -mavx -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_avx2.o: $(KMC_MAIN_DIR)/raduls_avx2.cpp
-	$(CC) $(CFLAGS) -mavx2 -mfma -fabi-version=0 -c $< -o $@
+	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
 	
 kmc: $(KMC_OBJS) $(RADULS_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
