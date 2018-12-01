@@ -66,7 +66,6 @@ bool CKMCFile::OpenForRA(const std::string &file_name)
 bool CKMCFile::OpenForListing(const std::string &file_name)
 {
 	uint64 size;
-	size_t result;
 
 	if (is_opened)
 		return false;
@@ -87,9 +86,17 @@ bool CKMCFile::OpenForListing(const std::string &file_name)
 		return false;
 
 	sufix_file_buf = new uchar[part_size];
-	result = fread(sufix_file_buf, 1, part_size, file_suf);
-	if (result == 0)
+
+	suf_file_left_to_read = size;
+	auto to_read = MIN(suf_file_left_to_read, part_size);
+	auto readed = fread(sufix_file_buf, 1, to_read, file_suf);
+	if (readed != to_read)
+	{
+		std::cerr << "Error: some error while reading suffix file\n";
 		return false;
+	}
+
+	suf_file_left_to_read -= readed;
 
 	is_opened = opened_for_listing;
 	prefix_index = 0;
@@ -606,7 +613,14 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint64 &count)
 //-------------------------------------------------------------------------------
 void CKMCFile::Reload_sufix_file_buf()
 {
-	fread (sufix_file_buf, 1, (size_t) part_size, file_suf);
+	auto to_read = MIN(suf_file_left_to_read, part_size);
+	auto readed = fread(sufix_file_buf, 1, (size_t)to_read, file_suf);
+	suf_file_left_to_read -= readed;
+	if (readed != to_read)
+	{
+		std::cerr << "Error: some error while reading suffix file\n";
+		exit(1);
+	}
 	index_in_partial_buf = 0;
 }
 //-------------------------------------------------------------------------------

@@ -585,7 +585,7 @@ void CFastqReader::GetFullLineFromEnd(int64& line_sart, int64& line_end, uchar* 
 	while (pos >= 0 && buff[pos] != '\n' && buff[pos] != '\r')
 		--pos;
 	line_sart = pos + 1;
-};
+}
 
 
 //************************************************************************************************************
