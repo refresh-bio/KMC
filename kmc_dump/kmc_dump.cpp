@@ -169,6 +169,6 @@ void print_info(void)
 			  << "Options:\n"
 			  << "-ci<value> - exclude k-mers occurring less than <value> times\n"
 			  << "-cx<value> - exclude k-mers occurring more of than <value> times\n";
-};
+}
 
 // ***** EOF

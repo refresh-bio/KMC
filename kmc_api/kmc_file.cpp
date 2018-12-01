@@ -109,7 +109,7 @@ CKMCFile::CKMCFile()
 
 	is_opened = closed;
 	end_of_file = false;
-};
+}
 //----------------------------------------------------------------------------------	
 CKMCFile::~CKMCFile()
 {
@@ -123,7 +123,7 @@ CKMCFile::~CKMCFile()
 		delete[] sufix_file_buf;
 	if (signature_map)
 		delete[] signature_map;
-};
+}
 //----------------------------------------------------------------------------------	
 // Open a file, recognize its size and check its marker. Auxiliary function.
 // IN	: file_name - the name of a file to open
@@ -168,7 +168,7 @@ bool CKMCFile::OpenASingleFile(const std::string &file_name, FILE *&file_handler
 	}
 
 	return true;
-};
+}
 //-------------------------------------------------------------------------------------
 // Recognize current parameters from kmc_databese. Auxiliary function.
 // IN	: the size of the file *.kmc_pre, without initial and terminal markers 
@@ -608,7 +608,7 @@ void CKMCFile::Reload_sufix_file_buf()
 {
 	fread (sufix_file_buf, 1, (size_t) part_size, file_suf);
 	index_in_partial_buf = 0;
-};
+}
 //-------------------------------------------------------------------------------
 // Release memory and close files in case they were opened 
 // RET: true - if files have been readed
@@ -641,7 +641,7 @@ bool CKMCFile::Close()
 	}
 	else
 		return false;
-};
+}
 //----------------------------------------------------------------------------------
 // Set initial values to enable listing kmers from the begining. Only in listing mode
 // RET: true - if a file has been opened for listing
@@ -663,7 +663,7 @@ bool CKMCFile::RestartListing(void)
 	}
 	return false;
 		
-};
+}
 //----------------------------------------------------------------------------------------
 // Set the minimal value for a counter. Kmers with counters below this theshold are ignored
 // IN	: x - minimal value for a counter
@@ -687,7 +687,7 @@ bool CKMCFile::SetMinCount(uint32 x)
 uint32 CKMCFile::GetMinCount(void)
 {
 	return min_count;
-};
+}
 
 //----------------------------------------------------------------------------------------
 // Set the maximal value for a counter. Kmers with counters above this theshold are ignored
@@ -847,7 +847,7 @@ bool CKMCFile::Info(uint32 &_kmer_length, uint32 &_mode, uint32 &_counter_size, 
 		return true;
 	}
 	return false;
-};
+}
 
 // Get current parameters from kmer_database
 bool CKMCFile::Info(CKMCFileInfo& info)
