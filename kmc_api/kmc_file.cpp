@@ -87,7 +87,8 @@ bool CKMCFile::OpenForListing(const std::string &file_name)
 
 	sufix_file_buf = new uchar[part_size];
 
-	suf_file_left_to_read = size;
+	suffix_file_total_to_read = size;
+	suf_file_left_to_read = suffix_file_total_to_read;
 	auto to_read = MIN(suf_file_left_to_read, part_size);
 	auto readed = fread(sufix_file_buf, 1, to_read, file_suf);
 	if (readed != to_read)
@@ -664,9 +665,17 @@ bool CKMCFile::RestartListing(void)
 {
 	if(is_opened == opened_for_listing)
 	{
-		
-		my_fseek ( file_suf , 4 , SEEK_SET );
-		fread (sufix_file_buf, 1, (size_t) part_size, file_suf);
+		my_fseek(file_suf , 4 , SEEK_SET);
+		suf_file_left_to_read = suffix_file_total_to_read;
+		auto to_read = MIN(suf_file_left_to_read, part_size);
+		auto readed = fread(sufix_file_buf, 1, to_read, file_suf);
+		if (readed != to_read)
+		{
+			std::cerr << "Error: some error while reading suffix file\n";
+			return false;
+		}
+
+		suf_file_left_to_read -= readed;
 		prefix_index = 0;
 		sufix_number = 0;
 		index_in_partial_buf = 0;
