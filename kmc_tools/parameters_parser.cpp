@@ -236,68 +236,6 @@ void CParametersParser::read_check_params()
 	config.check_params.kmer = argv[pos++];
 }
 
-void CParametersParser::read_dump_params()
-{
-	while (pos < argc && argv[pos][0] == '-')
-	{
-		if (strncmp(argv[pos], "-s", 2) == 0)
-		{
-			config.dump_params.sorted_output = true;
-		}
-		else
-		{
-			cerr << "Warning: Unknow parameter for dump operation: " << argv[pos] << "\n";			
-		}
-		++pos;
-	}
-
-}
-
-
-void CParametersParser::read_operation_type()
-{
-	if (strncmp(argv[pos], "-oc", 3) == 0)
-	{
-		char* mode = argv[pos] + 3;
-		if (strcmp(mode, "min") == 0)
-		{
-			config.counter_op_type = CounterOpType::MIN;
-		}
-		else if (strcmp(mode, "max") == 0)
-		{
-			config.counter_op_type = CounterOpType::MAX;
-		}
-		else if (strcmp(mode, "sum") == 0)
-		{
-			config.counter_op_type = CounterOpType::SUM;
-		}
-		else if (strcmp(mode, "diff") == 0)
-		{
-			config.counter_op_type = CounterOpType::DIFF;
-		}
-		else if (strcmp(mode, "left") == 0)
-		{
-			config.counter_op_type = CounterOpType::FROM_DB1;
-		}
-		else if (strcmp(mode, "right") == 0)
-		{
-			config.counter_op_type = CounterOpType::FROM_DB2;
-		}
-		else
-		{
-			cerr << "Error: unknown counter calculation mode: " << mode << ". Allowed values: min, max, sum, diff, left, right\n";
-			exit(1);
-		}
-		++pos;
-
-		if (config.mode == CConfig::Mode::KMERS_SUBTRACT)
-		{
-			cerr << "Error: counter calculation mode not allowed for kmers_subtract\n";
-			exit(1);
-		}
-	}
-}
-
 void CParametersParser::read_input_desc()
 {
 	if (pos >= argc)
@@ -605,44 +543,6 @@ bool CParametersParser::read_output_desc_for_simple()
 	return true;
 }
 
-void CParametersParser::read_output_desc()
-{
-	if (pos >= argc)
-	{
-		cerr << "Error: Output database source missed\n";
-		exit(1);
-	}
-	if (strncmp(argv[pos], "-", 1) == 0)
-	{
-		cerr << "Error: Output database source required, but " << argv[pos] << "found\n";
-		exit(1);
-	}
-	
-	config.output_desc.file_src = argv[pos++];
-	for (int i = 0; i < 3 && pos < argc; ++i)
-	{
-		if (strncmp(argv[pos], "-", 1) != 0)
-			break;
-		if (strncmp(argv[pos], "-ci", 3) == 0)
-		{
-			config.output_desc.cutoff_min = replace_zero(atoi(argv[pos++] + 3), "-ci", 1);
-		}
-		else if (strncmp(argv[pos], "-cx", 3) == 0)
-		{
-			config.output_desc.cutoff_max = replace_zero(atoi(argv[pos++] + 3), "-cx", 1);
-		}
-		else if (strncmp(argv[pos], "-cs", 3) == 0)
-		{
-			config.output_desc.counter_max = replace_zero(atoi(argv[pos++] + 3), "-cs", 1);
-		}
-		else
-		{
-			cerr << "Error: Unknow parameter: " << argv[pos];
-			exit(1);
-		}
-	}
-}
-
 void CParametersParser::Usage()
 {
 	CUsageDisplayerFactory disp(CConfig::GetInstance().mode);
@@ -663,26 +563,8 @@ void CParametersParser::Parse()
 {
 	pos = 1;
 	parse_global_params();
-	if (strcmp(argv[pos], "intersect") == 0)
-	{
-		config.mode = CConfig::Mode::INTERSECTION;
-		config.counter_op_type = CounterOpType::MIN;
-	}
-	else if (strcmp(argv[pos], "kmers_subtract") == 0)
-	{
-		config.mode = CConfig::Mode::KMERS_SUBTRACT;
-	}
-	else if (strcmp(argv[pos], "counters_subtract") == 0)
-	{
-		config.mode = CConfig::Mode::COUNTERS_SUBTRACT;
-		config.counter_op_type = CounterOpType::DIFF;
-	}
-	else if (strcmp(argv[pos], "union") == 0)
-	{
-		config.mode = CConfig::Mode::UNION;
-		config.counter_op_type = CounterOpType::SUM;
-	}
-	else if (strcmp(argv[pos], "complex") == 0)
+
+	if (strcmp(argv[pos], "complex") == 0)
 	{
 		config.mode = CConfig::Mode::COMPLEX;
 	}
@@ -693,26 +575,6 @@ void CParametersParser::Parse()
 	else if (strcmp(argv[pos], "simple") == 0)
 	{
 		config.mode = CConfig::Mode::SIMPLE_SET;
-	}
-	else if (strcmp(argv[pos], "sort") == 0)
-	{
-		config.mode = CConfig::Mode::SORT;
-	}
-	else if (strcmp(argv[pos], "reduce") == 0)
-	{
-		config.mode = CConfig::Mode::REDUCE;
-	}
-	else if (strcmp(argv[pos], "compact") == 0)
-	{
-		config.mode = CConfig::Mode::COMPACT;
-	}
-	else if (strcmp(argv[pos], "histogram") == 0)
-	{
-		config.mode = CConfig::Mode::HISTOGRAM;
-	}
-	else if (strcmp(argv[pos], "dump") == 0)
-	{
-		config.mode = CConfig::Mode::DUMP;
 	}
 	else if (strcmp(argv[pos], "compare") == 0)
 	{
@@ -744,14 +606,7 @@ void CParametersParser::Parse()
 	}
 
 	pos++;
-	if (config.mode == CConfig::Mode::INTERSECTION || config.mode == CConfig::Mode::KMERS_SUBTRACT || config.mode == CConfig::Mode::UNION || config.mode == CConfig::Mode::COUNTERS_SUBTRACT)
-	{		
-		read_operation_type();
-		read_input_desc(); //first input
-		read_input_desc(); //second input
-		read_output_desc(); //output
-	}
-	else if (config.mode == CConfig::Mode::FILTER)
+	if (config.mode == CConfig::Mode::FILTER)
 	{
 		read_filter_params();
 		read_input_desc(); //kmc db
@@ -799,39 +654,6 @@ void CParametersParser::Parse()
 			cerr << "Error: output missed\n";
 			Usage();
 			exit(1);
-		}
-	}
-	else if (config.mode == CConfig::Mode::DUMP)
-	{
-		read_dump_params();
-		read_input_desc();
-		read_output_desc();
-
-	}
-	else if (config.mode == CConfig::Mode::SORT || config.mode == CConfig::Mode::HISTOGRAM || config.mode == CConfig::Mode::REDUCE || config.mode == CConfig::Mode::COMPACT)
-	{
-		read_input_desc();
-		read_output_desc();
-		if (config.mode == CConfig::Mode::COMPACT)
-		{
-			if (config.output_desc.counter_max)
-				cerr << "Warning: -cs can not be specified for compact operation, value specified will be ignored\n";
-			config.output_desc.counter_max = 1;
-		}
-		if (config.mode == CConfig::Mode::HISTOGRAM)
-		{
-			if (config.output_desc.cutoff_max)
-				std::cerr << "Warning: -cx not allowed for histogram output, value specified will be ignored\n";
-			if(config.output_desc.cutoff_min)
-				std::cerr << "Warning: -ci not allowed for histogram output, value specified will be ignored\n";
-			if (config.output_desc.counter_max)
-				std::cerr << "Warning: -cs not allowed for histogram output, value specified will be ignored\n";
-
-
-			config.output_desc.cutoff_max = config.input_desc.front().cutoff_max;
-			config.output_desc.cutoff_min = config.input_desc.front().cutoff_min;
-			config.output_desc.counter_max = 0;
-
 		}
 	}
 	else if (config.mode == CConfig::Mode::INFO)
@@ -965,39 +787,6 @@ bool CParametersParser::validate_input_dbs()
 				desc.counter_max = max_counter_max;
 		}
 	}
-	else //old style operations
-	{
-		if (config.output_desc.cutoff_min == 0)
-		{
-			uint32 min_cutoff_min = get_min_cutoff_min();
-			config.output_desc.cutoff_min = min_cutoff_min;
-			if (config.verbose)
-				cerr << "Warning: -ci was not specified for output. It will be set to " << min_cutoff_min << "\n";
-		}
-
-		if (config.output_desc.cutoff_max == 0)
-		{
-			if (config.mode == CConfig::Mode::HISTOGRAM) //for histogram default value differs
-				config.output_desc.cutoff_max = MIN(config.headers.front().max_count, MIN(HISTOGRAM_MAX_COUNTER_DEFAULT, (uint32)((1ull << (8 * config.headers.front().counter_size)) - 1)));
-			else
-			{
-				uint32 max_cutoff_max = get_max_cutoff_max();
-				config.output_desc.cutoff_max = max_cutoff_max;
-			}
-			if (config.verbose)
-				cerr << "Warning: -cx was not specified for output. It will be set to " << config.output_desc.cutoff_max << "\n";
-		}
-		if (config.output_desc.counter_max == 0)
-		{
-			uint32 max_counter_max = get_max_counter_max();			
-			config.output_desc.counter_max = max_counter_max;
-			if (config.verbose)
-				cerr << "Warning: -cs was not specified for output. It will be set to " << max_counter_max << "\n";
-		}
-	}
-	
-	
-
 	return true;
 }
 	
@@ -1006,8 +795,8 @@ void CParametersParser::SetThreads()
 	uint32 threads_left = config.avaiable_threads;
 	//threads distribution: as many as possible for kmc2 database input, 1 thread for main thread which make operations calculation
 	vector<reference_wrapper<CInputDesc>> kmc2_desc;
-	
-	if (!config.Is1ArgOper()) 
+
+	if (config.IsSeparateThreadForMainProcessingNeeded())
 		threads_left = MAX(1, threads_left - 1);
 	
 	for (uint32 i = 0; i < config.headers.size(); ++i)

@@ -136,48 +136,6 @@ template<unsigned SIZE> class CTools
 		delete db;
 	}
 
-	bool histo()
-	{
-		if (!config.headers.front().IsKMC2()) //KMC1
-		{
-			CKMC1DbReader<SIZE> kmcdb(config.headers.front(), config.input_desc.front(), CConfig::GetInstance().percent_progress, KMCDBOpenMode::counters_only);
-			CHistogramWriter<CKMC1DbReader<SIZE>> writer(kmcdb);
-			return writer.Process();
-		}
-		else //KMC2
-		{
-			CKMC2DbReader<SIZE> kmcdb(config.headers.front(), config.input_desc.front(), CConfig::GetInstance().percent_progress, KMCDBOpenMode::counters_only);
-			CHistogramWriter<CKMC2DbReader<SIZE>> writer(kmcdb); 
-			return writer.Process();
-		}
-	}
-
-	bool dump()
-	{
-		if (!config.headers.front().IsKMC2()) //KMC1 - input is sorted
-		{			
-			CKMCDBForDump<CKMC1DbReader<SIZE>, SIZE, true> kmcdb_wrapper;
-			CDumpWriter<decltype(kmcdb_wrapper), SIZE> writer(kmcdb_wrapper);
-			return writer.Process();
-		}
-		else //KMC2
-		{
-			if (config.dump_params.sorted_output)
-			{			
-				CKMCDBForDump<CKMC2DbReader<SIZE>, SIZE, true> kmcdb_wrapper;
-				CDumpWriter<decltype(kmcdb_wrapper), SIZE> writer(kmcdb_wrapper);
-				return writer.Process();
-			}
-			else
-			{				
-				CKMCDBForDump<CKMC2DbReader<SIZE>, SIZE, false> kmcdb_wrapper;
-				CDumpWriter<decltype(kmcdb_wrapper), SIZE> writer(kmcdb_wrapper); 
-				return writer.Process();
-			}		
-		}
-		return true;
-	}
-	
 	bool info()
 	{
 		auto header = CConfig::GetInstance().headers.front();
@@ -436,14 +394,6 @@ public:
 		{
 			return info();
 		}
-		else if (config.mode == CConfig::Mode::HISTOGRAM)
-		{
-			return histo();
-		}
-		else if (config.mode == CConfig::Mode::DUMP)
-		{
-			return dump();
-		}
 		else if (config.mode == CConfig::Mode::COMPARE)
 		{
 			CInput<SIZE> *db1, *db2;
@@ -488,7 +438,7 @@ public:
 		{
 			return check();
 		}
-		else
+		else if(config.mode == CConfig::Mode::COMPLEX)
 		{
 			CExpressionNode<SIZE>* expression_root = parameters_parser.GetExpressionRoot<SIZE>();
 			auto t = expression_root->GetExecutionRoot();
@@ -498,11 +448,14 @@ public:
 			delete t;
 			return true;
 		}
+		else
+		{
+			//being here means bug
+			std::cerr << "Error: unknown mode\n";
+			exit(1);
+		}
 		return false;
 	}
-
-	
-
 };
 
 
