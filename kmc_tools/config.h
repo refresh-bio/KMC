@@ -147,13 +147,6 @@ struct CCheckParams
 	std::string kmer;
 };
 
-struct CDumpParams
-{
-	bool sorted_output = false;
-};
-
-
-
 
 //************************************************************************************************************
 // CConfig - configuration of current application run. Singleton class.
@@ -161,7 +154,7 @@ struct CDumpParams
 class CConfig
 {
 public:	
-	enum class Mode { UNDEFINED, INTERSECTION, KMERS_SUBTRACT, COUNTERS_SUBTRACT, UNION, COMPLEX, SORT, REDUCE, COMPACT, HISTOGRAM, DUMP, COMPARE, FILTER, SIMPLE_SET, TRANSFORM, INFO, CHECK }; 	
+	enum class Mode { UNDEFINED, COMPLEX, COMPARE, FILTER, SIMPLE_SET, TRANSFORM, INFO, CHECK };
 	uint32 avaiable_threads;
 	uint32 kmer_len = 0;
 	Mode mode = Mode::UNDEFINED;
@@ -169,18 +162,14 @@ public:
 	std::vector<CInputDesc> input_desc;
 	std::vector<CKMC_header> headers;
 		
-	COutputDesc output_desc;
+	COutputDesc output_desc; //complex only?
 
 	std::vector<CSimpleOutputDesc> simple_output_desc;
 
 	CFilteringParams filtering_params; //for filter operation only	
-	CDumpParams dump_params; //for dump operation only
 	CCheckParams check_params; // for check operation only
-	CounterOpType counter_op_type = CounterOpType::NONE; //for INTERSECTION, COUNTERS_SUBTRACT and UNION only
-
 
 	std::vector<CTransformOutputDesc> transform_output_desc;
-
 
 	CPercentProgress percent_progress;
 
@@ -199,19 +188,9 @@ public:
 		return ((uchar*)&a)[0] == 1 && ((uchar*)&a)[1] == 2 && ((uchar*)&a)[2] == 3 && ((uchar*)&a)[3] == 4 && ((uchar*)&a)[5] == 6 && ((uchar*)&a)[7] == 8;
 	}
 
-	bool Is2ArgOper()
+	bool IsSeparateThreadForMainProcessingNeeded()
 	{
-		return mode == Mode::UNION || mode == Mode::KMERS_SUBTRACT || mode == Mode::COUNTERS_SUBTRACT || mode == Mode::INTERSECTION || mode == Mode::COMPARE;
-	}
-
-	bool IsComplex()
-	{
-		return mode == Mode::COMPLEX;
-	}
-	
-	bool Is1ArgOper()
-	{
-		return mode == Mode::SORT || mode == Mode::REDUCE || mode == Mode::COMPACT || mode == Mode::HISTOGRAM || mode == Mode::DUMP;		
+		return mode == Mode::SIMPLE_SET || mode == Mode::COMPLEX || mode == Mode::COMPARE;
 	}
 
 	std::string GetOperationName()
@@ -219,27 +198,9 @@ public:
 		switch (mode)
 		{
 		case CConfig::Mode::UNDEFINED:
-			return "";			
-		case CConfig::Mode::INTERSECTION:
-			return "intersect";			
-		case CConfig::Mode::KMERS_SUBTRACT:
-			return "kmers_subtract";
-		case CConfig::Mode::COUNTERS_SUBTRACT:
-			return "counters_subtract";
-		case CConfig::Mode::UNION:
-			return "union";			
+			return "";
 		case CConfig::Mode::COMPLEX:
-			return "complex";			
-		case CConfig::Mode::SORT:
-			return "sort";
-		case CConfig::Mode::REDUCE:
-			return "reduce";
-		case CConfig::Mode::COMPACT:
-			return "compact";
-		case CConfig::Mode::HISTOGRAM:
-			return "histogram";
-		case CConfig::Mode::DUMP:
-			return "dump";
+			return "complex";
 		case CConfig::Mode::COMPARE:
 			return "compare";
 		case CConfig::Mode::FILTER:
@@ -255,11 +216,9 @@ public:
 		}
 	}
 
-
 private:
 	CConfig() = default;
 };
-
 
 
 class CUsageDisplayer
@@ -407,70 +366,6 @@ public:
 				  << "kmc_tools transform db reduce err_kmers -cx10 reduce valid_kmers -ci11 histogram histo.txt dump dump.txt\n";
 	}
 };
-class CUnionUsageDisplayer : public CUsageDisplayer
-{
-	public:
-		CUnionUsageDisplayer() :CUsageDisplayer("union")
-		{}
-		void Display() const override
-		{
-			Display2ArgGeneral();
-			std::cout << "The output database will contains each k-mer present in both input sets. For the same k-mers in first and second input the counter in output is equal to sum from inputs."
-					  << "Example:\n"
-					  << "kmc - k28 file1.fastq kmers1 tmp\n"
-					  << "kmc - k28 file2.fastq kmers2 tmp\n"
-					  << "kmc_tools union kmers1 -ci3 -cx70000 kmers2 kmers1_kmers2_union -cs65536\n";
-		}
-};
-
-class CIntersectUsageDisplayer : public CUsageDisplayer
-{
-public:
-	CIntersectUsageDisplayer() :CUsageDisplayer("intersect")
-	{}
-	void Display() const override
-	{
-		Display2ArgGeneral();
-		std::cout << "The output database will contains only k-mers that are present in both input sets. The counter value in output database is equal to lower counter value in input."
-				  << "Example:\n"
-				  << "kmc - k28 file1.fastq kmers1 tmp\n"
-				  << "kmc - k28 file2.fastq kmers2 tmp\n"
-				  << "kmc_tools intersect kmers1 -ci10 -cx200 kmers2 -ci4 -cx100 kmers1_kmers2_intersect -ci20 -cx150\n";
-	}
-};
-
-
-class CCountersSubtractUsageDisplayer : public CUsageDisplayer
-{
-public:
-	CCountersSubtractUsageDisplayer() :CUsageDisplayer("counters_subtract")
-	{}
-	void Display() const override
-	{
-		Display2ArgGeneral();
-		std::cout << "The output database will contains only k-mers that are present in first input set and have counters higher than apropriate k - mers in second set. For each k - mer the counter is equal to difference between counter in first set and counter in second set."
-				  << "Example:\n"
-				  << "kmc -k28 file1.fastq kmers1 tmp\n"
-				  << "kmc -k28 file2.fastq kmers2 tmp\n"
-				  << "kmc_tools counters_subtract kmers1 kmers2 kmers1_kmers2_counters_subtract\n";
-	}
-};
-
-class CKmersSubtractUsageDisplayer : public CUsageDisplayer
-{
-public:
-	CKmersSubtractUsageDisplayer() :CUsageDisplayer("kmers_subtract")
-	{}
-	void Display() const override
-	{
-		Display2ArgGeneral();
-		std::cout << "The output database will contains only k-mers that are present in first input set but absent in the second one. The counter value is equal to value from first input set."
-				  << "Example:\n"
-				  << "kmc - k28 file1.fastq kmers1 tmp\n"
-				  << "kmc - k28 file2.fastq kmers2 tmp\n"
-				  << "kmc_tools kmers_subtract kmers1 kmers2 kmers1_kmers2_subtract - cs200\n";
-	}
-};
 
 class CComplexUsageDisplayer : public CUsageDisplayer
 {
@@ -522,91 +417,6 @@ public:
 	}
 };
 
-class CSortUsageDisplayer : public CUsageDisplayer
-{
-public:
-	CSortUsageDisplayer() :CUsageDisplayer("sort")
-	{}
-	void Display() const override
-	{
-		Display1ArgGeneral(true);
-		std::cout << " For output there are additional parameters:\n"
-				  << "  -cs<value> - maximal value of a counter\n"
-				  << "Converts database produced by KMC2.x to KMC1.x database format (which contains k-mers in sorted order)\n"
-				  << "Example:\n"
-				  << "kmc_tools sort wy_kmc2 -ci3 -cx1000 wy_kmc1 -cs255\n";
-	}
-};
-
-class CReduceUsageDisplayer : public CUsageDisplayer
-{
-public:
-	CReduceUsageDisplayer() :CUsageDisplayer("reduce")
-	{}
-	void Display() const override
-	{
-		Display1ArgGeneral(true);
-		std::cout << " For output there are additional parameters:\n"
-				  << "  -cs<value> - maximal value of a counter\n"
-				  << "Exclude too rare and too frequent k-mers\n"
-				  << "Example:\n"
-				  << "kmc_tools reduce wy_kmc2 -ci3 -cx1000 wy_kmc1 -cs255\n";
-	}
-};
-
-
-class CCompactUsageDisplayer : public CUsageDisplayer
-{
-public:
-	CCompactUsageDisplayer() :CUsageDisplayer("compact")
-	{}
-	void Display() const override
-	{
-		Display1ArgGeneral(false);		
-		std::cout << "Remove counters of k-mers\n"
-				  << "Example:\n"
-				  << "kmc_tools compact wy_kmc2 -ci3 -cx1000 wy_kmc1\n";
-	}
-};
-
-class CHistogramUsageDisplayer : public CUsageDisplayer
-{
-public:
-	CHistogramUsageDisplayer() :CUsageDisplayer("histogram")
-	{}
-	void Display() const override
-	{
-		Display1ArgGeneral(false);
-		std::cout << "Produce histogram of k-mers occurrences\n"
-				  << "Example:\n"
-				  << "kmc_tools histogram wy_kmc2 -ci3 -cx1000 histo.txt\n";
-	}
-};
-
-
-class CDumpUsageDisplayer : public CUsageDisplayer
-{
-public:
-	CDumpUsageDisplayer() :CUsageDisplayer("dump")
-	{}
-	void Display() const override
-	{
-		std::cout << " The '" << name << "' is one argument operation. General syntax:\n"
-				  << " kmc_tools " << name << " [dump_params] <input> [input_params] <output>\n"
-				  << " dump_params:\n"
-				  << "  -s - sorted output\n"
-				  << " input - path to database generated by KMC \n"
-				  << " For input there are additional parameters:\n"
-				  << "  -ci<value> - exclude k-mers occurring less than <value> times \n"
-				  << "  -cx<value> - exclude k-mers occurring more of than <value> times\n"
-				  
-				  
-				  << "Produce text dump of kmc database\n"
-				  << "Example:\n"
-				  << "kmc_tools dump wy_kmc2 -ci3 -cx1000 dump.txt\n";
-	}
-};
-
 class CFilterUsageDisplayer : public CUsageDisplayer
 {
 public:
@@ -643,40 +453,14 @@ class CUsageDisplayerFactory
 public:
 	CUsageDisplayerFactory(CConfig::Mode mode)
 	{
+		//TODO: add desc of compare, check and info. Check also if others are not missing
 		switch (mode)
 		{
 		case CConfig::Mode::UNDEFINED:
 			desc = std::make_unique<CGeneralUsageDisplayer>();
 			break;
-		case CConfig::Mode::INTERSECTION:
-			desc = std::make_unique<CIntersectUsageDisplayer>();
-			break;
-		case CConfig::Mode::KMERS_SUBTRACT:
-			desc = std::make_unique<CKmersSubtractUsageDisplayer>();
-			break;
-		case CConfig::Mode::COUNTERS_SUBTRACT:
-			desc = std::make_unique<CCountersSubtractUsageDisplayer>();
-			break;
-		case CConfig::Mode::UNION:
-			desc = std::make_unique<CUnionUsageDisplayer>();
-			break;
 		case CConfig::Mode::COMPLEX:
 			desc = std::make_unique<CComplexUsageDisplayer>();
-			break;
-		case CConfig::Mode::SORT:
-			desc = std::make_unique<CSortUsageDisplayer>();
-			break;
-		case CConfig::Mode::REDUCE:
-			desc = std::make_unique<CReduceUsageDisplayer>();
-			break;
-		case CConfig::Mode::COMPACT:
-			desc = std::make_unique<CCompactUsageDisplayer>();
-			break;
-		case CConfig::Mode::HISTOGRAM:
-			desc = std::make_unique<CHistogramUsageDisplayer>();
-			break;
-		case CConfig::Mode::DUMP:
-			desc = std::make_unique<CDumpUsageDisplayer>();
 			break;
 		case CConfig::Mode::COMPARE:
 			desc = std::make_unique<CGeneralUsageDisplayer>();

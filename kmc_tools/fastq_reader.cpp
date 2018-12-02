@@ -159,7 +159,6 @@ bool CFastqReader::GetPart(uchar *&_part, uint64 &_size)
 	if(!in && !in_gzip && !in_bzip2)
 		return false;
 
-
 	if(IsEof())
 		return false;
 	uint64 readed;
@@ -177,14 +176,15 @@ bool CFastqReader::GetPart(uchar *&_part, uint64 &_size)
 	int64 total_filled = part_filled + readed;
 	int64 i;
 
-	if(IsEof())
-	{
-		_part = part;
-		_size = total_filled;
-
-		part = NULL;
-		return true;
-	}
+	//Commented to finish in the next iteration to check if file is valid FASTA or FASTQ, related to #114
+	//if(IsEof())
+	//{
+	//	_part = part;
+	//	_size = total_filled;
+	//
+	//	part = nullptr;
+	//	return true;
+	//}
 	
 	// Look for the end of the last complete record in a buffer
 	if(file_type == CFilteringParams::file_type::fasta)			// FASTA files
