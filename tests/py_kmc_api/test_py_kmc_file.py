@@ -10,7 +10,7 @@ import kmer_utils
 import init_sys_path
 import py_kmc_api as pka
 import pytest
-
+import resource
 
 
 
@@ -117,6 +117,8 @@ def _run_kmc(cutoff_min, kmer_len, memory, sig_len, reads_src):
     elif init_sys_path.is_windows():
         kmc_path = os.path.join(os.path.dirname(__file__), '../../x64/Release/kmer_counter.exe')
 
+    if init_sys_path.is_mac():        
+        resource.setrlimit(resource.RLIMIT_NOFILE, (2048, 2048))
     subprocess.call([kmc_path,
                      '-ci{}'.format(cutoff_min),
                      '-k{}'.format(kmer_len),
