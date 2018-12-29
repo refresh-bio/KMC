@@ -16,12 +16,18 @@ struct CountVec
 	std::vector<uint32> value;
 };
 
-
+struct LongKmerRepresentation
+{
+	std::vector<uint64> value;
+};
 
 PYBIND11_MODULE(py_kmc_api, m) {
 	m.doc() = "Python wrapper for KMC_API."; // optional module docstring
 	
-	//https://pybind11-rtdtest.readthedocs.io/en/stable/advanced.html#generating-documentation-using-sphinx
+	py::class_<LongKmerRepresentation>(m, "LongKmerRepresentation")
+		.def(py::init<>())
+		.def_readwrite("value", &LongKmerRepresentation::value);
+
 	py::class_<CountVec>(m, "CountVec")
 		.def(py::init<>())
 		.def_readwrite("value", &CountVec::value);
@@ -56,7 +62,7 @@ PYBIND11_MODULE(py_kmc_api, m) {
 		.def("to_string", [](CKmerAPI& ptr, char* str) { ptr.to_string(str); })
 		.def("__str__", [](CKmerAPI& ptr) {return ptr.to_string(); })
 		.def("to_string", [](CKmerAPI& ptr, std::string& str) { ptr.to_string(str); })
-		.def("to_long", &CKmerAPI::to_long)
+		.def("to_long", [](CKmerAPI& ptr, LongKmerRepresentation& res) {ptr.to_long(res.value); })
 		.def("reverse", &CKmerAPI::reverse)
 		.def("get_signature", &CKmerAPI::get_signature)
 		.def("from_string", [](CKmerAPI& ptr, const char* str) { return ptr.from_string(str); })
