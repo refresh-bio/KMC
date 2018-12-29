@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmer_counter", "kmer_counter\kmer_counter.vcxproj", "{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}"
 EndProject
@@ -10,6 +10,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_dump_sample", "kmc_dump_sample\kmc_dump_sample.vcxproj", "{17823F37-86DE-4E58-B354-B84DA9EDA6A1}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_tools", "kmc_tools\kmc_tools.vcxproj", "{F3B0CC94-9DD0-4642-891C-EA08BDA50260}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "py_kmc_api", "py_kmc_api\py_kmc_api.vcxproj", "{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -65,6 +67,18 @@ Global
 		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Release|Win32.Build.0 = Release|Win32
 		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Release|x64.ActiveCfg = Release|x64
 		{F3B0CC94-9DD0-4642-891C-EA08BDA50260}.Release|x64.Build.0 = Release|x64
+		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Debug|Win32.Build.0 = Debug|Win32
+		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Debug|x64.ActiveCfg = Debug|x64
+		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Debug|x64.Build.0 = Debug|x64
+		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Release|Win32.ActiveCfg = Release|Win32
+		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Release|Win32.Build.0 = Release|Win32
+		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Release|x64.ActiveCfg = Release|x64
+		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

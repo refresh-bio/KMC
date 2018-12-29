@@ -354,7 +354,7 @@ public:
 //-----------------------------------------------------------------------
 // The operator ==
 //-----------------------------------------------------------------------
-	inline bool operator==(const CKmerAPI &kmer)
+	inline bool operator==(const CKmerAPI &kmer) const
 	{
 			if(kmer.kmer_length != kmer_length)
 				return false;
@@ -370,7 +370,7 @@ public:
 //-----------------------------------------------------------------------
 // Operator < . If arguments differ in length a result is undefined
 //-----------------------------------------------------------------------
-	inline bool operator<(const CKmerAPI &kmer)
+	inline bool operator<(const CKmerAPI &kmer) const
 	{
 			if(kmer.kmer_length != kmer_length)
 				return false;					
