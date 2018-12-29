@@ -23,15 +23,7 @@ class MyParamsParser(argparse.ArgumentParser):
         self.print_help()
         sys.exit(1)
 
-parser = MyParamsParser(add_help=False
-      #formatter_class=argparse.RawDescriptionHelpFormatter,
-      #epilog=textwrap.dedent('''\
-      #   additional information:
-      #       I have indented it
-      #       exactly the way
-      #       I want it
-      #   ''')
-      )
+parser = MyParamsParser(add_help=False)
 parser.register('action', 'version_help_action', VersionHelpAction)
 
 
