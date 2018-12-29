@@ -10,7 +10,8 @@ import kmer_utils
 import init_sys_path
 import py_kmc_api as pka
 import pytest
-import resource
+if not init_sys_path.is_windows():
+    import resource
 
 
 
