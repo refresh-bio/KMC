@@ -57,7 +57,7 @@ The wrapper is designed and was tested only for python3. The main goal was to ma
 (https://blog.startifact.com/posts/older/what-is-pythonic.html) enough for regular python programmer. Suggestions or pull requests to make it more robust are welcome.
 
 Python module wrapping KMC API must be compiled.
- * for windows there is a visual studio project
+ * for windows there is a visual studio project (note that there will be probably the need to change include directories and library directories to point python include and libs location)
  * for linux one should run ```make py_kmc_api```
  * for mac on should run ```make -f makefile_mac py_kmc_api```
 
