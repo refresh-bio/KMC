@@ -62,10 +62,9 @@ Python module wrapping KMC API must be compiled.
  * for mac on should run ```make -f makefile_mac py_kmc_api```
 
 As a result of pybind11 *.so file (for linux and mac os) or *.pyd (for windows) is created and may be used as a python module. *.pyd file is in fact DLL file, the only difference is its extension.
-For windows following file is created:
-x64/Release/py_kmc_api.pyd
-For linux/mac os the followin file is created:
-bin/py_kmc_api`python3-config --extension-suffix`
+  * for windows following file is created: x64/Release/py_kmc_api.pyd
+  * for linux/mac os the following file is created: bin/py_kmc_api`python3-config --extension-suffix`
+
 To be able to use this file one should make it visible for python. One way to do this is to extend PYTHONPATH environment variable.
 For linux/mac os one may just
 ```
