@@ -787,6 +787,30 @@ bool CParametersParser::validate_input_dbs()
 				desc.counter_max = max_counter_max;
 		}
 	}
+	else if (config.mode == CConfig::Mode::COMPLEX)
+	{
+		if (config.output_desc.cutoff_min == 0)
+		{
+			uint32 min_cutoff_min = get_min_cutoff_min();
+			config.output_desc.cutoff_min = min_cutoff_min;
+			if (config.verbose)
+				cerr << "Warning: -ci was not specified for output. It will be set to " << min_cutoff_min << "\n";
+		}
+		if (config.output_desc.cutoff_max == 0)
+		{
+			uint32 max_cutoff_max = get_max_cutoff_max();
+			config.output_desc.cutoff_max = max_cutoff_max;
+			if (config.verbose)
+				cerr << "Warning: -cx was not specified for output. It will be set to " << config.output_desc.cutoff_max << "\n";
+		}
+		if (config.output_desc.counter_max == 0)
+		{
+			uint32 max_counter_max = get_max_counter_max();
+			config.output_desc.counter_max = max_counter_max;
+			if (config.verbose)
+				cerr << "Warning: -cs was not specified for output. It will be set to " << max_counter_max << "\n";
+		}
+	}
 	return true;
 }
 	
