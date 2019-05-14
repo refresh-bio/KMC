@@ -77,37 +77,72 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size)
 		// Title
 		if (part_pos >= part_size)
 			return false;
-		c = part[part_pos++];
-		if (c != '>')
-			return false;
-		for (; part_pos < part_size;)
+		if (curr_read_len == 0)
 		{
 			c = part[part_pos++];
-			if (c < 32)					// newliners
-				break;
-		}
-		if (part_pos >= part_size)
-			return false;
+			if (part[part_pos] != '>')
+				return false;
 
-		c = part[part_pos++];
-		if (c >= 32 || c == part[part_pos - 2]) //read may be empty
-			part_pos--;
-		else if (part_pos >= part_size)
-			return false;
+			++n_reads;
+			for (; part_pos < part_size;)
+			{
+				c = part[part_pos++];
+				if (c < 32)					// newliners
+					break;
+			}
+			if (part_pos >= part_size)
+				return false;
 
-		// Sequence
-		for (; part_pos < part_size;)
-		{
 			c = part[part_pos++];
-			if (c < 32)					// newliners
-				break;
-			seq[pos++] = codes[c];
+			if (c >= 32 || c == part[part_pos - 2]) //read may be empty
+				part_pos--;
+			else if (part_pos >= part_size)
+				return false;
+
+			// Sequence
+			for (; part_pos < part_size && pos < mem_part_pmm_reads;)
+			{
+				c = part[part_pos++];
+				if (c < 32)					// newliners
+					break;
+				seq[pos++] = codes[c];
+			}
+
+			if (part_pos >= part_size)
+				return true;
+
+			seq_size = pos;
+			curr_read_len = pos;
+
+			if (pos >= mem_part_pmm_reads) // read is too long to fit into out buff, it will be splitted into multiple buffers
+			{
+				part_pos -= kmer_len - 1;
+				return true;
+			}
 		}
-		seq_size = pos;
+		else // we are inside read
+		{
+			// Sequence
+			for (; part_pos < part_size && pos < mem_part_pmm_reads;)
+			{
+				c = part[part_pos++];
+				if (c < 32)					// newliners
+					break;
+				seq[pos++] = codes[c];
+			}
 
-		if (part_pos >= part_size)
-			return true;
+			if (part_pos >= part_size)
+				return true;
 
+			seq_size = pos;
+			curr_read_len += pos - kmer_len + 1;
+
+			if (pos >= mem_part_pmm_reads) // read is too long to fit into out buff, it will be splitted into multiple buffers
+			{
+				part_pos -= kmer_len - 1;
+				return true;
+			}
+		}
 		if (part[part_pos++] >= 32)
 			part_pos--;
 		else if (part_pos >= part_size)
@@ -118,34 +153,70 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size)
 		// Title
 		if (part_pos >= part_size)
 			return false;
-		c = part[part_pos++];
-		if (c != '@')
-			return false;
-		for (; part_pos < part_size;)
+
+		if (curr_read_len == 0)
 		{
 			c = part[part_pos++];
-			if (c < 32)					// newliners
-				break;
-		}
-		if (part_pos >= part_size)
-			return false;
+			if (c != '@')
+				return false;
+			++n_reads;
 
-		c = part[part_pos++];
-		if (c >= 32 || c == part[part_pos - 2]) //read may be empty
-			part_pos--;
-		else if (part_pos >= part_size)
-			return false;
+			for (; part_pos < part_size;)
+			{
+				c = part[part_pos++];
+				if (c < 32)					// newliners
+					break;
+			}
+			if (part_pos >= part_size)
+				return false;
 
-		// Sequence
-		for (; part_pos < part_size;)
-		{
 			c = part[part_pos++];
-			if (c < 32)					// newliners
-				break;
-			seq[pos++] = codes[c];
+			if (c >= 32 || c == part[part_pos - 2]) //read may be empty
+				part_pos--;
+			else if (part_pos >= part_size)
+				return false;
+
+			// Sequence
+			for (; part_pos < part_size && pos < mem_part_pmm_reads;)
+			{
+				c = part[part_pos++];
+				if (c < 32)					// newliners
+					break;
+				seq[pos++] = codes[c];
+			}
+			if (part_pos >= part_size)
+				return false;
+
+			seq_size = pos;
+			curr_read_len = pos;
+
+			if (pos >= mem_part_pmm_reads) // read is too long to fit into out buff, it will be splitted into multiple buffers
+			{
+				part_pos -= kmer_len - 1;
+				return true;
+			}
 		}
-		if (part_pos >= part_size)
-			return false;
+		else // we are inside read
+		{
+			// Sequence
+			for (; part_pos < part_size && pos < mem_part_pmm_reads;)
+			{
+				c = part[part_pos++];
+				if (c < 32)					// newliners
+					break;
+				seq[pos++] = codes[c];
+			}
+			if (part_pos >= part_size)
+				return false;
+
+			seq_size = pos;
+			curr_read_len += pos - kmer_len + 1;
+			if (pos >= mem_part_pmm_reads) // read is too long to fit into out buff, it will be splitted into multiple buffers
+			{
+				part_pos -= kmer_len - 1;
+				return true;
+			}
+		}
 
 		c = part[part_pos++];
 		if (c >= 32)
@@ -175,11 +246,12 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size)
 			return false;
 
 		// Quality
-		part_pos += pos;
+		part_pos += curr_read_len;
+		curr_read_len = 0;
+
 		if (part_pos >= part_size)
 			return false;
 		c = part[part_pos++];
-		seq_size = pos;
 
 		if (part_pos >= part_size)
 			return true;
@@ -188,6 +260,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size)
 			part_pos--;
 		else if (part_pos >= part_size)
 			return true;
+
 	}
 	else if (file_type == multiline_fasta)
 	{
@@ -300,7 +373,10 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size)
 			part_pos += remaining;
 
 			if (!exclude_read) //if readed successfuly return		
+			{
+				++n_reads;
 				return true;
+			}
 		}
 
 	}
@@ -428,8 +504,8 @@ bool CSplitter::ProcessReads(uchar *_part, uint64 _part_size)
 
 	while (GetSeq(seq, seq_size))
 	{
-		if (file_type != multiline_fasta)
-			n_reads++;
+		//if (file_type != multiline_fasta && file_type != fastq) //read conting moved to GetSeq
+		//	n_reads++;
 		i = 0;
 		len = 0;
 		while (i + kmer_len - 1 < seq_size)
