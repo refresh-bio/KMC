@@ -80,10 +80,10 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size)
 		if (curr_read_len == 0)
 		{
 			c = part[part_pos++];
-			if (part[part_pos] != '>')
+			if (c != '>')
 				return false;
-
 			++n_reads;
+
 			for (; part_pos < part_size;)
 			{
 				c = part[part_pos++];
