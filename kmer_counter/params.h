@@ -19,7 +19,6 @@
 
 typedef enum {fasta, fastq, multiline_fasta, bam} input_type;
 
-
 using namespace std;
 
 // Structure for passing KMC parameters

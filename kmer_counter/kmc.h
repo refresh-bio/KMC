@@ -329,6 +329,7 @@ template <unsigned SIZE> bool CKMC<SIZE>::AdjustMemoryLimits()
 	
 	// Settings for memory manager of FASTQ buffers
 	Params.fastq_buffer_size = 32 << 20;
+
 	do {
 		if(Params.fastq_buffer_size & (Params.fastq_buffer_size-1))
 			Params.fastq_buffer_size &= Params.fastq_buffer_size - 1;

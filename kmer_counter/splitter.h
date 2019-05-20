@@ -54,7 +54,7 @@ class CSplitter {
 
 	CSignatureMapper* s_mapper;
 
-	bool GetSeq(char *seq, uint32 &seq_size);
+	bool GetSeq(char *seq, uint32 &seq_size, ReadType read_type);
 
 public:
 	static uint32 MAX_LINE_SIZE;
@@ -62,9 +62,9 @@ public:
 	
 	CSplitter(CKMCParams &Params, CKMCQueues &Queues); 
 	void InitBins(CKMCParams &Params, CKMCQueues &Queues);	
-	void CalcStats(uchar* _part, uint64 _part_size, uint32* _stats);
-	bool ProcessReads(uchar *_part, uint64 _part_size);
-	template<typename COUNTER_TYPE> bool ProcessReadsSmallK(uchar *_part, uint64 _part_size, CSmallKBuf<COUNTER_TYPE>& small_k_buf);	
+	void CalcStats(uchar* _part, uint64 _part_size, ReadType read_type, uint32* _stats);
+	bool ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type);
+	template<typename COUNTER_TYPE> bool ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType read_type, CSmallKBuf<COUNTER_TYPE>& small_k_buf);
 	void Complete();
 	inline void GetTotal(uint64 &_n_reads);
 	inline uint64 GetTotalKmers();

@@ -308,8 +308,8 @@ public:
 			FILE* f = nullptr;
 			OpenFile(file_name, f, mode);
 			files.push_back(make_tuple(f, q, mode));
-			pmm_binary_file_reader->reserve(part);			
-			uint64 readed = fread(part, 1, part_size, f);		
+			pmm_binary_file_reader->reserve(part);
+			uint64 readed = fread(part, 1, part_size, f);
 			notify_readed(readed);
 			if (!q->push(part, readed, FilePart::Begin, mode))
 			{
