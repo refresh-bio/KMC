@@ -911,7 +911,18 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size)
 						cerr << "Error: An internal error occurred. Please contact authors\n";
 					}
 					if (garbage)
-						binary_pack_queue->ignore_rest();
+					{
+						//ignore rest (garbage) data of a current file
+						FilePart tmpfilepart = file_part;
+						while (tmpfilepart != FilePart::End)
+						{
+							uchar *tmp;
+							uint64 tmpsize;
+							CompressionType tmpcomptype;
+							binary_pack_queue->pop(tmp, tmpsize, tmpfilepart, tmpcomptype);
+						}
+
+					}
 					break;
 				}
 				else //multiple streams in one file
