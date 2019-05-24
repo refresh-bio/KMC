@@ -111,6 +111,31 @@ public:
 };
 
 
+class CMissingEOL_at_EOF_counter
+{
+	uint32 n_missing;
+	std::mutex mtx;
+public:
+	CMissingEOL_at_EOF_counter()
+	{
+		Reset();
+	}
+	void Reset()
+	{
+		n_missing = 0;
+	}
+	void RegisterMissingEOL()
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		++n_missing;
+	}
+	uint32 Get()
+	{
+		return n_missing;
+	}
+	
+};
+
 //************************************************************************************************************
 class CInputFilesQueue {
 	typedef string elem_t;

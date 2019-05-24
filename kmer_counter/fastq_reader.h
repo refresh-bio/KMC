@@ -42,7 +42,7 @@ class CFastqReaderDataSrc
 public:
 	inline void SetQueue(CBinaryPackQueue* _binary_pack_queue, CMemoryPool *_pmm_binary_file_reader);
 	inline bool Finished();
-	uint64 read(uchar* buff, uint64 size);
+	uint64 read(uchar* buff, uint64 size, bool& last_in_file);
 	void IgnoreRest()
 	{
 		if (in_data)
@@ -83,6 +83,7 @@ class CFastqReader {
 
 	CMemoryMonitor *mm;	
 	CMemoryPoolWithBamSupport* pmm_fastq;
+	CMissingEOL_at_EOF_counter* missingEOL_at_EOF_counter;
 
 	CMemoryPool *pmm_binary_file_reader;
 	CPartQueue *part_queue;
@@ -113,8 +114,12 @@ class CFastqReader {
 	bool GetNextSymbOfLongReadRecord(uchar& res, int64& p, int64& size);
 
 	void CleanUpAfterLongFastqRead(uint32 number_of_lines_to_skip);
+
+	void FixEOLIfNeeded(uchar* part, int64& size);	
 public:
-	CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_fastq, input_type _file_type, int _kmer_len, CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader, CBamTaskManager* _bam_task_manager, CPartQueue* _part_queue, CStatsPartQueue* _stats_part_queue);
+	CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_fastq, input_type _file_type, int _kmer_len, 
+		CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader, CBamTaskManager* _bam_task_manager, 
+		CPartQueue* _part_queue, CStatsPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter);
 	~CFastqReader();
 
 	static uint64 OVERHEAD_SIZE;
@@ -161,6 +166,8 @@ class CWFastqReader {
 	input_type file_type;	
 	int kmer_len;
 
+	CMissingEOL_at_EOF_counter* missingEOL_at_EOF_counter;
+
 public:
 	CWFastqReader(CKMCParams &Params, CKMCQueues &Queues, CBinaryPackQueue* _binary_pack_queue);
 	~CWFastqReader();
@@ -184,6 +191,7 @@ class CWStatsFastqReader {
 	input_type file_type;	
 	int kmer_len;
 	CBinaryPackQueue* binary_pack_queue;
+	CMissingEOL_at_EOF_counter* missingEOL_at_EOF_counter;
 public:
 	CWStatsFastqReader(CKMCParams &Params, CKMCQueues &Queues, CBinaryPackQueue* _binary_pack_queue);
 	~CWStatsFastqReader();

@@ -92,6 +92,9 @@ template <unsigned SIZE> class CKMC {
 
 	bool AdjustMemoryLimitsSmallK();	
 	template<typename COUNTER_TYPE>	bool ProcessSmallKOptimization();
+
+
+	void CheckAndReportMissingEOLs();
 	
 public:
 	CKMC();
@@ -612,6 +615,15 @@ template <unsigned SIZE> bool CKMC<SIZE>::AdjustMemoryLimitsSmallK()
 }
 
 //----------------------------------------------------------------------------------
+template <unsigned SIZE>
+void CKMC<SIZE>::CheckAndReportMissingEOLs()
+{
+	auto n_missing = Queues.missingEOL_at_EOF_counter->Get();
+	if (n_missing)	
+		std::cerr << "Warning: in " << n_missing << " input file(s) there was not end of line character at EOF.\n";
+}
+
+//----------------------------------------------------------------------------------
 template <unsigned SIZE> 
 template<typename COUNTER_TYPE>
 bool CKMC<SIZE>::ProcessSmallKOptimization()
@@ -627,6 +639,8 @@ bool CKMC<SIZE>::ProcessSmallKOptimization()
 	Queues.pmm_binary_file_reader = new CMemoryPool(Params.mem_tot_pmm_binary_file_reader, Params.mem_part_pmm_binary_file_reader);
 	Queues.pmm_reads = new CMemoryPool(Params.mem_tot_pmm_reads, Params.mem_part_pmm_reads);
 	Queues.pmm_small_k_buf = new CMemoryPool(Params.mem_tot_small_k_buf, Params.mem_part_small_k_buf);
+
+	Queues.missingEOL_at_EOF_counter = new CMissingEOL_at_EOF_counter;
 
 	w_small_k_splitters.resize(Params.n_splitters);
 
@@ -671,6 +685,7 @@ bool CKMC<SIZE>::ProcessSmallKOptimization()
 
 	bin_file_reader_th.join();
 	delete w_bin_file_reader;
+
 	for (auto& ptr : Queues.binary_pack_queues)
 		delete ptr;
 
@@ -766,6 +781,10 @@ bool CKMC<SIZE>::ProcessSmallKOptimization()
 	delete Queues.pmm_small_k_buf;
 	w2.stopTimer();
 	cerr << "\n";
+	
+	CheckAndReportMissingEOLs();
+	delete Queues.missingEOL_at_EOF_counter;
+
 	return true;
 }
 
@@ -823,6 +842,8 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 	Queues.pmm_fastq = new CMemoryPoolWithBamSupport(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
 	Queues.pmm_reads = new CMemoryPool(Params.mem_tot_pmm_reads, Params.mem_part_pmm_reads);
 	Queues.pmm_stats = new CMemoryPool(Params.mem_tot_pmm_stats, Params.mem_part_pmm_stats);
+
+	Queues.missingEOL_at_EOF_counter = new CMissingEOL_at_EOF_counter;
 
 	if (Params.file_type != bam)
 	{
@@ -901,8 +922,7 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 	Queues.s_mapper->Init(stats);
 	heuristic_time.stopTimer();
 
-	cerr << "\n";
-	
+	cerr << "\n";	
 	w0.stopTimer();
 
 
@@ -913,6 +933,7 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 
 	// ***** Stage 1 *****
 	ShowSettingsStage1();
+	Queues.missingEOL_at_EOF_counter->Reset();
 
 	w_splitters.resize(Params.n_splitters);
 
@@ -996,8 +1017,6 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 	});
 
 	
-
-
 	release_thr_st1_1->join();
 	release_thr_st1_2->join();
 
@@ -1008,6 +1027,8 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 	w1.stopTimer();
 	w2.startTimer();
 	
+	CheckAndReportMissingEOLs();
+	delete Queues.missingEOL_at_EOF_counter;
 
 	// ***** End of Stage 1 *****
 

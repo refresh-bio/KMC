@@ -183,6 +183,7 @@ struct CKMCQueues
 	CKmerQueue *kq;
 	CMemoryPool *pmm_bins, *pmm_reads, *pmm_radix_buf, *pmm_stats, *pmm_binary_file_reader;
 	CMemoryPoolWithBamSupport *pmm_fastq;
+	CMissingEOL_at_EOF_counter* missingEOL_at_EOF_counter{};
 	CMemoryBins *memory_bins;
 	CMemoryPool* pmm_small_k_buf, *pmm_small_k_completer;
 
