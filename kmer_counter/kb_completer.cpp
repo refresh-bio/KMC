@@ -5,8 +5,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 3.1.0
-  Date   : 2018-05-10
+  Version: 3.1.1
+  Date   : 2019-05-19
 */
 #include <algorithm>
 #include <numeric>

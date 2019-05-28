@@ -4,8 +4,8 @@ import py_kmc_api as pka
 import argparse
 import textwrap
 
-VER = "3.1.0"
-DATE = "2018-12-29"
+VER = "3.1.1"
+DATE = "2019-05-19"
 
 def GeneralHelp():
     print('KMC dump ver. {} ({})'.format(VER, DATE))

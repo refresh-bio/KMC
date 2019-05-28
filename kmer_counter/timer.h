@@ -5,8 +5,8 @@ The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
 The source codes are based on codes written by Dennis and published:
 http://allmybrain.com/2008/06/10/timing-cc-code-on-linux/
 
-Version: 3.1.0
-Date   : 2018-05-10
+Version: 3.1.1
+Date   : 2019-05-19
 */
 
 #ifndef _TIMER_H
