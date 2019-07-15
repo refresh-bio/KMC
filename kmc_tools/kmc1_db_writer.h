@@ -123,15 +123,16 @@ bundles_queue(DEFAULT_CIRCULAL_QUEUE_CAPACITY)
 	std::string kmc_suf_file_name = output_desc.file_src + ".kmc_suf";
 
 	kmc_pre = fopen(kmc_pre_file_name.c_str(), "wb");
-	setvbuf(kmc_pre, NULL, _IONBF, 0);
-
+	
 	if (!kmc_pre)
 	{
 		std::cerr << "Error: cannot open file : " << kmc_pre_file_name << "\n";
 		exit(1);
 	}
+
+	setvbuf(kmc_pre, NULL, _IONBF, 0);
+
 	kmc_suf = fopen(kmc_suf_file_name.c_str(), "wb");
-	setvbuf(kmc_suf, NULL, _IONBF, 0);
 
 	if (!kmc_suf)
 	{
@@ -139,6 +140,7 @@ bundles_queue(DEFAULT_CIRCULAL_QUEUE_CAPACITY)
 		std::cerr << "Error: cannot open file : " << kmc_suf_file_name << "\n";
 		exit(1);
 	}
+	setvbuf(kmc_suf, NULL, _IONBF, 0);
 
 	setvbuf(kmc_pre, NULL, _IONBF, 0);
 	setvbuf(kmc_suf, NULL, _IONBF, 0);

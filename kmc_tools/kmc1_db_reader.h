@@ -457,13 +457,14 @@ template<unsigned SIZE> void CKMC1DbReader<SIZE>::open_files()
 	suffix_file_name = desc.file_src + ".kmc_suf";
 
 	suffix_file = fopen(suffix_file_name.c_str(), "rb");
-	setvbuf(suffix_file, NULL, _IONBF, 0);
-
+	
 	if (!suffix_file)
 	{
 		std::cerr << "Error: cannot open file: " << suffix_file_name << "\n";
 		exit(1);
+	
 	}
+	
 	setvbuf(suffix_file, NULL, _IONBF, 0);
 
 	char marker[4];
@@ -498,13 +499,14 @@ template<unsigned SIZE> void CKMC1DbReader<SIZE>::open_files()
 	prefix_file_name = desc.file_src + ".kmc_pre";
 
 	prefix_file = fopen(prefix_file_name.c_str(), "rb");
-	setvbuf(prefix_file, NULL, _IONBF, 0);
-
+	
 	if (!prefix_file)
 	{
 		std::cerr << "Error: cannot open file: " << prefix_file_name << "\n";
 		exit(1);
 	}
+	setvbuf(prefix_file, NULL, _IONBF, 0);
+
 	my_fseek(prefix_file, 4 + sizeof(uint64), SEEK_SET);//skip KMCP and first value as it must be 0
 
 }
