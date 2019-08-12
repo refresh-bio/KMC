@@ -109,10 +109,11 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 				seq[pos++] = codes[c];
 			}
 
+			seq_size = pos;
+
 			if (part_pos >= part_size)
 				return true;
 
-			seq_size = pos;
 			curr_read_len = pos;
 
 			if (pos >= mem_part_pmm_reads) // read is too long to fit into out buff, it will be splitted into multiple buffers
@@ -132,10 +133,11 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 				seq[pos++] = codes[c];
 			}
 
+			seq_size = pos;
+
 			if (part_pos >= part_size)
 				return true;
 
-			seq_size = pos;
 			curr_read_len += pos - kmer_len + 1;
 
 			if (pos >= mem_part_pmm_reads) // read is too long to fit into out buff, it will be splitted into multiple buffers
