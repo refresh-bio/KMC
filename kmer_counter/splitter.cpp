@@ -653,8 +653,8 @@ bool CSplitter::ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType rea
 	if (both_strands)
 		while (GetSeq(seq, seq_size, read_type))
 		{
-			if (file_type != multiline_fasta)
-				n_reads++;
+			//if (file_type != multiline_fasta)
+			//	n_reads++;
 
 			// Init k-mer
 			kmer_str.clear();
@@ -706,8 +706,8 @@ bool CSplitter::ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType rea
 	else
 		while (GetSeq(seq, seq_size, read_type))
 		{
-			if (file_type != multiline_fasta)
-				n_reads++;
+			//if (file_type != multiline_fasta)
+			//	n_reads++;
 
 			// Init k-mer
 			kmer_str.clear();
