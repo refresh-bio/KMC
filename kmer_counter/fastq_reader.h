@@ -115,6 +115,7 @@ class CFastqReader {
 
 	void CleanUpAfterLongFastqRead(uint32 number_of_lines_to_skip);
 
+	void CleanUpAfterLongFastaRead();
 	void FixEOLIfNeeded(uchar* part, int64& size);	
 public:
 	CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_fastq, input_type _file_type, int _kmer_len, 

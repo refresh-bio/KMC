@@ -11,7 +11,6 @@ Date   : 2019-05-19
 #include "stdafx.h"
 #include "splitter.h"
 
-
 //************************************************************************************************************
 // CSplitter class - splits kmers into bins according to their signatures
 //************************************************************************************************************
@@ -35,7 +34,7 @@ CSplitter::CSplitter(CKMCParams &Params, CKMCQueues &Queues)
 
 	mem_part_pmm_bins = Params.mem_part_pmm_bins;
 
-	mem_part_pmm_reads = Params.mem_part_pmm_reads;
+	mem_part_pmm_reads = Params.mem_part_pmm_reads; 
 
 	s_mapper = Queues.s_mapper;
 
@@ -100,6 +99,8 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 
 	if (file_type == fasta)
 	{		
+		if (read_type == ReadType::long_read)
+			return GetSeqLongRead(seq, seq_size, '>');
 		if (curr_read_len == 0)
 		{
 			// Title
@@ -537,7 +538,7 @@ bool CSplitter::ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type
 	uint32 len;//length of extended kmer
 
 	while (GetSeq(seq, seq_size, read_type))
-	{
+	{		
 		//if (file_type != multiline_fasta && file_type != fastq) //read conting moved to GetSeq
 		//	n_reads++;
 		i = 0;
@@ -815,7 +816,7 @@ void CWSplitter::operator()()
 		uint64 size;
 		ReadType read_type;
 		if (pq->pop(part, size, read_type))
-		{
+		{			
 			spl->ProcessReads(part, size, read_type);
 			pmm_fastq->free(part);
 		}

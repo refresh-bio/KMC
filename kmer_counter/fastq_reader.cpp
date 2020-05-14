@@ -42,7 +42,7 @@ CFastqReader::CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_
 	kmer_len = _kmer_len;
 
 	// Size and pointer for the buffer
-	part_size = 1 << 23;
+	part_size = 1 << 23;	
 	part = nullptr;
 
 	containsNextChromosome = false;
@@ -61,7 +61,7 @@ CFastqReader::~CFastqReader()
 //----------------------------------------------------------------------------------
 // Set part size of the buffer
 bool CFastqReader::SetPartSize(uint64 _part_size)
-{
+{	
 	if (_part_size < (1 << 20) || _part_size >(1 << 30))
 		return false;
 
@@ -468,6 +468,33 @@ FORCE_INLINE bool CFastqReader::GetNextSymbOfLongReadRecord(uchar& res, int64& p
 	return true;
 }
 
+void CFastqReader::CleanUpAfterLongFastaRead()
+{
+	pmm_fastq->reserve(part);
+
+	uchar symb;
+	int64 in_part = 0;
+	int64 skip_pos = 0;	
+	while (GetNextSymbOfLongReadRecord(symb, skip_pos, in_part))
+	{
+		if (symb == '\n' || symb == '\r')
+			;
+		else
+		{				
+			if (symb != '>')
+			{
+				cerr << "Error: Wrong input file!\n";				
+				exit(1);
+			}
+			std::copy(part + skip_pos - 1, part + in_part, part);
+			part_filled = in_part - (skip_pos - 1);
+			return;				
+		}				
+	}
+
+	//the file has ended
+	part_filled = 0;
+}
 void CFastqReader::CleanUpAfterLongFastqRead(uint32 number_of_lines_to_skip)
 {
 	pmm_fastq->reserve(part);
@@ -540,6 +567,7 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 
 	if (data_src.Finished() && !long_read_in_progress)
 	{
+		read_type = ReadType::normal_read;
 		_part = part;
 		_size = total_filled;
 
@@ -554,6 +582,49 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 	}									// Look for the end of the last complete record in a buffer
 	else if (file_type == fasta)			// FASTA files
 	{
+		if (long_read_in_progress)
+		{			
+			//check if there is EOL in the data
+			int64 pos = 0;
+			for (; pos < total_filled; ++pos)
+			{
+				if (part[pos] == '\n' || part[pos] == '\r')
+				{
+					long_read_in_progress = false;
+					break;
+				}
+			}
+
+			if (!long_read_in_progress)
+			{
+				_part = part;
+				_size = pos;
+
+				//all from this part was readed, maybe there is another EOL character in the file
+				if(pos == total_filled)
+					CleanUpAfterLongFastaRead();
+				else //there is still some important data in the part!!
+				{
+					//skip possible eol
+					for (; pos < total_filled; ++pos)
+						if (part[pos] != '\n' && part[pos] != '\r')
+							break;
+
+					pmm_fastq->reserve(part);
+					std::copy(_part + pos, _part + total_filled, part);
+					part_filled = total_filled - pos;
+				}
+			}
+			else
+			{
+				_part = part;
+				_size = total_filled;
+				pmm_fastq->reserve(part);
+				std::copy(_part + total_filled - kmer_len + 1, _part + total_filled, part);
+				part_filled = kmer_len - 1;
+			}
+			return true;
+		}
 		// Looking for a FASTA record at the end of the area
 		i = total_filled - 1;
 		int64 start, end;
@@ -583,8 +654,45 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 		// Looking for a FASTQ record at the end of the area
 		if (!success)
 		{
-			cerr << "Error: Wrong input file!\n";
-			exit(1);
+			if (readed_lines == 2) //because if successfully readed full 2 lines in the worst case there is only one read that begins at the buffer start, and there is only onle fasta record
+			{
+				std::cerr << "Error: some error while reading fasta file, please contact authors\n";
+				exit(1);
+			}
+			k = 4 - readed_lines;
+			if (line_start[k] != 0)
+			{
+				std::cerr << "Error: some error while reading fasta file, please contact authors\n";
+				exit(1);
+			}
+			if (part[0] != '>')
+			{
+				cerr << "Error: Wrong input file!\n";				
+				exit(1);
+			}
+
+			if (readed_lines == 1)
+			{
+				long_read_in_progress = true;				
+
+				_part = part;
+				_size = total_filled;
+				read_type = ReadType::long_read;
+
+				//copy last k-1 symbols
+				pmm_fastq->reserve(part);
+				copy(_part + total_filled - kmer_len + 1, _part + total_filled, part);
+				part_filled = kmer_len - 1;
+
+				return true;
+			}
+			else 
+			{
+				std::cerr << "Error: some error while reading fasta file, please contact authors\n";
+				exit(1);
+			}
+
+			return true;
 		}
 
 		_part = part;
@@ -1072,7 +1180,7 @@ CWFastqReader::CWFastqReader(CKMCParams &Params, CKMCQueues &Queues, CBinaryPack
 	binary_pack_queue = _binary_pack_queue;
 	missingEOL_at_EOF_counter = Queues.missingEOL_at_EOF_counter;
 	bam_task_manager = Queues.bam_task_manager;
-	part_size = Params.fastq_buffer_size;
+	part_size = Params.fastq_buffer_size; 
 	part_queue = Queues.part_queue;
 	file_type = Params.file_type;
 	kmer_len = Params.p_k;
