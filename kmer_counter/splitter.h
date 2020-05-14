@@ -54,6 +54,8 @@ class CSplitter {
 
 	CSignatureMapper* s_mapper;
 
+	bool GetSeqLongRead(char *seq, uint32 &seq_size, uchar header_marker);
+
 	bool GetSeq(char *seq, uint32 &seq_size, ReadType read_type);
 
 public:
