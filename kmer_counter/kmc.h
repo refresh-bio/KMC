@@ -156,6 +156,7 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParams(CKMCParams &_Params)
 	Params.both_strands   = Params.p_both_strands;
 	Params.without_output = Params.p_without_output;
 	Params.use_strict_mem = Params.p_strict_mem;
+	Params.homopolymer_compressed = Params.p_homopolymer_compressed;
 	Params.mem_mode		  = Params.p_mem_mode;
 
 	

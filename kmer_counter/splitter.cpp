@@ -50,6 +50,8 @@ CSplitter::CSplitter(CKMCParams &Params, CKMCQueues &Queues)
 
 	n_reads = 0;
 	bins = nullptr;
+
+	homopolymer_compressed = Params.homopolymer_compressed;
 }
 
 void CSplitter::InitBins(CKMCParams &Params, CKMCQueues &Queues)
@@ -68,8 +70,7 @@ void CSplitter::InitBins(CKMCParams &Params, CKMCQueues &Queues)
 //----------------------------------------------------------------------------------
 // Parse long read, header_merker is '@' or '>'
 bool CSplitter::GetSeqLongRead(char *seq, uint32 &seq_size, uchar header_marker)
-{
-	uchar c = 0;
+{	
 	uint32 pos = 0;
 	//long read may or may not contain header
 	if (part_pos == 0 && part[0] == header_marker)
@@ -85,6 +86,7 @@ bool CSplitter::GetSeqLongRead(char *seq, uint32 &seq_size, uchar header_marker)
 		part_pos -= kmer_len - 1;
 	return true;
 }
+
 
 
 //----------------------------------------------------------------------------------
@@ -419,6 +421,20 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 }
 
 //----------------------------------------------------------------------------------
+void CSplitter::HomopolymerCompressSeq(char* seq, uint32 &seq_size)
+{
+	if (seq_size <= 1)
+		return;
+
+	uint32 read_pos = 1;
+	uint32 write_pos = 0;
+	for (; read_pos < seq_size; ++read_pos)
+		if (seq[read_pos] != seq[write_pos])
+			seq[++write_pos] = seq[read_pos];
+	seq_size = write_pos + 1;
+}
+
+//----------------------------------------------------------------------------------
 // Calculate statistics of m-mers
 void CSplitter::CalcStats(uchar* _part, uint64 _part_size, ReadType read_type, uint32* _stats)
 {
@@ -438,6 +454,8 @@ void CSplitter::CalcStats(uchar* _part, uint64 _part_size, ReadType read_type, u
 
 	while (GetSeq(seq, seq_size, read_type))
 	{
+		if (homopolymer_compressed)
+			HomopolymerCompressSeq(seq, seq_size);
 		i = 0;
 		len = 0;
 		while (i + kmer_len - 1 < seq_size)
@@ -539,6 +557,8 @@ bool CSplitter::ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type
 
 	while (GetSeq(seq, seq_size, read_type))
 	{		
+		if (homopolymer_compressed)
+			HomopolymerCompressSeq(seq, seq_size);
 		//if (file_type != multiline_fasta && file_type != fastq) //read conting moved to GetSeq
 		//	n_reads++;
 		i = 0;
@@ -664,6 +684,8 @@ bool CSplitter::ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType rea
 	if (both_strands)
 		while (GetSeq(seq, seq_size, read_type))
 		{
+			if (homopolymer_compressed)
+				HomopolymerCompressSeq(seq, seq_size);
 			//if (file_type != multiline_fasta)
 			//	n_reads++;
 
@@ -717,6 +739,8 @@ bool CSplitter::ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType rea
 	else
 		while (GetSeq(seq, seq_size, read_type))
 		{
+			if (homopolymer_compressed)
+				HomopolymerCompressSeq(seq, seq_size);
 			//if (file_type != multiline_fasta)
 			//	n_reads++;
 

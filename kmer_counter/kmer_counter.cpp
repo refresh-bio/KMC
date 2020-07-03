@@ -152,6 +152,7 @@ void usage()
 		 << "  -k<len> - k-mer length (k from " << MIN_K << " to " << MAX_K << "; default: 25)\n"
 		 << "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 12\n"
 		 << "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n"
+		 << "  -hc - count homopolymer compressed k-mers\n"
 		 << "  -p<par> - signature length (5, 6, 7, 8, 9, 10, 11); default: 9\n"
 		 << "  -f<a/q/m/bam> - input in FASTA format (-fa), FASTQ format (-fq), multi FASTA (-fm) or BAM (-fbam); default: FASTQ\n"	
 		 << "  -ci<value> - exclude k-mers occurring less than <value> times (default: 2)\n"
@@ -238,7 +239,7 @@ bool parse_parameters(int argc, char *argv[])
 			Params.p_cx = atoll(&argv[i][3]);
 		// Maximal counter value
 		else if (strncmp(argv[i], "-cs", 3) == 0)
-			Params.p_cs = atoll(&argv[i][3]);		
+			Params.p_cs = atoll(&argv[i][3]);
 		// Set p1
 		else if (strncmp(argv[i], "-p", 2) == 0)
 		{
@@ -269,6 +270,8 @@ bool parse_parameters(int argc, char *argv[])
 			Params.p_verbose = true;
 		else if (strncmp(argv[i], "-sm", 3) == 0 && strlen(argv[i]) == 3)
 			Params.p_strict_mem = true;
+		else if (strncmp(argv[i], "-hc", 3) == 0 && strlen(argv[i]) == 3)
+			Params.p_homopolymer_compressed = true;
 		else if (strncmp(argv[i], "-r", 2) == 0)
 			Params.p_mem_mode = true;
 		else if(strncmp(argv[i], "-b", 2) == 0)
@@ -494,7 +497,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	delete app;
 
 	cout << "1st stage: " << time1 << "s\n"
-	     << "2nd stage: " << time2  << "s\n";
+	     << "2nd stage: " << time2 << "s\n";
 
 	bool display_strict_mem_stats = Params.p_strict_mem && !was_small_k_opt;
 	if (display_strict_mem_stats)

@@ -54,9 +54,13 @@ class CSplitter {
 
 	CSignatureMapper* s_mapper;
 
+	bool homopolymer_compressed;
+
 	bool GetSeqLongRead(char *seq, uint32 &seq_size, uchar header_marker);
 
 	bool GetSeq(char *seq, uint32 &seq_size, ReadType read_type);
+
+	void HomopolymerCompressSeq(char* seq, uint32 &seq_size);
 
 public:
 	static uint32 MAX_LINE_SIZE;

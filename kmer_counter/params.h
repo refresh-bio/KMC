@@ -35,6 +35,7 @@ struct CKMCParams {
 	int64 p_cx;							// do not count k-mers occurring more than
 	int64 p_cs;							// maximal counter value	
 	bool p_strict_mem;					// use strict memory limit mode
+	bool p_homopolymer_compressed;		// count homopolymer compressed k-mers
 	bool p_mem_mode;					// use RAM instead of disk	
 	input_type p_file_type;				// input in FASTA format
 	bool p_verbose;						// verbose mode
@@ -98,6 +99,7 @@ struct CKMCParams {
 	int64 cutoff_max;			// exclude k-mers occurring more than times
 	int64 counter_max;		// maximal counter value	
 	bool use_strict_mem;	// use strict memory limit mode
+	bool homopolymer_compressed; //count homopolymer compressed k-mers
 	bool both_strands;		// find canonical representation of each k-mer
 	bool mem_mode;			// use RAM instead of disk
 
@@ -150,6 +152,7 @@ struct CKMCParams {
 		p_cx = 1000000000;
 		p_cs = 255;		
 		p_strict_mem = false;
+		p_homopolymer_compressed = false;
 		p_mem_mode = false;		
 		p_file_type = fastq;
 		p_verbose = false;
