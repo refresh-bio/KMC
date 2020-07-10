@@ -152,7 +152,7 @@ void usage()
 		 << "  -k<len> - k-mer length (k from " << MIN_K << " to " << MAX_K << "; default: 25)\n"
 		 << "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 12\n"
 		 << "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n"
-		 << "  -hc - count homopolymer compressed k-mers\n"
+		 << "  -hc - count homopolymer compressed k-mers (approximate and experimental)\n"
 		 << "  -p<par> - signature length (5, 6, 7, 8, 9, 10, 11); default: 9\n"
 		 << "  -f<a/q/m/bam> - input in FASTA format (-fa), FASTQ format (-fq), multi FASTA (-fm) or BAM (-fbam); default: FASTQ\n"	
 		 << "  -ci<value> - exclude k-mers occurring less than <value> times (default: 2)\n"
