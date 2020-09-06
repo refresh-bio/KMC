@@ -406,7 +406,7 @@ bool CFastqReader::GetPartFromMultilneFasta(uchar *&_part, uint64 &_size)
 			int64 tmp = i;
 			bool next_line = SkipNextEOL(part, i, total_filled);
 			if (!next_line)
-				i = total_filled;
+				i = total_filled; 
 			copy(part + tmp, part + i, part + pos);
 			last_header_pos = pos;
 			pos += i - tmp;
@@ -864,14 +864,14 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 
 //----------------------------------------------------------------------------------
 // Skip to next EOL from the current position in a buffer
-bool CFastqReader::SkipNextEOL(uchar *part, int64 &pos, int64 max_pos)
+bool CFastqReader::SkipNextEOL(uchar *part, int64 &pos, int64 size)
 {
 	int64 i;
-	for (i = pos; i < max_pos - 2; ++i)
+	for (i = pos; i < size - 1; ++i)
 		if ((part[i] == '\n' || part[i] == '\r') && !(part[i + 1] == '\n' || part[i + 1] == '\r'))
 			break;
 
-	if (i >= max_pos - 2)
+	if (i >= size - 1)
 		return false;
 
 	pos = i + 1;

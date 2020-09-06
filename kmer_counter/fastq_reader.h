@@ -104,7 +104,7 @@ class CFastqReader {
 	
 	bool containsNextChromosome; //for multiline_fasta processing
 
-	bool SkipNextEOL(uchar *part, int64 &pos, int64 max_pos);
+	bool SkipNextEOL(uchar *part, int64 &pos, int64 size);
 
 	void GetFullLineFromEnd(int64& line_sart, int64& line_end, uchar* buff, int64& pos);
 	
