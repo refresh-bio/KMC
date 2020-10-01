@@ -37,7 +37,7 @@ class CMmer
 			return false;
 		if ((mmer & 0x3f) == 0x3b)            // TGT suffix
 			return false;
-		if ((mmer & 0x3c) == 0x3c)            // TG* suffix
+		if ((mmer & 0x3c) == 0x3c)            // TG* suffix !!!! consider issue #152
 			return false;
 
 		for (uint32 j = 0; j < len - 3; ++j)
