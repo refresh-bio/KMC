@@ -143,14 +143,14 @@ public:
 	bool Eof(void) const;
 
 	// Return true if kmer exists. In this case return kmer's counter in count
-	bool CheckKmer(CKmerAPI &kmer, float &count) const;
+	bool CheckKmer(const CKmerAPI &kmer, float &count) const;
 
-	bool CheckKmer(CKmerAPI &kmer, uint32 &count) const;
+	bool CheckKmer(const CKmerAPI &kmer, uint32 &count) const;
 
-	bool CheckKmer(CKmerAPI &kmer, uint64 &count) const;
+	bool CheckKmer(const CKmerAPI &kmer, uint64 &count) const;
 
 	// Return true if kmer exists
-	bool IsKmer(CKmerAPI &kmer) const;
+	bool IsKmer(const CKmerAPI &kmer) const;
 
 	// Set original (readed from *.kmer_pre) values for min_count and max_count
 	void ResetMinMaxCounts(void);
@@ -165,8 +165,8 @@ public:
 	bool GetCountersForRead(const std::string& read, std::vector<uint32>& counters) const;
 	bool GetCountersForRead(const std::string& read, std::vector<float>& counters) const;
 	private:
-		uint32 count_for_kmer_kmc1(CKmerAPI& kmer) const;
-		uint32 count_for_kmer_kmc2(CKmerAPI& kmer, uint32 bin_start_pos) const;
+		uint32 count_for_kmer_kmc1(const CKmerAPI& kmer) const;
+		uint32 count_for_kmer_kmc2(const CKmerAPI& kmer, uint32 bin_start_pos) const;
 };
 
 #endif

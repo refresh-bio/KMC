@@ -307,7 +307,7 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size)
 // OUT: count - kmer's counter if kmer exists
 // RET: true  - if kmer exists
 //------------------------------------------------------------------------------------------
-bool CKMCFile::CheckKmer(CKmerAPI &kmer, float &count) const
+bool CKMCFile::CheckKmer(const CKmerAPI &kmer, float &count) const
 {
 	uint32 int_counter;
 	if (CheckKmer(kmer, int_counter))
@@ -327,7 +327,7 @@ bool CKMCFile::CheckKmer(CKmerAPI &kmer, float &count) const
 // OUT: count - kmer's counter if kmer exists
 // RET: true  - if kmer exists
 //------------------------------------------------------------------------------------------
-bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint32 &count) const
+bool CKMCFile::CheckKmer(const CKmerAPI &kmer, uint32 &count) const
 {
 	if(is_opened != opened_for_RA)
 		return false;
@@ -371,7 +371,7 @@ bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint32 &count) const
 // OUT: count - kmer's counter if kmer exists
 // RET: true  - if kmer exists
 //------------------------------------------------------------------------------------------
-bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint64 &count) const
+bool CKMCFile::CheckKmer(const CKmerAPI &kmer, uint64 &count) const
 {
 	if (is_opened != opened_for_RA)
 		return false;
@@ -772,7 +772,7 @@ uint32 CKMCFile::KmerLength(void) const
 // IN	: kmer - kmer
 // RET	: true if kmer exists
 //----------------------------------------------------------------------------------------
-bool CKMCFile::IsKmer(CKmerAPI &kmer) const
+bool CKMCFile::IsKmer(const CKmerAPI &kmer) const
 {
 	uint32 _count;
 	if(CheckKmer(kmer, _count))
@@ -964,7 +964,7 @@ bool CKMCFile::GetCountersForRead(const std::string& read, std::vector<float>& c
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
-uint32 CKMCFile::count_for_kmer_kmc1(CKmerAPI& kmer) const
+uint32 CKMCFile::count_for_kmer_kmc1(const CKmerAPI& kmer) const
 {
 	//recognize a prefix:
 
@@ -989,7 +989,7 @@ uint32 CKMCFile::count_for_kmer_kmc1(CKmerAPI& kmer) const
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
-uint32 CKMCFile::count_for_kmer_kmc2(CKmerAPI& kmer, uint32 bin_start_pos) const
+uint32 CKMCFile::count_for_kmer_kmc2(const CKmerAPI& kmer, uint32 bin_start_pos) const
 {
 	//recognize a prefix:
 	uint64 pattern_prefix_value = kmer.kmer_data[0];
