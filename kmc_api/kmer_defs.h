@@ -35,7 +35,6 @@
 
 
 	#include <stdio.h>
-	#include <ext/algorithm>
 	#include <iostream>
 
 #else
