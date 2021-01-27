@@ -46,12 +46,12 @@ protected:
 		kmer_data[(pos + byte_alignment) >> 5] += (uint64)val << (62 - (((pos + byte_alignment) & 31) * 2));
 	}
 
-	inline uchar extract2bits(uint32 pos)
+	inline uchar extract2bits(uint32 pos) const
 	{
 		return (kmer_data[(pos + byte_alignment) >> 5] >> (62 - (((pos + byte_alignment) & 31) * 2))) & 3;
 	}
 	//----------------------------------------------------------------------------------
-	inline void SHL_insert2bits(uchar val)
+	inline void SHL_insert2bits(uchar val) const
 	{
 		kmer_data[0] <<= 2;
 		if (byte_alignment)
@@ -68,7 +68,7 @@ protected:
 	}
 	
 	//----------------------------------------------------------------------------------
-	inline void SHR_insert2bits(uchar val)
+	inline void SHR_insert2bits(uchar val) const
 	{
 		for (uint32 i = no_of_rows - 1; i > 0; --i)
 		{
@@ -98,7 +98,7 @@ protected:
 
 	// ----------------------------------------------------------------------------------
 	template<typename RandomAccessIterator>
-	inline void to_string_impl(RandomAccessIterator iter)
+	inline void to_string_impl(RandomAccessIterator iter) const
 	{
 		uchar *byte_ptr;
 		uchar c;
@@ -391,7 +391,7 @@ public:
 // IN	: pos - a position of a symbol
 // RET	: symbol - a symbol placed on a position pos
 //-----------------------------------------------------------------------
-	inline char get_asci_symbol(unsigned int pos)
+	inline char get_asci_symbol(unsigned int pos) const
 	{
 		if(pos >= kmer_length)
 			return 0;
@@ -411,7 +411,7 @@ public:
 	// IN	: pos - a position of a symbol
 	// RET	: symbol - a symbol placed on a position pos
 	//-----------------------------------------------------------------------
-	inline uchar get_num_symbol(unsigned int pos)
+	inline uchar get_num_symbol(unsigned int pos) const
 	{
 		if (pos >= kmer_length)
 			return 0;
@@ -430,7 +430,7 @@ public:
 	// Convert kmer into string (an alphabet ACGT)
 	// RET	: string kmer
 	//-----------------------------------------------------------------------
-	inline std::string to_string()
+	inline std::string to_string() const
 	{
 		std::string string_kmer;		
 		string_kmer.resize(kmer_length);
@@ -441,14 +441,14 @@ public:
 	// Convert kmer into string (an alphabet ACGT). The function assumes enough memory was allocated
 	// OUT	: str - string kmer. 
 	//-----------------------------------------------------------------------
-	inline void to_string(char *str)
+	inline void to_string(char *str) const
 	{
 		to_string_impl(str);
 		str[kmer_length] = '\0';
 	};
 
 
-	inline void to_long(std::vector<uint64>& kmer)
+	inline void to_long(std::vector<uint64>& kmer) const
 	{
 		kmer.resize(no_of_rows);
 		uint32 offset = 62 - ((kmer_length - 1 + byte_alignment) & 31) * 2;
@@ -472,7 +472,7 @@ public:
 	// Convert kmer into string (an alphabet ACGT)
 	// OUT 	: str - string kmer
 	//-----------------------------------------------------------------------
-	inline void to_string(std::string &str)
+	inline void to_string(std::string &str) const
 	{	
 		str.resize(kmer_length);
 		to_string_impl(str.begin());
@@ -650,7 +650,7 @@ public:
 // IN	: sig_len	- the length of a signature
 // RET	: signature value
 //-----------------------------------------------------------------------
-	 uint32 get_signature(uint32 sig_len)
+	 uint32 get_signature(uint32 sig_len) const
 	 {
 		 uchar symb;
 		 CMmer cur_mmr(sig_len);
