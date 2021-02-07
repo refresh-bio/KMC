@@ -87,25 +87,6 @@ kmc: $(KMC_OBJS) $(RADULS_OBJS)
 	-mkdir -p $(KMC_BIN_DIR)
 	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS)
 
-kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
-	-mkdir -p $(KMC_BIN_DIR)
-	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^
-
-kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS)
-	-mkdir -p $(KMC_BIN_DIR)
-	$(CC) $(KMC_TOOLS_CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS)
-
-$(PY_KMC_API_DIR)/%.o: $(KMC_API_DIR)/%.cpp
-	$(CC) -c -fPIC -Wall -O3 -m64 -std=c++11 $^ -o $@
-
-py_kmc_api: $(PY_KMC_API_OBJS) $(PY_KMC_API_OBJS)
-	-mkdir -p $(KMC_BIN_DIR)
-	$(CC) -fPIC -Wall -shared -std=c++11 -O3 $(PY_KMC_API_DIR)/py_kmc_api.cpp $(PY_KMC_API_OBJS) \
-	-I $(KMC_API_DIR) \
-	-I $(PY_KMC_API_DIR)/libs/pybind11/include \
-	-I `python3 -c "import sysconfig;print(sysconfig.get_paths()['include'])"` \
-	-o $(KMC_BIN_DIR)/$@`python3-config --extension-suffix`
-
 clean:
 	-rm -f $(KMC_MAIN_DIR)/*.o
 	-rm -f $(KMC_API_DIR)/*.o
