@@ -22,6 +22,7 @@
 #include <vector>
 #include "small_k_buf.h"
 #include "bam_utils.h"
+#include "mmer_compartator.h"
 
 using namespace std;
 
@@ -54,6 +55,8 @@ class CSplitter {
 
 	CSignatureMapper* s_mapper;
 
+	CMmerNorm* norm;
+
 	bool homopolymer_compressed;
 
 	bool GetSeqLongRead(char *seq, uint32 &seq_size, uchar header_marker);
@@ -66,7 +69,7 @@ public:
 	static uint32 MAX_LINE_SIZE;
 
 	
-	CSplitter(CKMCParams &Params, CKMCQueues &Queues); 
+	CSplitter(CKMCParams &Params, CKMCQueues &Queues, CMmerNorm* _norm);
 	void InitBins(CKMCParams &Params, CKMCQueues &Queues);	
 	void CalcStats(uchar* _part, uint64 _part_size, ReadType read_type, uint32* _stats);
 	bool ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type);
@@ -105,7 +108,7 @@ class CWSplitter {
 	uint64 n_reads;
 
 public:
-	CWSplitter(CKMCParams &Params, CKMCQueues &Queues);	
+	CWSplitter(CKMCParams &Params, CKMCQueues &Queues, CMmerNorm* _norm);
 	void operator()();
 	void GetTotal(uint64 &_n_reads);
 	~CWSplitter();

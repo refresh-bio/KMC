@@ -42,6 +42,7 @@
 #include "bkb_merger.h"
 #include "bkb_writer.h"
 #include "binary_reader.h"
+#include "mmer_compartator.h"
 
 using namespace std;
 
@@ -926,12 +927,12 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 	cerr << "\n";	
 	w0.stopTimer();
 
-
-	Queues.pmm_stats->free(stats);
-	Queues.pmm_stats->release();
-	delete Queues.pmm_stats;
-	Queues.pmm_stats = nullptr;
-
+//TODO: FIX
+//	Queues.pmm_stats->free(stats);
+//	Queues.pmm_stats->release();
+//	delete Queues.pmm_stats;
+//	Queues.pmm_stats = nullptr;
+    CMmerNorm* norm = new CMmerNorm(stats);
 	// ***** Stage 1 *****
 	ShowSettingsStage1();
 	Queues.missingEOL_at_EOF_counter->Reset();
@@ -940,7 +941,7 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 
 	for(int i = 0; i < Params.n_splitters; ++i)
 	{
-		w_splitters[i] = new CWSplitter(Params, Queues);
+		w_splitters[i] = new CWSplitter(Params, Queues, norm);
 		gr1_2.push_back(thread(std::ref(*w_splitters[i])));
 	}
 	

@@ -24,7 +24,7 @@ CMmer::_si CMmer::_init;
 
 
 //--------------------------------------------------------------------------
-CMmer::CMmer(uint32 _len)
+CMmer::CMmer(uint32 _len, CMmerNorm* _norm)
 {
 	switch (_len)
 	{
@@ -55,6 +55,8 @@ CMmer::CMmer(uint32 _len)
 	len = _len;
 	mask = (1 << _len * 2) - 1;
 	str = 0;
+
+    new_norm = _norm;
 }
 
 //--------------------------------------------------------------------------

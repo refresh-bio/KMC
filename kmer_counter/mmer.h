@@ -11,6 +11,8 @@
 #ifndef _MMER_H
 #define _MMER_H
 #include "defs.h"
+#include "mmer_compartator.h"
+
 
 // *************************************************************************
 // *************************************************************************
@@ -23,6 +25,9 @@ class CMmer
 	uint32 current_val;
 	uint32* norm;
 	uint32 len;
+
+	CMmerNorm* new_norm;
+
 	static uint32 norm5[1 << 10];
 	static uint32 norm6[1 << 12];
 	static uint32 norm7[1 << 14];	
@@ -99,7 +104,7 @@ class CMmer
 
 	}static _init;
 public:
-	CMmer(uint32 _len);
+	CMmer(uint32 _len, CMmerNorm* _norm);
 	inline void insert(uchar symb);
 	inline uint32 get() const;
 	inline bool operator==(const CMmer& x);
@@ -190,7 +195,16 @@ inline void CMmer::insert(const char* seq)
 		break;
 	}
 
-	current_val = norm[str];
+	if(norm == nullptr)
+    {
+        current_val = norm[str];
+    }
+	else
+    {
+        current_val = new_norm->get_norm_value(str);
+    }
+
+
 }
 
 
