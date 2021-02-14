@@ -920,6 +920,8 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 	delete Queues.input_files_queue;
 	Queues.input_files_queue = new CInputFilesQueue(Params.input_file_names);
 
+	CMmerNorm* norm = new CMmerNorm(stats); // this line alters stats
+
 	heuristic_time.startTimer();
 	Queues.s_mapper->Init(stats);
 	heuristic_time.stopTimer();
@@ -932,7 +934,7 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 //	Queues.pmm_stats->release();
 //	delete Queues.pmm_stats;
 //	Queues.pmm_stats = nullptr;
-    CMmerNorm* norm = new CMmerNorm(stats);
+    
 	// ***** Stage 1 *****
 	ShowSettingsStage1();
 	Queues.missingEOL_at_EOF_counter->Reset();

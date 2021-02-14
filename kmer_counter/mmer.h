@@ -125,7 +125,16 @@ inline void CMmer::insert(uchar symb)
 	str += symb;
 	str &= mask;
 
-	current_val = norm[str];
+	//current_val = norm[str];
+	if(new_norm == nullptr)
+    {
+        // current_val = norm[str]; // this is the original
+		current_val = str;
+    }
+	else
+    {
+        current_val = new_norm->get_norm_value(str);
+    }
 }
 
 //--------------------------------------------------------------------------
@@ -195,9 +204,10 @@ inline void CMmer::insert(const char* seq)
 		break;
 	}
 
-	if(norm == nullptr)
+	if(new_norm == nullptr)
     {
-        current_val = norm[str];
+        // current_val = norm[str]; // this is the original
+		current_val = str;
     }
 	else
     {

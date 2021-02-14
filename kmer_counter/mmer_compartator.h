@@ -21,7 +21,7 @@ class CMmerNorm
 
     class MmerComp
     {
-        uint32* stats;
+        uint32 stats[1<<18];//uint32* stats;
         uint32 uhs[1<<18];
         uint32 my_norm[1<<18];
         char num_codes[256];
@@ -51,7 +51,12 @@ class CMmerNorm
         }
         MmerComp(uint32* _signature_occurrences)
         {
-            stats = _signature_occurrences;
+            // stats = _signature_occurrences;
+            for (int j = 0; j < (1<<18); j++)
+            {
+                stats[j] = _signature_occurrences[j] + _signature_occurrences[get_reversed(j)];
+            }
+
             for (int i = 0; i < 256; i++)
                 num_codes[i] = -1;
             num_codes['A'] = num_codes['a'] = 0;
@@ -65,6 +70,14 @@ class CMmerNorm
             for (int j = 0; j < (1<<18); j++)
             {
                 my_norm[j] = norm[j];
+            }
+            for (int j = 0; j < (1<<18); j++)
+            {
+                _signature_occurrences[j] = 0;
+                if(uhs[j] == 1)
+                    _signature_occurrences[MAX(j,get_reversed(j))] = stats[j];       
+                    _signature_occurrences[MIN(j,get_reversed(j))] = 0;       
+                            
             }
         }
         void init_uhs_bitset()
@@ -113,6 +126,21 @@ class CMmerNorm
 
             return true;
         }
+        
+        uint32 get_reversed(uint32 mmer)
+    {
+        uint32 rev = 0;
+        uint32 shift = 9*2 - 2;
+        for(uint32 i = 0 ; i < 9 ; ++i)
+        {
+            rev += (3 - (mmer & 3)) << shift;
+            mmer >>= 2;
+            shift -= 2;
+        }
+        return rev;
+    }
+
+
     };
 
     void merge(uint32 arr[], int l, int m, int r, MmerComp* comp)
@@ -206,12 +234,20 @@ public:
         {
             norm[i] = temp[i];
         }
+        std::cout << "after reverse normalizing for loop" << std::endl;
+        for(uint32 i = 0 ; i < special ; ++i)
+        {
+            uint32 rev = get_rev(i);
+            uint32 min_value = MIN(norm[i], norm[rev]);
+            norm[i] = min_value;
+            norm[rev] = min_value;
+        }
         std::cout << "after final for loop" << std::endl;
     }
 
     CMmerNorm(uint32* stats);
 
-    inline int32 get_norm_value(uint32 value)
+    inline uint32 get_norm_value(uint32 value)
     {
         return norm[value];
     }
@@ -227,8 +263,6 @@ public:
         }
         return rev;
     }
-
-
 };
 
 // ***** EOF

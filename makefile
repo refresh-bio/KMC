@@ -85,7 +85,7 @@ $(KMC_MAIN_DIR)/raduls_avx2.o: $(KMC_MAIN_DIR)/raduls_avx2.cpp
 	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
 
 kmc: $(KMC_OBJS) $(RADULS_OBJS)
-	-mkdir -p $(KMC_BIN_DIR)
+	-mkdir $(KMC_BIN_DIR)
 	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS)
 
 clean:

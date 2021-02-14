@@ -13,6 +13,8 @@
 #include "defs.h"
 #include "mmer.h"
 #include "params.h"
+#include <iostream>
+
 
 #ifdef DEVELOP_MODE
 #include "develop.h"
@@ -43,7 +45,7 @@ class CSignatureMapper
 	};
 	
 public:	
-	void Init(uint32* stats)
+	void Init(uint32* stats) // TODO: stats do not contain special characters in original implementation
 	{
 		uint32 *sorted;
 		pmm_stats->reserve(sorted);
@@ -54,7 +56,7 @@ public:
 		list<pair<uint32, uint64>> _stats;
 		for (uint32 i = 0; i < map_size ; ++i)
 		{
-			if (CMmer::is_allowed(sorted[i], signature_len))
+			//if (CMmer::is_allowed(sorted[i], signature_len))
 				_stats.push_back(make_pair(sorted[i], stats[sorted[i]]));
 		}
 
@@ -163,7 +165,8 @@ public:
 	}
 	inline int32 get_bin_id(uint32 signature)
 	{
-		return signature_map[signature];
+		// return signature % n_bins;
+		return signature_map[signature]; // TODO: FIX???
 	}
 
 	inline int32 get_max_bin_no()
