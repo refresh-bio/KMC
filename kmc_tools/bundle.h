@@ -50,6 +50,7 @@ template<unsigned SIZE> class CSimpleOperation;
 template<unsigned SIZE> class CKMC1DbReader; 
 template<unsigned SIZE> class CMergerParent;
 template<unsigned SIZE> class CMergerParentSubthread;
+template<unsigned SIZE> class CSectionMergerParent;
 
 //************************************************************************************************************
 // CBundleData - class containing a buffer of k-mers and its counters. 
@@ -157,6 +158,7 @@ private:
 	friend class CSimpleOperation<SIZE>; //as above
 	friend class CMergerParent<SIZE>;
 	friend class CMergerParentSubthread<SIZE>;
+	friend class CSectionMergerParent<SIZE>;
 	friend class CBundle<SIZE>;
 	uint32 insert_pos, get_pos, size;
 	CKmerWithCounter* kmers_with_counters;
@@ -241,14 +243,14 @@ protected:
 };
 
 //forward declaration
-template <unsigned SIZE> class CKMC1DbWriter;
+template <unsigned SIZE> class CDbWriter;
 template<unsigned SIZE>
 class COutputBundle : public CBundle<SIZE>
 {
 private:
 	CSimpleOutputDesc::OpType op_type;
 	CounterOpType counter_op;
-	CKMC1DbWriter<SIZE>& db_writer;
+	CDbWriter<SIZE>& db_writer;
 	
 public:
 
@@ -281,7 +283,7 @@ public:
 	}
 
 
-	COutputBundle(CSimpleOutputDesc::OpType op_type, CounterOpType counter_op, CKMC1DbWriter<SIZE>& db_writer) :
+	COutputBundle(CSimpleOutputDesc::OpType op_type, CounterOpType counter_op, CDbWriter<SIZE>& db_writer) :
 		CBundle<SIZE>(nullptr),
 		op_type(op_type),
 		counter_op(counter_op),

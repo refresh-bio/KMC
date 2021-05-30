@@ -61,6 +61,9 @@
     <ClCompile Include="kb_collector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="kff_writer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libs\zconf.h" />
@@ -186,6 +189,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="timer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kff_writer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

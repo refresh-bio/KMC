@@ -14,6 +14,7 @@ Date   : 2019-05-19
 #include "defs.h"
 #include "config.h"
 #include "queues.h"
+#include "db_writer.h"
 
 #include <string>
 #include <vector>
@@ -51,12 +52,12 @@ private:
 //************************************************************************************************************
 // CKMC1DbWriter - writer of KMC1 database
 //************************************************************************************************************
-template<unsigned SIZE> class CKMC1DbWriter
+template<unsigned SIZE> class CKMC1DbWriter : public CDbWriter<SIZE>
 {
 public:
 	CKMC1DbWriter(CBundle<SIZE>* bundle, COutputDesc& output_desc);
 	~CKMC1DbWriter();
-	bool Process();
+	bool Process() override;
 
 private:
 	static const uint32 PRE_BUFF_SIZE_BYTES = KMC1_DB_WRITER_PREFIX_BUFF_BYTES;
@@ -97,10 +98,10 @@ private:
 	CKMC1SuffixFileWriter* suffix_writer = nullptr;
 	std::thread suf_buf_writing_thread;
 public:
-	void MultiOptputInit();
-	void MultiOptputAddResultPart(COutputBundle<SIZE>& bundle);
-	void MultiOptputAddResultPart(CBundle<SIZE>& bundle);
-	void MultiOptputFinish();
+	void MultiOptputInit() override;
+	void MultiOptputAddResultPart(COutputBundle<SIZE>& bundle) override;
+	void MultiOptputAddResultPart(CBundle<SIZE>& bundle) override;
+	void MultiOptputFinish() override;
 
 };
 
@@ -176,7 +177,6 @@ bundles_queue(DEFAULT_CIRCULAL_QUEUE_CAPACITY)
 /*****************************************************************************************************************************/
 template<unsigned SIZE> bool CKMC1DbWriter<SIZE>::Process()
 {
-
 	start_writing();
 
 	//Converts bundles to output buffers, suffix buffer is placed to another queue and write in separate thread (suffix_writer)

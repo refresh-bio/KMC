@@ -1,0 +1,136 @@
+/*
+This file is a part of KMC software distributed under GNU GPL 3 licence.
+The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
+
+Authors: Marek Kokot
+
+Version: 3.1.1
+Date   : 2019-05-19
+*/
+
+//TODO KFF: consider separate thread for writing linke in kmc1 db writer
+
+#ifndef _KFF_DB_WRITER_H
+#define _KFF_DB_WRITER_H
+
+#include "../kmer_counter/kff_writer.h"
+#include "defs.h"
+
+
+template<unsigned SIZE> class CKFFDbWriter : public CDbWriter<SIZE>
+{
+	uint64 counter_size;
+	uint64 kmer_bytes;
+	uint64 rec_bytes;
+	CBundle<SIZE>* bundle;
+	CKFFWriter kff_writer;
+	COutputDesc& output_desc;
+	uchar* buff;	
+	uint64 buff_size;
+	uint64 buff_pos;
+	
+	void store_buff()
+	{
+		kff_writer.StoreSectionPart(buff, buff_pos);
+		buff_pos = 0;
+	}
+
+	void ProcessBundleData(CBundleData<SIZE>& bundle_data)
+	{
+		while (!bundle_data.Empty())
+		{
+			add_kmer(bundle_data.TopKmer(), bundle_data.TopCounter());
+			bundle_data.Pop();
+		}
+	}
+
+	void start()
+	{
+		kff_writer.InitSection();
+	}
+
+	void finish()
+	{
+		if (buff_pos != 0)
+			store_buff();
+		kff_writer.FinishSection();		
+	}
+public:
+	
+	CKFFDbWriter(CBundle<SIZE>* bundle, COutputDesc& output_desc) :
+		counter_size(MIN(BYTE_LOG(output_desc.counter_max), BYTE_LOG(output_desc.cutoff_max))),
+		kmer_bytes((CConfig::GetInstance().kmer_len + 3) / 4),
+		rec_bytes(kmer_bytes + counter_size),
+		bundle(bundle),
+		kff_writer(
+			output_desc.file_src + ".kff",
+			true /*TODO KFF: set this basing on inputs! */,
+			CConfig::GetInstance().kmer_len,
+			counter_size
+			/*TODO KFF: store encoding info!*/),
+		output_desc(output_desc)
+	{
+		buff = new uchar[KFF_DB_WRITER_BUFF_BYTES];
+		rec_bytes = kmer_bytes + counter_size;
+		buff_size = KFF_DB_WRITER_BUFF_BYTES / rec_bytes;
+		buff_pos = 0;
+	}
+	~CKFFDbWriter() 
+	{
+		delete[] buff;
+	}
+
+	void add_kmer(CKmer<SIZE>& kmer, uint32 counter)
+	{
+		//if specific counter value is set use it as counter value (set_counts operation), do not check if counter is valid in term of cutoffs and counter max
+		if (output_desc.counter_value)
+			counter = static_cast<uint32>(output_desc.counter_value);
+		else
+		{
+			if (counter < output_desc.cutoff_min || counter > output_desc.cutoff_max)
+				return;
+			if (counter > output_desc.counter_max)
+				counter = output_desc.counter_max;
+		}
+		uchar* rec = buff + buff_pos * rec_bytes;
+		kmer.store(rec, kmer_bytes);
+
+		for (int32 j = (int32)counter_size - 1; j >= 0; --j)
+			*rec++ = (counter >> (j * 8)) & 0xFF;
+		++buff_pos;
+		if (buff_size == buff_pos)
+			store_buff();		
+	}
+
+	bool Process() override 
+	{
+		start();
+		while (!bundle->Finished())
+			ProcessBundleData(bundle->Data());			
+		
+		finish();
+		return true;
+	}
+
+	void MultiOptputInit() override 
+	{
+		start();
+	}
+
+	void MultiOptputAddResultPart(COutputBundle<SIZE>& bundle) override 
+	{
+		ProcessBundleData(bundle.Data());
+	}
+	
+	void MultiOptputAddResultPart(CBundle<SIZE>& bundle) override 
+	{
+		ProcessBundleData(bundle.Data());
+	}
+	
+	void MultiOptputFinish() override 
+	{
+		finish();
+	}
+};
+
+#endif

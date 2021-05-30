@@ -50,12 +50,15 @@ CKmerBinCompleter::CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues)
 	without_output = Params.without_output;
 
 	kmer_t_size    = Params.KMER_T_size;
-		
+
+	kff_writer = nullptr;
+	output_type = Params.output_type;		
 }
 
 //----------------------------------------------------------------------------------
 CKmerBinCompleter::~CKmerBinCompleter()
 {
+	delete kff_writer;
 }
 
 
@@ -70,31 +73,47 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 	uchar *lut = nullptr;
 	uint64 lut_size = 0;
 	counter_size = 0;
-	sig_map_size = (1 << (signature_len * 2)) + 1;
-	sig_map = new uint32[sig_map_size];
-	fill_n(sig_map, sig_map_size, 0);
-	lut_pos = 0;
+	if (output_type == OutputType::KMC)
+	{
+		sig_map_size = (1 << (signature_len * 2)) + 1;
+		sig_map = new uint32[sig_map_size];
+		fill_n(sig_map, sig_map_size, 0);
+		lut_pos = 0;
+	}
+	
 	
 	counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));	
 	
 	if (!without_output)
 	{
-		// Open output file
-		out_kmer = fopen(kmer_file_name.c_str(), "wb");
-		if (!out_kmer)
+		if(output_type == OutputType::KMC)
 		{
-			cerr << "Error: Cannot create " << kmer_file_name << "\n";
-			exit(1);
-			return;
-		}
+			// Open output file
+			out_kmer = fopen(kmer_file_name.c_str(), "wb");
+			if (!out_kmer)
+			{
+				cerr << "Error: Cannot create " << kmer_file_name << "\n";
+				exit(1);
+				return;
+			}
 
-		out_lut = fopen(lut_file_name.c_str(), "wb");
-		if (!out_lut)
+			out_lut = fopen(lut_file_name.c_str(), "wb");
+			if (!out_lut)
+			{
+				cerr << "Error: Cannot create " << lut_file_name << "\n";
+				fclose(out_kmer);
+				exit(1);
+				return;
+			}
+		}
+		else if (output_type == OutputType::KFF)
+		{			
+			kff_writer = new CKFFWriter(file_name + ".kff", !both_strands, kmer_len, counter_size);
+		}
+		else
 		{
-			cerr << "Error: Cannot create " << lut_file_name << "\n";
-			fclose(out_kmer);
+			std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
 			exit(1);
-			return;
 		}
 	}
 	
@@ -108,9 +127,12 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 
 	if (!without_output)
 	{
-		// Markers at the beginning
-		fwrite(s_kmc_pre, 1, 4, out_lut);
-		fwrite(s_kmc_suf, 1, 4, out_kmer);
+		if (output_type == OutputType::KMC)
+		{
+			// Markers at the beginning
+			fwrite(s_kmc_pre, 1, 4, out_lut);
+			fwrite(s_kmc_suf, 1, 4, out_kmer);
+		}
 	}
 
 	// Process priority queue of ready-to-output bins
@@ -135,37 +157,55 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 
 		if (!without_output)
 		{
-			for (auto& e : data_packs)
-			{
-				// Write bin data to the output file
-#ifdef WIN32 //fwrite bug https://connect.microsoft.com/VisualStudio/feedback/details/755018/fwrite-hangs-with-large-size-count
-				uint64 write_offset = e.first;
-				uint64 left_to_write = e.second - e.first;
-				while (left_to_write)
+			if(output_type == OutputType::KMC)
+			{ 
+				for (auto& e : data_packs)
 				{
-					uint64 current_to_write = MIN(left_to_write, (4ull << 30) - 1);
-					fwrite(data + write_offset, 1, current_to_write, out_kmer);
-					write_offset += current_to_write;
-					left_to_write -= current_to_write;
-				}
+					// Write bin data to the output file
+#ifdef WIN32 //fwrite bug https://connect.microsoft.com/VisualStudio/feedback/details/755018/fwrite-hangs-with-large-size-count
+					uint64 write_offset = e.first;
+					uint64 left_to_write = e.second - e.first;
+					while (left_to_write)
+					{
+						uint64 current_to_write = MIN(left_to_write, (4ull << 30) - 1);
+						fwrite(data + write_offset, 1, current_to_write, out_kmer);
+						write_offset += current_to_write;
+						left_to_write -= current_to_write;
+					}
 #else
-				fwrite(data + e.first, 1, e.second - e.first, out_kmer);
+					fwrite(data + e.first, 1, e.second - e.first, out_kmer);
 #endif
+				}
 			}
+			else if (output_type == OutputType::KFF)
+			{
+				uint32_t rec_size = (kmer_len + 3) / 4 + counter_size;
+				for (auto& e : data_packs)									
+					kff_writer->StoreWholeSection(data + e.first, (e.second - e.first) / rec_size);
+			}
+			else
+			{
+				std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
+				exit(1);
+			}
+			
 		}
 
 		memory_bins->free(bin_id, CMemoryBins::mba_suffix);
 
 		if (!without_output)
 		{
-			uint64 *ulut = (uint64*)lut;
-			for (uint64 i = 0; i < lut_recs; ++i)
+			if (output_type == OutputType::KMC)
 			{
-				uint64 x = ulut[i];
-				ulut[i] = n_recs;
-				n_recs += x;
+				uint64* ulut = (uint64*)lut;
+				for (uint64 i = 0; i < lut_recs; ++i)
+				{
+					uint64 x = ulut[i];
+					ulut[i] = n_recs;
+					n_recs += x;
+				}
+				fwrite(lut, lut_recs, sizeof(uint64), out_lut);
 			}
-			fwrite(lut, lut_recs, sizeof(uint64), out_lut);
 		}
 		//fwrite(&n_rec, 1, sizeof(uint64), out_lut);
 		memory_bins->free(bin_id, CMemoryBins::mba_lut);
@@ -174,14 +214,18 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		n_cutoff_min += _n_cutoff_min;
 		n_cutoff_max += _n_cutoff_max;
 		n_total      += _n_total;
-		for (uint32 i = 0; i < sig_map_size; ++i)
+		
+		if (output_type == OutputType::KMC)
 		{
-			if (s_mapper->get_bin_id(i) == bin_id)
+			for (uint32 i = 0; i < sig_map_size; ++i)
 			{
-				sig_map[i] = lut_pos;
+				if (s_mapper->get_bin_id(i) == bin_id)
+				{
+					sig_map[i] = lut_pos;
+				}
 			}
+			++lut_pos;
 		}
-		++lut_pos;
 	}		
 }
 
@@ -241,48 +285,52 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 
 	if (!without_output)
 	{
-		// Marker at the end
-		fwrite(s_kmc_suf, 1, 4, out_kmer);
-		fclose(out_kmer);
-
-		fwrite(&n_recs, 1, sizeof(uint64), out_lut);
-
-		//store signature mapping 
-		fwrite(sig_map, sizeof(uint32), sig_map_size, out_lut);
-
-		// Store header
-		uint32 offset = 0;
-
-		store_uint(out_lut, kmer_len, 4);				offset += 4;
-		store_uint(out_lut, (uint32)0, 4);				offset += 4;	// mode: 0 (counting), 1 (Quake-compatibile counting) which is now not supported
-		store_uint(out_lut, counter_size, 4);			offset += 4;
-		store_uint(out_lut, lut_prefix_len, 4);			offset += 4;
-		store_uint(out_lut, signature_len, 4);			offset += 4;
-		store_uint(out_lut, cutoff_min, 4);				offset += 4;
-		store_uint(out_lut, cutoff_max, 4);				offset += 4;
-		store_uint(out_lut, n_unique - n_cutoff_min - n_cutoff_max, 8);		offset += 8;
-
-		store_uint(out_lut, both_strands ? 0 : 1, 1);			offset++;
-
-		// Space for future use
-		for (int32 i = 0; i < 27; ++i)
+		if(output_type == OutputType::KMC)
 		{
-			store_uint(out_lut, 0, 1);
-			offset++;
+			// Marker at the end
+			fwrite(s_kmc_suf, 1, 4, out_kmer);
+			fclose(out_kmer);
+
+			fwrite(&n_recs, 1, sizeof(uint64), out_lut);
+
+			//store signature mapping 
+			fwrite(sig_map, sizeof(uint32), sig_map_size, out_lut);
+
+			// Store header
+			uint32 offset = 0;
+
+			store_uint(out_lut, kmer_len, 4);				offset += 4;
+			store_uint(out_lut, (uint32)0, 4);				offset += 4;	// mode: 0 (counting), 1 (Quake-compatibile counting) which is now not supported
+			store_uint(out_lut, counter_size, 4);			offset += 4;
+			store_uint(out_lut, lut_prefix_len, 4);			offset += 4;
+			store_uint(out_lut, signature_len, 4);			offset += 4;
+			store_uint(out_lut, cutoff_min, 4);				offset += 4;
+			store_uint(out_lut, cutoff_max, 4);				offset += 4;
+			store_uint(out_lut, n_unique - n_cutoff_min - n_cutoff_max, 8);		offset += 8;
+
+			store_uint(out_lut, both_strands ? 0 : 1, 1);			offset++;
+
+			// Space for future use
+			for (int32 i = 0; i < 27; ++i)
+			{
+				store_uint(out_lut, 0, 1);
+				offset++;
+			}
+
+			store_uint(out_lut, 0x200, 4);
+			offset += 4;
+
+			store_uint(out_lut, offset, 4);
+
+			// Marker at the end
+			fwrite(s_kmc_pre, 1, 4, out_lut);
+			fclose(out_lut);
 		}
-
-		store_uint(out_lut, 0x200, 4);
-		offset += 4;
-
-		store_uint(out_lut, offset, 4);
-
-		// Marker at the end
-		fwrite(s_kmc_pre, 1, 4, out_lut);
-		fclose(out_lut);
 	}
 	cerr << "\n";
 
-	delete[] sig_map;
+	if (output_type == OutputType::KMC)	
+		delete[] sig_map;
 }
 
 //----------------------------------------------------------------------------------

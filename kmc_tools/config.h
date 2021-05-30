@@ -16,10 +16,11 @@
 #include <vector>
 #include <memory>
 #include <cstring>
-#include "kmc_header.h"
+#include "kmer_file_header.h"
 #include "percent_progress.h"
 
 enum class CounterOpType { MIN, MAX, SUM, DIFF, FROM_DB1, FROM_DB2, NONE };
+enum class OutputType { KMC1, KFF1 };
 
 class CCounterBuilder
 {
@@ -81,6 +82,7 @@ struct CSimpleOutputDesc : public COutputDesc
 	enum class OpType { INTERSECT, UNION, KMERS_SUBTRACTION, COUNTERS_SUBTRACTION, REVERSE_KMERS_SUBTRACTION, REVERSE_COUNTERS_SUBTRACTION }; 	
 	OpType op_type;
 	CounterOpType counter_op;
+	OutputType output_type = OutputType::KMC1;
 	CSimpleOutputDesc(OpType op_type) :
 		op_type(op_type)		
 	{		
@@ -105,6 +107,7 @@ struct CSimpleOutputDesc : public COutputDesc
 struct CTransformOutputDesc : public COutputDesc
 {
 	enum class OpType { HISTOGRAM, DUMP, SORT, REDUCE, COMPACT, SET_COUNTS };
+	OutputType output_type = OutputType::KMC1;
 	OpType op_type;
 	bool sorted_output = false; //only for dump operation, rest is sorted anyway (except histo which does not print k-mers at all)
 	CTransformOutputDesc(OpType op_type) :op_type(op_type)
@@ -160,7 +163,7 @@ public:
 	Mode mode = Mode::UNDEFINED;
 	bool verbose = false;	
 	std::vector<CInputDesc> input_desc;
-	std::vector<CKMC_header> headers;
+	std::vector<CKmerFileHeader> headers;
 		
 	COutputDesc output_desc; //complex only?
 
@@ -312,6 +315,7 @@ public:
 				  << "  -ci<value>  - exclude k-mers occurring less than <value> times \n"
 				  << "  -cx<value>  - exclude k-mers occurring more of than <value> times\n"
 				  << "  -cs<value>  - maximal value of a counter\n"
+				  << "  -o<kmc|kff> - output in KMC or KFF format (default: kmc) \n"
 				  << "  -oc<value>  - redefine counter calculation mode for equal k-mers\n"
 				  << "    Available values : \n"
 				  << "      min   - get lower value of a k-mer counter (default value for intersect operation)\n"
@@ -355,6 +359,9 @@ public:
 				  << "  -ci<value> - exclude k-mers occurring less than <value> times \n"
 				  << "  -cx<value> - exclude k-mers occurring more of than <value> times\n"
 				  << "  -cs<value> - maximal value of a counter\n"
+
+				  << " For compact, reduce, set_counts and sort operations is an additional output_params:\n"
+				  << "  -o<kmc|kff> - output in KMC or KFF format (default: kmc) \n"				  
 			
 				  << " For histogram operation there are additional output_params:\n"
 				  << "  -ci<value> - minimum value of counter to be stored in the otput file\n"

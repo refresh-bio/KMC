@@ -358,7 +358,7 @@ bool CParametersParser::read_output_for_transform()
 				Usage();
 				exit(1);
 			}
-		}
+		}		
 		else
 		{
 			cerr << "Error: unknown operation parameter: " << argv[pos] <<"\n";
@@ -399,6 +399,34 @@ bool CParametersParser::read_output_for_transform()
 		else if (strncmp(argv[pos], "-cs", 3) == 0)
 		{
 			config.transform_output_desc.back().counter_max = replace_zero(atoi(argv[pos++] + 3), "-cs", 1);
+		}
+		else if (strncmp(argv[pos], "-o", 2) == 0)
+		{
+			auto& op_type = config.transform_output_desc.back().op_type;
+
+			if (op_type == CTransformOutputDesc::OpType::COMPACT ||
+				op_type == CTransformOutputDesc::OpType::REDUCE ||
+				op_type == CTransformOutputDesc::OpType::SET_COUNTS ||
+				op_type == CTransformOutputDesc::OpType::SORT)
+			{
+				if (strncmp(argv[pos] + 2, "kff", 3) == 0)
+					config.transform_output_desc.back().output_type = OutputType::KFF1;
+				else if (strncmp(argv[pos] + 2, "kmc", 3) == 0)
+					config.transform_output_desc.back().output_type = OutputType::KMC1;
+				else
+				{
+					cerr << "Error: Unknown output type\n";
+					Usage();
+					exit(1);
+				}
+				++pos;
+			}
+			else
+			{
+				cerr << "Error: -o parameter allowed only for compact, reduce, set_counts and sort operations\n";
+				Usage();
+				exit(1);
+			}
 		}
 		else
 		{
@@ -528,6 +556,20 @@ bool CParametersParser::read_output_desc_for_simple()
 			else
 			{
 				cerr << "Error: unknown counter calculation mode: " << mode << ". Allowed values: min, max, sum, diff, left, right\n";
+				exit(1);
+			}
+			++pos;
+		}
+		else if (strncmp(argv[pos], "-o", 2) == 0)
+		{			
+			if (strncmp(argv[pos] + 2, "kff", 3) == 0)
+				config.simple_output_desc.back().output_type = OutputType::KFF1;
+			else if (strncmp(argv[pos] + 2, "kmc", 3) == 0)
+				config.simple_output_desc.back().output_type = OutputType::KMC1;
+			else
+			{
+				cerr << "Error: Unknown output type\n";
+				Usage();
 				exit(1);
 			}
 			++pos;
@@ -708,7 +750,7 @@ uint32 CParametersParser::get_max_counter_max()
 
 bool CParametersParser::validate_input_dbs()
 {
-	config.headers.push_back(CKMC_header(config.input_desc.front().file_src));
+	config.headers.push_back(CKmerFileHeader(config.input_desc.front().file_src));
 
 	uint32 kmer_len = config.headers.front().kmer_len;
 	uint32 mode = config.headers.front().mode;
@@ -719,8 +761,8 @@ bool CParametersParser::validate_input_dbs()
 	}
 	for (uint32 i = 1; i < config.input_desc.size(); ++i)
 	{
-		config.headers.push_back(CKMC_header(config.input_desc[i].file_src));
-		CKMC_header& h = config.headers.back();
+		config.headers.push_back(CKmerFileHeader(config.input_desc[i].file_src));
+		CKmerFileHeader& h = config.headers.back();
 		if (h.mode != mode)
 		{
 			cerr << "Error: quality/direct based counters conflict!\n";
@@ -817,17 +859,17 @@ bool CParametersParser::validate_input_dbs()
 void CParametersParser::SetThreads()
 {
 	uint32 threads_left = config.avaiable_threads;
-	//threads distribution: as many as possible for kmc2 database input, 1 thread for main thread which make operations calculation
-	vector<reference_wrapper<CInputDesc>> kmc2_desc;
+	//threads distribution: as many as possible for kmc2 of kff database input, 1 thread for main thread which make operations calculation
+	vector<reference_wrapper<CInputDesc>> kmc2_or_kff_desc;
 
 	if (config.IsSeparateThreadForMainProcessingNeeded())
 		threads_left = MAX(1, threads_left - 1);
 	
 	for (uint32 i = 0; i < config.headers.size(); ++i)
 	{
-		if (config.headers[i].IsKMC2())
+		if (config.headers[i].kmer_file_type == KmerFileType::KMC2 || config.headers[i].kmer_file_type == KmerFileType::KFF1)
 		{
-			kmc2_desc.push_back(ref(config.input_desc[i]));
+			kmc2_or_kff_desc.push_back(ref(config.input_desc[i]));
 		}
 		else
 		{
@@ -837,15 +879,15 @@ void CParametersParser::SetThreads()
 				threads_left = 1;
 		}
 	}
-	if (kmc2_desc.size())
+	if (kmc2_or_kff_desc.size())
 	{
-		uint32 per_signle_kmc2_input = MAX(1, (uint32)(threads_left / kmc2_desc.size()));
-		uint32 per_last_kmc2_input = MAX(1, (uint32)((threads_left + kmc2_desc.size() - 1) / kmc2_desc.size()));
+		uint32 per_signle_kmc2_input = MAX(1, (uint32)(threads_left / kmc2_or_kff_desc.size()));
+		uint32 per_last_kmc2_input = MAX(1, (uint32)((threads_left + kmc2_or_kff_desc.size() - 1) / kmc2_or_kff_desc.size()));
 
-		for (uint32 i = 0; i < kmc2_desc.size() - 1; ++i)
-			kmc2_desc[i].get().threads = per_signle_kmc2_input;
+		for (uint32 i = 0; i < kmc2_or_kff_desc.size() - 1; ++i)
+			kmc2_or_kff_desc[i].get().threads = per_signle_kmc2_input;
 
-		kmc2_desc.back().get().threads = per_last_kmc2_input;
+		kmc2_or_kff_desc.back().get().threads = per_last_kmc2_input;
 	}
 }
 

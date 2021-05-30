@@ -11,6 +11,10 @@
 #ifndef _INTR_COPY_H
 #define _INTR_COPY_H
 
+#ifdef _WIN32
+#include <intrin.h>
+#endif
+
 #include <emmintrin.h>
 #include <immintrin.h>
 

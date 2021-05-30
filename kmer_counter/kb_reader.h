@@ -145,11 +145,16 @@ template <unsigned SIZE> void CKmerBinReader<SIZE>::ProcessBins()
 
 		uint32 kmer_symbols = kmer_len - lut_prefix_len;
 		uint64 kmer_bytes = kmer_symbols / 4;
+		if (lut_prefix_len == 0) //do not split data to prefix and sufix (for example when storying result in KFF)
+			kmer_bytes = (kmer_symbols + 3) / 4;
+
 		uint64 out_buffer_size = max_out_recs * (kmer_bytes + counter_size);
 			
 		uint32 rec_len         = (kxmer_symbols + 3) / 4;
 
 		uint64 lut_recs = 1ull << (2 * lut_prefix_len);
+		if (lut_prefix_len == 0)
+			lut_recs = 0;
 		uint64 lut_size = lut_recs * sizeof(uint64);
 
 		// Reserve memory only for the file data

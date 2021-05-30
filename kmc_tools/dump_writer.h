@@ -26,7 +26,7 @@ class CKMCDBForDump
 	KMCDB kmcdb;
 public:
 	CKMCDBForDump() :
-		kmcdb(CConfig::GetInstance().headers.front(), CConfig::GetInstance().input_desc.front(), CConfig::GetInstance().percent_progress, KMCDBOpenMode::sequential){}
+		kmcdb(CConfig::GetInstance().headers.front(), CConfig::GetInstance().input_desc.front(), CConfig::GetInstance().percent_progress, KmerDBOpenMode::sequential){}
 	bool NextKmer(CKmer<SIZE>& kmer, uint32& counter)
 	{
 		return kmcdb.NextKmerSequential(kmer, counter);
@@ -42,7 +42,7 @@ class CKMCDBForDump<CKMC2DbReader<SIZE>, SIZE, true>
 	CBundle<SIZE> bundle;
 public:
 	CKMCDBForDump() :
-		kmcdb(new CKMC2DbReader<SIZE>(CConfig::GetInstance().headers.front(), CConfig::GetInstance().input_desc.front(), CConfig::GetInstance().percent_progress, KMCDBOpenMode::sorted)), 
+		kmcdb(new CKMC2DbReader<SIZE>(CConfig::GetInstance().headers.front(), CConfig::GetInstance().input_desc.front(), CConfig::GetInstance().percent_progress, KmerDBOpenMode::sorted)), 
 		bundle(kmcdb){}
 	bool NextKmer(CKmer<SIZE>& kmer, uint32& counter)
 	{

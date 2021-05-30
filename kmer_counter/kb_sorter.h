@@ -84,6 +84,8 @@ private:
 	int32 lut_prefix_len;
 	uint32 counter_max;
 
+	OutputType output_type;
+
 	CKmer<SIZE> *buffer_input, *buffer_tmp, *buffer;
 	uint32 *kxmer_counters;
 
@@ -189,6 +191,8 @@ template <unsigned SIZE> CKmerBinSorter<SIZE>::CKmerBinSorter(CKMCParams &Params
 	without_output = Params.without_output;
 	
 	lut_prefix_len = Params.lut_prefix_len;
+
+	output_type = Params.output_type;
 
 	n_sorting_threads = 0;
 	//n_sorting_threads = Params.n_sorting_threads[thread_no];
@@ -943,7 +947,13 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKxmers()
 
 	uint32 kmer_symbols = kmer_len - lut_prefix_len;
 	uint64 kmer_bytes = kmer_symbols / 4;
+
+	if (lut_prefix_len == 0) //do not split data to prefix and sufix (for example when storying result in KFF)
+		kmer_bytes = (kmer_symbols + 3) / 4;
+
 	uint64 lut_recs = 1ull << (2 * lut_prefix_len);
+	if (lut_prefix_len == 0)
+		lut_recs = 0;
 	uint64 lut_size = lut_recs * sizeof(uint64);
 
 
@@ -972,14 +982,14 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKxmers()
 			pos[i] = FindFirstSymbOccur(pos[i - 1], compacted_count, 0, i);
 
 		if (n_sorting_threads > 1)
-		{			
+		{						
 			CKXmerSetMultiThreaded<SIZE> kxmer_set_multithreaded(buffer, kxmer_counters, compacted_count, 
 				cutoff_min, cutoff_max, counter_max, kmer_len, lut_prefix_len, lut, out_buffer, n_sorting_threads);
 
 			for (uint32 i = 1; i < 5; ++i)
 				InitKXMerSetMultithreaded(kxmer_set_multithreaded, pos[i - 1], pos[i], max_x + 2 - i, i);
 
-			kxmer_set_multithreaded.Process(without_output);
+			kxmer_set_multithreaded.Process(without_output, output_type);
 		
 			kxmer_set_multithreaded.GetStats(n_unique, n_cutoff_min, n_cutoff_max, n_total);	
 			output_packs_desc = std::move(kxmer_set_multithreaded.GetOutputPacksDesc());			
@@ -1022,13 +1032,29 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKxmers()
 
 						if (!without_output)
 						{
-							lut[kmer.remove_suffix(2 * kmer_symbols)]++;
-							// Store compacted kmer
+							if(output_type == OutputType::KMC)
+							{
+								lut[kmer.remove_suffix(2 * kmer_symbols)]++;
+								// Store compacted kmer
 
-							for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
-								out_buffer[out_pos++] = kmer.get_byte(j);
-							for (int32 j = 0; j < (int32)counter_size; ++j)
-								out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+								for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
+									out_buffer[out_pos++] = kmer.get_byte(j);
+								for (int32 j = 0; j < (int32)counter_size; ++j)
+									out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+							}
+							else if (output_type == OutputType::KFF)
+							{
+								for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
+									out_buffer[out_pos++] = kmer.get_byte(j);
+
+								for (int32 j = (int32)counter_size - 1; j >= 0; --j)
+									out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+							}
+							else
+							{
+								std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
+								exit(1);
+							}
 						}
 					}
 					count = kxmer_counters[counter_pos];
@@ -1051,13 +1077,28 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKxmers()
 
 				if (!without_output)
 				{
-					lut[kmer.remove_suffix(2 * kmer_symbols)]++;
-					// Store compacted kmer
+					if (output_type == OutputType::KMC)
+					{
+						lut[kmer.remove_suffix(2 * kmer_symbols)]++;
+						// Store compacted kmer
 
-					for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
-						out_buffer[out_pos++] = kmer.get_byte(j);
-					for (int32 j = 0; j < (int32)counter_size; ++j)
-						out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+						for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
+							out_buffer[out_pos++] = kmer.get_byte(j);
+						for (int32 j = 0; j < (int32)counter_size; ++j)
+							out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+					}
+					else if (output_type == OutputType::KFF)
+					{
+						for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
+							out_buffer[out_pos++] = kmer.get_byte(j);
+						for (int32 j = (int32)counter_size - 1; j >= 0; --j)
+							out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+					}
+					else
+					{
+						std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
+						exit(1);
+					}
 				}
 			}
 
@@ -1090,7 +1131,12 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKmers()
 
 	uint32 kmer_symbols = kmer_len - lut_prefix_len;
 	uint64 kmer_bytes = kmer_symbols / 4;
+	if (lut_prefix_len == 0) //do not split data to prefix and sufix (for example when storying result in KFF)
+		kmer_bytes = (kmer_symbols + 3) / 4;
+
 	uint64 lut_recs = 1ull << (2 * (lut_prefix_len));
+	if (lut_prefix_len == 0)
+		lut_recs = 0;
 	uint64 lut_size = lut_recs * sizeof(uint64);
 
 	uint64 counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
@@ -1146,13 +1192,29 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKmers()
 
 					if (!without_output)
 					{
-						// Store compacted kmer
-						for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
-							out_buffer[out_pos++] = act_kmer->get_byte(j);
-						for (int32 j = 0; j < (int32)counter_size; ++j)
-							out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+						if (output_type == OutputType::KMC)
+						{
+							// Store compacted kmer
+							for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
+								out_buffer[out_pos++] = act_kmer->get_byte(j);
+							for (int32 j = 0; j < (int32)counter_size; ++j)
+								out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
 
-						lut[act_kmer->remove_suffix(2 * kmer_symbols)]++;
+							lut[act_kmer->remove_suffix(2 * kmer_symbols)]++;
+						}
+						else if (output_type == OutputType::KFF)
+						{
+							for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
+								out_buffer[out_pos++] = act_kmer->get_byte(j);
+
+							for (int32 j = (int32)counter_size - 1; j >= 0; --j)
+								out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+						}
+						else
+						{
+							std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
+							exit(1);
+						}
 					}
 					act_kmer = &buffer[i];
 					count = 1;
@@ -1176,11 +1238,28 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKmers()
 
 			if (!without_output)
 			{
-				for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
-					out_buffer[out_pos++] = act_kmer->get_byte(j);
-				for (int32 j = 0; j < (int32)counter_size; ++j)
-					out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
-				lut[act_kmer->remove_suffix(2 * kmer_symbols)]++;
+				if (output_type == OutputType::KMC)
+				{
+					// Store compacted kmer
+					for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
+						out_buffer[out_pos++] = act_kmer->get_byte(j);
+					for (int32 j = 0; j < (int32)counter_size; ++j)
+						out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+
+					lut[act_kmer->remove_suffix(2 * kmer_symbols)]++;
+				}
+				else if (output_type == OutputType::KFF)
+				{
+					for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
+						out_buffer[out_pos++] = act_kmer->get_byte(j);
+					for (int32 j = (int32)counter_size - 1; j >= 0; --j)
+						out_buffer[out_pos++] = (count >> (j * 8)) & 0xFF;
+				}
+				else
+				{
+					std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
+					exit(1);
+				}
 			}
 		}
 		n_unique++;

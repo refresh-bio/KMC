@@ -44,8 +44,12 @@ using uchar = unsigned char;
 #define KMC2_DB_READER_PREFIX_BUFF_BYTES (1 << 24)
 #define KMC2_DB_READER_SUFFIX_BUFF_BYTES  (1 << 24)
 
+#define KFF_DB_READER_BUFF_BYTES (1 << 24)
+
 #define KMC1_DB_WRITER_PREFIX_BUFF_BYTES (1 << 24)
 #define KMC1_DB_WRITER_SUFFIX_BUFF_BYTES  (1 << 24)
+
+#define KFF_DB_WRITER_BUFF_BYTES (1 << 24)
 
 #define HISTOGRAM_MAX_COUNTER_DEFAULT 10000
 
@@ -55,10 +59,12 @@ using uchar = unsigned char;
 #define BUNDLE_CAPACITY (1 << 12) //in kmers, for kmers and counters. 
 
 #define KMC2_DB_READER_BUNDLE_CAPACITY (1 << 22)
+#define KFF_DB_READER_BUNDLE_CAPACITY (1 << 22)
 
 //this value has high impact to used memory, max value of memory is = 2 * SINGLE_BIN_BUFF_SIZE_FOR_DB2_READER * number_of_kmc2_input_dbs * number_of_bins_per_in_db
 //increasing this value can have positive performance impact when running on HDD
 #define SINGLE_BIN_BUFF_SIZE_FOR_DB2_READER (1 << 21) //if less is needed less will be allocated
+#define SINGLE_SECTION_BUFF_SIZE_FOR_KFF_READER (1 << 21) //if less is needed less will be allocated
 
 //default values
 #define CUTOFF_MIN 2 

@@ -20,7 +20,7 @@ template<unsigned SIZE>
 class CKmerCheck
 {
 	CConfig& config;
-	const CKMC_header& header;
+	const CKmerFileHeader& header;
 	const CInputDesc& input_desc;
 	CKmer<SIZE> mask;
 	uint64 max_prefix;
@@ -89,7 +89,7 @@ class CKmerCheck
 
 	void get_lower_upper(uint64 prefix, CKmer<SIZE>& kmer, uint64& lower, uint64& upper)
 	{
-		if (!header.IsKMC2())
+		if (header.kmer_file_type == KmerFileType::KMC1)
 		{
 			uint64 pos = 4 + sizeof(uint64)*prefix;
 			my_fseek(prefix_file, pos, SEEK_SET);
@@ -100,7 +100,7 @@ class CKmerCheck
 			else
 				fread(&upper, sizeof(uint64), 1, prefix_file);
 		}
-		else
+		else if (header.kmer_file_type == KmerFileType::KMC2)
 		{
 			uint32 sig_len = header.signature_len;
 			CMmer cur_mmr(sig_len);
@@ -136,10 +136,15 @@ class CKmerCheck
 			fread(&lower, sizeof(uint64), 1, prefix_file);
 			fread(&upper, sizeof(uint64), 1, prefix_file);
 		}
+		else
+		{
+			std::cerr << "Error: this should never happen, please contact authors: " << __FILE__ << "\t" << __LINE__ << "\n";
+			exit(1);
+		}
 	}
-
+	//TODO KFF: implement for KFF
 public:
-	CKmerCheck(const CKMC_header& header, const CInputDesc& input_desc) :
+	CKmerCheck(const CKmerFileHeader& header, const CInputDesc& input_desc) :
 		config(CConfig::GetInstance()),
 		header(header),
 		input_desc(input_desc)

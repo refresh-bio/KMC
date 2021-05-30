@@ -129,6 +129,7 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParams(CKMCParams &_Params)
 	Params = _Params;
 	Params.kmer_len	= Params.p_k;
 	Params.file_type = Params.p_file_type;
+	Params.output_type = Params.p_output_type;
 
 	Params.n_bins = Params.p_n_bins;
 	
@@ -428,6 +429,16 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage1()
 		cerr << "BAM\n";
 		break;
 	}
+	cerr << "Output format                 : ";
+	switch (Params.output_type)		
+	{
+	case OutputType::KFF:
+		cerr << "KFF\n";
+		break;
+	case OutputType::KMC:
+		cerr << "KMC\n";
+		break;	
+	}
 	cerr << "\n";
 	cerr << "k-mer length                 : " << Params.kmer_len << "\n";
 	cerr << "Max. k-mer length            : " << MAX_K << "\n";
@@ -507,6 +518,17 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsSmallKOpt()
 		cerr << "BAM\n";
 		break;
 	}
+	cerr << "Output format                 : ";
+	switch (Params.output_type)
+	{
+	case OutputType::KFF:
+		cerr << "KFF\n";
+		break;
+	case OutputType::KMC:
+		cerr << "KMC\n";
+		break;
+	}
+
 	cerr << "\n";
 	cerr << "k-mer length                 : " << Params.kmer_len << "\n";
 	cerr << "Max. k-mer length            : " << MAX_K << "\n";
@@ -740,33 +762,42 @@ bool CKMC<SIZE>::ProcessSmallKOptimization()
 	uint32 best_lut_prefix_len = 0;
 	uint64 best_mem_amount = 1ull << 62;
 
-	
-	uint32 counter_size = 0;
-
-	counter_size = min(BYTE_LOG(Params.cutoff_max), BYTE_LOG(Params.counter_max));
-
-	for (Params.lut_prefix_len = 1; Params.lut_prefix_len < 16; ++Params.lut_prefix_len)
+	if (Params.output_type == OutputType::KMC)
 	{
-		uint32 suffix_len;
-		if (Params.lut_prefix_len > (uint32)Params.kmer_len)
-			suffix_len = 0;
-		else
-			suffix_len = Params.kmer_len - Params.lut_prefix_len;
-		
-		if (suffix_len % 4)
-			continue;
+		uint32 counter_size = 0;
 
-		uint64 suf_mem = n_kmers * (suffix_len / 4 + counter_size);
-		uint64 lut_mem = (1ull << (2 * Params.lut_prefix_len)) * sizeof(uint64);
+		counter_size = min(BYTE_LOG(Params.cutoff_max), BYTE_LOG(Params.counter_max));
 
-		if (suf_mem + lut_mem < best_mem_amount)
+		for (Params.lut_prefix_len = 1; Params.lut_prefix_len < 16; ++Params.lut_prefix_len)
 		{
-			best_lut_prefix_len = Params.lut_prefix_len;
-			best_mem_amount = suf_mem + lut_mem;
-		}
-	}
+			uint32 suffix_len;
+			if (Params.lut_prefix_len > (uint32)Params.kmer_len)
+				suffix_len = 0;
+			else
+				suffix_len = Params.kmer_len - Params.lut_prefix_len;
 
-	Params.lut_prefix_len = best_lut_prefix_len;
+			if (suffix_len % 4)
+				continue;
+
+			uint64 suf_mem = n_kmers * (suffix_len / 4 + counter_size);
+			uint64 lut_mem = (1ull << (2 * Params.lut_prefix_len)) * sizeof(uint64);
+
+			if (suf_mem + lut_mem < best_mem_amount)
+			{
+				best_lut_prefix_len = Params.lut_prefix_len;
+				best_mem_amount = suf_mem + lut_mem;
+			}
+		}
+
+		Params.lut_prefix_len = best_lut_prefix_len;
+	}
+	else if (Params.output_type == OutputType::KFF)
+		Params.lut_prefix_len = 0;
+	else
+	{
+		std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
+		exit(1);
+	}
 
 	Queues.pmm_small_k_completer = new CMemoryPool(Params.mem_tot_small_k_completer, Params.mem_part_small_k_completer);
 
@@ -987,21 +1018,21 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 
 	Queues.pmm_fastq->release();
 	Queues.pmm_reads->release();
-	
+
 	delete Queues.pmm_fastq;
 	delete Queues.pmm_reads;
 	delete Queues.pmm_binary_file_reader;
 
-	for(auto p = gr1_3.begin(); p != gr1_3.end(); ++p)
+	for (auto p = gr1_3.begin(); p != gr1_3.end(); ++p)
 		p->join();
 
 	n_reads = 0;
 
-	thread *release_thr_st1_1 = new thread([&]{
-		for(int i = 0; i < Params.n_readers; ++i)
+	thread* release_thr_st1_1 = new thread([&] {
+		for (int i = 0; i < Params.n_readers; ++i)
 			delete w_fastqs[i];
 
-		for(int i = 0; i < Params.n_splitters; ++i)
+		for (int i = 0; i < Params.n_splitters; ++i)
 		{
 			uint64 _n_reads;
 			w_splitters[i]->GetTotal(_n_reads);
@@ -1012,12 +1043,12 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 		delete w_storer;
 	});
 
-	thread *release_thr_st1_2 = new thread([&]{
+	thread* release_thr_st1_2 = new thread([&] {
 		Queues.pmm_bins->release();
 		delete Queues.pmm_bins;
 	});
 
-	
+
 	release_thr_st1_1->join();
 	release_thr_st1_2->join();
 
@@ -1027,7 +1058,7 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 
 	w1.stopTimer();
 	w2.startTimer();
-	
+
 	CheckAndReportMissingEOLs();
 	delete Queues.missingEOL_at_EOF_counter;
 
@@ -1035,27 +1066,37 @@ template <unsigned SIZE> bool CKMC<SIZE>::Process()
 
 	// Adjust RAM for 2nd stage
 	// Calculate LUT size
-	uint32 best_lut_prefix_len = 0;
-	uint64 best_mem_amount = 1ull << 62;
 
-	for (Params.lut_prefix_len = 2; Params.lut_prefix_len < 16; ++Params.lut_prefix_len)
+	if (Params.output_type == OutputType::KMC)
 	{
-		uint32 suffix_len = Params.kmer_len - Params.lut_prefix_len;
-		if (suffix_len % 4)
-			continue;
+		uint32 best_lut_prefix_len = 0;
+		uint64 best_mem_amount = 1ull << 62;
 
-		uint64 est_suf_mem = n_reads * suffix_len;
-		uint64 lut_mem = Params.n_bins * (1ull << (2 * Params.lut_prefix_len)) * sizeof(uint64);
-
-		if (est_suf_mem + lut_mem < best_mem_amount)
+		for (Params.lut_prefix_len = 2; Params.lut_prefix_len < 16; ++Params.lut_prefix_len)
 		{
-			best_lut_prefix_len = Params.lut_prefix_len;
-			best_mem_amount = est_suf_mem + lut_mem;
+			uint32 suffix_len = Params.kmer_len - Params.lut_prefix_len;
+			if (suffix_len % 4)
+				continue;
+
+			uint64 est_suf_mem = n_reads * suffix_len;
+			uint64 lut_mem = Params.n_bins * (1ull << (2 * Params.lut_prefix_len)) * sizeof(uint64);
+
+			if (est_suf_mem + lut_mem < best_mem_amount)
+			{
+				best_lut_prefix_len = Params.lut_prefix_len;
+				best_mem_amount = est_suf_mem + lut_mem;
+			}
 		}
+
+		Params.lut_prefix_len = best_lut_prefix_len;
 	}
-
-	Params.lut_prefix_len = best_lut_prefix_len;
-
+	else if (Params.output_type == OutputType::KFF)
+		Params.lut_prefix_len = 0;
+	else
+	{
+		std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
+		exit(1);
+	}
 
 
 	Queues.bd->reset_reading();

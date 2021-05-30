@@ -18,6 +18,7 @@
 #include <string>
 
 typedef enum {fasta, fastq, multiline_fasta, bam} input_type;
+enum class OutputType {KMC, KFF} ;
 
 using namespace std;
 
@@ -38,6 +39,7 @@ struct CKMCParams {
 	bool p_homopolymer_compressed;		// count homopolymer compressed k-mers
 	bool p_mem_mode;					// use RAM instead of disk	
 	input_type p_file_type;				// input in FASTA format
+	OutputType p_output_type;			// output type
 	bool p_verbose;						// verbose mode
 	bool p_without_output = false;		// do not create output files 
 #ifdef DEVELOP_MODE
@@ -55,6 +57,7 @@ struct CKMCParams {
 	string output_file_name;
 	string working_directory;
 	input_type file_type;
+	OutputType output_type;
 
 	string json_summary_file_name = "";
 	bool without_output = false;
@@ -155,6 +158,7 @@ struct CKMCParams {
 		p_homopolymer_compressed = false;
 		p_mem_mode = false;		
 		p_file_type = fastq;
+		p_output_type = OutputType::KMC;
 		p_verbose = false;
 		p_both_strands = true;
 		p_p1 = 9;	

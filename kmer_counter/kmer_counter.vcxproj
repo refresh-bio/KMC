@@ -22,27 +22,28 @@
     <ProjectGuid>{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>kmer_counter</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>NotSet</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -50,7 +51,7 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -180,6 +181,7 @@
     <ClInclude Include="kb_reader.h" />
     <ClInclude Include="kb_sorter.h" />
     <ClInclude Include="kb_storer.h" />
+    <ClInclude Include="kff_writer.h" />
     <ClInclude Include="kmc.h" />
     <ClInclude Include="kmer.h" />
     <ClInclude Include="kxmer_set.h" />
@@ -214,6 +216,7 @@
     <ClCompile Include="kb_collector.cpp" />
     <ClCompile Include="kb_completer.cpp" />
     <ClCompile Include="kb_storer.cpp" />
+    <ClCompile Include="kff_writer.cpp" />
     <ClCompile Include="kmer.cpp" />
     <ClCompile Include="kmer_counter.cpp" />
     <ClCompile Include="mem_disk_file.cpp" />

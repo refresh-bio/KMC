@@ -20,6 +20,7 @@
 #include <array>
 #include <stdio.h>
 #include "small_k_buf.h"
+#include "kff_writer.h"
 
 //************************************************************************************************************
 // CKmerBinCompleter - complete the sorted bins and store in a file
@@ -55,7 +56,9 @@ class CKmerBinCompleter {
 	int32 signature_len;	
 	bool both_strands;
 	bool without_output;
-	bool store_uint(FILE *out, uint64 x, uint32 size);	
+	bool store_uint(FILE *out, uint64 x, uint32 size);
+	CKFFWriter* kff_writer;
+	OutputType output_type;
 
 public:
 	CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues);

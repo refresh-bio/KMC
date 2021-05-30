@@ -8,17 +8,24 @@
   Date   : 2019-05-19
 */
 
-#ifndef _KMC_HEADER_H
-#define _KMC_HEADER_H
+#ifndef _KMER_FILE_HEADER_H
+#define _KMER_FILE_HEADER_H
 #include "defs.h"
+#include "kff_info_reader.h"
 #include <string>
 #include <iostream>
 
 //************************************************************************************************************
-// CKMC_header - represents header of KMC database.
+// CKmerFileHeader - represents header of k-mer database.
 //************************************************************************************************************
-struct CKMC_header
+
+enum class KmerFileType { KMC1, KMC2, KFF1 };
+
+struct CKmerFileHeader
 {
+	bool is_kff_file(std::string& fname);
+	void read_from_kff_file(const std::string& fname);
+	CKFFFileStruct kff_file_struct;
 public:
 	uint32 kmer_len = 0;
 	uint32 mode = 0;
@@ -31,14 +38,22 @@ public:
 	bool both_strands = true;
 	uint32 db_version = 0;
 	uint32 header_offset = 0;
-	uint64 file_size = 0;
-
+	
 	uint32 no_of_bins = 0; //only for kmc2
-	bool IsKMC2()const
+	KmerFileType kmer_file_type;
+	//bool IsKMC2() const
+	//{
+	//	return db_version == 0x200;
+	//}
+
+	KmerFileType GetType() const
 	{
-		return db_version == 0x200;
+		return kmer_file_type;
 	}
-	CKMC_header(std::string file_name);
+
+	CKmerFileHeader(std::string file_name);
+
+	
 
 private:
 	template<typename T> void load_uint(FILE* file, T& res)

@@ -513,12 +513,19 @@ public:
 
 			uint32 kmer_symbols = kmer_len - lut_prefix_len;
 			uint64 kmer_bytes = kmer_symbols / 4;
+			if (lut_prefix_len == 0) //do not split data to prefix and sufix (for example when storying result in KFF)
+				kmer_bytes = (kmer_symbols + 3) / 4;
+
 			uint64 out_buffer_size = max_out_recs * (kmer_bytes + counter_size);
 
 			uint32 rec_len = (kxmer_symbols + 3) / 4;
 
 			uint64 lut_recs = 1ull << (2 * lut_prefix_len);
+			if (lut_prefix_len == 0)
+				lut_recs = 0;
 			uint64 lut_size = lut_recs * sizeof(uint64);
+
+			
 
 			auto req_size = get_req_size(rec_len, round_up_to_alignment(size), round_up_to_alignment(input_kmer_size), round_up_to_alignment(out_buffer_size), round_up_to_alignment(kxmer_counter_size), round_up_to_alignment(lut_size));
 			bin_sizes.push_back(make_pair(p.first, req_size));
@@ -1258,7 +1265,7 @@ public:
 	// Prepare memory buffer for bin of given id - in fact alllocate only for the bin file size
 	bool init(uint32 bin_id, uint32 sorting_phases, int64 file_size, int64 kxmers_size, int64 out_buffer_size, int64 kxmer_counter_size, int64 lut_size)
 	{
-		unique_lock<mutex> lck(mtx);
+		unique_lock<mutex> lck(mtx);		
 		int64 part1_size;
 		int64 part2_size;
 
@@ -1381,7 +1388,7 @@ public:
 	// Prepare memory buffer for bin of given id - in fact alllocate only for the bin file size
 	bool extend(uint32 bin_id, uint32 sorting_phases, int64 file_size, int64 kxmers_size, int64 out_buffer_size, int64 kxmer_counter_size, int64 lut_size)
 	{
-		unique_lock<mutex> lck(mtx);
+		unique_lock<mutex> lck(mtx);		
 		int64 part1_size;
 		int64 part2_size;
 

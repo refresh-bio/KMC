@@ -29,7 +29,9 @@ $(KMC_MAIN_DIR)/kb_completer.o \
 $(KMC_MAIN_DIR)/kb_storer.o \
 $(KMC_MAIN_DIR)/kmer.o \
 $(KMC_MAIN_DIR)/splitter.o \
-$(KMC_MAIN_DIR)/kb_collector.o
+$(KMC_MAIN_DIR)/kb_collector.o \
+$(KMC_MAIN_DIR)/kff_writer.o
+
 RADULS_OBJS = \
 $(KMC_MAIN_DIR)/raduls_sse2.o \
 $(KMC_MAIN_DIR)/raduls_sse41.o \
@@ -53,7 +55,7 @@ KMC_API_SRC_FILES = $(wildcard $(KMC_API_DIR)/*.cpp)
 PY_KMC_API_OBJS = $(patsubst $(KMC_API_DIR)/%.cpp,$(PY_KMC_API_DIR)/%.o,$(KMC_API_SRC_FILES))
 
 KMC_TOOLS_OBJS = \
-$(KMC_TOOLS_DIR)/kmc_header.o \
+$(KMC_TOOLS_DIR)/kmer_file_header.o \
 $(KMC_TOOLS_DIR)/kmc_tools.o \
 $(KMC_TOOLS_DIR)/nc_utils.o \
 $(KMC_TOOLS_DIR)/parameters_parser.o \
@@ -62,7 +64,9 @@ $(KMC_TOOLS_DIR)/tokenizer.o \
 $(KMC_TOOLS_DIR)/fastq_filter.o \
 $(KMC_TOOLS_DIR)/fastq_reader.o \
 $(KMC_TOOLS_DIR)/fastq_writer.o \
-$(KMC_TOOLS_DIR)/percent_progress.o
+$(KMC_TOOLS_DIR)/percent_progress.o \
+$(KMC_TOOLS_DIR)/kff_info_reader.o \
+$(KMC_MAIN_DIR)/kff_writer.o
 
 KMC_TOOLS_LIBS = \
 $(KMC_TOOLS_DIR)/libs/libz.a \

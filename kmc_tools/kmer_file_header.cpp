@@ -9,15 +9,25 @@
 */
 
 #include "stdafx.h"
-#include "kmc_header.h"
+#include "kmer_file_header.h"
+#include "kff_info_reader.h"
 #include <cstring>
+#include <set>
 
 /*****************************************************************************************************************************/
 /******************************************************** CONSTRUCTOR ********************************************************/
 /*****************************************************************************************************************************/
 
-CKMC_header::CKMC_header(std::string file_name)
+CKmerFileHeader::CKmerFileHeader(std::string file_name)
 {
+	if (is_kff_file(file_name))
+	{
+		kmer_file_type = KmerFileType::KFF1;
+		read_from_kff_file(file_name);
+		
+		return;
+	}
+
 	file_name += ".kmc_pre";
 	FILE* file = my_fopen(file_name.c_str(), "rb");
 	if (!file)
@@ -52,7 +62,7 @@ CKMC_header::CKMC_header(std::string file_name)
 	}
 
 	my_fseek(file, 0, SEEK_END);
-	file_size = my_ftell(file);
+	uint64 file_size = my_ftell(file);
 
 	my_fseek(file, -8, SEEK_END);
 	load_uint(file, header_offset);
@@ -60,12 +70,14 @@ CKMC_header::CKMC_header(std::string file_name)
 	my_fseek(file, -12, SEEK_END);
 	load_uint(file, db_version);
 
+	kmer_file_type = db_version == 0x200 ? KmerFileType::KMC2 : KmerFileType::KMC1;
+
 	my_fseek(file, 0LL - (header_offset + 8), SEEK_END);
 	load_uint(file, kmer_len);
 	load_uint(file, mode);
 	load_uint(file, counter_size);
 	load_uint(file, lut_prefix_len);
-	if (IsKMC2())
+	if (kmer_file_type == KmerFileType::KMC2)
 		load_uint(file, signature_len);
 	load_uint(file, min_count);
 	load_uint(file, max_count);
@@ -77,7 +89,7 @@ CKMC_header::CKMC_header(std::string file_name)
 
 	fclose(file);
 
-	if (IsKMC2())
+	if (kmer_file_type == KmerFileType::KMC2)
 	{
 		uint32 single_lut_size = (1ull << (2 * lut_prefix_len)) * sizeof(uint64);
 		uint32 map_size = ((1 << 2 * signature_len) + 1) * sizeof(uint32);
@@ -85,4 +97,56 @@ CKMC_header::CKMC_header(std::string file_name)
 	}
 }
 
+bool CKmerFileHeader::is_kff_file(std::string& fname)
+{
+	auto file = my_fopen(fname.c_str(), "rb");
+	if (!file)
+	{
+		file = my_fopen((fname + ".kff").c_str(), "rb");
+		if (file)
+			fname += ".kff";
+		else
+			return false;
+	}
+	
+	char marker_start[3];
+	fread(marker_start, 1, 3, file);
+	char marker_end[3];
+	my_fseek(file, -3, SEEK_END);
+	fread(marker_end, 1, 3, file);
+
+	if (strncmp("KFF", marker_start, 3) || strncmp("KFF", marker_end, 3))	
+		return false;
+
+	return true;
+}
+
+void CKmerFileHeader::read_from_kff_file(const std::string& fname)
+{
+	CKFFInfoReader kff_reader(fname);
+	kff_file_struct = kff_reader.GetKffFileStruct();
+
+	std::set<uint64_t> k_values;
+	this->counter_size = 0;
+	for (auto& s : kff_file_struct.scopes)
+	{
+		k_values.insert(s.kmer_size);
+		if (s.data_size > this->counter_size)
+			this->counter_size = s.data_size;
+	}
+
+	this->min_count = 1; //TODO KFF: try to read this values from KFF file, and if not present set defaults
+	this->max_count = std::numeric_limits<uint32>::max();
+
+	if (k_values.size() == 1)
+		kmer_len = *k_values.begin();
+	else
+	{
+		std::cerr << "Error: only KFF files with single k value are supported. This file contains following k values:";		
+		for (auto k : k_values)
+			std::cerr << " " << k;
+		std::cerr << "\n";
+		exit(1);		
+	}
+}
 // ***** EOF

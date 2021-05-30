@@ -22,31 +22,32 @@
     <ProjectGuid>{F3B0CC94-9DD0-4642-891C-EA08BDA50260}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>kmc_tools</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -151,9 +152,13 @@
     <ClInclude Include="..\kmc_api\kmc_file.h" />
     <ClInclude Include="..\kmc_api\kmer_api.h" />
     <ClInclude Include="..\kmc_api\mmer.h" />
+    <ClInclude Include="..\kmer_counter\kff_writer.h" />
     <ClInclude Include="bundle.h" />
     <ClInclude Include="check_kmer.h" />
     <ClInclude Include="config.h" />
+    <ClInclude Include="db_reader_factory.h" />
+    <ClInclude Include="db_writer.h" />
+    <ClInclude Include="db_writer_factory.h" />
     <ClInclude Include="defs.h" />
     <ClInclude Include="dump_writer.h" />
     <ClInclude Include="expression_node.h" />
@@ -161,10 +166,13 @@
     <ClInclude Include="fastq_reader.h" />
     <ClInclude Include="fastq_writer.h" />
     <ClInclude Include="histogram_writer.h" />
+    <ClInclude Include="kff_db_reader.h" />
+    <ClInclude Include="kff_db_writer.h" />
+    <ClInclude Include="kff_info_reader.h" />
     <ClInclude Include="kmc1_db_reader.h" />
     <ClInclude Include="kmc1_db_writer.h" />
     <ClInclude Include="kmc2_db_reader.h" />
-    <ClInclude Include="kmc_header.h" />
+    <ClInclude Include="kmer_file_header.h" />
     <ClInclude Include="kmer.h" />
     <ClInclude Include="libs\bzlib.h" />
     <ClInclude Include="libs\bzlib_private.h" />
@@ -188,10 +196,12 @@
     <ClCompile Include="..\kmc_api\kmc_file.cpp" />
     <ClCompile Include="..\kmc_api\kmer_api.cpp" />
     <ClCompile Include="..\kmc_api\mmer.cpp" />
+    <ClCompile Include="..\kmer_counter\kff_writer.cpp" />
     <ClCompile Include="fastq_filter.cpp" />
     <ClCompile Include="fastq_reader.cpp" />
     <ClCompile Include="fastq_writer.cpp" />
-    <ClCompile Include="kmc_header.cpp" />
+    <ClCompile Include="kff_info_reader.cpp" />
+    <ClCompile Include="kmer_file_header.cpp" />
     <ClCompile Include="kmc_tools.cpp" />
     <ClCompile Include="nc_utils.cpp" />
     <ClCompile Include="parameters_parser.cpp" />

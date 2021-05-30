@@ -167,6 +167,7 @@ void usage()
 		 << "  -sr<value> - number of threads for 2nd stage\n"
 		 << "  -j<file_name> - file name with execution summary in JSON format\n"
 		 << "  -w - without output\n"
+		 << "  -o<kmc/kff> - output in KMC of KFF format; default: KMC\n"
 		 << "Example:\n"
 		 << "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
 	     << "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
@@ -251,6 +252,19 @@ bool parse_parameters(int argc, char *argv[])
 			}
 			else
 				Params.p_p1 = tmp;
+		}
+		//output type
+		else if (strncmp(argv[i], "-o", 2) == 0)
+		{
+			if (strncmp(argv[i] + 2, "kff", 3) == 0)
+				Params.p_output_type = OutputType::KFF;
+			else if (strncmp(argv[i] + 2, "kmc", 3) == 0)
+				Params.p_output_type = OutputType::KMC;
+			else
+			{
+				std::cerr << "Error: unsupported output type: " << argv[i] << " (use -okff or -okmc)\n";
+				exit(1);
+			}
 		}
 		// FASTA input files
 		else if (strncmp(argv[i], "-fa", 3) == 0)
