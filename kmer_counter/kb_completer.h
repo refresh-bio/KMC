@@ -91,7 +91,6 @@ public:
 //************************************************************************************************************
 // SmallKCompleter - completer for small k optimization
 //************************************************************************************************************
-//TODO: remove quake move implementation to cpp file
 class CSmallKCompleter
 {
 	CMemoryPool *pmm_small_k_completer;
@@ -104,6 +103,7 @@ class CSmallKCompleter
 	std::string output_file_name;
 	bool both_strands;	
 	bool without_output;
+	OutputType output_type;
 
 	inline bool store_uint(FILE *out, uint64 x, uint32 size);
 public:
@@ -111,6 +111,13 @@ public:
 
 	template<typename COUNTER_TYPE>
 	bool Complete(CSmallKBuf<COUNTER_TYPE> results);
+
+	template<typename COUNTER_TYPE>
+	bool CompleteKMCFormat(CSmallKBuf<COUNTER_TYPE> results);
+
+	template<typename COUNTER_TYPE>
+	bool CompleteKFFFormat(CSmallKBuf<COUNTER_TYPE> results);
+
 	inline void GetTotal(uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max);
 
 };
@@ -129,6 +136,7 @@ CSmallKCompleter::CSmallKCompleter(CKMCParams& Params, CKMCQueues& Queues)
 
 	mem_tot_small_k_completer = Params.mem_tot_small_k_completer;
 	output_file_name = Params.output_file_name;
+	output_type = Params.output_type;
 }
 
 bool CSmallKCompleter::store_uint(FILE *out, uint64 x, uint32 size)
@@ -140,7 +148,7 @@ bool CSmallKCompleter::store_uint(FILE *out, uint64 x, uint32 size)
 }
 
 template<typename COUNTER_TYPE>
-bool CSmallKCompleter::Complete(CSmallKBuf<COUNTER_TYPE> result)
+bool CSmallKCompleter::CompleteKMCFormat(CSmallKBuf<COUNTER_TYPE> result)
 {
 	uchar* raw_buffer;
 	uint64 counter_size = 0;
@@ -196,12 +204,12 @@ bool CSmallKCompleter::Complete(CSmallKBuf<COUNTER_TYPE> result)
 	}
 
 	CKmer<1> kmer;
-	
+
 	uint64 prev_prefix = 0, prefix;
 
 	lut[lut_buf_pos++] = 0;
 	uint64 kmer_no = 0;
-	for (kmer.data = 0; kmer.data < (1ull << 2 * kmer_len); ++kmer.data) 
+	for (kmer.data = 0; kmer.data < (1ull << 2 * kmer_len); ++kmer.data)
 	{
 		if (!this->without_output)
 		{
@@ -254,7 +262,7 @@ bool CSmallKCompleter::Complete(CSmallKBuf<COUNTER_TYPE> result)
 	{
 		fwrite(lut, sizeof(uint64), lut_buf_pos, pre_file);
 		fwrite(suf, 1, suf_pos, suf_file);
-	
+
 		uint32 offset = 0;
 
 		store_uint(pre_file, kmer_len, 4);					offset += 4;
@@ -292,9 +300,93 @@ bool CSmallKCompleter::Complete(CSmallKBuf<COUNTER_TYPE> result)
 		fclose(suf_file);
 	}
 	pmm_small_k_completer->free(raw_buffer);
-	
+
 
 	return true;
+}
+
+template<typename COUNTER_TYPE>
+bool CSmallKCompleter::CompleteKFFFormat(CSmallKBuf<COUNTER_TYPE> result)
+{
+	uchar* raw_buffer;
+	uint64 counter_size = 0;
+
+	counter_size = min(BYTE_LOG_ULL((uint64)cutoff_max), BYTE_LOG_ULL((uint64)counter_max));
+	
+	pmm_small_k_completer->reserve(raw_buffer);
+
+
+	CKFFWriter* kff_writer = nullptr;
+	if (!without_output)
+	{
+		kff_writer = new CKFFWriter(output_file_name + ".kff", both_strands, kmer_len, counter_size);
+		kff_writer->InitSection();
+	}
+
+	uchar* buff = raw_buffer;
+
+	CKmer<1> kmer;
+	uint64 kmer_bytes = (kmer_len + 3) / 4;
+	uint64 rec_bytes = kmer_bytes + counter_size;
+	uint64 buff_size = mem_tot_small_k_completer / rec_bytes * rec_bytes;
+	uint64 buff_pos{};
+	for (kmer.data = 0; kmer.data < (1ull << 2 * kmer_len); ++kmer.data)
+	{
+		if (result.buf[kmer.data])
+		{
+			++n_unique;
+			if (result.buf[kmer.data] < cutoff_min)
+				++n_cutoff_min;
+			else if (result.buf[kmer.data] > (uint64)cutoff_max)
+				++n_cutoff_max;
+			else
+			{
+				if (!without_output)
+				{
+					if (result.buf[kmer.data] > (uint64)counter_max)
+						result.buf[kmer.data] = (COUNTER_TYPE)counter_max;
+
+					for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
+						buff[buff_pos++] = kmer.get_byte(j);
+
+					COUNTER_TYPE count = result.buf[kmer.data];
+					for (int32 j = (int32)counter_size - 1; j >= 0; --j)
+						buff[buff_pos++] = (count >> (j * 8)) & 0xFF;
+
+					if (buff_pos == buff_size)
+					{
+						kff_writer->StoreSectionPart(buff, buff_pos / rec_bytes);
+						buff_pos = 0;
+					}
+				}
+			}
+		}
+	}
+
+	if (!without_output)
+	{
+		if (buff_pos)
+			kff_writer->StoreSectionPart(buff, buff_pos / rec_bytes);
+		kff_writer->FinishSection();
+		delete kff_writer;
+	}
+
+	pmm_small_k_completer->free(raw_buffer);
+	return true;
+}
+template<typename COUNTER_TYPE>
+bool CSmallKCompleter::Complete(CSmallKBuf<COUNTER_TYPE> result)
+{
+	switch(output_type)
+	{
+	case OutputType::KMC:
+		return CompleteKMCFormat(result);
+	case OutputType::KFF:
+		return CompleteKFFFormat(result);
+	default:
+		std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
+		exit(1);
+	}
 }
 
 void CSmallKCompleter::GetTotal(uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max)

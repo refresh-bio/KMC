@@ -108,11 +108,11 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		}
 		else if (output_type == OutputType::KFF)
 		{			
-			kff_writer = new CKFFWriter(file_name + ".kff", !both_strands, kmer_len, counter_size);
+			kff_writer = new CKFFWriter(file_name + ".kff", both_strands, kmer_len, counter_size);
 		}
 		else
 		{
-			std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
+			std::cerr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__ << "\n";
 			exit(1);
 		}
 	}

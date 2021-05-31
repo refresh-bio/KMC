@@ -109,7 +109,7 @@ CKFFInfoReader::CKFFInfoReader(const std::string& path)
 	fread(tmp.data(), 1, 1, file);
 	LoadBigEndian(tmp.data(), canonical);
 
-	kff_file_struct.both_strands = (canonical == 0 ? 1 : 0); //TODO KFF: I think this is not set correctly, verity this!!!
+	kff_file_struct.both_strands = canonical;
 
 	uint32_t free_size;
 	fread(tmp.data(), 1, sizeof(free_size), file);

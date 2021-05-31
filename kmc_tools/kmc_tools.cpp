@@ -157,6 +157,7 @@ template<unsigned SIZE> class CTools
 		else if (header.kmer_file_type == KmerFileType::KFF1)
 		{
 			std::cout << "This is KFF file, summary:\n";
+			std::cout << "canonical         :  " << (header.kff_file_struct.both_strands ? "yes" : "no") << "\n";
 			//TODO KFF: add encoding printing
 			std::set<uint64_t> k_values;
 			for (auto& e : header.kff_file_struct.scopes)
@@ -346,7 +347,6 @@ template<unsigned SIZE> class CTools
 			writers.back()->MultiOptputInit();
 			output_bundles.push_back(new COutputBundle<SIZE>(config.simple_output_desc[i].op_type, config.simple_output_desc[i].counter_op, *writers.back()));
 		}
-
 
 		CSimpleOperation<SIZE> op(&input1, &input2, output_bundles);
 		op.Process();
