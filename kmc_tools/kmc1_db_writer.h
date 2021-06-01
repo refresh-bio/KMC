@@ -330,9 +330,10 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::finish_writing()
 	write_header_part(output_desc.cutoff_max);
 	write_header_part(added_kmers);
 
-	bool both_stands = false;
+	bool both_stands = true;
+
 	for (auto& input : config.headers)
-		both_stands = both_stands || input.both_strands; //if any input database is in both strands, output is also in both strands
+		both_stands = both_stands && input.both_strands; //if any input database is in not canonical, output is also not canonical
 
 	write_header_part(!both_stands);
 

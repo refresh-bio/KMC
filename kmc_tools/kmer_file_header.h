@@ -26,6 +26,15 @@ struct CKmerFileHeader
 	bool is_kff_file(std::string& fname);
 	void read_from_kff_file(const std::string& fname);
 	CKFFFileStruct kff_file_struct;
+
+	uint64_t GetFromFooterOrDefault(const std::string& name, uint64_t default)
+	{
+		const auto& m = kff_file_struct.footer;
+		auto r = m.find(name);
+		if (r != m.end())
+			return r->second;
+		return default;
+	}
 public:
 	uint32 kmer_len = 0;
 	uint32 mode = 0;

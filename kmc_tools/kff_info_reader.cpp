@@ -29,7 +29,6 @@ CKFFInfoReader::CKFFInfoReader(const std::string& path)
 	if (!file)
 		throw std::runtime_error("Error: cannot open file " + path);
 
-	
 	// Check markers
 	char marker[4];
 	marker[3] = '\0';
@@ -41,8 +40,6 @@ CKFFInfoReader::CKFFInfoReader(const std::string& path)
 	fread(marker, 1, 3, file);
 	if (strncmp(marker, "KFF", 3) != 0)
 		throw std::runtime_error("Error: missing KFF marker at the end of file " + path);
-
-	//TODO KFF: index may be at the begining, so maybe there is no need to read footer
 
 	my_fseek(file, -23, SEEK_END);
 	char footer_size_str[12];
@@ -73,7 +70,6 @@ CKFFInfoReader::CKFFInfoReader(const std::string& path)
 
 		//std::cerr << "footer nb_vars: " << nb_vars << "\n";
 
-		
 		for (uint64_t i = 0; i < nb_vars; ++i)
 		{
 			auto name = ReadVarName();
@@ -81,6 +77,8 @@ CKFFInfoReader::CKFFInfoReader(const std::string& path)
 			fread(tmp.data(), 1, 8, file);
 			LoadBigEndian(tmp.data(), val);
 			//std::cerr << name << ": " << val << "\n";
+
+			kff_file_struct.footer[name] = val;
 
 			if (name == "first_index")
 				first_index = val;
@@ -95,14 +93,13 @@ CKFFInfoReader::CKFFInfoReader(const std::string& path)
 	fread(tmp.data(), 1, 1, file);
 	LoadBigEndian(tmp.data(), ver_minor);
 
-	uint8_t encoding;
-	fread(tmp.data(), 1, 1, file);
-	LoadBigEndian(tmp.data(), encoding);
 
-	uint8_t unique;
 	fread(tmp.data(), 1, 1, file);
-	LoadBigEndian(tmp.data(), unique);
-	if (unique == 0)
+	LoadBigEndian(tmp.data(), kff_file_struct.encoding);
+
+	fread(tmp.data(), 1, 1, file);
+	LoadBigEndian(tmp.data(), kff_file_struct.all_unique);
+	if (kff_file_struct.all_unique == 0)
 		throw std::runtime_error("Error: only unique k-mers in KFF file are supported, file " + path);
 
 	uint8_t canonical;
@@ -130,7 +127,6 @@ CKFFInfoReader::CKFFInfoReader(const std::string& path)
 	if (first_index == std::numeric_limits<uint64_t>::max())
 		throw std::runtime_error("Error: no first_index in the footer and first section is not an index, file: " + path);
 
-	//std::vector<std::pair<char, int64_t>> index_pairs;
 
 	while (first_index)
 	{
@@ -181,7 +177,6 @@ CKFFInfoReader::CKFFInfoReader(const std::string& path)
 			throw std::runtime_error("Error: KFF index is inconsistent with file content");
 	}
 
-	//some reading
 	for (auto e : index)
 	{
 		my_fseek(file, e.section_pos, SEEK_SET);
@@ -227,6 +222,8 @@ void CKFFInfoReader::ReadVariableSection()
 			section.data_size = val;
 		else if (var_name == "m")
 			section.minimizer_size = val;
+		else if (var_name == "ordered")
+			section.ordered = val;
 	}
 	if (kff_file_struct.scopes.size())
 	{

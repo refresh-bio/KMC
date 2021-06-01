@@ -2,10 +2,9 @@
 #include <string>
 #include <vector>
 #include <limits>
+#include <string>
+#include <map>
 
-/*
-TODO KFF: add checking if section is ordered!!!!
-*/
 
 template<typename T>
 void LoadBigEndian(const uint8_t* buff, T& data)
@@ -42,12 +41,16 @@ struct CKFFVariables
 	uint64_t data_size = std::numeric_limits<uint64_t>::max(); //counter size
 	uint64_t minimizer_size = std::numeric_limits<uint64_t>::max();
 	uint64_t max_in_block = std::numeric_limits<uint64_t>::max();
+	bool ordered;
 	std::vector<CKFFDataSection> data_sections;
 };
 
 struct CKFFFileStruct
 {	
+	std::map<std::string, uint64_t> footer;
 	bool both_strands;	
+	uint8_t encoding;
+	uint8_t all_unique;
 	std::vector<CKFFVariables> scopes;
 };
 

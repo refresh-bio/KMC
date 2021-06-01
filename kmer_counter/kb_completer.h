@@ -319,7 +319,7 @@ bool CSmallKCompleter::CompleteKFFFormat(CSmallKBuf<COUNTER_TYPE> result)
 	CKFFWriter* kff_writer = nullptr;
 	if (!without_output)
 	{
-		kff_writer = new CKFFWriter(output_file_name + ".kff", both_strands, kmer_len, counter_size);
+		kff_writer = new CKFFWriter(output_file_name + ".kff", both_strands, kmer_len, counter_size, cutoff_min, cutoff_max);
 		kff_writer->InitSection();
 	}
 

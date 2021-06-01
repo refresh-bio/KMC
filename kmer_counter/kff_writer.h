@@ -22,11 +22,15 @@ class CKFFWriter
 	uint64_t k;
 
 	uint64_t counter_size;
+	uint64_t min_count;
+	uint64_t max_count;
 
 	std::vector<int64_t> index;
 	uint64_t cur_file_size = 0;
 
 	void storeIndexPair(const char* type, int64_t val, std::vector<uint8_t>& tmp);
+
+
 
 	struct SectionPartState
 	{
@@ -36,7 +40,7 @@ class CKFFWriter
 	SectionPartState section_part_state;
 
 public:
-	explicit CKFFWriter(const std::string& path, uint8_t canonical, uint64_t k, uint64_t counter_size, uint8_t encoding = 0b00011011);
+	explicit CKFFWriter(const std::string& path, uint8_t canonical, uint64_t k, uint64_t counter_size, uint64_t min_count, uint64_t max_count, uint8_t encoding = 0b00011011);
 
 	void StoreWholeSection(uint8_t* data, uint64_t n_kmers);
 

@@ -13,7 +13,6 @@
 
 //TODO KFF: for dump operation encoding is important: implement it!
 //TODO KFF: considef minimizers sections
-//TODO KFF: only blocks with given k value must be prepared before -> for now maybe just reject KFF with multiple k values
 
 //Forward declaration
 template<unsigned SIZE> class CKFFDbReaderSorted;

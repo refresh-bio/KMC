@@ -55,6 +55,18 @@ template<unsigned SIZE> class CKFFDbWriter : public CDbWriter<SIZE>
 			store_buff();
 		kff_writer.FinishSection();		
 	}
+
+	bool canonical()
+	{
+		auto& headers = CConfig::GetInstance().headers;
+		bool both_stands = true;
+
+		for (auto& input : headers)
+			both_stands = both_stands && input.both_strands; //if any input database is in both strands, output is also in both strands
+
+		return both_stands;
+	}
+
 public:
 	
 	CKFFDbWriter(CBundle<SIZE>* bundle, COutputDesc& output_desc) :
@@ -64,9 +76,11 @@ public:
 		bundle(bundle),
 		kff_writer(
 			output_desc.file_src + ".kff",
-			true /*TODO KFF: set this basing on inputs! */,
+			canonical(),
 			CConfig::GetInstance().kmer_len,
-			counter_size
+			counter_size,
+			output_desc.cutoff_min,
+			output_desc.cutoff_max
 			/*TODO KFF: store encoding info!*/),
 		output_desc(output_desc)
 	{

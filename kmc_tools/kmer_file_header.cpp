@@ -131,12 +131,26 @@ void CKmerFileHeader::read_from_kff_file(const std::string& fname)
 	for (auto& s : kff_file_struct.scopes)
 	{
 		k_values.insert(s.kmer_size);
+		if (!s.ordered)
+		{
+			std::cerr << "Error: kmc_tools requires all KFF sections to be ordered\n";
+			exit(1);
+		}
+
+		for (auto& section: s.data_sections)
+			if (!(section.type == KFFDataSectionType::RAW))
+			{
+				std::cerr << "Error: currently kmc_tools supports only raw KFF sections\n";
+				exit(1);
+			}
+
 		if (s.data_size > this->counter_size)
 			this->counter_size = s.data_size;
 	}
 
-	this->min_count = 1; //TODO KFF: try to read this values from KFF file, and if not present set defaults
-	this->max_count = std::numeric_limits<uint32>::max();
+	this->min_count = GetFromFooterOrDefault("min_count", 1);
+	this->max_count = GetFromFooterOrDefault("max_count", std::numeric_limits<uint32>::max());
+	this->both_strands = kff_file_struct.both_strands;
 
 	if (k_values.size() == 1)
 		kmer_len = *k_values.begin();

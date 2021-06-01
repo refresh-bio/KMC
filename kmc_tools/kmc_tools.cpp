@@ -158,6 +158,7 @@ template<unsigned SIZE> class CTools
 		{
 			std::cout << "This is KFF file, summary:\n";
 			std::cout << "canonical         :  " << (header.kff_file_struct.both_strands ? "yes" : "no") << "\n";
+			std::cout << "all k-mers unique :  " << (header.kff_file_struct.all_unique ? "yes" : "no") << "\n";
 			//TODO KFF: add encoding printing
 			std::set<uint64_t> k_values;
 			for (auto& e : header.kff_file_struct.scopes)
@@ -167,6 +168,12 @@ template<unsigned SIZE> class CTools
 				std::cout << "max           :  " << e.max_in_block << "\n";
 				if(e.minimizer_size != (std::numeric_limits<uint64_t>::max)())
 					std::cout << "m             :  " << e.minimizer_size << "\n";
+
+				std::cerr << "footer values:\n";
+				for (const auto& e : header.kff_file_struct.footer)
+				{
+					std::cerr << "\t" << e.first << "      :  " << e.second << "\n";
+				}
 				std::cout << "Data sections:\n";
 				uint64_t tot_nb_blocks{};
 				for (auto& s : e.data_sections)
@@ -178,8 +185,8 @@ template<unsigned SIZE> class CTools
 							type = "raw";
 							break;
 						case KFFDataSectionType::MINIMIZER:
-								type = "minimizer";
-								break;
+							type = "minimizer";
+							break;
 						default:
 						{
 							std::cerr << "Error: this should never happen, please contact authors: " << __FILE__ << "\t" << __LINE__ << "\n";

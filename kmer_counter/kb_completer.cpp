@@ -108,7 +108,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		}
 		else if (output_type == OutputType::KFF)
 		{			
-			kff_writer = new CKFFWriter(file_name + ".kff", both_strands, kmer_len, counter_size);
+			kff_writer = new CKFFWriter(file_name + ".kff", both_strands, kmer_len, counter_size, cutoff_min, cutoff_max);
 		}
 		else
 		{

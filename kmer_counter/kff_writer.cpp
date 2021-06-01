@@ -5,8 +5,10 @@
 
 constexpr uint8_t CKFFWriter::VER_MAJOR;
 constexpr uint8_t CKFFWriter::VER_MINOR;
-CKFFWriter::CKFFWriter(const std::string& path, uint8_t canonical, uint64_t k, uint64_t counter_size, uint8_t encoding) :
-	k(k), counter_size(counter_size)
+CKFFWriter::CKFFWriter(const std::string& path, uint8_t canonical, uint64_t k, uint64_t counter_size, uint64_t min_count, uint64_t max_count, uint8_t encoding) :
+	k(k), counter_size(counter_size),
+	min_count(min_count),
+	max_count(max_count)
 {
 	file = fopen(path.c_str(), "wb");
 	if (!file)
@@ -47,7 +49,7 @@ CKFFWriter::CKFFWriter(const std::string& path, uint8_t canonical, uint64_t k, u
 	pairs.emplace_back("k", k);
 	pairs.emplace_back("max", 1);
 	pairs.emplace_back("data_size", counter_size);
-	pairs.emplace_back("ordered", 1); //TODO KFF: currently not defined in the format!
+	pairs.emplace_back("ordered", 1);
 
 	uint64_t nb_vars = pairs.size();
 
@@ -169,9 +171,9 @@ CKFFWriter::~CKFFWriter()
 	//Footer
 	std::vector<std::pair<std::string, uint64_t>> footer;
 	footer.emplace_back("first_index", index_start_pos);
-	/*
-		TODO KFF: other important values like cutoffs
-	*/
+	footer.emplace_back("min_count", min_count);
+	footer.emplace_back("max_count", max_count);
+	footer.emplace_back("counter_size", counter_size);
 
 	uint64_t footer_size = 1; // 'v'
 	footer_size += sizeof(uint64_t); // nb_vars
