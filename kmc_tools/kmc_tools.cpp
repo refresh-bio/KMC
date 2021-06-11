@@ -159,7 +159,12 @@ template<unsigned SIZE> class CTools
 			std::cout << "This is KFF file, summary:\n";
 			std::cout << "canonical         :  " << (header.kff_file_struct.both_strands ? "yes" : "no") << "\n";
 			std::cout << "all k-mers unique :  " << (header.kff_file_struct.all_unique ? "yes" : "no") << "\n";
-			//TODO KFF: add encoding printing
+			std::cout << "symbols encoding:\n";
+			std::cout << "\tA: " << ((header.kff_file_struct.encoding >> 6) & 3) << "\n";
+			std::cout << "\tC: " << ((header.kff_file_struct.encoding >> 4) & 3) << "\n";
+			std::cout << "\tG: " << ((header.kff_file_struct.encoding >> 2) & 3) << "\n";
+			std::cout << "\tT: " << (header.kff_file_struct.encoding        & 3) << "\n";
+
 			std::set<uint64_t> k_values;
 			for (auto& e : header.kff_file_struct.scopes)
 			{

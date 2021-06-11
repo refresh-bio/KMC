@@ -82,10 +82,15 @@ class CDumpWriterBase
 	struct DumpOpt
 	{
 		char* opt_ACGT;
-		DumpOpt()
+		DumpOpt(uint8_t encoding)
 		{
 			opt_ACGT = new char[1024];
-			char codes[] = { 'A', 'C', 'G', 'T' };
+			//char codes[] = { 'A', 'C', 'G', 'T' };
+			char codes[4];
+			codes[(encoding >> 6) & 3] = 'A';
+			codes[(encoding >> 4) & 3] = 'C';
+			codes[(encoding >> 2) & 3] = 'G';
+			codes[ encoding       & 3] = 'T';
 			uint32 pos = 0;
 			for (uint32 kmer = 0; kmer < 256; ++kmer)
 			{
@@ -165,13 +170,22 @@ protected:
 		delete[] buf;
 	}
 
+	uint8_t get_encoding()
+	{
+		if (config.headers.front().GetType() == KmerFileType::KFF1)
+			return config.headers.front().kff_file_struct.encoding;
+		return 0b00011011;
+	}
+
+
 protected:
 	CDumpWriterBase(std::string& file_src, uint32 cutoff_max, uint32 cutoff_min, uint32 counter_max) :
 		file_src(file_src),
 		cutoff_max(cutoff_max),
 		cutoff_min(cutoff_min),
 		counter_max(counter_max),
-		config(CConfig::GetInstance())
+		config(CConfig::GetInstance()),
+		opt(get_encoding())
 	{
 		kmer_len = config.headers.front().kmer_len;
 		kmer_bytes = (kmer_len + 3) / 4;

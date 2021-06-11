@@ -11,7 +11,6 @@
 #include <cassert>
 #include <memory>
 
-//TODO KFF: for dump operation encoding is important: implement it!
 //TODO KFF: considef minimizers sections
 
 //Forward declaration
@@ -1222,7 +1221,6 @@ CKFFDbReaderSorted<SIZE>::CKFFDbReaderSorted(const CKmerFileHeader& header, cons
 		for (const auto& section : scope.data_sections)
 		{			
 			uint32 kmer_bytes = (scope.kmer_size + 3) / 4;
-			uint32 counter_btyes = scope.data_size;
 			sections.emplace_back(section_id++, section_buf_provider, section.nb_blocks, kmer_bytes, scope.data_size, section.data_start_pos, cutoff_range, cutoff_min);
 		}
 	}
