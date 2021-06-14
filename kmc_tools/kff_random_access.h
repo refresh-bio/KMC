@@ -17,7 +17,7 @@
 #include "kff_db_reader.h"
 #include "db_reader_factory.h"
 #include "../kmc_api/kmc_file.h"
-//TODO KFF: remember to use apropriate encoding! Important!
+
 class CKffAndKMCRandomAccess : protected CKMCFile
 {
 	uint32_t suffix_bits;
