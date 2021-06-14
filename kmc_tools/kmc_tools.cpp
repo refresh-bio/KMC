@@ -226,8 +226,6 @@ template<unsigned SIZE> class CTools
 
 	bool filter()
 	{
-		//TODO KFF: implement for KFF
-
 		CFilteringParams& filtering_params = config.filtering_params;
 		CFilteringQueues filtering_queues;				
 
@@ -382,9 +380,25 @@ template<unsigned SIZE> class CTools
 
 	bool check()
 	{
-		CKmerCheck<SIZE> checker(config.headers.front(), config.input_desc.front());
-		return checker.CheckKmer();
-
+		switch (config.headers.front().GetType())
+		{
+			case KmerFileType::KMC1:
+			case KmerFileType::KMC2:
+			{
+				CKmerCheck<SIZE> checker(config.headers.front(), config.input_desc.front());
+				return checker.CheckKmer();
+			}
+			case KmerFileType::KFF1:
+			{
+				CKmerCheckKFF<SIZE> checker(config.headers.front(), config.input_desc.front());
+				return checker.CheckKmer();
+			}
+			default:
+			{
+				std::cerr << "Error: this should never happen, please contact authors: " << __FILE__ << "\t" << __LINE__ << "\n";
+				exit(1);
+			}
+		}
 	}
 
 	bool transform()

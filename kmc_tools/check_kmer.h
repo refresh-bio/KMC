@@ -142,7 +142,6 @@ class CKmerCheck
 			exit(1);
 		}
 	}
-	//TODO KFF: implement for KFF
 public:
 	CKmerCheck(const CKmerFileHeader& header, const CInputDesc& input_desc) :
 		config(CConfig::GetInstance()),
@@ -180,7 +179,6 @@ public:
 		fclose(suffix_file);
 	}
 
-	
 	uint32 CheckKmer(CKmer<SIZE> kmer)
 	{
 		uint64 prefix = kmer.remove_suffix((header.kmer_len - header.lut_prefix_len) * 2);
@@ -242,6 +240,165 @@ public:
 		uint32 counter = check_in_suffix_file(lower, upper, _kmer);
 		std::cout << counter << "\n";
 		return true;
+	}
+};
+
+
+template<unsigned SIZE>
+class CKmerCheckKFF
+{
+	CConfig& config;
+	const CKmerFileHeader& header;
+	const CInputDesc& input_desc;
+	FILE* file = nullptr;
+
+	std::unique_ptr<uchar[]> rec;
+
+	bool check_in_file(uint64 offset, uint64 lower, uint64 upper, CKmer<SIZE>& kmer, uint32& counter, uint32 record_size, uint32 counter_size)
+	{
+		if (!upper)
+		{
+			return false;
+		}
+		upper--;
+
+		if (upper < lower)
+			return 0;
+
+		uint32 cutoff_range = input_desc.cutoff_max - input_desc.cutoff_min;
+
+		auto read_at = [](FILE* file, uint64 pos, uchar*& tmp, uint32 record_size, uint32 counter_size) -> CKmer<SIZE>
+		{
+			my_fseek(file, pos, SEEK_SET);
+			fread(tmp, 1, record_size, file);
+			CKmer<SIZE> res;
+			res.load(tmp, record_size - counter_size);
+			return res;
+		};
+
+		while (upper >= lower)
+		{
+			uint64 middle = (upper + lower) / 2;
+			uchar* tmp = rec.get();
+			auto middle_kmer = read_at(file, offset + record_size * middle, tmp, record_size, counter_size);
+			if (middle_kmer < kmer)
+			{
+				lower = middle + 1;
+			}
+			else if (kmer < middle_kmer)
+			{
+				upper = middle - 1;
+			}
+			else
+			{
+				counter = 0;
+				for (int32 i = counter_size - 1; i >= 0; --i)
+				{
+					counter += (((uint32)*tmp++) << (i << 3));
+				}
+				if (counter - input_desc.cutoff_min < cutoff_range)
+				{
+					return true;
+				}
+				break;
+			}
+		}
+
+		return false;
+	}
+public:
+	CKmerCheckKFF(const CKmerFileHeader& header, const CInputDesc& input_desc) :
+		config(CConfig::GetInstance()),
+		header(header),
+		input_desc(input_desc)
+	{
+		std::string file_src = input_desc.file_src;
+
+		file = fopen(file_src.c_str(), "rb");
+		if (!file)
+			file = fopen((file_src + ".kff").c_str(), "rb");
+
+		if (!file)
+		{
+			std::cerr << "Error: cannot open file " << file_src << "\n";
+			exit(1);
+		}
+
+		setvbuf(file, NULL, _IOFBF, (1ULL << 26));
+	}
+
+	~CKmerCheckKFF()
+	{
+		fclose(file);
+	}
+
+	bool CheckKmer()
+	{
+		const std::string& kmer = config.check_params.kmer;
+		if (kmer.length() != header.kmer_len)
+		{
+			std::cerr << "Error: invalid k-mer length\n";
+			exit(1);
+		}
+
+		char codes[255];
+		for (uint32 i = 0; i < 255; ++i)
+			codes[i] = -1;
+
+		uint8_t encoding = header.GetEncoding();
+
+		uint8_t A_representation = (encoding >> 6) & 3;
+		uint8_t C_representation = (encoding >> 4) & 3;
+		uint8_t G_representation = (encoding >> 2) & 3;
+		uint8_t T_representation =  encoding       & 3;
+
+		codes['A'] = codes['a'] = A_representation;
+		codes['C'] = codes['c'] = C_representation;
+		codes['G'] = codes['g'] = G_representation;
+		codes['T'] = codes['t'] = T_representation;
+
+		CKmer<SIZE> _kmer;
+
+		_kmer.clear();
+
+		for (uint32 i = 0; i < header.kmer_len; ++i)
+		{
+			char d = codes[(uchar)kmer[i]];
+			if (d < 0)
+			{
+				std::cerr << "Error: invalid k-mer format\n";
+				exit(1);
+			}
+			_kmer.SHL_insert_2bits(d);
+		}
+
+		uint32 counter;
+		bool any = false;
+
+		uint32 counter_size = header.counter_size;
+		uint32 record_size = (header.kmer_len + 3) / 4 + counter_size;
+		rec = std::make_unique<uchar[]>(record_size);
+		uint32 prev_counter_size = counter_size;
+		for (const auto& scope : header.kff_file_struct.scopes)
+		{
+			counter_size = scope.data_size;
+			if(counter_size != prev_counter_size)
+			{
+				record_size = (header.kmer_len + 3) / 4 + counter_size;
+				rec = std::make_unique<uchar[]>(record_size);
+				prev_counter_size = counter_size;
+			}
+
+			for (const auto& section : scope.data_sections)
+			{
+				 if(check_in_file(section.data_start_pos, 0, section.nb_blocks, _kmer, counter, record_size, counter_size))
+				 {
+					 any = true;
+					 std::cout << counter << "\n";
+				 }
+			}
+		}
+		return any;
 	}
 };
 

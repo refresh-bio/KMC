@@ -60,7 +60,7 @@ public:
 		return kmer_file_type;
 	}
 
-	uint8_t GetEncoding()
+	uint8_t GetEncoding() const
 	{
 		switch (kmer_file_type)
 		{
