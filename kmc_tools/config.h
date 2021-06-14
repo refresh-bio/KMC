@@ -69,6 +69,7 @@ struct COutputDesc : public CDescBase
 {
 	uint32 counter_max = 0; //0 means it is not set yet
 	uint64 counter_value = 0; //only for SET_COUNTER operation, 0 means not set yet
+	OutputType output_type = OutputType::KMC1;
 	COutputDesc(const std::string& file_src) :
 		CDescBase(file_src)		
 	{
@@ -83,7 +84,6 @@ struct CSimpleOutputDesc : public COutputDesc
 	enum class OpType { INTERSECT, UNION, KMERS_SUBTRACTION, COUNTERS_SUBTRACTION, REVERSE_KMERS_SUBTRACTION, REVERSE_COUNTERS_SUBTRACTION }; 	
 	OpType op_type;
 	CounterOpType counter_op;
-	OutputType output_type = OutputType::KMC1;
 	CSimpleOutputDesc(OpType op_type) :
 		op_type(op_type)		
 	{		
@@ -108,7 +108,6 @@ struct CSimpleOutputDesc : public COutputDesc
 struct CTransformOutputDesc : public COutputDesc
 {
 	enum class OpType { HISTOGRAM, DUMP, SORT, REDUCE, COMPACT, SET_COUNTS };
-	OutputType output_type = OutputType::KMC1;
 	OpType op_type;
 	bool sorted_output = false; //only for dump operation, rest is sorted anyway (except histo which does not print k-mers at all)
 	CTransformOutputDesc(OpType op_type) :op_type(op_type)

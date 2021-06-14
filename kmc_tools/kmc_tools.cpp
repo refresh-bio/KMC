@@ -56,7 +56,7 @@ template<unsigned SIZE> class CTools
 			case CTransformOutputDesc::OpType::REDUCE:
 			case CTransformOutputDesc::OpType::SORT:
 			case CTransformOutputDesc::OpType::SET_COUNTS:
-				kmc_db_writers.push_back(db_writer_factory<SIZE>(desc, desc.output_type));
+				kmc_db_writers.push_back(db_writer_factory<SIZE>(desc));
 				kmc_db_writers.back()->MultiOptputInit();
 				bundles.push_back(new CBundle<SIZE>(nullptr));
 				break;
@@ -358,7 +358,7 @@ template<unsigned SIZE> class CTools
 
 		for (uint32 i = 0; i < config.simple_output_desc.size(); ++i)
 		{
-			writers.push_back(db_writer_factory<SIZE>(config.simple_output_desc[i], config.simple_output_desc[i].output_type));
+			writers.push_back(db_writer_factory<SIZE>(config.simple_output_desc[i]));
 			writers.back()->MultiOptputInit();
 			output_bundles.push_back(new COutputBundle<SIZE>(config.simple_output_desc[i].op_type, config.simple_output_desc[i].counter_op, *writers.back()));
 		}
@@ -375,6 +375,18 @@ template<unsigned SIZE> class CTools
 		for (auto o : output_bundles)
 			delete o;
 
+		return true;
+	}
+
+	bool complex()
+	{
+		CExpressionNode<SIZE>* expression_root = parameters_parser.GetExpressionRoot<SIZE>();
+		auto t = expression_root->GetExecutionRoot();
+		delete expression_root;
+		auto writer = db_writer_factory<SIZE>(config.output_desc, t);
+		writer->Process();
+		delete t;
+		delete writer;
 		return true;
 	}
 
@@ -529,14 +541,7 @@ public:
 		}
 		else if(config.mode == CConfig::Mode::COMPLEX)
 		{
-			//TODO KFF: implement this operation for KFF
-			CExpressionNode<SIZE>* expression_root = parameters_parser.GetExpressionRoot<SIZE>();
-			auto t = expression_root->GetExecutionRoot();
-			delete expression_root;
-			CKMC1DbWriter<SIZE> writer(t, config.output_desc);
-			writer.Process();
-			delete t;
-			return true;
+			return complex();
 		}
 		else
 		{
