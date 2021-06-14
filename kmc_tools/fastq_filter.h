@@ -14,7 +14,7 @@ Date   : 2019-05-19
 #include "config.h"
 #include "queues.h"
 
-#include "../kmc_api/kmc_file.h"
+#include "kff_random_access.h"
 
 //************************************************************************************************************
 // CFastqFilter - filter of reads
@@ -27,7 +27,7 @@ private:
 	CMemoryPool *pmm_fastq_reader;
 	CMemoryPool *pmm_fastq_filter;
 	CFilteringParams::file_type input_file_type, output_file_type;
-	CKMCFile& kmc_api;
+	CKffAndKMCRandomAccess& kmc_api;
 	uint64 output_part_size;
 
 	uchar* input_part;
@@ -69,7 +69,7 @@ private:
 	bool FilterReadTrim();
 	void HardMask();
 public:
-	CFastqFilter(CFilteringParams& Params, CFilteringQueues& Queues, CKMCFile& kmc_api);
+	CFastqFilter(CFilteringParams& Params, CFilteringQueues& Queues, CKffAndKMCRandomAccess& kmc_api);
 	void Process();
 
 
@@ -96,7 +96,7 @@ class CWFastqFilter
 {
 	std::unique_ptr<CFastqFilter> ff;
 public:
-	CWFastqFilter(CFilteringParams& Params, CFilteringQueues& Queues, CKMCFile& kmc_api);
+	CWFastqFilter(CFilteringParams& Params, CFilteringQueues& Queues, CKffAndKMCRandomAccess& kmc_api);
 	void operator()();
 };
 

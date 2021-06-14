@@ -301,7 +301,7 @@ template<unsigned SIZE> class CTools
 			kmc_api.OpenKFF<SIZE>(config.headers.front(), config.input_desc.front());
 		else
 		{
-			if (!kmc_api.OpenForRA(config.input_desc.front().file_src))
+			if (!kmc_api.OpenKMC(config.input_desc.front().file_src))
 			{
 				cerr << "Error: cannot open: " << config.input_desc.front().file_src << " by KMC API\n";
 				exit(1);

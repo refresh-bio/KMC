@@ -11,6 +11,7 @@
 #include "kff_kmc2_reader_utils.h"
 #include <cassert>
 #include <memory>
+#include <algorithm>
 
 //TODO KFF: consider minimizers sections
 

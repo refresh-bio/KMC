@@ -760,7 +760,6 @@ bool CParametersParser::validate_input_dbs()
 		return false;
 	}
 
-
 	uint8_t encoding = config.headers.front().GetEncoding();
 
 	for (uint32 i = 1; i < config.input_desc.size(); ++i)

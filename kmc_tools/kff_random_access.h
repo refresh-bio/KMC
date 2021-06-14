@@ -18,9 +18,11 @@
 #include "db_reader_factory.h"
 #include "../kmc_api/kmc_file.h"
 //TODO KFF: remember to use apropriate encoding! Important!
-class CKffAndKMCRandomAccess : public CKMCFile
+class CKffAndKMCRandomAccess : protected CKMCFile
 {
 	uint32_t suffix_bits;
+	bool need_to_encode_reads = false; //if KFF uses different encoding than ACGT -> 0b00011011 the symbols in reads needs to be encoded according to this encoding
+	char enocde_reads_map[256];
 	uint64_t CalcLutPrefixLen(uint64_t tot_kmers, uint32_t kmer_len, uint32 counter_size)
 	{
 		uint32_t best_lut_prefix_len = 0;
@@ -111,7 +113,59 @@ public:
 		original_min_count = min_count = kmer_file_header.min_count;
 		original_max_count = max_count = kmer_file_header.max_count;
 		is_opened = opened_for_RA;
-	}	
+
+		uint8_t encoding = kmer_file_header.GetEncoding();
+		if (encoding != 0b00011011)
+		{
+			need_to_encode_reads = true;
+			for (int i = 0; i < 256; ++i)
+				enocde_reads_map[i] = i;
+
+			uint8_t A_representation = (encoding >> 6) & 3;
+			uint8_t C_representation = (encoding >> 4) & 3;
+			uint8_t G_representation = (encoding >> 2) & 3;
+			uint8_t T_representation =  encoding       & 3;
+
+			enocde_reads_map['A'] = "ACGT"[A_representation];
+			enocde_reads_map['a'] = "acgt"[A_representation];
+
+			enocde_reads_map['C'] = "ACGT"[C_representation];
+			enocde_reads_map['c'] = "acgt"[C_representation];
+
+			enocde_reads_map['G'] = "ACGT"[G_representation];
+			enocde_reads_map['g'] = "acgt"[G_representation];
+
+			enocde_reads_map['T'] = "ACGT"[T_representation];
+			enocde_reads_map['t'] = "acgt"[T_representation];
+		}
+	}
+
+	bool GetCountersForRead(const std::string& read, std::vector<uint32>& counters)
+	{
+		if (need_to_encode_reads)
+		{
+			std::string encoded_read = read;
+			for (auto& c : encoded_read)
+				c = enocde_reads_map[(int)c];
+			return CKMCFile::GetCountersForRead(encoded_read, counters);
+		}
+		return CKMCFile::GetCountersForRead(read, counters);
+	}
+
+	bool OpenKMC(const std::string& file_name)
+	{
+		return CKMCFile::OpenForRA(file_name);
+	}
+
+	bool SetMinCount(uint32 x)
+	{
+		return CKMCFile::SetMinCount(x);
+	}
+
+	bool SetMaxCount(uint32 x)
+	{
+		return CKMCFile::SetMaxCount(x);
+	}
 };
 
 #endif //_KFF_RANDOM_ACCESS_H

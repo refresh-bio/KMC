@@ -19,7 +19,7 @@ using namespace std;
 /*****************************************************************************************************************************/
 
 /*****************************************************************************************************************************/
-CFastqFilter::CFastqFilter(CFilteringParams& Params, CFilteringQueues& Queues, CKMCFile& kmc_api) :
+CFastqFilter::CFastqFilter(CFilteringParams& Params, CFilteringQueues& Queues, CKffAndKMCRandomAccess& kmc_api) :
 kmc_api(kmc_api)
 {
 	input_part_queue = Queues.input_part_queue;
@@ -39,7 +39,7 @@ kmc_api(kmc_api)
 }
 
 /*****************************************************************************************************************************/
-CWFastqFilter::CWFastqFilter(CFilteringParams& Params, CFilteringQueues& Queues, CKMCFile& kmc_api)
+CWFastqFilter::CWFastqFilter(CFilteringParams& Params, CFilteringQueues& Queues, CKffAndKMCRandomAccess& kmc_api)
 {
 	ff = make_unique<CFastqFilter>(Params, Queues, kmc_api);
 }
