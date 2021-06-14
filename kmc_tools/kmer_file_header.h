@@ -60,6 +60,22 @@ public:
 		return kmer_file_type;
 	}
 
+	uint8_t GetEncoding()
+	{
+		switch (kmer_file_type)
+		{
+			case KmerFileType::KMC1:
+			case KmerFileType::KMC2:
+				return 0b00011011;
+			case KmerFileType::KFF1:
+				return kff_file_struct.encoding;
+			default:
+			{
+				std::cerr << "Error: this should never happen, please contact authors: " << __FILE__ << "\t" << __LINE__ << "\n";
+				exit(1);
+			}
+		}
+	}
 	CKmerFileHeader(std::string file_name);
 
 	

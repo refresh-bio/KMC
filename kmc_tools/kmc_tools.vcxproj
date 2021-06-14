@@ -169,6 +169,7 @@
     <ClInclude Include="kff_db_reader.h" />
     <ClInclude Include="kff_db_writer.h" />
     <ClInclude Include="kff_info_reader.h" />
+    <ClInclude Include="kff_random_access.h" />
     <ClInclude Include="kmc1_db_reader.h" />
     <ClInclude Include="kmc1_db_writer.h" />
     <ClInclude Include="kmc2_db_reader.h" />

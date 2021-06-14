@@ -759,6 +759,10 @@ bool CParametersParser::validate_input_dbs()
 		cerr << "Error: quality counters are not supported in kmc tools\n"; 
 		return false;
 	}
+
+
+	uint8_t encoding = config.headers.front().GetEncoding();
+
 	for (uint32 i = 1; i < config.input_desc.size(); ++i)
 	{
 		config.headers.push_back(CKmerFileHeader(config.input_desc[i].file_src));
@@ -771,6 +775,12 @@ bool CParametersParser::validate_input_dbs()
 		if (h.kmer_len != kmer_len)
 		{
 			cerr << "Database " << config.input_desc.front().file_src << " contains " << kmer_len << "-mers, but database " << config.input_desc[i].file_src << " contains " << h.kmer_len << "-mers\n";
+			return false;
+		}
+
+		if (h.GetEncoding() != encoding)
+		{
+			cerr << "Error: different k-mers encodings across input databases\n";
 			return false;
 		}
 	}

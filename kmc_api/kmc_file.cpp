@@ -237,7 +237,7 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size)
 		if (result == 0)
 			return false;
 
-		sufix_size = (kmer_length - lut_prefix_length) / 4;		 
+		sufix_size = (kmer_length - lut_prefix_length) / 4;
 	
 		sufix_rec_size = sufix_size + counter_size;	
 

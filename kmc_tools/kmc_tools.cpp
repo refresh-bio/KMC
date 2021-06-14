@@ -26,6 +26,7 @@
 #include "fastq_writer.h"
 #include "db_reader_factory.h"
 #include "db_writer_factory.h"
+#include "kff_random_access.h"
 #ifdef ENABLE_LOGGER
 #include "develop.h"
 #endif
@@ -295,11 +296,16 @@ template<unsigned SIZE> class CTools
 		vector<unique_ptr<CWFastqFilter>> filters;
 		vector<unique_ptr<CWFastqReader>> readers;
 
-		CKMCFile kmc_api;
-		if (!kmc_api.OpenForRA(config.input_desc.front().file_src))
+		CKffAndKMCRandomAccess kmc_api;
+		if (config.headers.front().GetType() == KmerFileType::KFF1)
+			kmc_api.OpenKFF<SIZE>(config.headers.front(), config.input_desc.front());
+		else
 		{
-			cerr << "Error: cannot open: " << config.input_desc.front().file_src << " by KMC API\n";
-			exit(1);
+			if (!kmc_api.OpenForRA(config.input_desc.front().file_src))
+			{
+				cerr << "Error: cannot open: " << config.input_desc.front().file_src << " by KMC API\n";
+				exit(1);
+			}
 		}
 		kmc_api.SetMinCount(config.input_desc.front().cutoff_min);
 		kmc_api.SetMaxCount(config.input_desc.front().cutoff_max);
@@ -325,12 +331,11 @@ template<unsigned SIZE> class CTools
 
 		filters.clear();
 
-
 		for (auto& thread : readers_ths)
 			thread.join();
 
 		readers.clear();
-				
+
 		delete filtering_queues.input_part_queue;
 		delete filtering_queues.pmm_fastq_reader;
 		delete filtering_queues.pmm_fastq_filter;
@@ -510,6 +515,7 @@ public:
 		}
 		else if(config.mode == CConfig::Mode::COMPLEX)
 		{
+			//TODO KFF: implement this operation for KFF
 			CExpressionNode<SIZE>* expression_root = parameters_parser.GetExpressionRoot<SIZE>();
 			auto t = expression_root->GetExecutionRoot();
 			delete expression_root;

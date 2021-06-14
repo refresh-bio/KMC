@@ -594,6 +594,7 @@ public:
 		return true;
 	}
 };
+
 class CFastqFilter::HardMaskFastqToFastaHelper
 {
 	CFastqFilter& owner;
@@ -621,6 +622,7 @@ public:
 		return true;
 	}
 };
+
 class CFastqFilter::HardMaskFastaToFastaHelper
 {
 	CFastqFilter& owner;

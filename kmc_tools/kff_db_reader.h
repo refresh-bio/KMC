@@ -8,10 +8,11 @@
 #include "kmer_file_header.h"
 #include "queues.h"
 #include "kff_info_reader.h"
+#include "kff_kmc2_reader_utils.h"
 #include <cassert>
 #include <memory>
 
-//TODO KFF: considef minimizers sections
+//TODO KFF: consider minimizers sections
 
 //Forward declaration
 template<unsigned SIZE> class CKFFDbReaderSorted;

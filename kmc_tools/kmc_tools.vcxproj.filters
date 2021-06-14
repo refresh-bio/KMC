@@ -141,6 +141,9 @@
     <ClInclude Include="..\kmer_counter\kff_writer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="kff_random_access.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

@@ -21,6 +21,7 @@
 
 enum class CounterOpType { MIN, MAX, SUM, DIFF, FROM_DB1, FROM_DB2, NONE };
 enum class OutputType { KMC1, KFF1 };
+enum class KmerDBOpenMode { sequential, sorted, counters_only };
 
 class CCounterBuilder
 {

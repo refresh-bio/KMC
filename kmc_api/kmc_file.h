@@ -31,6 +31,7 @@ struct CKMCFileInfo
 
 class CKMCFile
 {
+protected:
 	enum open_mode {closed, opened_for_RA, opened_for_listing};
 	open_mode is_opened;
 	uint64 suf_file_left_to_read = 0; // number of bytes that are yet to read in a listing mode

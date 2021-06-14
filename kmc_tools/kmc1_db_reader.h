@@ -21,7 +21,7 @@ Date   : 2019-05-19
 #include <thread>
 #include <tuple>
 
-enum class KmerDBOpenMode { sequential, sorted, counters_only };
+
 
 class CSuffBufQueue
 {
