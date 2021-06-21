@@ -443,6 +443,10 @@ bool CFastqReader::GetPartFromMultilneFasta(uchar *&_part, uint64 &_size)
 
 FORCE_INLINE void CFastqReader::FixEOLIfNeeded(uchar* part, int64& size)
 {
+	//Just in case. In fact this method should never be called because if size is 0, the last_in_file flag should not be set
+	//But I am not sure if it is true in all cases
+	if(size == 0)
+		return;
 	uchar c = part[size - 1];
 	if (c != '\n' && c != '\r')
 	{
