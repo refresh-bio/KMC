@@ -42,6 +42,7 @@ template<unsigned SIZE> class CKFFDbWriter : public CDbWriter<SIZE>
 			add_kmer(bundle_data.TopKmer(), bundle_data.TopCounter());
 			bundle_data.Pop();
 		}
+		bundle_data.Clear();
 	}
 
 	void start()
