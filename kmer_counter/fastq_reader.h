@@ -43,6 +43,7 @@ public:
 	inline void SetQueue(CBinaryPackQueue* _binary_pack_queue, CMemoryPool *_pmm_binary_file_reader);
 	inline bool Finished();
 	uint64 read(uchar* buff, uint64 size, bool& last_in_file);
+	uint64 read(uchar* buff, uint64 size, bool& last_in_file, bool&first_in_file);
 	void IgnoreRest()
 	{
 		if (in_data)

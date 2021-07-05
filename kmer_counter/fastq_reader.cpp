@@ -390,13 +390,21 @@ bool CFastqReader::GetPartFromMultilneFasta(uchar *&_part, uint64 &_size)
 	}
 
 	bool last_in_file;
-	readed = data_src.read(part + part_filled, (part_size - 1) - part_filled, last_in_file); //part_size - 1 to eventually append EOL if not present at EOF
+	bool first_in_file;
+	readed = data_src.read(part + part_filled, (part_size - 1) - part_filled, last_in_file, first_in_file); //part_size - 1 to eventually append EOL if not present at EOF
 
 	int64 total_filled = part_filled + readed;
 
 	if (last_in_file)	
 		FixEOLIfNeeded(part, total_filled);
 	
+	if(first_in_file && total_filled)
+		if (part[0] != '>')
+		{
+			cerr << "Error: Wrong input file!\n";
+			exit(1);
+		}
+
 	int64 last_header_pos = 0;
 	int64 pos = 0;
 	for (int64 i = 0; i < total_filled; ++i)//find last '>' and remove EOLs
@@ -957,9 +965,10 @@ bool CFastqReaderDataSrc::Finished()
 }
 
 //----------------------------------------------------------------------------------
-uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file)
+uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, bool& first_in_file)
 {
 	last_in_file = false;
+	first_in_file = false;
 	if (!in_progress)
 	{
 		if (!binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type))
@@ -968,6 +977,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file)
 			return 0;
 		}
 		in_progress = true;
+		first_in_file = true;
 		init_stream();
 	}
 
@@ -1004,7 +1014,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file)
 			}
 
 			if (ret == Z_STREAM_END)
-			{				
+			{
 				uchar* tmp_data = nullptr;
 				uint64 tmp_size = 0;
 				bool multistream = stream.avail_in || binary_pack_queue->peek_next_pack(tmp_data, tmp_size);
@@ -1034,7 +1044,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file)
 					}
 					garbage = b1 != 0x1f || b2 != 0x8b;
 				}
-				
+
 				//bool multistream = stream.avail_in || !binary_pack_queue->is_next_last();				
 				if (!multistream || garbage)
 				{
@@ -1054,7 +1064,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file)
 						FilePart tmpfilepart = file_part;
 						while (tmpfilepart != FilePart::End)
 						{
-							uchar *tmp;
+							uchar* tmp;
 							uint64 tmpsize;
 							CompressionType tmpcomptype;
 							binary_pack_queue->pop(tmp, tmpsize, tmpfilepart, tmpcomptype);
@@ -1167,6 +1177,12 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file)
 		cerr << "Error: unknown compression\n";
 		exit(1);
 	}
+}
+//----------------------------------------------------------------------------------
+uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file)
+{
+	bool ignore;
+	return read(buff, size, last_in_file, ignore);
 }
 
 
