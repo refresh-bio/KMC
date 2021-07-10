@@ -307,7 +307,7 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size)
 // OUT: count - kmer's counter if kmer exists
 // RET: true  - if kmer exists
 //------------------------------------------------------------------------------------------
-bool CKMCFile::CheckKmer(CKmerAPI &kmer, float &count)
+bool CKMCFile::CheckKmer(const CKmerAPI &kmer, float &count) const
 {
 	uint32 int_counter;
 	if (CheckKmer(kmer, int_counter))
@@ -327,7 +327,7 @@ bool CKMCFile::CheckKmer(CKmerAPI &kmer, float &count)
 // OUT: count - kmer's counter if kmer exists
 // RET: true  - if kmer exists
 //------------------------------------------------------------------------------------------
-bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint32 &count)
+bool CKMCFile::CheckKmer(const CKmerAPI &kmer, uint32 &count) const
 {
 	if(is_opened != opened_for_RA)
 		return false;
@@ -371,7 +371,7 @@ bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint32 &count)
 // OUT: count - kmer's counter if kmer exists
 // RET: true  - if kmer exists
 //------------------------------------------------------------------------------------------
-bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint64 &count)
+bool CKMCFile::CheckKmer(const CKmerAPI &kmer, uint64 &count) const
 {
 	if (is_opened != opened_for_RA)
 		return false;
@@ -410,7 +410,7 @@ bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint64 &count)
 // Check if end of file
 // RET: true - all kmers are listed
 //-----------------------------------------------------------------------------------------------
-bool CKMCFile::Eof(void)
+bool CKMCFile::Eof(void) const
 {
 	return end_of_file;	
 }
@@ -707,7 +707,7 @@ bool CKMCFile::SetMinCount(uint32 x)
 // Return a value of min_count. Kmers with counters below this theshold are ignored 
 // RET	: a value of min_count
 //----------------------------------------------------------------------------------------
-uint32 CKMCFile::GetMinCount(void)
+uint32 CKMCFile::GetMinCount(void) const
 {
 	return min_count;
 }
@@ -733,7 +733,7 @@ bool CKMCFile::SetMaxCount(uint32 x)
 // Return a value of max_count. Kmers with counters above this theshold are ignored 
 // RET	: a value of max_count
 //----------------------------------------------------------------------------------------
-uint64 CKMCFile::GetMaxCount(void)
+uint64 CKMCFile::GetMaxCount(void) const
 {
 	return max_count;
 }
@@ -742,7 +742,7 @@ uint64 CKMCFile::GetMaxCount(void)
 // Return true if KMC was run without -b switch
 // RET	: a value of both_strands
 //----------------------------------------------------------------------------------------
-bool CKMCFile::GetBothStrands(void)
+bool CKMCFile::GetBothStrands(void) const
 {
 	return both_strands;
 }
@@ -762,7 +762,7 @@ void CKMCFile::ResetMinMaxCounts(void)
 // Return the length of kmers
 // RET	: the length of kmers
 //----------------------------------------------------------------------------------------
-uint32 CKMCFile::KmerLength(void)
+uint32 CKMCFile::KmerLength(void) const
 {
 	return kmer_length;			
 }
@@ -772,7 +772,7 @@ uint32 CKMCFile::KmerLength(void)
 // IN	: kmer - kmer
 // RET	: true if kmer exists
 //----------------------------------------------------------------------------------------
-bool CKMCFile::IsKmer(CKmerAPI &kmer)
+bool CKMCFile::IsKmer(const CKmerAPI &kmer) const
 {
 	uint32 _count;
 	if(CheckKmer(kmer, _count))
@@ -852,7 +852,7 @@ uint64 CKMCFile::KmerCount(void)
 //			_total_kmers	- the total number of kmers
 // RET	: true if kmer_database has been opened
 //---------------------------------------------------------------------------------
-bool CKMCFile::Info(uint32 &_kmer_length, uint32 &_mode, uint32 &_counter_size, uint32 &_lut_prefix_length, uint32 &_signature_len, uint32 &_min_count, uint64 &_max_count, uint64 &_total_kmers)
+bool CKMCFile::Info(uint32 &_kmer_length, uint32 &_mode, uint32 &_counter_size, uint32 &_lut_prefix_length, uint32 &_signature_len, uint32 &_min_count, uint64 &_max_count, uint64 &_total_kmers) const
 {
 	if(is_opened)
 	{
@@ -873,7 +873,7 @@ bool CKMCFile::Info(uint32 &_kmer_length, uint32 &_mode, uint32 &_counter_size, 
 }
 
 // Get current parameters from kmer_database
-bool CKMCFile::Info(CKMCFileInfo& info)
+bool CKMCFile::Info(CKMCFileInfo& info) const
 {
 	if (is_opened)
 	{
@@ -901,7 +901,7 @@ bool CKMCFile::Info(CKMCFileInfo& info)
 // IN   :   read			- 
 // RET	:   true if success, false if k > read length or some failure 
 //---------------------------------------------------------------------------------
-bool CKMCFile::GetCountersForRead(const std::string& read, std::vector<uint32>& counters)
+bool CKMCFile::GetCountersForRead(const std::string& read, std::vector<uint32>& counters) const
 {
 	if (is_opened != opened_for_RA)
 		return false;
@@ -936,7 +936,7 @@ bool CKMCFile::GetCountersForRead(const std::string& read, std::vector<uint32>& 
 // IN   :   read			- 
 // RET	: true if success
 //---------------------------------------------------------------------------------
-bool CKMCFile::GetCountersForRead(const std::string& read, std::vector<float>& counters)
+bool CKMCFile::GetCountersForRead(const std::string& read, std::vector<float>& counters) const
 {
 	if (is_opened != opened_for_RA)
 		return false;
@@ -964,7 +964,7 @@ bool CKMCFile::GetCountersForRead(const std::string& read, std::vector<float>& c
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
-uint32 CKMCFile::count_for_kmer_kmc1(CKmerAPI& kmer)
+uint32 CKMCFile::count_for_kmer_kmc1(const CKmerAPI& kmer) const
 {
 	//recognize a prefix:
 
@@ -989,7 +989,7 @@ uint32 CKMCFile::count_for_kmer_kmc1(CKmerAPI& kmer)
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
-uint32 CKMCFile::count_for_kmer_kmc2(CKmerAPI& kmer, uint32 bin_start_pos)
+uint32 CKMCFile::count_for_kmer_kmc2(const CKmerAPI& kmer, uint32 bin_start_pos) const
 {
 	//recognize a prefix:
 	uint64 pattern_prefix_value = kmer.kmer_data[0];
@@ -1013,7 +1013,7 @@ uint32 CKMCFile::count_for_kmer_kmc2(CKmerAPI& kmer, uint32 bin_start_pos)
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
-bool CKMCFile::GetCountersForRead_kmc1_both_strands(const std::string& read, std::vector<uint32>& counters)
+bool CKMCFile::GetCountersForRead_kmc1_both_strands(const std::string& read, std::vector<uint32>& counters) const
 {
 	uint32 read_len = static_cast<uint32>(read.length());
 	counters.resize(read.length() - kmer_length + 1);
@@ -1091,7 +1091,7 @@ bool CKMCFile::GetCountersForRead_kmc1_both_strands(const std::string& read, std
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
-bool CKMCFile::GetCountersForRead_kmc1(const std::string& read, std::vector<uint32>& counters)
+bool CKMCFile::GetCountersForRead_kmc1(const std::string& read, std::vector<uint32>& counters) const
 {	
 	uint32 read_len = static_cast<uint32>(read.length());
 	counters.resize(read.length() - kmer_length + 1);
@@ -1155,7 +1155,7 @@ bool CKMCFile::GetCountersForRead_kmc1(const std::string& read, std::vector<uint
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
-void CKMCFile::GetSuperKmers(const std::string& transformed_read, super_kmers_t& super_kmers)
+void CKMCFile::GetSuperKmers(const std::string& transformed_read, super_kmers_t& super_kmers) const
 {
 	uint32 i = 0;
 	uint32 len = 0; //length of super k-mer
@@ -1244,7 +1244,7 @@ void CKMCFile::GetSuperKmers(const std::string& transformed_read, super_kmers_t&
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
-bool CKMCFile::GetCountersForRead_kmc2_both_strands(const std::string& read, std::vector<uint32>& counters)
+bool CKMCFile::GetCountersForRead_kmc2_both_strands(const std::string& read, std::vector<uint32>& counters) const
 {
 	counters.resize(read.length() - kmer_length + 1);
 	std::string transformed_read = read;
@@ -1316,7 +1316,7 @@ bool CKMCFile::GetCountersForRead_kmc2_both_strands(const std::string& read, std
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
-bool CKMCFile::GetCountersForRead_kmc2(const std::string& read, std::vector<uint32>& counters)
+bool CKMCFile::GetCountersForRead_kmc2(const std::string& read, std::vector<uint32>& counters) const
 {	
 	counters.resize(read.length() - kmer_length + 1);
 	std::string transformed_read = read;
@@ -1380,7 +1380,7 @@ bool CKMCFile::GetCountersForRead_kmc2(const std::string& read, std::vector<uint
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
-bool CKMCFile::BinarySearch(int64 index_start, int64 index_stop, const CKmerAPI& kmer, uint64& counter, uint32 pattern_offset)
+bool CKMCFile::BinarySearch(int64 index_start, int64 index_stop, const CKmerAPI& kmer, uint64& counter, uint32 pattern_offset) const
 {
 	if (index_start >= static_cast<int64>(total_kmers))
 		return false;
