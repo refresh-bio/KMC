@@ -24,38 +24,41 @@ CMmer::_si CMmer::_init;
 
 
 //--------------------------------------------------------------------------
-CMmer::CMmer(uint32 _len)
+CMmer::CMmer(uint32 _len, CMmerNorm* _norm)
 {
-	switch (_len)
-	{
-	case 5:
-		norm = norm5;
-		break;
-	case 6:
-		norm = norm6;
-		break;
-	case 7:
-		norm = norm7;
-		break;
-	case 8:
-		norm = norm8;
-		break;
-	case 9:
-		norm = norm9;
-		break;
-	case 10:
-		norm = norm10;
-		break;
-	case 11:
-		norm = norm11;
-		break;
-	default:
-		break;
-	}
-	len = _len;
-	mask = (1 << _len * 2) - 1;
-	str = 0;
+    switch (_len)
+    {
+        case 5:
+            norm = norm5;
+            break;
+        case 6:
+            norm = norm6;
+            break;
+        case 7:
+            norm = norm7;
+            break;
+        case 8:
+            norm = norm8;
+            break;
+        case 9:
+            norm = norm9;
+            break;
+        case 10:
+            norm = norm10;
+            break;
+        case 11:
+            norm = norm11;
+            break;
+        default:
+            break;
+    }
+    len = _len;
+    mask = (1 << _len * 2) - 1;
+    str = 0;
+
+    new_norm = _norm;
 }
 
 //--------------------------------------------------------------------------
 
+// ***** EOF

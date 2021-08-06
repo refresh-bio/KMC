@@ -20,8 +20,9 @@ uint32 CSplitter::MAX_LINE_SIZE = 1 << 16;
 
 //----------------------------------------------------------------------------------
 // Assigns queues
-CSplitter::CSplitter(CKMCParams &Params, CKMCQueues &Queues)
+CSplitter::CSplitter(CKMCParams &Params, CKMCQueues &Queues, CMmerNorm* _norm)
 {
+    norm = _norm;
 	mm = Queues.mm;
 	file_type = Params.file_type;
 	both_strands = Params.both_strands;
@@ -447,7 +448,7 @@ void CSplitter::CalcStats(uchar* _part, uint64 _part_size, ReadType read_type, u
 	pmm_reads->reserve(seq);
 
 	uint32 signature_start_pos;
-	CMmer current_signature(signature_len), end_mmer(signature_len);
+	CMmer current_signature(signature_len, norm), end_mmer(signature_len, norm);
 
 	uint32 i;
 	uint32 len;//length of extended kmer
@@ -549,7 +550,7 @@ bool CSplitter::ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type
 	pmm_reads->reserve(seq);
 
 	uint32 signature_start_pos;
-	CMmer current_signature(signature_len), end_mmer(signature_len);
+	CMmer current_signature(signature_len, norm), end_mmer(signature_len, norm);
 	uint32 bin_no;
 
 	uint32 i;
@@ -820,12 +821,12 @@ CSplitter::~CSplitter()
 //************************************************************************************************************
 //----------------------------------------------------------------------------------
 // Constructor
-CWSplitter::CWSplitter(CKMCParams &Params, CKMCQueues &Queues)
+CWSplitter::CWSplitter(CKMCParams &Params, CKMCQueues &Queues, CMmerNorm* _norm)
 {
 	pq = Queues.part_queue;
 	bpq = Queues.bpq;
 	pmm_fastq = Queues.pmm_fastq;
-	spl = new CSplitter(Params, Queues);
+	spl = new CSplitter(Params, Queues, _norm);
 	spl->InitBins(Params, Queues);
 }
 
@@ -883,7 +884,7 @@ CWStatsSplitter::CWStatsSplitter(CKMCParams &Params, CKMCQueues &Queues)
 	spq = Queues.stats_part_queue;
 	pmm_fastq = Queues.pmm_fastq;
 	pmm_stats = Queues.pmm_stats;
-	spl = new CSplitter(Params, Queues);
+	spl = new CSplitter(Params, Queues, nullptr);
 
 	signature_len = Params.signature_len;
 	pmm_stats->reserve(stats);
@@ -940,7 +941,7 @@ template <typename COUNTER_TYPE> CWSmallKSplitter<COUNTER_TYPE>::CWSmallKSplitte
 	pmm_fastq = Queues.pmm_fastq;
 	pmm_small_k = Queues.pmm_small_k_buf;
 	kmer_len = Params.kmer_len;
-	spl = new CSplitter(Params, Queues);
+	spl = new CSplitter(Params, Queues, nullptr);
 }
 
 //----------------------------------------------------------------------------------
