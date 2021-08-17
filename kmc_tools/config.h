@@ -40,7 +40,7 @@ struct CDescBase
 {
 	std::string file_src;
 	uint32 cutoff_min = 0; //0 means it is not set yet
-	uint32 cutoff_max = 0; //0 means it is not set yet
+	uint64 cutoff_max = 0; //0 means it is not set yet
 	CDescBase(const std::string& file_src) :
 		file_src(file_src)
 	{

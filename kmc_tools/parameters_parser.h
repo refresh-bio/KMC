@@ -34,7 +34,7 @@ class CParametersParser
 	bool read_output_for_transform();
 
 	uint32 get_max_counter_max();
-	uint32 get_max_cutoff_max();
+	uint64 get_max_cutoff_max();
 	uint32 get_min_cutoff_min();
 public:
 	

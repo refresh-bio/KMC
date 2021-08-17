@@ -80,13 +80,18 @@ CKmerFileHeader::CKmerFileHeader(std::string file_name)
 	if (kmer_file_type == KmerFileType::KMC2)
 		load_uint(file, signature_len);
 	load_uint(file, min_count);
-	load_uint(file, max_count);
+	uint32_t max_count_lo;
+	load_uint(file, max_count_lo);
 	load_uint(file, total_kmers);
 	uchar both_s_tmp;
 	load_uint(file, both_s_tmp);
 	both_strands = both_s_tmp == 1;
 	both_strands = !both_strands;
 
+	fseek(file, 3, SEEK_CUR);
+	uint32_t max_count_hi;
+	load_uint(file, max_count_hi);
+	max_count = (((uint64_t)max_count_hi) << 32) + max_count_lo;
 	fclose(file);
 
 	if (kmer_file_type == KmerFileType::KMC2)

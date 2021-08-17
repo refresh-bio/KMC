@@ -65,7 +65,7 @@ class CDumpWriterBase
 	uint32 counter_len;
 	
 	std::string& file_src;
-	uint32 cutoff_max;
+	uint64 cutoff_max;
 	uint32 cutoff_min;	
 	uint32 counter_max;
 	
@@ -179,7 +179,7 @@ protected:
 
 
 protected:
-	CDumpWriterBase(std::string& file_src, uint32 cutoff_max, uint32 cutoff_min, uint32 counter_max) :
+	CDumpWriterBase(std::string& file_src, uint64 cutoff_max, uint32 cutoff_min, uint32 counter_max) :
 		file_src(file_src),
 		cutoff_max(cutoff_max),
 		cutoff_min(cutoff_min),

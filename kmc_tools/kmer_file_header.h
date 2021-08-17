@@ -42,7 +42,7 @@ public:
 	uint32 lut_prefix_len = 0;
 	uint32 signature_len = 0; //only for kmc2
 	uint32 min_count = 0;
-	uint32 max_count = 0;
+	uint64 max_count = 0;
 	uint64 total_kmers = 0;
 	bool both_strands = true;
 	uint32 db_version = 0;

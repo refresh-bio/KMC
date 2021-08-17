@@ -725,9 +725,9 @@ uint32 CParametersParser::get_min_cutoff_min()
 	return min_cutoff_min;
 }
 
-uint32 CParametersParser::get_max_cutoff_max()
+uint64 CParametersParser::get_max_cutoff_max()
 {
-	uint32 max_cutoff_max = config.input_desc.front().cutoff_max;
+	uint64 max_cutoff_max = config.input_desc.front().cutoff_max;
 	for (uint32 i = 0; i < config.input_desc.size(); ++i)
 	{
 		if (config.input_desc[i].cutoff_max > max_cutoff_max)
@@ -799,7 +799,7 @@ bool CParametersParser::validate_input_dbs()
 	if (config.mode == CConfig::Mode::SIMPLE_SET)
 	{
 		uint32 min_cutoff_min = get_min_cutoff_min();
-		uint32 max_cutoff_max = get_max_cutoff_max();
+		uint64 max_cutoff_max = get_max_cutoff_max();
 		uint32 max_counter_max = get_max_counter_max();
 		
 		for (auto& desc : config.simple_output_desc)
@@ -815,7 +815,7 @@ bool CParametersParser::validate_input_dbs()
 	else if (config.mode == CConfig::Mode::TRANSFORM)
 	{
 		uint32 min_cutoff_min = get_min_cutoff_min();
-		uint32 max_cutoff_max = get_max_cutoff_max();
+		uint64 max_cutoff_max = get_max_cutoff_max();
 		uint32 max_counter_max = get_max_counter_max();
 
 		for (auto& desc : config.transform_output_desc)
@@ -849,7 +849,7 @@ bool CParametersParser::validate_input_dbs()
 		}
 		if (config.output_desc.cutoff_max == 0)
 		{
-			uint32 max_cutoff_max = get_max_cutoff_max();
+			uint64 max_cutoff_max = get_max_cutoff_max();
 			config.output_desc.cutoff_max = max_cutoff_max;
 			if (config.verbose)
 				cerr << "Warning: -cx was not specified for output. It will be set to " << config.output_desc.cutoff_max << "\n";

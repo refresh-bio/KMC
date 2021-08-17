@@ -570,8 +570,8 @@ template<unsigned SIZE> bool CKMC1DbReader<SIZE>::fill_bundle()
 	uint32 counter;
 
 	uint32 cutoff_min = desc.cutoff_min;
-	uint32 cutoff_max = desc.cutoff_max;
-	uint32 cutoff_range = cutoff_max - cutoff_min;
+	uint64 cutoff_max = desc.cutoff_max;
+	uint64 cutoff_range = cutoff_max - cutoff_min;
 
 	uint64 local_kmers_left_for_current_prefix = kmers_left_for_current_prefix;
 	uint64 local_total_kmers_left = total_kmers_left;
@@ -613,7 +613,6 @@ template<unsigned SIZE> bool CKMC1DbReader<SIZE>::fill_bundle()
 																							\
 	counter = suffix_bundle_get.kmers_with_counters[suffix_bundle_pos++].counter;			\
 	--local_kmers_left_for_current_prefix;													\
-																							\
 	if (counter - cutoff_min <= cutoff_range)												\
 	{																						\
 	kmer = suffix_bundle_get.kmers_with_counters[suffix_bundle_pos - 1].kmer;				\
