@@ -321,13 +321,15 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::finish_writing()
 	store_pre_buf();
 	send_suf_buf_to_queue();
 
+	uint32_t cutoff_max_lo = output_desc.cutoff_max;
+	uint32_t cutoff_max_hi = output_desc.cutoff_max >> 32;
 	//store header
 	write_header_part(config.kmer_len);
 	write_header_part(config.headers.front().mode);
 	write_header_part(counter_size);
 	write_header_part(lut_prefix_len);
 	write_header_part(output_desc.cutoff_min);
-	write_header_part(output_desc.cutoff_max);
+	write_header_part(cutoff_max_lo);
 	write_header_part(added_kmers);
 
 	bool both_stands = true;
@@ -337,8 +339,19 @@ template<unsigned SIZE> void CKMC1DbWriter<SIZE>::finish_writing()
 
 	write_header_part(!both_stands);
 
+	//uchar tmp[3];
+	for (uint32 i = 0; i < 3; ++i)
+		write_header_part(uchar(0));
 
-	for (uint32 i = 0; i < 31; ++i)
+	//uint32_t max_counter_hi
+	write_header_part(cutoff_max_hi);
+
+	//uint32_t tmp[5]
+	for (uint32 i = 0; i < 20; ++i)
+		write_header_part(uchar(0));
+
+	//KMC_VER -> KMC 1 (value 0)
+	for (uint32 i = 0; i < 4; ++i)
 		write_header_part(uchar(0));
 
 	write_header_part((uint32)64);

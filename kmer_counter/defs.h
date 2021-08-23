@@ -130,8 +130,6 @@ const int32 MAX_STR_LEN = 32768;
 #define FORCE_INLINE inline __attribute__((always_inline))
 #endif
 
-
-
 //for radix
 #define WIN_ALIGNMENT 64
 //designated experimentally
@@ -148,6 +146,20 @@ typedef unsigned __int8 uint8_t;
 #include <stdint.h>
 #endif
 
+
+inline uint32 calc_counter_size(int64 cutoff_max, int64 counter_max)
+{
+	if (counter_max == 1)
+		return 0;
+	return MIN(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
+}
+
+inline uint32 calc_counter_size_ull(int64 cutoff_max, int64 counter_max)
+{
+	if (counter_max == 1)
+		return 0;
+	return MIN(BYTE_LOG_ULL((uint64)cutoff_max), BYTE_LOG_ULL((uint64)counter_max));
+}
 
 
 

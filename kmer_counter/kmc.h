@@ -766,7 +766,7 @@ bool CKMC<SIZE>::ProcessSmallKOptimization()
 	{
 		uint32 counter_size = 0;
 
-		counter_size = min(BYTE_LOG(Params.cutoff_max), BYTE_LOG(Params.counter_max));
+		counter_size = calc_counter_size(Params.cutoff_max, Params.counter_max);
 
 		for (Params.lut_prefix_len = 1; Params.lut_prefix_len < 16; ++Params.lut_prefix_len)
 		{

@@ -28,6 +28,11 @@ class CCounterBuilder
 public:
 	static void build_counter(uint32& counter, uchar *&buffer, uint32 counter_bytes, uint32 counter_mask, bool little_endian)
 	{
+		if (counter_bytes == 0)
+		{
+			counter = 1;
+			return;
+		}
 		memcpy(&counter, buffer, sizeof(counter));
 		if (!little_endian)
 			counter = _bswap_uint32(counter);

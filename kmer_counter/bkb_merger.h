@@ -135,7 +135,7 @@ void CBigKmerBinMerger<SIZE>::Process()
 {
 	int32 bin_id;
 	uint32 size = 0;
-	uint32 counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
+	uint32 counter_size = calc_counter_size(cutoff_max, counter_max);
 	uint32 lut_recs = 1 << 2 * lut_prefix_len;
 	uint32 kmer_symbols = (kmer_len - lut_prefix_len);
 	uint32 kmer_bytes = kmer_symbols / 4;

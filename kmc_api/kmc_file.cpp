@@ -486,23 +486,28 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint32 &count)
 			else
 					off -=8;
 		}
-	
-		//read counter:
-		if(index_in_partial_buf == part_size)
-			Reload_sufix_file_buf();
 		
-		count = sufix_file_buf[index_in_partial_buf++];
-
-		for(uint32 b = 1; b < counter_size; b++)
+		//read counter:
+		if (counter_size == 0)
+			count = 1;
+		else
 		{
-			if(index_in_partial_buf == part_size)
+			
+			if (index_in_partial_buf == part_size)
 				Reload_sufix_file_buf();
-			
-			uint32 aux = 0x000000ff & sufix_file_buf[index_in_partial_buf++];
-			aux = aux << 8 * ( b);
-			count = aux | count;
+
+			count = sufix_file_buf[index_in_partial_buf++];
+
+			for (uint32 b = 1; b < counter_size; b++)
+			{
+				if (index_in_partial_buf == part_size)
+					Reload_sufix_file_buf();
+
+				uint32 aux = 0x000000ff & sufix_file_buf[index_in_partial_buf++];
+				aux = aux << 8 * (b);
+				count = aux | count;
+			}
 		}
-			
 		sufix_number++;
 	
 		if(sufix_number == total_kmers)
@@ -519,7 +524,7 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint32 &count)
 		}
 
 	}
-	while((count < min_count) || (count > max_count));
+	while ((counter_size != 0) && ((count < min_count) || (count > max_count))); //do not applay filtering if counter_size == 0 as it does not make sence
 
 	return true;
 }
@@ -584,27 +589,31 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint64 &count)
 		}
 
 		//read counter:
-		if (index_in_partial_buf == part_size)
-			Reload_sufix_file_buf();
-
-		count = sufix_file_buf[index_in_partial_buf++];
-
-		for (uint32 b = 1; b < counter_size; b++)
+		if (counter_size == 0)
+			count = 1;
+		else
 		{
 			if (index_in_partial_buf == part_size)
 				Reload_sufix_file_buf();
 
-			uint64 aux = 0x000000ff & sufix_file_buf[index_in_partial_buf++];
-			aux = aux << 8 * (b);
-			count = aux | count;
-		}
+			count = sufix_file_buf[index_in_partial_buf++];
 
+			for (uint32 b = 1; b < counter_size; b++)
+			{
+				if (index_in_partial_buf == part_size)
+					Reload_sufix_file_buf();
+
+				uint64 aux = 0x000000ff & sufix_file_buf[index_in_partial_buf++];
+				aux = aux << 8 * (b);
+				count = aux | count;
+			}
+		}
 		sufix_number++;
 
 		if (sufix_number == total_kmers)
 			end_of_file = true;
 
-	} while ((count < min_count) || (count > max_count));
+	} while ((counter_size != 0) && ((count < min_count) || (count > max_count))); //do not applay filtering if counter_size == 0 as it does not make sence
 
 	return true;
 }
@@ -803,23 +812,30 @@ uint64 CKMCFile::KmerCount(void)
 				for(uint64 i = 0; i < total_kmers; i++)		
 				{
 					ptr += sufix_size;
-					int_counter = *ptr;
-					ptr++;
 
-					for(uint32 b = 1; b < counter_size; b ++)
+					if (counter_size == 0)
+						int_counter = 1;
+					else
 					{
-						uint32 aux = 0x000000ff & *(ptr);
-						aux = aux << 8 * ( b);
-						int_counter = aux | int_counter;
+						int_counter = *ptr;
 						ptr++;
+
+						for(uint32 b = 1; b < counter_size; b ++)
+						{
+							uint32 aux = 0x000000ff & *(ptr);
+							aux = aux << 8 * ( b);
+							int_counter = aux | int_counter;
+							ptr++;
+						}
 					}
-					
+
 					if(mode == 0)
 						count = int_counter;
 					else
 						memcpy(&count, &int_counter, counter_size);
 	
-					if((count >= min_count) && (count <= max_count))
+					//applay filtering only if counter_size != 0
+					if((counter_size == 0) || ((count >= min_count) && (count <= max_count)))
 						aux_kmerCount++;
 				}
 			}
@@ -1439,24 +1455,29 @@ bool CKMCFile::BinarySearch(int64 index_start, int64 index_stop, const CKmerAPI&
 
 	if (found)
 	{
-		sufix_byte_ptr += sufix_size;
-
-		counter = *sufix_byte_ptr;
-
-		for (uint32 b = 1; b < counter_size; b++)
+		if (counter_size == 0)
+			counter = 1;
+		else
 		{
-			uint64 aux = 0x000000ff & *(sufix_byte_ptr + b);
+			sufix_byte_ptr += sufix_size;
+			counter = *sufix_byte_ptr;
 
-			aux = aux << 8 * (b);
-			counter = aux | counter;
+			for (uint32 b = 1; b < counter_size; b++)
+			{
+				uint64 aux = 0x000000ff & *(sufix_byte_ptr + b);
+
+				aux = aux << 8 * (b);
+				counter = aux | counter;
+			}
+			if (mode != 0)
+			{
+				float float_counter;
+				memcpy(&float_counter, &counter, counter_size);
+				return (float_counter >= min_count) && (float_counter <= max_count);
+			}
 		}
-		if (mode != 0)
-		{
-			float float_counter;
-			memcpy(&float_counter, &counter, counter_size);
-			return (float_counter >= min_count) && (float_counter <= max_count);
-		}
-		return (counter >= min_count) && (counter <= max_count);
+		//applay filtering only if counter_size != 0
+		return (counter_size == 0) || ((counter >= min_count) && (counter <= max_count));
 	}
 	return false;
 }

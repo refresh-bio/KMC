@@ -639,7 +639,7 @@ public:
 		CLutUpdater lut_updater(lut);
 		vector<thread> threads;
 		vector<CKXmerMerger<SIZE>*> mergers;
-		uint32 counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
+		uint32 counter_size = calc_counter_size(cutoff_max, counter_max);
 
 		uint32 rec_len = (kmer_len - lut_prefix_len) / 4 + counter_size;
 

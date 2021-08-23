@@ -745,6 +745,8 @@ uint32 CParametersParser::get_max_counter_max()
 			max_counter_max = config.headers[i].counter_size;
 	}
 	max_counter_max = (uint32)((1ull << (max_counter_max << 3)) - 1);
+	if (max_counter_max == 0)
+		max_counter_max = 1;
 	return max_counter_max;
 }
 

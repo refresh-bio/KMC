@@ -1001,7 +1001,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKxmers()
 				InitKXMerSet(pos[i - 1], pos[i], max_x + 2 - i, i);
 
 			uint64 counter_pos = 0;
-			uint64 counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
+			uint64 counter_size = calc_counter_size(cutoff_max, counter_max);
 
 			CKmer<SIZE> kmer, next_kmer;
 			kmer.clear();
@@ -1139,7 +1139,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKmers()
 		lut_recs = 0;
 	uint64 lut_size = lut_recs * sizeof(uint64);
 
-	uint64 counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
+	uint64 counter_size = calc_counter_size(cutoff_max, counter_max);
 
 	uchar *out_buffer;
 	uchar *raw_lut;

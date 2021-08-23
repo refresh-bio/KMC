@@ -83,7 +83,7 @@ void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, u
 		std::function<int64(int64)> round_up_to_alignment = [](int64 x){ return (x + ALIGNMENT - 1) / ALIGNMENT * ALIGNMENT; };
 
 
-		uint64 counter_size = min(BYTE_LOG(Params.cutoff_max), BYTE_LOG(Params.counter_max));		
+		uint64 counter_size = calc_counter_size(Params.cutoff_max, Params.counter_max);
 
 		uint32 kmer_symbols = Params.kmer_len - Params.lut_prefix_len;
 		uint64 kmer_bytes = kmer_symbols / 4;

@@ -81,8 +81,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		lut_pos = 0;
 	}
 	
-	
-	counter_size = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));	
+	counter_size = calc_counter_size(cutoff_max, counter_max);
 	
 	if (!without_output)
 	{

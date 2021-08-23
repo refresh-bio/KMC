@@ -140,8 +140,8 @@ template <unsigned SIZE> void CKmerBinReader<SIZE>::ProcessBins()
 			kxmer_symbols = kmer_len;
 		}
 		uint64 max_out_recs    = (n_rec+1) / max(cutoff_min, 1u);
-		
-		uint64 counter_size    = min(BYTE_LOG(cutoff_max), BYTE_LOG(counter_max));
+
+		uint64 counter_size = calc_counter_size(cutoff_max, counter_max);
 
 		uint32 kmer_symbols = kmer_len - lut_prefix_len;
 		uint64 kmer_bytes = kmer_symbols / 4;

@@ -608,7 +608,7 @@ template<unsigned SIZE> bool CBin<SIZE>::NextKmer(CKmer<SIZE>& kmer, uint32& cou
 
 		--kmers_left;
 		--kmers_left_for_current_prefix;
-		if (counter - cutoff_min <= cutoff_range)
+		if (counter_size == 0 || counter - cutoff_min <= cutoff_range) //do not applay filtering if counter_size == 0 as it does not make sence
 			return true;
 	}
 	return false;
@@ -715,7 +715,7 @@ template<unsigned SIZE> void CKmerPQ<SIZE>::Process(CCircularQueue<SIZE>& output
 
 			--bin->kmers_left;
 			--bin->kmers_left_for_current_prefix;
-			if (counter - cutoff_min <= cutoff_range)
+			if (counter_size == 0 || counter - cutoff_min <= cutoff_range) //do not applay filtering if counter_size == 0 as it does not make sence
 			{
 				exists = true;
 				break;
@@ -1790,11 +1790,16 @@ template<unsigned SIZE> bool CKMC2DbReaderSequential<SIZE>::NextKmerSequential(C
 		for (int32 i = this->prefix_bytes - 1; i >= 0; --i)
 			kmer.set_byte(pos--, current_prefix >> (i << 3));
 
-		counter = 0;
-		for (int32 i = this->header.counter_size - 1; i >= 0; --i)
+		if (this->header.counter_size == 0)
+			counter = 1;
+		else
 		{
-			counter <<= 8;
-			counter += record[i];
+			counter = 0;
+			for (int32 i = this->header.counter_size - 1; i >= 0; --i)
+			{
+				counter <<= 8;
+				counter += record[i];
+			}
 		}
 
 		++this->suffix_number;
@@ -1803,7 +1808,8 @@ template<unsigned SIZE> bool CKMC2DbReaderSequential<SIZE>::NextKmerSequential(C
 		if (this->suffix_buff_pos >= this->suffix_buff_size)
 			this->reload_suf_buff();
 
-		if (counter >= this->desc.cutoff_min && counter <= this->desc.cutoff_max)
+		//do not applay filtering if counter_size == 0 as it does not make sence
+		if ((this->header.counter_size == 0) || (counter >= this->desc.cutoff_min && counter <= this->desc.cutoff_max))
 			return true;
 	}
 }
@@ -1888,7 +1894,7 @@ template<unsigned SIZE> bool CKMC2DbReaderCountersOnly<SIZE>::NextCounter(uint32
 		if (this->suffix_buff_pos >= this->suffix_buff_size)
 			this->reload_suf_buff();
 
-		if (counter >= this->desc.cutoff_min && counter <= this->desc.cutoff_max)
+		if (this->header.counter_size == 0 || (counter >= this->desc.cutoff_min && counter <= this->desc.cutoff_max)) //do not applay filtering if counter_size == 0 as it does not make sence
 			return true;
 	}
 }

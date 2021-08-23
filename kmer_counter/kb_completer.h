@@ -153,7 +153,7 @@ bool CSmallKCompleter::CompleteKMCFormat(CSmallKBuf<COUNTER_TYPE> result)
 	uchar* raw_buffer;
 	uint64 counter_size = 0;
 
-	counter_size = min(BYTE_LOG_ULL((uint64)cutoff_max), BYTE_LOG_ULL((uint64)counter_max));
+	counter_size = calc_counter_size_ull(cutoff_max, counter_max);
 	uint64 kmer_suf_bytes = (kmer_len - lut_prefix_len) / 4;
 
 
@@ -311,7 +311,7 @@ bool CSmallKCompleter::CompleteKFFFormat(CSmallKBuf<COUNTER_TYPE> result)
 	uchar* raw_buffer;
 	uint64 counter_size = 0;
 
-	counter_size = min(BYTE_LOG_ULL((uint64)cutoff_max), BYTE_LOG_ULL((uint64)counter_max));
+	counter_size = calc_counter_size_ull(cutoff_max, counter_max);
 	
 	pmm_small_k_completer->reserve(raw_buffer);
 

@@ -141,7 +141,8 @@ protected:
 
 	void ProcessKmer(CKmer<SIZE>& kmer, uint32 counter)
 	{
-		if (counter >= cutoff_min && counter <= cutoff_max)
+		//do not applay filtering if counter_size == 0 as it does not make sence
+		if (config.headers.front().counter_size == 0 || (counter >= cutoff_min && counter <= cutoff_max))
 		{
 			if (counter > counter_max)
 				counter = counter_max;
