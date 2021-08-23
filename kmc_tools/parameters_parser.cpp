@@ -785,6 +785,14 @@ bool CParametersParser::validate_input_dbs()
 			return false;
 		}
 	}
+
+	for(auto& header : config.headers)
+		if (header.counter_size == 0)
+		{
+			std::cerr << "Error: kmc_tools currently does not support k-mer sets without counters. It will be implemented soon. If needed faster please contact authors or post an issue at https://github.com/refresh-bio/KMC/issues.\n";
+			exit(1);
+		}
+
 	config.kmer_len = kmer_len;
 
 

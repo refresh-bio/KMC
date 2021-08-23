@@ -435,6 +435,11 @@ bool parse_parameters(int argc, char *argv[])
 		}
 	}
 
+	if (Params.p_cs == 1)
+	{
+		std::cerr << "Warning: using -cs1 will cause not storying counters in KMC output file, all counters will be assumed to be 1. This is experimental and is not currently supported in kmc_tools. Will be implemented soon.\n";
+	}
+
 	//Check if output files may be created and if it is possible to create file in specified tmp location
 	if(!Params.p_without_output)
 	{
