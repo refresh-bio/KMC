@@ -146,7 +146,7 @@
     <ClCompile Include="kmc.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\kmer_counter\kmer_counter.vcxproj">
+    <ProjectReference Include="..\kmc_core\kmc_core.vcxproj">
       <Project>{8c8b90da-28b7-4d82-81f3-c0e7ce52d59f}</Project>
     </ProjectReference>
   </ItemGroup>

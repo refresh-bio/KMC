@@ -1,5 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include "../kmer_counter/kmc_runner.h"
+#include "../kmc_core/kmc_runner.h"
 #include <cstring>
 #include <iostream>
 #include <fstream>
