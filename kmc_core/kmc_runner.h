@@ -66,6 +66,8 @@ namespace KMC
 	enum class InputFileType { FASTQ, FASTA, MULTILINE_FASTA, BAM, KMC };
 	enum class OutputFileType { KMC, KFF };
 	
+	enum class EstimateHistogramCfg { DONT_ESTIMATE, ESTIMATE_AND_COUNT_KMERS, ONLY_ESTIMATE };
+
 	class Stage1Params
 	{
 		struct 
@@ -92,7 +94,7 @@ namespace KMC
 		ILogger* verboseLogger = &defaults.defaultVerboseLogger;
 		IPercentProgressObserver* percentProgressObserver = &defaults.defaultPercentProgressObserver;
 		ILogger* warningsLogger = &defaults.defaultWarningsLogger;
-
+		EstimateHistogramCfg estimateHistogramCfg = EstimateHistogramCfg::DONT_ESTIMATE;
 	public:		
 		Stage1Params& SetInputFiles(const std::vector<std::string>& inputFiles);
 		Stage1Params& SetTmpPath(const std::string& tmpPath);
@@ -110,6 +112,7 @@ namespace KMC
 		Stage1Params& SetVerboseLogger(ILogger* verboseLogger);
 		Stage1Params& SetPercentProgressObserver(IPercentProgressObserver* percentProgressObserver);
 		Stage1Params& SetWarningsLogger(ILogger* warningsLogger);
+		Stage1Params& SetEstimateHistogramCfg(EstimateHistogramCfg estimateHistogramCfg);
 
 		const std::vector<std::string>& GetInputFiles() const noexcept { return inputFiles; }
 		const std::string& GetTmpPath() const noexcept { return tmpPath; }
@@ -127,6 +130,7 @@ namespace KMC
 		ILogger* GetVerboseLogger() const noexcept { return verboseLogger; }
 		IPercentProgressObserver* GetPercentProgressObserver() const noexcept { return percentProgressObserver; }
 		ILogger* GetWarningsLogger() const noexcept { return warningsLogger; }
+		EstimateHistogramCfg GetEstimateHistogramCfg() const noexcept { return estimateHistogramCfg; }
 	};
 
 
@@ -181,6 +185,7 @@ namespace KMC
 		bool wasSmallKOptUsed = false;
 		uint64_t nTotalSuperKmers{};
 		uint64_t tmpSize{};
+		std::vector<uint64_t> estimatedHistogram;
 	};
 
 	struct Stage2Results

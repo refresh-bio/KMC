@@ -10,6 +10,7 @@ using namespace std;
 struct CLIParams
 {
 	std::string jsonSummaryFileName;
+	std::string estimatedHistogramFileName;
 };
 
 struct Params
@@ -50,6 +51,8 @@ void usage()
 		<< "  -w - without output\n"
 		<< "  -o<kmc/kff> - output in KMC of KFF format; default: KMC\n"
 		<< "  -hp - hide percentage progress (default: false)\n"
+		<< "  -e<file_name> - estimage histogram of k-mers counts and work as usual\n"
+		<< "  -E<file_name> - only estimage histogram of k-mers counts and stop after stage1\n"
 		<< "Example:\n"
 		<< "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
 		<< "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
@@ -205,6 +208,17 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			if (cliParams.jsonSummaryFileName == "")
 				cerr << "Warning: file name for json summary file missed (-j switch)\n";
 		}
+		else if (strncmp(argv[i], "-e", 2) == 0 || strncmp(argv[i], "-E", 2) == 0)
+		{
+			cliParams.estimatedHistogramFileName = &argv[i][2];
+			auto eE = argv[i][1]; //small or capital e
+			if (cliParams.estimatedHistogramFileName == "")
+				cerr << "Warning: file name for estimated histogram missed (-" << eE << " switch)\n";
+			if (eE == 'e')
+				stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS);
+			else // 'E'
+				stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ONLY_ESTIMATE);
+		}
 		else if (strncmp(argv[i], "-w", 2) == 0)
 			stage2Params.SetWithoutOutput(true);			
 
@@ -276,6 +290,21 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		return false;
 	}
 	return true;
+}
+
+void save_estimated_histogram(const std::string& fileName, const std::vector<uint64_t>& estimatedHistogram)
+{
+	if (fileName == "")
+		return;
+
+	std::ofstream out(fileName);
+	if (!out)
+	{
+		std::cerr << "Warning: Cannot open file " << fileName << " to store estimated histogram";
+		return;
+	}
+	for (uint32_t i = 1; i < estimatedHistogram.size(); ++i)
+		out << i << "\t" << estimatedHistogram[i] << "\n";
 }
 
 void save_stats_in_json_file(const Params& params, const KMC::Stage1Results& stage1Results,	const KMC::Stage2Results& stage2Results)
@@ -397,6 +426,7 @@ int main(int argc, char** argv)
 
 		KMC::Runner runner;
 		auto stage1Results = runner.RunStage1(params.stage1Params);
+		save_estimated_histogram(params.cliParams.estimatedHistogramFileName, stage1Results.estimatedHistogram);
 		auto stage2Results = runner.RunStage2(params.stage2Params);
 		print_summary(params, stage1Results, stage2Results);
 		save_stats_in_json_file(params, stage1Results, stage2Results);

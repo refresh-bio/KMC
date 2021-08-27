@@ -56,6 +56,9 @@ class CSplitter {
 
 	bool homopolymer_compressed;
 
+	CntHashEstimator* ntHashEstimator;
+	bool onlyEstimateHistogram = false;
+
 	bool GetSeqLongRead(char *seq, uint32 &seq_size, uchar header_marker);
 
 	bool GetSeq(char *seq, uint32 &seq_size, ReadType read_type);

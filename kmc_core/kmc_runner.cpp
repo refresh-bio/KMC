@@ -280,7 +280,11 @@ namespace KMC
 		this->warningsLogger = warningsLogger;
 		return *this;
 	}
-
+	Stage1Params& Stage1Params::SetEstimateHistogramCfg(EstimateHistogramCfg estimateHistogramCfg)
+	{
+		this->estimateHistogramCfg = estimateHistogramCfg;
+		return *this;
+	}
 
 	Stage2Params& Stage2Params::SetMaxRamGB(uint32_t maxRamGB)
 	{

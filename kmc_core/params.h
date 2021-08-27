@@ -17,8 +17,7 @@
 #include "s_mapper.h"
 #include <vector>
 #include <string>
-
-//typedef enum {fasta, fastq, multiline_fasta, bam} input_type;
+#include "libs/ntHash/ntHashWrapper.h"
 
 using InputType = KMC::InputFileType;
 using OutputType = KMC::OutputFileType;
@@ -98,6 +97,7 @@ struct CKMCParams {
 	//vector<int> n_sorting_threads;// number of OMP threads per sorters
 	uint32 max_x;					//k+x-mers will be counted
 
+	KMC::EstimateHistogramCfg estimateHistogramCfg = KMC::EstimateHistogramCfg::DONT_ESTIMATE;
 	//params for strict memory mode
 	int sm_n_uncompactors;
 	int sm_n_sorting_threads;	
@@ -167,6 +167,8 @@ struct CKMCQueues
 	
 	CCompletedBinsCollector* sm_cbc;
 	CSortersManager* sorters_manager = nullptr;
+
+	CntHashEstimator* ntHashEstimator = nullptr;
 };
 
 #endif

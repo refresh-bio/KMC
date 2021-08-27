@@ -52,6 +52,10 @@ CSplitter::CSplitter(CKMCParams &Params, CKMCQueues &Queues)
 	bins = nullptr;
 
 	homopolymer_compressed = Params.homopolymer_compressed;
+
+	ntHashEstimator = Queues.ntHashEstimator;
+
+	onlyEstimateHistogram = Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ONLY_ESTIMATE;
 }
 
 void CSplitter::InitBins(CKMCParams &Params, CKMCQueues &Queues)
@@ -557,6 +561,12 @@ bool CSplitter::ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type
 
 	while (GetSeq(seq, seq_size, read_type))
 	{		
+		if (ntHashEstimator)
+		{
+			ntHashEstimator->Process(seq, seq_size);
+			if (onlyEstimateHistogram)
+				continue;
+		}
 		if (homopolymer_compressed)
 			HomopolymerCompressSeq(seq, seq_size);
 		//if (file_type != multiline_fasta && file_type != fastq) //read conting moved to GetSeq

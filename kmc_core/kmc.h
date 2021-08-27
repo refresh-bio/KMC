@@ -139,6 +139,11 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 	Params.file_type = stage1Params.GetInputFileType();
 	Params.n_bins = stage1Params.GetNBins();
 
+	//TODO: for now if there is only histogram to estimate (no k-mer counting) KMC will work further and do nothing, maybe it shouldn't
+	//create empty tmp files and empty output database
+
+	Params.estimateHistogramCfg = stage1Params.GetEstimateHistogramCfg();
+
 	if (Params.kmer_len % 32 == 0)
 		Params.max_x = 0;
 	else
@@ -180,7 +185,6 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 		}
 		SetThreads1Stage(stage1Params);
 	}
-
 	Params.max_mem_size = NORM(((uint64)stage1Params.GetMaxRamGB()) * 1000000000ull, (uint64)MIN_MEM * 1000000000ull, 1024ull * 1000000000ull);
 	Params.KMER_T_size = sizeof(CKmer<SIZE>);
 
@@ -386,7 +390,13 @@ template <unsigned SIZE> void CKMC<SIZE>::AdjustMemoryLimitsStage2()
 template <unsigned SIZE> bool CKMC<SIZE>::AdjustMemoryLimits()
 {
 	// Memory for splitter internal buffers
-	int64 m_rest = Params.max_mem_size;  
+	int64 m_rest = Params.max_mem_size;
+
+	if(Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS || 
+		Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ONLY_ESTIMATE)
+	{
+		m_rest -= 1ull << 30; //TODO: 1GB is assumed for estimation, but depending on the parameters it may be different
+	}
 
 	Params.mem_part_pmm_stats = ((1 << Params.signature_len * 2) + 1) * sizeof(uint32);
 	Params.mem_tot_pmm_stats = (Params.n_splitters + 1 + 1) * Params.mem_part_pmm_stats; //1 merged in main thread, 1 for sorting indices
@@ -724,6 +734,13 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 	results.wasSmallKOptUsed = true;
 	ShowSettingsSmallKOpt();
 
+	if (Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS ||
+		Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ONLY_ESTIMATE)
+	{
+		std::cerr << "Error: histogram estimation not supported when small k optimization is on\n";
+		exit(1);
+	}
+
 	w1.startTimer();
 	Queues.input_files_queue = new CInputFilesQueue(Params.input_file_names);
 	Queues.part_queue = new CPartQueue(Params.n_readers);
@@ -964,7 +981,8 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 		Queues.bam_task_manager = new CBamTaskManager;
 	}
 	w_bin_file_reader = new CWBinaryFilesReader(Params, Queues, false);
-	Queues.stats_part_queue = new CStatsPartQueue(Params.n_readers, MAX(STATS_FASTQ_SIZE, w_bin_file_reader->GetPredictedSize() / 100));
+	auto predicted_total_input_size = w_bin_file_reader->GetPredictedSize();
+	Queues.stats_part_queue = new CStatsPartQueue(Params.n_readers, MAX(STATS_FASTQ_SIZE, predicted_total_input_size / 100));
 
 	Queues.s_mapper = new CSignatureMapper(Queues.pmm_stats, Params.signature_len, Params.n_bins
 #ifdef DEVELOP_MODE
@@ -1052,6 +1070,15 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 
 	w_splitters.resize(Params.n_splitters);
 
+	if (Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS ||
+		Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ONLY_ESTIMATE)
+	{
+		if (predicted_total_input_size < 50000000000ull)
+			Queues.ntHashEstimator = new CntHashEstimator(Params.kmer_len, 7);
+		else
+			Queues.ntHashEstimator = new CntHashEstimator(Params.kmer_len, 11);
+	}
+
 	for (int i = 0; i < Params.n_splitters; ++i)
 	{
 		w_splitters[i] = new CWSplitter(Params, Queues);
@@ -1092,6 +1119,12 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 
 	bin_file_reader_th.join();
 	delete w_bin_file_reader;
+
+	if(Queues.ntHashEstimator)
+	{
+		Queues.ntHashEstimator->EstimateHistogram(results.estimatedHistogram);
+		delete Queues.ntHashEstimator;
+	}
 
 	for (auto& ptr : Queues.binary_pack_queues)
 		delete ptr;

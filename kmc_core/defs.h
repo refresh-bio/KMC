@@ -48,7 +48,7 @@
 
 #define MIN_K		1
 
-#define MIN_MEM		1
+#define MIN_MEM		2
 
 // Range of number of FASTQ/FASTA reading threads
 #define MIN_SF		1
