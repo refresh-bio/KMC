@@ -108,7 +108,11 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			break;
 		// Number of threads
 		if (strncmp(argv[i], "-t", 2) == 0)
-			stage1Params.SetNThreads(atoi(&argv[i][2])); //TODO: what with stage2 in this case?
+		{
+			auto nThreads = atoi(&argv[i][2]);
+			stage1Params.SetNThreads(nThreads); //TODO: what with stage2 in this case?
+			stage2Params.SetNThreads(nThreads);
+		}
 		// k-mer length
 		else if (strncmp(argv[i], "-k", 2) == 0)
 			stage1Params.SetKmerLen(atoi(&argv[i][2]));		
