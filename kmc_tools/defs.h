@@ -14,10 +14,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-using uint32 = unsigned int;
-using uint64 = unsigned long long;
-using int32 = int;
-using int64 = long long;
+#include <cinttypes>
+
+using uint32 = uint32_t;
+using uint64 = uint64_t;
+using int32 = int32_t;
+using int64 = int64_t;
 using uchar = unsigned char;
 
 #define MIN(x,y)	((x) < (y) ? (x) : (y))

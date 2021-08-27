@@ -15,6 +15,8 @@ Date   : 2019-05-19
 #include "params.h"
 #include "queues.h"
 #include "percent_progress.h"
+#define DONT_DEFINE_UCHAR
+#include "../kmc_api/kmc_file.h"
 #include "bam_utils.h"
 #include <sys/stat.h>
 
@@ -43,8 +45,8 @@ class CBinaryFilesReader
 	uint64 predicted_size;	
 	CPercentProgress percent_progress;
 
-	bool bam_input = false; //for bam input behaviour of this class is quite different, for example only one file is readed at once
-	
+	InputType input_type; //for bam input behaviour of this class is quite different, for example only one file is readed at once
+						  //also for KMC, where this class does almost nothing, just sends kmc file path to reader
 	void notify_readed(uint64 readed)
 	{		
 		percent_progress.NotifyProgress(readed);
@@ -219,6 +221,81 @@ class CBinaryFilesReader
 		bam_task_manager->NotifyBinaryReaderCompleted(id-1);		
 	}
 
+	/*
+	* TODO: for now very simple version, that just reads k-mers from databases and transforms it to pseudoreads
+	* it uses KMC API. Better solution would be to read binary data from kmc pre and suf files and pass it to the reader that would decode 
+	* and prepare for splitter.
+	* TODO: also this thread is now much more busy and probably should be counted to the numbre of threads
+	*/
+	void ProcessKMC()
+	{
+		std::string file_name;
+		//for now im using only one binary_pack_queue, but it is just first and simple implementation
+		notify_readed(0);
+		while (input_files_queue->pop(file_name))
+		{
+			uchar* part;
+			pmm_binary_file_reader->reserve(part);
+			CKMCFile kmc_file;
+			kmc_file.OpenForListing(file_name);
+			CKMCFileInfo info;
+			kmc_file.Info(info);
+			uint32_t rec_size = 3 + info.kmer_length; // `>` + '\n' + kmer + '\n'
+			uint32 kmers_in_part = part_size / rec_size;
+
+			CKmerAPI kmer(info.kmer_length);
+
+			uint32 id{};
+			FilePart file_part = FilePart::Begin;
+			uint32 c;
+			uchar* ptr = part;
+			bool forced_to_finish = false;
+			while (kmc_file.ReadNextKmer(kmer, c))
+			{
+				*ptr++ = '>';
+				*ptr++ = '\n';
+				kmer.to_string((char*)ptr);
+				ptr += info.kmer_length;
+				*ptr++ = '\n';
+				++id;
+				if (id == kmers_in_part)
+				{
+					notify_readed(id);
+					if (!binary_pack_queues[0]->push(part, id * rec_size, file_part, CompressionType::plain))
+					{
+						forced_to_finish = true;
+						pmm_binary_file_reader->free(part);
+						break;
+					}
+					id = 0;
+					file_part = FilePart::Middle;
+					pmm_binary_file_reader->reserve(part);
+					ptr = part;
+				}
+			}
+
+			if (id && !forced_to_finish)
+			{
+				notify_readed(id);
+				if (!binary_pack_queues[0]->push(part, id * rec_size, file_part, CompressionType::plain))
+				{
+					pmm_binary_file_reader->free(part);
+				}
+				//id = 0;
+				//file_part = FilePart::Middle;
+				//pmm_binary_file_reader->reserve(part);
+				//ptr = part;
+			}
+		}
+
+		binary_pack_queues[0]->push(nullptr, 0, FilePart::End, CompressionType::plain);
+
+		//user may specify more fastq_readers than input files
+		for (auto& e : binary_pack_queues)
+			e->mark_completed();
+	}
+
+
 public:
 	CBinaryFilesReader(CKMCParams &Params, CKMCQueues &Queues, bool _show_progress)
 		:
@@ -232,27 +309,57 @@ public:
 		auto files_copy = input_files_queue->GetCopy();		
 		total_size = 0;
 		predicted_size = 0;
-		bam_input = Params.file_type == InputType::BAM;
+		input_type = Params.file_type;
 
 		while (!files_copy.empty())
 		{
 			string& f_name = files_copy.front();
-			FILE* f = fopen(f_name.c_str(), "rb");
-			if(!is_file(f_name.c_str()))
+			uint64 fsize;
+			if(input_type == InputType::KMC)
 			{
-				cerr << "Error: " << f_name << " is not a file\n";
-				exit(1);
+				CKMCFile kmc_file;
+				if (!kmc_file.OpenForListing(f_name))
+				{
+					cerr << "Cannot open KMC database: " << f_name << "\n";
+					exit(1);
+				}
+				if (!kmc_file.IsKMC2())
+				{
+					cerr << "Error: currently only KMC databases in version 2 can be readed. If needed to read other version please post an GitHub issue.\n";
+					exit(1);
+				}
+				CKMCFileInfo info;
+				kmc_file.Info(info);
+				fsize = info.total_kmers;
+				kmc_file.Close();
 			}
-			if (!f)
+			else
 			{
-				cerr << "Cannot open file: " << f_name << "\n";
-				exit(1);
+				FILE* f = fopen(f_name.c_str(), "rb");
+				if (!is_file(f_name.c_str()))
+				{
+					cerr << "Error: " << f_name << " is not a file\n";
+					exit(1);
+				}
+				if (!f)
+				{
+					cerr << "Cannot open file: " << f_name << "\n";
+					exit(1);
+				}
+				my_fseek(f, 0, SEEK_END);
+				fsize = my_ftell(f);
+				fclose(f);
 			}
-			my_fseek(f, 0, SEEK_END);
-			total_size += my_ftell(f);
-			if (bam_input)
+
+			total_size += fsize;
+
+			if (input_type == InputType::BAM)
 			{
-				predicted_size += (uint64)(0.7 * my_ftell(f)); //TODO: is this correct?
+				predicted_size += (uint64)(0.7 * fsize); //TODO: is this correct?
+			}
+			else if (input_type == InputType::KMC)
+			{
+				predicted_size = fsize;
 			}
 			else
 			{
@@ -260,19 +367,18 @@ public:
 				switch (compression)
 				{
 				case CompressionType::plain:
-					predicted_size += my_ftell(f);
+					predicted_size += fsize;
 					break;
 				case CompressionType::gzip:
-					predicted_size += (uint64)(3.2 * my_ftell(f));
+					predicted_size += (uint64)(3.2 * fsize);
 					break;
 				case CompressionType::bzip2:
-					predicted_size += (uint64)(4.0 * my_ftell(f));
+					predicted_size += (uint64)(4.0 * fsize);
 					break;
 				default:
 					break;
 				}
 			}
-			fclose(f);
 			files_copy.pop();
 		}
 		percent_progress.SetMaxVal(total_size);
@@ -288,9 +394,14 @@ public:
 
 	void Process()
 	{
-		if (bam_input)
+		if (input_type == InputType::BAM)
 		{
 			ProcessBam();
+			return;
+		}
+		if (input_type == InputType::KMC)
+		{
+			ProcessKMC();
 			return;
 		}
 		std::string file_name;

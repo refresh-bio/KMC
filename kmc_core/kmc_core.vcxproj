@@ -210,6 +210,8 @@
     <ClInclude Include="timer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\kmc_api\kmc_file.cpp" />
+    <ClCompile Include="..\kmc_api\kmer_api.cpp" />
     <ClCompile Include="bkb_reader.cpp" />
     <ClCompile Include="bkb_writer.cpp" />
     <ClCompile Include="cpu_info.cpp" />

@@ -197,7 +197,7 @@
     <ClCompile Include="kff_info_reader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\kmer_counter\kff_writer.cpp">
+    <ClCompile Include="..\kmc_core\kff_writer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

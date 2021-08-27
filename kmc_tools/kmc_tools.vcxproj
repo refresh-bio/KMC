@@ -198,7 +198,7 @@
     <ClCompile Include="..\kmc_api\kmc_file.cpp" />
     <ClCompile Include="..\kmc_api\kmer_api.cpp" />
     <ClCompile Include="..\kmc_api\mmer.cpp" />
-    <ClCompile Include="..\kmer_counter\kff_writer.cpp" />
+    <ClCompile Include="..\kmc_core\kff_writer.cpp" />
     <ClCompile Include="fastq_filter.cpp" />
     <ClCompile Include="fastq_reader.cpp" />
     <ClCompile Include="fastq_writer.cpp" />

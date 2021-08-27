@@ -12,6 +12,8 @@
 #ifndef _KMER_DEFS_H
 #define _KMER_DEFS_H
 
+#include <cinttypes>
+
 #define KMC_VER		"3.1.1"
 #define KMC_DATE	"2019-05-19"
 
@@ -43,13 +45,13 @@
 	#define my_fseek    _fseeki64
 	#define my_ftell    _ftelli64
 #endif
-	//typedef unsigned char uchar;
-
-	typedef int int32;
-	typedef unsigned int uint32;
-	typedef long long int64;
-	typedef unsigned long long uint64;
+	using int32 = int32_t;
+	using uint32 = uint32_t;
+	using int64 = int64_t;
+	using uint64 = uint64_t;
+#ifndef DONT_DEFINE_UCHAR
 	typedef unsigned char uchar;
+#endif
 #endif
 
 // ***** EOF

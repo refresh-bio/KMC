@@ -63,7 +63,7 @@ namespace KMC
 		void Log(const std::string& msg) override;
 	};
 
-	enum class InputFileType { FASTQ, FASTA, MULTILINE_FASTA, BAM };
+	enum class InputFileType { FASTQ, FASTA, MULTILINE_FASTA, BAM, KMC };
 	enum class OutputFileType { KMC, KFF };
 	
 	class Stage1Params

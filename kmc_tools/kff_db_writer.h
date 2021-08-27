@@ -13,7 +13,7 @@ Date   : 2019-05-19
 #ifndef _KFF_DB_WRITER_H
 #define _KFF_DB_WRITER_H
 
-#include "../kmer_counter/kff_writer.h"
+#include "../kmc_core/kff_writer.h"
 #include "defs.h"
 
 

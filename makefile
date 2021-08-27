@@ -40,6 +40,8 @@ $(KMC_MAIN_DIR)/kmer.o \
 $(KMC_MAIN_DIR)/splitter.o \
 $(KMC_MAIN_DIR)/kb_collector.o \
 $(KMC_MAIN_DIR)/kff_writer.o \
+$(KMC_API_DIR)/kmc_file.o \
+$(KMC_API_DIR)/kmer_api.o \
 $(KMC_MAIN_DIR)/kmc_runner.o
 
 RADULS_OBJS = \

@@ -249,15 +249,32 @@ template <unsigned SIZE> void CKMC<SIZE>::SetThreads1Stage(const KMC::Stage1Para
 			else if (p.size() > 4 && string(p.end() - 4, p.end()) == ".bz2")
 				gz_bz2 = true;
 
-			FILE* tmp = my_fopen(p.c_str(), "rb");
-			if (!tmp)
+			uint64 fsize{};
+			if (Params.file_type != InputType::KMC)
 			{
-				cerr << "Error: cannot open file: " << p.c_str();
-				exit(1);
+				FILE* tmp = my_fopen(p.c_str(), "rb");
+				if (!tmp)
+				{
+					cerr << "Error: cannot open file: " << p.c_str();
+					exit(1);
+				}
+				my_fseek(tmp, 0, SEEK_END);
+				fsize = my_ftell(tmp);
+				fclose(tmp);
 			}
-			my_fseek(tmp, 0, SEEK_END);
-			file_sizes.push_back(my_ftell(tmp));
-			fclose(tmp);
+			else
+			{
+				CKMCFile kmc_file;
+				if (!kmc_file.OpenForListing(p))
+				{
+					cerr << "Error: cannot open KMC database: " << p.c_str();
+					exit(1);
+				}
+				CKMCFileInfo info;
+				kmc_file.Info(info);
+				fsize = info.total_kmers;
+			}
+			file_sizes.push_back(fsize);
 		}
 		if (gz_bz2)
 		{
@@ -470,6 +487,9 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage1()
 	case InputType::BAM:
 		ostr << "BAM\n";
 		break;
+	case InputType::KMC:
+		ostr << "KMC\n";
+		break;
 	}
 	ostr << "Output format                : ";
 	switch (Params.output_type)		
@@ -562,6 +582,9 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsSmallKOpt()
 		break;
 	case InputType::BAM:
 		ostr << "BAM\n";
+		break;
+	case InputType::KMC:
+		ostr << "KMC\n";
 		break;
 	}
 	ostr << "Output format                 : ";
@@ -950,69 +973,78 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 	);
 	Queues.disk_logger = new CDiskLogger;
 	// ***** Stage 0 *****
+
+	thread bin_file_reader_th;
 	w0.startTimer();
-	w_stats_splitters.resize(Params.n_splitters);
-
-	for (int i = 0; i < Params.n_splitters; ++i)
+	if(Params.file_type != InputType::KMC)
 	{
-		w_stats_splitters[i] = new CWStatsSplitter(Params, Queues);
-		gr0_2.push_back(thread(std::ref(*w_stats_splitters[i])));
-	}
+		w_stats_splitters.resize(Params.n_splitters);
 
-	w_stats_fastqs.resize(Params.n_readers);
-	for (int i = 0; i < Params.n_readers; ++i)
+		for (int i = 0; i < Params.n_splitters; ++i)
+		{
+			w_stats_splitters[i] = new CWStatsSplitter(Params, Queues);
+			gr0_2.push_back(thread(std::ref(*w_stats_splitters[i])));
+		}
+
+		w_stats_fastqs.resize(Params.n_readers);
+		for (int i = 0; i < Params.n_readers; ++i)
+		{
+			w_stats_fastqs[i] = new CWStatsFastqReader(Params, Queues, Params.file_type == InputType::BAM ? nullptr : Queues.binary_pack_queues[i]);
+			gr0_1.push_back(thread(std::ref(*w_stats_fastqs[i])));
+		}
+		bin_file_reader_th = std::thread(std::ref(*w_bin_file_reader));
+
+		for (auto p = gr0_1.begin(); p != gr0_1.end(); ++p)
+			p->join();
+
+		for (auto p = gr0_2.begin(); p != gr0_2.end(); ++p)
+			p->join();
+
+		bin_file_reader_th.join();
+		delete w_bin_file_reader;
+
+		for (auto& ptr : Queues.binary_pack_queues)
+			delete ptr;
+
+		if (Params.file_type == InputType::BAM)
+			delete Queues.bam_task_manager;
+
+		uint32 *stats;
+		Queues.pmm_stats->reserve(stats);
+		fill_n(stats, (1 << Params.signature_len * 2) + 1, 0);
+
+
+		for (int i = 0; i < Params.n_readers; ++i)
+			delete w_stats_fastqs[i];
+
+		for (int i = 0; i < Params.n_splitters; ++i)
+		{
+			w_stats_splitters[i]->GetStats(stats);
+			delete w_stats_splitters[i];
+		}
+
+		delete Queues.stats_part_queue;
+		Queues.stats_part_queue = nullptr;
+		delete Queues.input_files_queue;
+		Queues.input_files_queue = new CInputFilesQueue(Params.input_file_names);
+
+		heuristic_time.startTimer();
+		Queues.s_mapper->Init(stats);
+		heuristic_time.stopTimer();
+
+		cerr << "\n";
+
+		Queues.pmm_stats->free(stats);
+		Queues.pmm_stats->release();
+		delete Queues.pmm_stats;
+		Queues.pmm_stats = nullptr;
+
+	}
+	else
 	{
-		w_stats_fastqs[i] = new CWStatsFastqReader(Params, Queues, Params.file_type == InputType::BAM ? nullptr : Queues.binary_pack_queues[i]);
-		gr0_1.push_back(thread(std::ref(*w_stats_fastqs[i])));
+		Queues.s_mapper->InitKMC(Params.input_file_names.front());
 	}
-	thread bin_file_reader_th(std::ref(*w_bin_file_reader));
-
-	for (auto p = gr0_1.begin(); p != gr0_1.end(); ++p)
-		p->join();
-
-	for (auto p = gr0_2.begin(); p != gr0_2.end(); ++p)
-		p->join();
-
-	bin_file_reader_th.join();
-	delete w_bin_file_reader;
-
-	for (auto& ptr : Queues.binary_pack_queues)
-		delete ptr;
-
-	if (Params.file_type == InputType::BAM)
-		delete Queues.bam_task_manager;
-
-	uint32* stats;
-	Queues.pmm_stats->reserve(stats);
-	fill_n(stats, (1 << Params.signature_len * 2) + 1, 0);
-
-
-	for (int i = 0; i < Params.n_readers; ++i)
-		delete w_stats_fastqs[i];
-
-	for (int i = 0; i < Params.n_splitters; ++i)
-	{
-		w_stats_splitters[i]->GetStats(stats);
-		delete w_stats_splitters[i];
-	}
-
-	delete Queues.stats_part_queue;
-	Queues.stats_part_queue = nullptr;
-	delete Queues.input_files_queue;
-	Queues.input_files_queue = new CInputFilesQueue(Params.input_file_names);
-
-	heuristic_time.startTimer();
-	Queues.s_mapper->Init(stats);
-	heuristic_time.stopTimer();
-
-	cerr << "\n";
 	w0.stopTimer();
-
-
-	Queues.pmm_stats->free(stats);
-	Queues.pmm_stats->release();
-	delete Queues.pmm_stats;
-	Queues.pmm_stats = nullptr;
 
 	// ***** Stage 1 *****
 	ShowSettingsStage1();

@@ -43,6 +43,70 @@ class CSignatureMapper
 	};
 	
 public:	
+
+	void InitKMC(const std::string& path)
+	{
+		std::string pre_file_name = path + ".kmc_pre";
+		FILE* file = fopen(pre_file_name.c_str(), "rb");
+		if(!file)
+		{
+			std::cerr << "Error: cannot open " << pre_file_name << "\n";
+			exit(1);
+		}
+
+		my_fseek(file, 0, SEEK_END);
+
+		uint32_t header_offset;
+		my_fseek(file, -8, SEEK_END);
+		fread(&header_offset, sizeof(uint32_t), 1, file);
+
+		my_fseek(file, -(8 + (int)header_offset) + 3 * sizeof(uint32_t), SEEK_END);
+		uint32_t lut_prefix_len, sig_len;
+		fread(&lut_prefix_len, sizeof(uint32_t), 1, file);
+		fread(&sig_len, sizeof(uint32_t), 1, file);
+
+		my_fseek(file, -(8 + (int)header_offset + map_size * sizeof(int32_t)), SEEK_END);
+
+		std::map<uint32_t, std::vector<uint32>> m;
+		for(uint32_t sig = 0 ; sig < map_size ; ++sig)
+		{
+			//TODO: refactor this to to make each read endianness-aware
+			uint8_t raw[4];
+			fread(raw, 1, 4, file);
+			int32_t val{};
+			val += raw[3];
+			val <<= 8;
+
+			val += raw[2];
+			val <<= 8;
+
+			val += raw[1];
+			val <<= 8;
+
+			val += raw[0];
+
+			m[val].push_back(sig);
+		}
+		uint32 bin_no = 0;
+		for(const auto& val : m)
+		{
+			bool was_special = false;
+			for(auto sig : val.second)
+			{
+				if(sig == special_signature)
+				{
+					was_special = true;
+					signature_map[sig] = n_bins - 1;
+				}
+				else
+					signature_map[sig] = bin_no;
+			}
+			if(!was_special)
+				++bin_no;
+		}
+
+		fclose(file);
+	}
 	void Init(uint32* stats)
 	{
 		uint32 *sorted;

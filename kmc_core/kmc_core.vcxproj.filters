@@ -64,6 +64,8 @@
     <ClCompile Include="kmc_runner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\kmc_api\kmc_file.cpp" />
+    <ClCompile Include="..\kmc_api\kmer_api.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libs\zconf.h" />

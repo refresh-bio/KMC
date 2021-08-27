@@ -591,7 +591,7 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 		_part = part;
 		_size = 0;
 	}									// Look for the end of the last complete record in a buffer
-	else if (file_type == InputType::FASTA)			// FASTA files
+	else if (file_type == InputType::FASTA || file_type == InputType::KMC)			// FASTA files
 	{
 		if (long_read_in_progress)
 		{			

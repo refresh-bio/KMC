@@ -35,7 +35,7 @@ void usage()
 		<< "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n"
 		<< "  -hc - count homopolymer compressed k-mers (approximate and experimental)\n"
 		<< "  -p<par> - signature length (5, 6, 7, 8, 9, 10, 11); default: 9\n"
-		<< "  -f<a/q/m/bam> - input in FASTA format (-fa), FASTQ format (-fq), multi FASTA (-fm) or BAM (-fbam); default: FASTQ\n"
+		<< "  -f<a/q/m/bam/kmc> - input in FASTA format (-fa), FASTQ format (-fq), multi FASTA (-fm) or BAM (-fbam) or KMC(-fkmc); default: FASTQ\n"
 		<< "  -ci<value> - exclude k-mers occurring less than <value> times (default: 2)\n"
 		<< "  -cs<value> - maximal value of a counter (default: 255)\n"
 		<< "  -cx<value> - exclude k-mers occurring more of than <value> times (default: 1e9)\n"
@@ -158,6 +158,8 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			stage1Params.SetInputFileType(KMC::InputFileType::MULTILINE_FASTA);
 		else if (strncmp(argv[i], "-fbam", 5) == 0)
 			stage1Params.SetInputFileType(KMC::InputFileType::BAM);
+		else if (strncmp(argv[i], "-fkmc", 5) == 0)
+			stage1Params.SetInputFileType(KMC::InputFileType::KMC);
 #ifdef DEVELOP_MODE //TODO: reconsider !!!! 
 		else if (strncmp(argv[i], "-vl", 3) == 0)
 			Params.p_verbose_log = true;

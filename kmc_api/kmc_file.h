@@ -108,6 +108,9 @@ public:
 	// Open files *kmc_pre & *.kmc_suf, read *.kmc_pre to RAM, *.kmc_suf is buffered
 	bool OpenForListing(const std::string& file_name);
 
+	// Return true if kmc is in KMC2 compatiblie format
+	bool IsKMC2() const noexcept { return kmc_version == 0x200; }
+
 	// Return next kmer in CKmerAPI &kmer. Return its counter in float &count. Return true if not EOF
 	bool ReadNextKmer(CKmerAPI &kmer, float &count);
 
