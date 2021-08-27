@@ -201,14 +201,14 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage2(const KMC::Stage2Param
 	
 	if (Params.kmer_len > 9)
 	{
-		if (Params.cutoff_max > ((1ull << 32) - 1))
+		if ((uint64)Params.cutoff_max > ((1ull << 32) - 1))
 		{
 			std::ostringstream ostr;
 			ostr << "for k > 9 maximum value of cutoff_max is 4294967295";
 			Params.warningsLogger->Log(ostr.str());
 			Params.cutoff_max = 4294967295;
 		}
-		if (Params.counter_max > ((1ull << 32) - 1))
+		if ((uint64)Params.counter_max > ((1ull << 32) - 1))
 		{
 			std::ostringstream ostr;
 			ostr << "for k > 9 maximum value of counter_max is 4294967295";
@@ -1288,7 +1288,7 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 
 		w_sorters.resize(_2nd_stage_threads);
 
-		for (uint32 i = 0; i < _2nd_stage_threads; ++i)
+		for (int i = 0; i < _2nd_stage_threads; ++i)
 		{
 			w_sorters[i] = new CWKmerBinSorter<SIZE>(Params, Queues, sort_func);
 			gr2_2.push_back(thread(std::ref(*w_sorters[i])));

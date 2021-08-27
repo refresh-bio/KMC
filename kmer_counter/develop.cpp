@@ -57,6 +57,7 @@ void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, u
 		cerr << "Error: cannot open file to store kmers per bin: " << KMERS_PER_BIN_LOG_FILE << "\n";
 		exit(1);
 	}
+	using ull = unsigned long long;
 	fprintf(stats_file, "%s;%s;%s;%s;%s;%s\n", "bin_id", "n_rec", "n_super_kmers", "size", "2nd stage MEM", "n_singatures");
 	while ((bin_id = Queues.bd->get_next_sort_bin()) >= 0)
 	{
@@ -124,15 +125,15 @@ void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, u
 				++n_signatures;
 		}
 
-		fprintf(stats_file, "%i;%llu;%llu;%llu;%llu;%llu\n", bin_id, n_rec, n_super_kmers, size, (uint64)req_size, n_signatures);
+		fprintf(stats_file, "%i;%llu;%llu;%llu;%llu;%llu\n", bin_id, (ull)n_rec, (ull)n_super_kmers, (ull)size, (ull)req_size, (ull)n_signatures);
 		sum_size += size;
 		sum_n_rec += n_rec;
 		sum_n_plus_x_recs += n_plus_x_recs;
 		sum_n_super_kmers += n_super_kmers;
 	}
 
-	fprintf(stats_file, "%s;%llu;%llu;%llu\n", "SUMMARY", sum_n_rec, sum_n_super_kmers, sum_size);
-	fprintf(stats_file, "n_reads: %llu\n", n_reads);
+	fprintf(stats_file, "%s;%llu;%llu;%llu\n", "SUMMARY", (ull)sum_n_rec, (ull)sum_n_super_kmers, (ull)sum_size);
+	fprintf(stats_file, "n_reads: %llu\n", (ull)n_reads);
 
 	fclose(stats_file);
 
