@@ -25,9 +25,6 @@
     <ClCompile Include="kmer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="kmer_counter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="mem_disk_file.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -62,6 +59,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="kff_writer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kmc_runner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -192,6 +192,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="kff_writer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kmc_runner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

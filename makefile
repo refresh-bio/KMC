@@ -2,20 +2,26 @@ all: kmc kmc_dump kmc_tools py_kmc_api
 
 KMC_BIN_DIR = bin
 KMC_MAIN_DIR = kmer_counter
+KMC_CLI_DIR = kmc-CLI
 KMC_API_DIR = kmc_api
 KMC_DUMP_DIR = kmc_dump
 KMC_TOOLS_DIR = kmc_tools
 PY_KMC_API_DIR = py_kmc_api
 
 CC 	= g++
-CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11
-CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11
+CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
+CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 
 KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 KMC_TOOLS_CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 
-KMC_OBJS = \
-$(KMC_MAIN_DIR)/kmer_counter.o \
+
+LIB_KMC_CORE = $(KMC_BIN_DIR)/libkmc_core.a
+
+KMC_CLI_OBJS = \
+$(KMC_CLI_DIR)/kmc.o
+
+KMC_CORE_OBJS = \
 $(KMC_MAIN_DIR)/mmer.o \
 $(KMC_MAIN_DIR)/mem_disk_file.o \
 $(KMC_MAIN_DIR)/rev_byte.o \
@@ -30,7 +36,8 @@ $(KMC_MAIN_DIR)/kb_storer.o \
 $(KMC_MAIN_DIR)/kmer.o \
 $(KMC_MAIN_DIR)/splitter.o \
 $(KMC_MAIN_DIR)/kb_collector.o \
-$(KMC_MAIN_DIR)/kff_writer.o
+$(KMC_MAIN_DIR)/kff_writer.o \
+$(KMC_MAIN_DIR)/kmc_runner.o
 
 RADULS_OBJS = \
 $(KMC_MAIN_DIR)/raduls_sse2.o \
@@ -72,7 +79,7 @@ KMC_TOOLS_LIBS = \
 $(KMC_TOOLS_DIR)/libs/libz.a \
 $(KMC_TOOLS_DIR)/libs/libbz2.a
 
-$(KMC_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS): %.o: %.cpp
+$(KMC_CLI_OBJS) $(KMC_CORE_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS): %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(KMC_TOOLS_OBJS): %.o: %.cpp
@@ -87,7 +94,11 @@ $(KMC_MAIN_DIR)/raduls_avx.o: $(KMC_MAIN_DIR)/raduls_avx.cpp
 $(KMC_MAIN_DIR)/raduls_avx2.o: $(KMC_MAIN_DIR)/raduls_avx2.cpp
 	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
 
-kmc: $(KMC_OBJS) $(RADULS_OBJS)
+$(LIB_KMC_CORE): $(KMC_CORE_OBJS) $(RADULS_OBJS)
+	-mkdir -p $(KMC_BIN_DIR)
+	ar rcs $@ $^
+
+kmc: $(KMC_CLI_OBJS) $(LIB_KMC_CORE)
 	-mkdir -p $(KMC_BIN_DIR)
 	$(CC) $(CLINK) -o $(KMC_BIN_DIR)/$@ $^ $(KMC_LIBS)
 

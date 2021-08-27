@@ -91,7 +91,7 @@ class CFastqReader {
 	CStatsPartQueue *stats_part_queue;
 
 	string input_file_name;
-	input_type file_type;
+	InputType file_type;
 	int kmer_len;
 	
 	CFastqReaderDataSrc data_src;
@@ -119,7 +119,7 @@ class CFastqReader {
 	void CleanUpAfterLongFastaRead();
 	void FixEOLIfNeeded(uchar* part, int64& size);	
 public:
-	CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_fastq, input_type _file_type, int _kmer_len, 
+	CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_fastq, InputType _file_type, int _kmer_len,
 		CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader, CBamTaskManager* _bam_task_manager, 
 		CPartQueue* _part_queue, CStatsPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter);
 	~CFastqReader();
@@ -165,7 +165,7 @@ class CWFastqReader {
 	CPartQueue *part_queue;
 	CStatsPartQueue *stats_part_queue;
 
-	input_type file_type;	
+	InputType file_type;
 	int kmer_len;
 
 	CMissingEOL_at_EOF_counter* missingEOL_at_EOF_counter;
@@ -190,7 +190,7 @@ class CWStatsFastqReader {
 	uint64 part_size;
 	CBamTaskManager* bam_task_manager = nullptr; //only for bam input
 	CStatsPartQueue *stats_part_queue;
-	input_type file_type;	
+	InputType file_type;
 	int kmer_len;
 	CBinaryPackQueue* binary_pack_queue;
 	CMissingEOL_at_EOF_counter* missingEOL_at_EOF_counter;

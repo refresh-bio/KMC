@@ -23,7 +23,7 @@ uint64 CFastqReader::OVERHEAD_SIZE = 1 << 16;
 // Constructor of FASTA/FASTQ reader
 // Parameters:
 //    * _mm - pointer to memory monitor (to check the memory limits)
-CFastqReader::CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_fastq, input_type _file_type, int _kmer_len, 
+CFastqReader::CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_fastq, InputType _file_type, int _kmer_len,
 	CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader, CBamTaskManager* _bam_task_manager, 
 	CPartQueue* _part_queue, CStatsPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter)
 {
@@ -458,7 +458,6 @@ FORCE_INLINE void CFastqReader::FixEOLIfNeeded(uchar* part, int64& size)
 	uchar c = part[size - 1];
 	if (c != '\n' && c != '\r')
 	{
-		//std::cerr << "Warning: missing end of line character after last line in file\n";
 		missingEOL_at_EOF_counter->RegisterMissingEOL();
 		part[size++] = '\n'; //append fake EOL
 	}
@@ -554,7 +553,7 @@ void CFastqReader::CleanUpAfterLongFastqRead(uint32 number_of_lines_to_skip)
 
 bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 {
-	if (file_type == multiline_fasta)
+	if (file_type == InputType::MULTILINE_FASTA)
 	{
 		read_type = ReadType::na;
 		return GetPartFromMultilneFasta(_part, _size);
@@ -592,7 +591,7 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 		_part = part;
 		_size = 0;
 	}									// Look for the end of the last complete record in a buffer
-	else if (file_type == fasta)			// FASTA files
+	else if (file_type == InputType::FASTA)			// FASTA files
 	{
 		if (long_read_in_progress)
 		{			
@@ -1203,7 +1202,7 @@ CWFastqReader::CWFastqReader(CKMCParams &Params, CKMCQueues &Queues, CBinaryPack
 	part_size = Params.fastq_buffer_size; 
 	part_queue = Queues.part_queue;
 	file_type = Params.file_type;
-	kmer_len = Params.p_k;
+	kmer_len = Params.kmer_len;
 
 
 	fqr = nullptr;
@@ -1222,7 +1221,7 @@ void CWFastqReader::operator()()
 
 	fqr = new CFastqReader(mm, pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader, bam_task_manager, part_queue, nullptr, missingEOL_at_EOF_counter);
 	fqr->SetPartSize(part_size);
-	if (file_type == bam)
+	if (file_type == InputType::BAM)
 	{
 		fqr->ProcessBam();
 	}
@@ -1254,7 +1253,7 @@ CWStatsFastqReader::CWStatsFastqReader(CKMCParams &Params, CKMCQueues &Queues, C
 	part_size = Params.fastq_buffer_size;
 	stats_part_queue = Queues.stats_part_queue;
 	file_type = Params.file_type;
-	kmer_len = Params.p_k;
+	kmer_len = Params.kmer_len;
 
 	missingEOL_at_EOF_counter = Queues.missingEOL_at_EOF_counter;
 
@@ -1274,7 +1273,7 @@ void CWStatsFastqReader::operator()()
 
 	fqr = new CFastqReader(mm, pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader, bam_task_manager, nullptr, stats_part_queue, missingEOL_at_EOF_counter);
 	fqr->SetPartSize(part_size);
-	if (file_type == bam)
+	if (file_type == InputType::BAM)
 	{
 		fqr->ProcessBam();
 	}

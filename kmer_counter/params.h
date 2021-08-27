@@ -12,51 +12,30 @@
 #define _PARAMS_H
 
 #include "defs.h"
+#include "kmc_runner.h"
 #include "queues.h"
 #include "s_mapper.h"
 #include <vector>
 #include <string>
 
-typedef enum {fasta, fastq, multiline_fasta, bam} input_type;
-enum class OutputType {KMC, KFF} ;
+//typedef enum {fasta, fastq, multiline_fasta, bam} input_type;
+
+using InputType = KMC::InputFileType;
+using OutputType = KMC::OutputFileType;
 
 using namespace std;
 
 // Structure for passing KMC parameters
 struct CKMCParams {
-	
-	// Input parameters
-	int p_m;							// max. total RAM usage
-	int p_k;							// k-mer length
-	int p_t;							// no. of threads
-	int p_sf;							// no. of reading threads
-	int p_sp;							// no. of splitting threads
-	int p_sr;							// no. of threads for 2nd stage
-	int p_ci;							// do not count k-mers occurring less than
-	int64 p_cx;							// do not count k-mers occurring more than
-	int64 p_cs;							// maximal counter value	
-	bool p_strict_mem;					// use strict memory limit mode
-	bool p_homopolymer_compressed;		// count homopolymer compressed k-mers
-	bool p_mem_mode;					// use RAM instead of disk	
-	input_type p_file_type;				// input in FASTA format
-	OutputType p_output_type;			// output type
-	bool p_verbose;						// verbose mode
-	bool p_without_output = false;		// do not create output files 
+//TODO: reconsider !!!!
 #ifdef DEVELOP_MODE
 	bool p_verbose_log = false;         // verbose log
 #endif
-	bool p_both_strands;				// compute canonical k-mer representation
-	int p_p1;							// signature length	
-	int p_n_bins;						// no. of bins
-	int p_smso;							// no. of OpenMP threads for sorting in strict memory mode
-	int p_smun;							// no. of uncompacting threads in strict memory mode
-	int p_smme;							// no. of merging threads in strict memory mode
-
 	// File names
 	vector<string> input_file_names;
 	string output_file_name;
 	string working_directory;
-	input_type file_type;
+	InputType file_type;
 	OutputType output_type;
 
 	string json_summary_file_name = "";
@@ -91,7 +70,9 @@ struct CKMCParams {
 	int64 mem_part_small_k_completer;
 	int64 mem_tot_small_k_completer;
 
-	bool verbose;	
+	KMC::ILogger* verboseLogger;
+	KMC::IPercentProgressObserver* percentProgressObserver;
+	KMC::ILogger* warningsLogger;
 #ifdef DEVELOP_MODE
 	bool verbose_log;
 #endif
@@ -114,7 +95,7 @@ struct CKMCParams {
 	int n_readers;			// number of FASTQ readers; default: 1
 	int n_splitters;		// number of splitters; default: 1
 	int n_sorters;			// number of sorters; default: 1
-	vector<int> n_sorting_threads;// number of OMP threads per sorters
+	//vector<int> n_sorting_threads;// number of OMP threads per sorters
 	uint32 max_x;					//k+x-mers will be counted
 
 	//params for strict memory mode
@@ -141,29 +122,6 @@ struct CKMCParams {
 	int64 sm_mem_tot_merger_lut;
 	int64 sm_mem_part_merger_suff;
 	int64 sm_mem_tot_merger_suff;
-
-	CKMCParams()
-	{
-		p_m = 12;
-		p_k = 25;
-		p_t = 0;
-		p_sf = 0;
-		p_sp = 0;
-		p_sr = 0;
-		p_smme = p_smso = p_smun = 0;
-		p_ci = 2;
-		p_cx = 1000000000;
-		p_cs = 255;		
-		p_strict_mem = false;
-		p_homopolymer_compressed = false;
-		p_mem_mode = false;		
-		p_file_type = fastq;
-		p_output_type = OutputType::KMC;
-		p_verbose = false;
-		p_both_strands = true;
-		p_p1 = 9;	
-		p_n_bins = 512;		
-	}
 };
 
 // Structure for passing KMC queues and monitors to threads

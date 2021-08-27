@@ -222,7 +222,7 @@ class CBinaryFilesReader
 public:
 	CBinaryFilesReader(CKMCParams &Params, CKMCQueues &Queues, bool _show_progress)
 		:
-		percent_progress("Stage 1: ", _show_progress)
+		percent_progress("Stage 1: ", _show_progress, Params.percentProgressObserver)
 	{
 		part_size = (uint32)Params.mem_part_pmm_binary_file_reader;
 		input_files_queue = Queues.input_files_queue;
@@ -232,7 +232,7 @@ public:
 		auto files_copy = input_files_queue->GetCopy();		
 		total_size = 0;
 		predicted_size = 0;
-		bam_input = Params.file_type == bam;
+		bam_input = Params.file_type == InputType::BAM;
 
 		while (!files_copy.empty())
 		{

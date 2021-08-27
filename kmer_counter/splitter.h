@@ -41,7 +41,7 @@ class CSplitter {
 	int64 mem_part_pmm_reads;
 
 	char codes[256];
-	input_type file_type;
+	InputType file_type;
 	bool both_strands;
 
 	uint32_t curr_read_len = 0;

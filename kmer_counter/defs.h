@@ -11,6 +11,8 @@
 #ifndef _DEFS_H
 #define _DEFS_H
 
+#include <cinttypes>
+
 #define KMC_VER		"3.1.1"
 #define KMC_DATE	"2019-05-19"
 
@@ -87,10 +89,10 @@ typedef float	count_t;
 #define my_fopen	fopen
 #define my_fseek	_fseeki64
 #define my_ftell	_ftelli64
-typedef int int32;
-typedef unsigned int uint32;
-typedef long long int64;
-typedef unsigned long long uint64;
+using int32 = int32_t;
+using uint32 = uint32_t;
+using int64 = int64_t;
+using uint64 = uint64_t;
 
 #else
 #define my_fopen	fopen
@@ -99,10 +101,10 @@ typedef unsigned long long uint64;
 #define _TCHAR	char
 #define _tmain	main
 
-typedef int int32;
-typedef unsigned int uint32;
-typedef long long int64;
-typedef unsigned long long uint64;
+using int32 = int32_t;
+using uint32 = uint32_t;
+using int64 = int64_t;
+using uint64 = uint64_t;
 
 #include <stdio.h>
 #include <stdlib.h>

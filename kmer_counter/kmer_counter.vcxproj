@@ -23,6 +23,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>kmer_counter</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>kmc_core</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -32,7 +33,7 @@
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>NotSet</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
@@ -46,7 +47,7 @@
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
@@ -183,6 +184,7 @@
     <ClInclude Include="kb_storer.h" />
     <ClInclude Include="kff_writer.h" />
     <ClInclude Include="kmc.h" />
+    <ClInclude Include="kmc_runner.h" />
     <ClInclude Include="kmer.h" />
     <ClInclude Include="kxmer_set.h" />
     <ClInclude Include="libs\bzlib.h" />
@@ -217,8 +219,8 @@
     <ClCompile Include="kb_completer.cpp" />
     <ClCompile Include="kb_storer.cpp" />
     <ClCompile Include="kff_writer.cpp" />
+    <ClCompile Include="kmc_runner.cpp" />
     <ClCompile Include="kmer.cpp" />
-    <ClCompile Include="kmer_counter.cpp" />
     <ClCompile Include="mem_disk_file.cpp" />
     <ClCompile Include="mmer.cpp" />
     <ClCompile Include="raduls_avx.cpp">

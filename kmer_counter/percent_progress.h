@@ -12,24 +12,23 @@ Date   : 2019-05-19
 #define _PERCENT_PROGRESS_H
 #include "defs.h"
 #include <string>
-#include <iostream>
 class CPercentProgress
 {
 	uint64 curr_val;
 	uint64 max_val;	
 	int32 curr_percent;
-	std::string label;
 	bool show_progress;
+	KMC::IPercentProgressObserver* percentProgressObserver;
 public:
-	CPercentProgress(const std::string& label, bool show_progress)
+	CPercentProgress(const std::string& label, bool show_progress, KMC::IPercentProgressObserver* percentProgressObserver)
 		:
 		curr_val(0),
 		max_val(0),
 		curr_percent(-1),
-		label(label),
-		show_progress(show_progress)
+		show_progress(show_progress),
+		percentProgressObserver(percentProgressObserver)
 	{
-
+		percentProgressObserver->SetLabel(label);
 	}
 	void SetMaxVal(uint64 _max_val)
 	{
@@ -49,8 +48,7 @@ public:
 			curr_percent = new_percent;
 			if (show_progress)
 			{
-				std::cerr << "\r" << label << curr_percent << "%";
-				std::cerr.flush();
+				percentProgressObserver->ProgressChanged(curr_percent);
 			}
 		}
 	}

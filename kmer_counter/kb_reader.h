@@ -48,6 +48,7 @@ template <unsigned SIZE> class CKmerBinReader {
 
 	bool both_strands;	
 
+	KMC::IPercentProgressObserver* percentProgressObserver;
 #ifdef DEVELOP_MODE
 	bool verbose_log;
 #endif
@@ -90,6 +91,8 @@ template <unsigned SIZE> CKmerBinReader<SIZE>::CKmerBinReader(CKMCParams &Params
 #ifdef DEVELOP_MODE
 	verbose_log = Params.verbose_log;
 #endif
+
+	percentProgressObserver = Params.percentProgressObserver;
 }
 
 //----------------------------------------------------------------------------------
@@ -114,7 +117,7 @@ template <unsigned SIZE> void CKmerBinReader<SIZE>::ProcessBins()
 	uint32 buffer_size;
 	uint32 kmer_len;
 
-	CPercentProgress percent_progress("Stage 2: ", true);
+	CPercentProgress percent_progress("Stage 2: ", true, percentProgressObserver);
 	percent_progress.SetMaxVal(bd->get_n_rec_sum());
 	percent_progress.NotifyProgress(0);
 

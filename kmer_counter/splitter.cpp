@@ -99,7 +99,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 	uchar c = 0;
 	uint32 pos = 0;
 
-	if (file_type == fasta)
+	if (file_type == InputType::FASTA)
 	{		
 		if (read_type == ReadType::long_read)
 			return GetSeqLongRead(seq, seq_size, '>');
@@ -184,7 +184,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 		else if (part_pos >= part_size)
 			return true;
 	}
-	else if (file_type == fastq)
+	else if (file_type == InputType::FASTQ)
 	{
 		if (read_type == ReadType::long_read)		
 			return GetSeqLongRead(seq, seq_size, '@');	
@@ -301,7 +301,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 			return true;
 		
 	}
-	else if (file_type == multiline_fasta)
+	else if (file_type == InputType::MULTILINE_FASTA)
 	{
 		if (part[part_pos] == '>')//need to ommit header
 		{
@@ -323,7 +323,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 		return true;
 
 	}
-	else if (file_type == bam)
+	else if (file_type == InputType::BAM)
 	{
 		while (true)
 		{

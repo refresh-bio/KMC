@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31205.134
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmer_counter", "kmer_counter\kmer_counter.vcxproj", "{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc-core", "kmer_counter\kmer_counter.vcxproj", "{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_dump", "kmc_dump\kmc_dump.vcxproj", "{8939AD12-23D5-469C-806B-DC3F98F8A514}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_tools", "kmc_tools\kmc_tools.vcxproj", "{F3B0CC94-9DD0-4642-891C-EA08BDA50260}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "py_kmc_api", "py_kmc_api\py_kmc_api.vcxproj", "{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc-CLI", "kmc-CLI\kmc-CLI.vcxproj", "{043DA599-2052-4FD8-B166-A5E24A9BF8BA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -79,11 +81,24 @@ Global
 		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Release|Win32.Build.0 = Release|Win32
 		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Release|x64.ActiveCfg = Release|x64
 		{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}.Release|x64.Build.0 = Release|x64
+		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.Debug|Win32.Build.0 = Debug|Win32
+		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.Debug|x64.ActiveCfg = Debug|x64
+		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.Debug|x64.Build.0 = Debug|x64
+		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.Release|Win32.ActiveCfg = Release|Win32
+		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.Release|Win32.Build.0 = Release|Win32
+		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.Release|x64.ActiveCfg = Release|x64
+		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .
+		SolutionGuid = {BC3A0CEE-782E-46DC-A9C0-330A04586DCF}
 	EndGlobalSection
 EndGlobal
