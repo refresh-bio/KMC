@@ -12,6 +12,8 @@
 #include <numeric>
 #include <iostream>
 #include "kb_completer.h"
+#include "critical_error_handler.h"
+#include <sstream>
 
 using namespace std;
 
@@ -90,18 +92,18 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 			out_kmer = fopen(kmer_file_name.c_str(), "wb");
 			if (!out_kmer)
 			{
-				cerr << "Error: Cannot create " << kmer_file_name << "\n";
-				exit(1);
-				return;
+				std::ostringstream ostr;
+				ostr << "Error: Cannot create " << kmer_file_name;
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 
 			out_lut = fopen(lut_file_name.c_str(), "wb");
 			if (!out_lut)
 			{
-				cerr << "Error: Cannot create " << lut_file_name << "\n";
+				std::ostringstream ostr;
+				ostr << "Error: Cannot create " << lut_file_name;
 				fclose(out_kmer);
-				exit(1);
-				return;
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 		}
 		else if (output_type == OutputType::KFF)
@@ -110,8 +112,9 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		}
 		else
 		{
-			std::cerr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__ << "\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 	}
 	
@@ -183,8 +186,9 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 			}
 			else
 			{
-				std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			
 		}

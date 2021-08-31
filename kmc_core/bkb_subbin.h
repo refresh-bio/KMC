@@ -52,8 +52,9 @@ void CSubBin<SIZE>::read_next_lut_part()
 		my_fseek(file, lut_start_pos_in_file + (lut_offset - lut_buff_recs) * sizeof(uint64), SEEK_SET);
 		if (fread(lut, sizeof(uint64), to_read, file) != to_read)
 		{
-			cerr << "Error while reading file : " << name << "\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error while reading file : " << name;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 		my_fseek(file, prev_pos, SEEK_SET);
 	}

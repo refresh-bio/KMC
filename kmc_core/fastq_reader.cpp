@@ -13,6 +13,8 @@
 #include "defs.h"
 #include "fastq_reader.h"
 #include "bam_utils.h"
+#include "critical_error_handler.h"
+#include <sstream>
 //************************************************************************************************************
 // CFastqReader	- reader class
 //************************************************************************************************************
@@ -122,8 +124,9 @@ void CFastqReader::ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uin
 		stream.next_out = part + part_filled;
 		if (inflateInit2(&stream, -15) != Z_OK)
 		{
-			cerr << "Error: inflateInit2\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: inflateInit2";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
 		int ret = inflate(&stream, Z_NO_FLUSH);
@@ -132,24 +135,33 @@ void CFastqReader::ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uin
 		case Z_NEED_DICT:
 			ret = Z_DATA_ERROR;     /* and fall through */
 		case Z_DATA_ERROR:
-			cerr << "Some error (Z_DATA_ERROR) while reading bam file, please contact authors, CODE: FastqReader_" << __LINE__ << "\n";
-			exit(1);
+		{
+			std::ostringstream ostr;
+			ostr << "Some error (Z_DATA_ERROR) while reading bam file, please contact authors, CODE: FastqReader_" << __LINE__;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+		}
 		case Z_MEM_ERROR:
+		{
 			inflateEnd(&stream);
-			exit(ret);
+
+			std::ostringstream ostr;
+			ostr << "Some error (Z_MEM_ERROR) while reading bam file, please contact authors, CODE: FastqReader_" << __LINE__;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+		}
 		}
 		if (ret == Z_STREAM_END)
 			inflateEnd(&stream);
 		else
 		{
-			cerr << "Error: Some error in bam file decompression, please contact authors, CODE: FastqReader_" << __LINE__ << "\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: Some error in bam file decompression, please contact authors, CODE: FastqReader_" << __LINE__;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 		if (stream.avail_in != 8)
 		{
-			//cerr << "Err avail_in != 8:" << stream.avail_in << "\n";
-			cerr << "Error: Some error in bam file decompression, please contact authors, CODE: FastqReader_" << __LINE__ << "\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: Some error in bam file decompression, please contact authors, CODE: FastqReader_" << __LINE__;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
 		part_filled += ISIZE;
@@ -166,8 +178,9 @@ void CFastqReader::ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uin
 		crc = crc32(crc, part + part_filled - ISIZE, ISIZE);
 		if (crc != CRC)
 		{
-			cerr << "Error: BGZF CRC check error. Input file may be corrupted\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: BGZF CRC check error. Input file may be corrupted";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
 	}
@@ -187,8 +200,9 @@ void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 /*id*
 
 		if (strncmp((const char*)data, "BAM\1", 4) != 0)
 		{
-			cerr << "BAM\\1 magic string missed\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "BAM\\1 magic string missed";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
 		int32_t l_text = 0;
@@ -253,8 +267,9 @@ void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 /*id*
 		}
 		else
 		{
-			cerr << "Error: Should never be here, please contact authors, CODE: FastqReader_" << __LINE__ << "\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: Should never be here, please contact authors, CODE: FastqReader_" << __LINE__;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
 		//TODO: this memmove could be avoided, the part queue could store starting pos, apropriate changes will be required in splitters
@@ -288,8 +303,9 @@ void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 /*id*
 			}
 			else
 			{
-				cerr << "Error: Should never be here, please contact authors, CODE: FastqReader_" << __LINE__ << "\n";
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: Should never be here, please contact authors, CODE: FastqReader_" << __LINE__;
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			break;
 		}
@@ -335,8 +351,9 @@ void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 /*id*
 			}
 			else
 			{
-				cerr << "Error: Should never be here, please contact authors, CODE: FastqReader_" << __LINE__ << "\n";
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: Should never be here, please contact authors, CODE: FastqReader_" << __LINE__;
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			break;
 		}
@@ -400,8 +417,9 @@ bool CFastqReader::GetPartFromMultilneFasta(uchar *&_part, uint64 &_size)
 	if(first_in_file && total_filled)
 		if (part[0] != '>')
 		{
-			cerr << "Error: Wrong input file!\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: Wrong input file!";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
 	int64 last_header_pos = 0;
@@ -493,8 +511,9 @@ void CFastqReader::CleanUpAfterLongFastaRead()
 		{				
 			if (symb != '>')
 			{
-				cerr << "Error: Wrong input file!\n";				
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: Wrong input file!";
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			std::copy(part + skip_pos - 1, part + in_part, part);
 			part_filled = in_part - (skip_pos - 1);
@@ -527,8 +546,9 @@ void CFastqReader::CleanUpAfterLongFastqRead(uint32 number_of_lines_to_skip)
 				{
 					if (symb != '@')
 					{
-						cerr << "Error: Wrong input file!\n";
-						exit(1);
+						std::ostringstream ostr;
+						ostr << "Error: Wrong input file!";
+						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 					}
 					std::copy(part + skip_pos - 1, part + in_part, part);
 					part_filled = in_part - (skip_pos - 1);
@@ -666,19 +686,22 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 		{
 			if (readed_lines == 2) //because if successfully readed full 2 lines in the worst case there is only one read that begins at the buffer start, and there is only onle fasta record
 			{
-				std::cerr << "Error: some error while reading fasta file, please contact authors\n";
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: some error while reading fasta file, please contact authors";
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			k = 4 - readed_lines;
 			if (line_start[k] != 0)
 			{
-				std::cerr << "Error: some error while reading fasta file, please contact authors\n";
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: some error while reading fasta file, please contact authors";
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			if (part[0] != '>')
 			{
-				cerr << "Error: Wrong input file!\n";				
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: Wrong input file!";
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 
 			if (readed_lines == 1)
@@ -698,8 +721,9 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 			}
 			else 
 			{
-				std::cerr << "Error: some error while reading fasta file, please contact authors\n";
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: some error while reading fasta file, please contact authors";
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 
 			return true;
@@ -798,19 +822,22 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 		{
 			if (readed_lines == 4) //because if successfully reade full 4 lines in the worst case there is only one read that begins at the buffer start, and there is only onle fastq record
 			{
-				std::cerr << "Error: some error while reading fastq file, please contact authors\n";
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: some error while reading fastq file, please contact authors";
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			k = 8 - readed_lines;
 			if (line_start[k] != 0)
 			{
-				std::cerr << "Error: some error while reading fastq file, please contact authors\n";
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: some error while reading fastq file, please contact authors";
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			if (part[0] != '@')
 			{
-				cerr << "Error: Wrong input file!\n";
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: Wrong input file!";
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			if (readed_lines == 1)
 			{
@@ -849,8 +876,9 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 					number_of_lines_to_skip = 1; //means inside qual
 				else //shold not be possible
 				{
-					std::cerr << "Error: some error while reading fastq file, please contact authors\n";
-					exit(1);
+					std::ostringstream ostr;
+					ostr << "Error: some error while reading fastq file, please contact authors";
+					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 				}
 
 				CleanUpAfterLongFastqRead(number_of_lines_to_skip);
@@ -924,8 +952,9 @@ void CFastqReaderDataSrc::init_stream()
 		stream.next_in = Z_NULL;
 		if (inflateInit2(&stream, 31) != Z_OK)
 		{
-			cerr << "Error while reading gz file\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error while reading gz file";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 		stream.avail_in = (uint32)in_data_size;
 		stream.next_in = in_data;
@@ -938,8 +967,9 @@ void CFastqReaderDataSrc::init_stream()
 		_bz_stram.next_in = nullptr;
 		if (BZ2_bzDecompressInit(&_bz_stram, 0, 0) != BZ_OK)
 		{
-			cerr << "Error while reading bz2 file\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error while reading bz2 file";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 		_bz_stram.avail_in = (uint32)in_data_size;
 		_bz_stram.next_in = (char*)in_data;
@@ -1004,11 +1034,16 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 			case Z_NEED_DICT:
 				ret = Z_DATA_ERROR;     /* and fall through */
 			case Z_DATA_ERROR:
-				cerr << "Some error while reading gzip file\n";
-				exit(1);
+			{
+				std::ostringstream ostr;
+				ostr << "Some error while reading gzip file";
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+			}
 			case Z_MEM_ERROR:
+			{
 				inflateEnd(&stream);
 				return ret;
+			}
 			}
 
 			if (ret == Z_STREAM_END)
@@ -1021,8 +1056,9 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 				{
 					if (stream.avail_in + tmp_size < 2)
 					{
-						cerr << "Some error while reading gzip file\n";
-						exit(1);
+						std::ostringstream ostr;
+						ostr << "Some error while reading gzip file";
+						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 					}
 					uchar b1, b2;
 					if (stream.avail_in >= 2)
@@ -1073,17 +1109,11 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 				}
 				else //multiple streams in one file
 				{
-					//equivalent of inflateReset 
-					//inflateEnd(&stream);
-					//if (inflateInit2(&stream, 31) != Z_OK)
-					//{
-					//	cerr << "Error while reading gzip file\n";
-					//	exit(1);
-					//}
 					if (inflateReset(&stream) != Z_OK)
 					{
-						cerr << "Error while reading gzip file\n";
-						exit(1);
+						std::ostringstream ostr;
+						ostr << "Error while reading gzip file";
+						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 					}
 				}
 			}
@@ -1134,8 +1164,9 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 					BZ2_bzDecompressEnd(&_bz_stram);
 					if (BZ2_bzDecompressInit(&_bz_stram, 0, 0) != BZ_OK)
 					{
-						cerr << "Error while reading bz2 file\n";
-						exit(1);
+						std::ostringstream ostr;
+						ostr << "Error while reading bz2 file";
+						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 					}
 				}
 			}
@@ -1172,8 +1203,9 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 	}
 	else
 	{
-		cerr << "Error: unknown compression\n";
-		exit(1);
+		std::ostringstream ostr;
+		ostr << "Error: unknown compression";
+		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 	}
 }
 //----------------------------------------------------------------------------------

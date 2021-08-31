@@ -13,6 +13,8 @@
 #include "defs.h"
 #include "mmer.h"
 #include "params.h"
+#include "critical_error_handler.h"
+#include <sstream>
 
 #ifdef DEVELOP_MODE
 #include "develop.h"
@@ -50,8 +52,9 @@ public:
 		FILE* file = fopen(pre_file_name.c_str(), "rb");
 		if(!file)
 		{
-			std::cerr << "Error: cannot open " << pre_file_name << "\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: cannot open " << pre_file_name;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
 		my_fseek(file, 0, SEEK_END);

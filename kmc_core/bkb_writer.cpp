@@ -10,6 +10,8 @@
 
 #include "stdafx.h"
 #include "bkb_writer.h"
+#include "critical_error_handler.h"
+#include <sstream>
 
 //************************************************************************************************************
 // CBigKmerBinWriter
@@ -55,8 +57,9 @@ void CBigKmerBinWriter::Process()
 			file = fopen(name.c_str(), "wb+");
 			if (!file)
 			{
-				cerr << "Error: can not open file : " << name;
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: can not open file : " << name;
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			setbuf(file, nullptr);
 		}
@@ -67,8 +70,9 @@ void CBigKmerBinWriter::Process()
 			disk_logger->log_write(suff_buff_size);
 			if (fwrite(suff_buff, 1, suff_buff_size, file) != suff_buff_size)
 			{
-				cerr << "Error while writing to file : " << name;
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error while writing to file : " << name;
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			file_size += suff_buff_size;
 			sm_pmm_sorter_suffixes->free(suff_buff);
@@ -79,8 +83,9 @@ void CBigKmerBinWriter::Process()
 			disk_logger->log_write(lut_size * sizeof(uint64));
 			if (fwrite(lut, sizeof(uint64), lut_size, file) != lut_size)
 			{
-				cerr << "Error while writing to file : " << name;
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error while writing to file : " << name;
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			file_size += lut_size * sizeof(uint64);
 			sm_pmm_sorter_lut->free((uchar*)lut);

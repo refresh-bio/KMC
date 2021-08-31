@@ -11,6 +11,8 @@
 
 #include "mem_disk_file.h"
 #include <iostream>
+#include "critical_error_handler.h"
+#include <sstream>
 using namespace std;
 
 //----------------------------------------------------------------------------------
@@ -34,8 +36,9 @@ void CMemDiskFile::Open(const string& f_name)
 
 		if (!file)
 		{
-			cerr << "Error: Cannot open temporary file " << f_name << "\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: Cannot open temporary file " << f_name;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 		setbuf(file, nullptr);
 	}

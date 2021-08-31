@@ -195,6 +195,7 @@
     <ClInclude Include="meta_oper.h" />
     <ClInclude Include="mmer.h" />
     <ClInclude Include="percent_progress.h" />
+    <ClInclude Include="critical_error_handler.h" />
     <ClInclude Include="raduls.h" />
     <ClInclude Include="raduls_impl.h" />
     <ClInclude Include="rev_byte.h" />

@@ -628,6 +628,7 @@ void CKMCFile::Reload_sufix_file_buf()
 	suf_file_left_to_read -= readed;
 	if (readed != to_read)
 	{
+		//TODO: what about this exit? maybe turn into exception
 		std::cerr << "Error: some error while reading suffix file\n";
 		exit(1);
 	}

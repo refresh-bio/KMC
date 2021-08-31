@@ -179,18 +179,18 @@ bool CSmallKCompleter::CompleteKMCFormat(CSmallKBuf<COUNTER_TYPE> result)
 		pre_file = fopen(pre_file_name.c_str(), "wb");
 		if (!pre_file)
 		{
-			cerr << "Error: Cannot create " << pre_file_name << "\n";
-			exit(1);
-			return false;
+			std::ostringstream ostr;
+			ostr << "Error: Cannot create " << pre_file_name;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 		suf_file = fopen(suf_file_name.c_str(), "wb");
 
 		if (!suf_file)
 		{
-			cerr << "Error: Cannot create " << suf_file_name << "\n";
+			std::ostringstream ostr;
+			ostr << "Error: Cannot create " << suf_file_name;
 			fclose(pre_file);
-			exit(1);
-			return false;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 	}
 	char s_kmc_pre[] = "KMCP";
@@ -384,8 +384,9 @@ bool CSmallKCompleter::Complete(CSmallKBuf<COUNTER_TYPE> result)
 	case OutputType::KFF:
 		return CompleteKFFFormat(result);
 	default:
-		std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
-		exit(1);
+		std::ostringstream ostr;
+		ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 	}
 }
 

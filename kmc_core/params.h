@@ -94,8 +94,7 @@ struct CKMCParams {
 	int n_readers;			// number of FASTQ readers; default: 1
 	int n_splitters;		// number of splitters; default: 1
 	int n_sorters;			// number of sorters; default: 1
-	//vector<int> n_sorting_threads;// number of OMP threads per sorters
-	uint32 max_x;					//k+x-mers will be counted
+	uint32 max_x;			//k+x-mers will be counted
 
 	KMC::EstimateHistogramCfg estimateHistogramCfg = KMC::EstimateHistogramCfg::DONT_ESTIMATE;
 	//params for strict memory mode

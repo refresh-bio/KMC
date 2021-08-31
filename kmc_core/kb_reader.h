@@ -170,8 +170,9 @@ template <unsigned SIZE> void CKmerBinReader<SIZE>::ProcessBins()
 		{
 			if (file == nullptr)
 			{
-				cerr << "Error: Cannot open temporary file: " << name << "\n"; fflush(stdout);
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: Cannot open temporary file: " << name;
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			else
 				file->Rewind();
@@ -182,9 +183,9 @@ template <unsigned SIZE> void CKmerBinReader<SIZE>::ProcessBins()
 			readed = file->Read(data, 1, size);
 			if(readed != size)
 			{
-				cerr << "Error: Corrupted file: " << name << "   " << "Real size : " << readed << "   " << "Should be : " << size << "\n";
-				fflush(stdout);
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: Corrupted file: " << name << "   " << "Real size : " << readed << "   " << "Should be : " << size;
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 
 			// Reserve memory necessary to process the whole bin

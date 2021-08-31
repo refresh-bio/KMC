@@ -1051,8 +1051,9 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKxmers()
 							}
 							else
 							{
-								std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
-								exit(1);
+								std::ostringstream ostr;
+								ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+								CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 							}
 						}
 					}
@@ -1095,8 +1096,9 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKxmers()
 					}
 					else
 					{
-						std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
-						exit(1);
+						std::ostringstream ostr;
+						ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 					}
 				}
 			}
@@ -1211,8 +1213,9 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKmers()
 						}
 						else
 						{
-							std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
-							exit(1);
+							std::ostringstream ostr;
+							ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+							CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 						}
 					}
 					act_kmer = &buffer[i];
@@ -1256,8 +1259,9 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKmers()
 				}
 				else
 				{
-					std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
-					exit(1);
+					std::ostringstream ostr;
+					ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 				}
 			}
 		}

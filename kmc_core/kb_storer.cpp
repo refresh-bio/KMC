@@ -12,6 +12,8 @@
 #include <numeric>
 #include <iostream>
 #include "kb_storer.h"
+#include "critical_error_handler.h"
+#include <sstream>
 
 using namespace std;
 
@@ -164,9 +166,10 @@ void CKmerBinStorer::PutBinToTmpFile(uint32 n)
 		w = files[n]->Write(tmp_buff, 1, tmp_buff_pos);
 		if(w != tmp_buff_pos)
 		{
-			cerr << "Error while writing to temporary file " << n;
-			exit(1);
-		}		
+			std::ostringstream ostr;
+			ostr << "Error while writing to temporary file " << n;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+		}
 		total_size += w;		
 		buffer_size_bytes -= buf_sizes[n];
 	}

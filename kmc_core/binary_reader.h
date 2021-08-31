@@ -17,6 +17,7 @@ Date   : 2019-05-19
 #include "percent_progress.h"
 #define DONT_DEFINE_UCHAR
 #include "../kmc_api/kmc_file.h"
+#include "critical_error_handler.h"
 #include "bam_utils.h"
 #include <sys/stat.h>
 
@@ -66,8 +67,9 @@ class CBinaryFilesReader
 		f = fopen(file_name.c_str(), "rb");
 		if (!f)
 		{
-			std::cerr << "Error: cannot open file: " << file_name << " for reading\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: cannot open file: " << file_name << " for reading";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
 		setvbuf(f, nullptr, _IONBF, 0);
@@ -83,20 +85,23 @@ class CBinaryFilesReader
 			;
 		else
 		{
-			cerr << "Fail: this is not gzip file\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Fail: this is not gzip file";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
 		if (buff[2] != 8)
 		{
-			cerr << "Error: CM flag is set to " << buff[2] << " instead of 8 \n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: CM flag is set to " << buff[2] << " instead of 8";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
 		if (!((buff[3] >> 2) & 1))
 		{
-			cerr << "Error: FLG.FEXTRA is not set\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: FLG.FEXTRA is not set";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
 		pos = 10;
@@ -108,15 +113,17 @@ class CBinaryFilesReader
 		uchar SI2 = buff[pos++];
 		if (SI1 != 66 || SI2 != 67)
 		{
-			cerr << "Error: SI1 != 66 || SI2 != 67\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: SI1 != 66 || SI2 != 67";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 		uint16_t LEN;
 		read_uint16_t(LEN, buff, pos);
 		if (LEN != 2)
 		{
-			cerr << "Error: SLEN is " << LEN << " instead of 2\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: SLEN is " << LEN << " instead of 2";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
 		uint16_t BGZF_block_size_tmp;
@@ -145,8 +152,9 @@ class CBinaryFilesReader
 		FILE* file = fopen(fname.c_str(), "rb");
 		if (!file)
 		{
-			cerr << "Error: cannot open file " << fname << "\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: cannot open file " << fname;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 		setvbuf(file, nullptr, _IONBF, 0);
 
@@ -156,13 +164,15 @@ class CBinaryFilesReader
 		fseek(file, -static_cast<int>(sizeof(eof_marker)), SEEK_END);
 		if (sizeof(eof_marker) != fread(eof_to_chech, 1, sizeof(eof_marker), file))
 		{
-			cerr << "Error: cannot check EOF marker of BAM file: " << fname << "\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: cannot check EOF marker of BAM file: " << fname;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 		if (!equal(begin(eof_marker), end(eof_marker), begin(eof_to_chech)))
 		{
-			cerr << "Error: wrong EOF marker of BAM file: " << fname << "\n";
-			exit(1);
+			std::ostringstream ostr;
+			ostr << "Error: wrong EOF marker of BAM file: " << fname;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 		fseek(file, 0, SEEK_SET);
 
@@ -320,13 +330,15 @@ public:
 				CKMCFile kmc_file;
 				if (!kmc_file.OpenForListing(f_name))
 				{
-					cerr << "Cannot open KMC database: " << f_name << "\n";
-					exit(1);
+					std::ostringstream ostr;
+					ostr << "Cannot open KMC database: " << f_name;
+					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 				}
 				if (!kmc_file.IsKMC2())
 				{
-					cerr << "Error: currently only KMC databases in version 2 can be readed. If needed to read other version please post an GitHub issue.\n";
-					exit(1);
+					std::ostringstream ostr;
+					ostr << "Error: currently only KMC databases in version 2 can be readed. If needed to read other version please post an GitHub issue.";
+					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 				}
 				CKMCFileInfo info;
 				kmc_file.Info(info);
@@ -338,13 +350,15 @@ public:
 				FILE* f = fopen(f_name.c_str(), "rb");
 				if (!is_file(f_name.c_str()))
 				{
-					cerr << "Error: " << f_name << " is not a file\n";
-					exit(1);
+					std::ostringstream ostr;
+					ostr << "Error: " << f_name << " is not a file";
+					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 				}
 				if (!f)
 				{
-					cerr << "Cannot open file: " << f_name << "\n";
-					exit(1);
+					std::ostringstream ostr;
+					ostr << "Cannot open file: " << f_name;
+					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 				}
 				my_fseek(f, 0, SEEK_END);
 				fsize = my_ftell(f);

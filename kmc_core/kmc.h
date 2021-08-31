@@ -45,6 +45,7 @@
 #include "bkb_writer.h"
 #include "binary_reader.h"
 #include "kmc_runner.h"
+#include "critical_error_handler.h"
 
 using namespace std;
 
@@ -259,8 +260,9 @@ template <unsigned SIZE> void CKMC<SIZE>::SetThreads1Stage(const KMC::Stage1Para
 				FILE* tmp = my_fopen(p.c_str(), "rb");
 				if (!tmp)
 				{
-					cerr << "Error: cannot open file: " << p.c_str();
-					exit(1);
+					std::ostringstream ostr;
+					ostr << "Error: cannot open file: " << p.c_str();
+					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 				}
 				my_fseek(tmp, 0, SEEK_END);
 				fsize = my_ftell(tmp);
@@ -271,8 +273,9 @@ template <unsigned SIZE> void CKMC<SIZE>::SetThreads1Stage(const KMC::Stage1Para
 				CKMCFile kmc_file;
 				if (!kmc_file.OpenForListing(p))
 				{
-					cerr << "Error: cannot open KMC database: " << p.c_str();
-					exit(1);
+					std::ostringstream ostr;
+					ostr << "Error: cannot open KMC database: " << p.c_str();
+					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 				}
 				CKMCFileInfo info;
 				kmc_file.Info(info);
@@ -691,8 +694,9 @@ template <unsigned SIZE> bool CKMC<SIZE>::AdjustMemoryLimitsSmallK()
 			if (small_k_opt_required)
 			{
 				//Should never be here
-				cerr << "Error: Internal error occurred during small k adjustment, please report this via https://github.com/refresh-bio/KMC/issues";
-				exit(1);
+				std::ostringstream ostr;
+				ostr << "Error: Internal error occurred during small k adjustment, please report this via https://github.com/refresh-bio/KMC/issues";
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			return false;
 		}
@@ -737,8 +741,9 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 	if (Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS ||
 		Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ONLY_ESTIMATE)
 	{
-		std::cerr << "Error: histogram estimation not supported when small k optimization is on\n";
-		exit(1);
+		std::ostringstream ostr;
+		ostr << "Error: histogram estimation not supported when small k optimization is on";
+		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 	}
 
 	w1.startTimer();
@@ -896,8 +901,9 @@ KMC::Stage2Results CKMC<SIZE>::ProcessSmallKOptimization_Stage2()
 		Params.lut_prefix_len = 0;
 	else
 	{
-		std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
-		exit(1);
+		std::ostringstream ostr;
+		ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 	}
 
 	Queues.pmm_small_k_completer = new CMemoryPool(Params.mem_tot_small_k_completer, Params.mem_part_small_k_completer);
@@ -1248,8 +1254,9 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 		Params.lut_prefix_len = 0;
 	else
 	{
-		std::cerr << "Error: not implemented, plase contact authors showind this message" << __FILE__ << "\t" << __LINE__ << "\n";
-		exit(1);
+		std::ostringstream ostr;
+		ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 	}
 
 	Queues.bd->reset_reading();
