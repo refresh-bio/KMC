@@ -39,13 +39,13 @@ template<unsigned SIZE> class CExpandThread;
 //************************************************************************************************************
 // CKmerBinSorter - sorting of k-mers in a bin
 //************************************************************************************************************
-template <unsigned SIZE> class CKmerBinSorter {	
+template <unsigned SIZE> class CKmerBinSorter
+{
 private:
 
 	mutable mutex expander_mtx;
 	uint64 input_pos;
 
-	CMemoryMonitor *mm;
 	CBinDesc *bd;
 	CExpanderPackDesc *epd;
 	CBinQueue *bq;
@@ -169,7 +169,6 @@ template <unsigned SIZE> CKmerBinSorter<SIZE>::CKmerBinSorter(CKMCParams &Params
 	sort_func(sort_func)
 {
 	both_strands = Params.both_strands;
-	mm = Queues.mm;
 	n_bins = Params.n_bins;
 	bd = Queues.bd;
 	epd = Queues.epd;

@@ -25,8 +25,8 @@
 //************************************************************************************************************
 // CKmerBinCompleter - complete the sorted bins and store in a file
 //************************************************************************************************************
-class CKmerBinCompleter {
-	CMemoryMonitor *mm;
+class CKmerBinCompleter
+{
 	string file_name, kmer_file_name, lut_file_name;
 	CKmerQueue *kq;
 	CBinDesc *bd;

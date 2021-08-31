@@ -23,7 +23,7 @@ uint64 CFastqReader::OVERHEAD_SIZE = 1 << 16;
 // Constructor of FASTA/FASTQ reader
 // Parameters:
 //    * _mm - pointer to memory monitor (to check the memory limits)
-CFastqReader::CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_fastq, InputType _file_type, int _kmer_len,
+CFastqReader::CFastqReader(CMemoryPoolWithBamSupport *_pmm_fastq, InputType _file_type, int _kmer_len,
 	CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader, CBamTaskManager* _bam_task_manager, 
 	CPartQueue* _part_queue, CStatsPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter)
 {
@@ -34,7 +34,6 @@ CFastqReader::CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_
 	part_queue = _part_queue;
 	stats_part_queue = _stats_part_queue;
 
-	mm = _mm;
 	pmm_fastq = _pmm_fastq;
 	pmm_binary_file_reader = _pmm_binary_file_reader;
 
@@ -1192,7 +1191,6 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file)
 //************************************************************************************************************
 CWFastqReader::CWFastqReader(CKMCParams &Params, CKMCQueues &Queues, CBinaryPackQueue* _binary_pack_queue)
 {
-	mm = Queues.mm;
 	pmm_fastq = Queues.pmm_fastq;
 	pmm_binary_file_reader = Queues.pmm_binary_file_reader;
 	//input_files_queue = Queues.input_files_queue;
@@ -1219,7 +1217,7 @@ void CWFastqReader::operator()()
 	uchar *part;
 	uint64 part_filled;
 
-	fqr = new CFastqReader(mm, pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader, bam_task_manager, part_queue, nullptr, missingEOL_at_EOF_counter);
+	fqr = new CFastqReader(pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader, bam_task_manager, part_queue, nullptr, missingEOL_at_EOF_counter);
 	fqr->SetPartSize(part_size);
 	if (file_type == InputType::BAM)
 	{
@@ -1243,7 +1241,6 @@ void CWFastqReader::operator()()
 //************************************************************************************************************
 CWStatsFastqReader::CWStatsFastqReader(CKMCParams &Params, CKMCQueues &Queues, CBinaryPackQueue* _binary_pack_queue)
 {
-	mm = Queues.mm;
 	pmm_fastq = Queues.pmm_fastq;
 	pmm_binary_file_reader = Queues.pmm_binary_file_reader;
 
@@ -1271,7 +1268,7 @@ void CWStatsFastqReader::operator()()
 	uchar *part;
 	uint64 part_filled;
 
-	fqr = new CFastqReader(mm, pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader, bam_task_manager, nullptr, stats_part_queue, missingEOL_at_EOF_counter);
+	fqr = new CFastqReader(pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader, bam_task_manager, nullptr, stats_part_queue, missingEOL_at_EOF_counter);
 	fqr->SetPartSize(part_size);
 	if (file_type == InputType::BAM)
 	{

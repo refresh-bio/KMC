@@ -26,7 +26,6 @@ extern uint64 total_reads;
 CKmerBinStorer::CKmerBinStorer(CKMCParams &Params, CKMCQueues &Queues)
 {
 	pmm_bins			= Queues.pmm_bins;
-	mm					= Queues.mm;
 	n_bins			    = Params.n_bins;
 	q_part			    = Queues.bpq;
 	bd                  = Queues.bd;

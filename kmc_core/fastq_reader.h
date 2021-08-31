@@ -77,12 +77,12 @@ public:
 //************************************************************************************************************
 // FASTA/FASTQ reader class
 //************************************************************************************************************
-class CFastqReader {	
+class CFastqReader
+{
 	CBinaryPackQueue* binary_pack_queue;
 
 	CBamTaskManager* bam_task_manager = nullptr; //only for bam input
 
-	CMemoryMonitor *mm;	
 	CMemoryPoolWithBamSupport* pmm_fastq;
 	CMissingEOL_at_EOF_counter* missingEOL_at_EOF_counter;
 
@@ -119,7 +119,7 @@ class CFastqReader {
 	void CleanUpAfterLongFastaRead();
 	void FixEOLIfNeeded(uchar* part, int64& size);	
 public:
-	CFastqReader(CMemoryMonitor *_mm, CMemoryPoolWithBamSupport *_pmm_fastq, InputType _file_type, int _kmer_len,
+	CFastqReader(CMemoryPoolWithBamSupport *_pmm_fastq, InputType _file_type, int _kmer_len,
 		CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader, CBamTaskManager* _bam_task_manager, 
 		CPartQueue* _part_queue, CStatsPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter);
 	~CFastqReader();
@@ -154,7 +154,6 @@ public:
 // Wrapper for FASTA/FASTQ reader class - for multithreading purposes
 //************************************************************************************************************
 class CWFastqReader {
-	CMemoryMonitor *mm;
 	CMemoryPoolWithBamSupport *pmm_fastq;
 	CMemoryPool *pmm_binary_file_reader;
 
@@ -182,8 +181,8 @@ public:
 //************************************************************************************************************
 // Wrapper for FASTA/FASTQ reader class (stats mode) - for multithreading purposes
 //************************************************************************************************************
-class CWStatsFastqReader {
-	CMemoryMonitor *mm;
+class CWStatsFastqReader
+{
 	CMemoryPoolWithBamSupport *pmm_fastq;
 	CMemoryPool *pmm_binary_file_reader;
 	CFastqReader *fqr;

@@ -28,8 +28,8 @@
 //************************************************************************************************************
 // CKmerBinReader - reader of bins from distribution phase
 //************************************************************************************************************
-template <unsigned SIZE> class CKmerBinReader {
-	CMemoryMonitor *mm;
+template <unsigned SIZE> class CKmerBinReader
+{
 	CSignatureMapper* s_mapper;
 
 	CBinDesc *bd;
@@ -69,8 +69,6 @@ public:
 // Assign monitors and queues
 template <unsigned SIZE> CKmerBinReader<SIZE>::CKmerBinReader(CKMCParams &Params, CKMCQueues &Queues)
 {
-	mm = Queues.mm;
-//	dm = Queues.dm;
 	bd = Queues.bd;
 	bq = Queues.bq;
 	sorters_manager = Queues.sorters_manager;

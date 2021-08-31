@@ -828,49 +828,6 @@ public:
 	}
 };
 
-
-
-
-//************************************************************************************************************
-class CMemoryMonitor {
-	uint64 max_memory;
-	uint64 memory_in_use;
-
-	mutable mutex mtx;								// The mutex to synchronise on
-	condition_variable cv_memory_full;				// The condition to wait for
-
-public:
-	CMemoryMonitor(uint64 _max_memory) {
-		lock_guard<mutex> lck(mtx);
-		max_memory    = _max_memory;
-		memory_in_use = 0;
-	}
-	~CMemoryMonitor() {
-	}
-
-	void increase(uint64 n) {
-		unique_lock<mutex> lck(mtx);
-		cv_memory_full.wait(lck, [this, n]{return memory_in_use + n <= max_memory;});
-		memory_in_use += n;
-	}
-	void force_increase(uint64 n) {
-		unique_lock<mutex> lck(mtx);
-		cv_memory_full.wait(lck, [this, n]{return memory_in_use + n <= max_memory || memory_in_use == 0;});
-		memory_in_use += n;
-	}
-	void decrease(uint64 n) {
-		lock_guard<mutex> lck(mtx);
-		memory_in_use -= n;
-		cv_memory_full.notify_all();
-	}
-	void info(uint64 &_max_memory, uint64 &_memory_in_use)
-	{
-		lock_guard<mutex> lck(mtx);
-		_max_memory    = max_memory;
-		_memory_in_use = memory_in_use;
-	}
-};
-
 //************************************************************************************************************
 class CMemoryPool {
 protected:

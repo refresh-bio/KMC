@@ -27,7 +27,6 @@ extern uint64 total_reads;
 // Assign queues and monitors
 CKmerBinCompleter::CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues) 
 {
-	mm		       = Queues.mm;
 	file_name      = Params.output_file_name;
 	kq             = Queues.kq;
 	bd		       = Queues.bd;

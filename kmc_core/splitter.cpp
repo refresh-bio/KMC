@@ -22,7 +22,7 @@ uint32 CSplitter::MAX_LINE_SIZE = 1 << 16;
 // Assigns queues
 CSplitter::CSplitter(CKMCParams &Params, CKMCQueues &Queues)
 {
-	mm = Queues.mm;
+	//mm = Queues.mm;
 	file_type = Params.file_type;
 	both_strands = Params.both_strands;
 

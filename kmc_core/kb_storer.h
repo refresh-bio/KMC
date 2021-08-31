@@ -27,9 +27,8 @@ using namespace std;
 //************************************************************************************************************
 // CKmerBinStorer - storer of bins of k-mers
 //************************************************************************************************************
-class CKmerBinStorer {
-	CMemoryMonitor *mm;
-
+class CKmerBinStorer
+{
 	uint64 total_size; 
 	CMemoryPool *pmm_bins;
 	string working_directory;

@@ -28,8 +28,9 @@ using namespace std;
 //************************************************************************************************************
 // CSplitter class - splits kmers into bins according to their signatures
 //************************************************************************************************************
-class CSplitter {
-	CMemoryMonitor *mm;
+class CSplitter
+{
+	//CMemoryMonitor *mm;
 	uint64 total_kmers = 0;	
 	uchar *part;
 	uint64_t part_size, part_pos;

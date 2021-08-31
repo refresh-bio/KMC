@@ -129,8 +129,6 @@ struct CKMCQueues
 {
 	//Signature mapper
 	CSignatureMapper* s_mapper;
-	// Memory monitors
-	CMemoryMonitor *mm;
 
 	vector<CBinaryPackQueue*> binary_pack_queues;
 

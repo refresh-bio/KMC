@@ -946,10 +946,6 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 	if (!AdjustMemoryLimits())
 		throw std::runtime_error("Error: cannot adjust memory, please contact authors");
 
-	// Create monitors
-	Queues.mm = new CMemoryMonitor(Params.max_mem_stage2);
-
-
 	// Create queues
 	Queues.input_files_queue = new CInputFilesQueue(Params.input_file_names);
 	Queues.part_queue = new CPartQueue(Params.n_readers);
@@ -1380,7 +1376,6 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	gr2_3.clear();
 
 	thread* release_thr_st2_1 = new thread([&] {
-		delete Queues.mm;
 		//Queues.pmm_radix_buf->release();
 		Queues.memory_bins->release();
 		//delete Queues.pmm_radix_buf;
