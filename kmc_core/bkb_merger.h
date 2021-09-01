@@ -19,7 +19,7 @@
 template<unsigned SIZE>
 class CBigKmerBinMerger
 {
-	vector<CSubBin<SIZE>*> sub_bins;
+	std::vector<std::unique_ptr<CSubBin<SIZE>>> sub_bins;
 	std::vector<std::tuple<CKmer<SIZE>, uint32, uint32>> curr_min;
 	CDiskLogger* disk_logger;
 	uint32 size;
@@ -44,19 +44,19 @@ public:
 template<unsigned SIZE>
 CBigKmerBinMerger<SIZE>::CBigKmerBinMerger(CKMCParams& Params, CKMCQueues& Queues) 
 {
-	disk_logger = Queues.disk_logger;
-	bbd = Queues.bbd;
-	bbkpq = Queues.bbkpq;
-	sm_cbc = Queues.sm_cbc;
+	disk_logger = Queues.disk_logger.get();
+	bbd = Queues.bbd.get();
+	bbkpq = Queues.bbkpq.get();
+	sm_cbc = Queues.sm_cbc.get();
 	kmer_len = Params.kmer_len;
 	lut_prefix_len = Params.lut_prefix_len;
 	cutoff_min = Params.cutoff_min;
 	cutoff_max = (uint32)Params.cutoff_max;
 	counter_max = (uint32)Params.counter_max;
-	sm_pmm_merger_suff = Queues.sm_pmm_merger_suff;
-	sm_pmm_merger_lut = Queues.sm_pmm_merger_lut;
-	sm_pmm_sub_bin_suff = Queues.sm_pmm_sub_bin_suff;
-	sm_pmm_sub_bin_lut = Queues.sm_pmm_sub_bin_lut;
+	sm_pmm_merger_suff = Queues.sm_pmm_merger_suff.get();
+	sm_pmm_merger_lut = Queues.sm_pmm_merger_lut.get();
+	sm_pmm_sub_bin_suff = Queues.sm_pmm_sub_bin_suff.get();
+	sm_pmm_sub_bin_lut = Queues.sm_pmm_sub_bin_lut.get();
 	sm_mem_part_sub_bin_suff = Params.sm_mem_part_sub_bin_suff;
 	sm_mem_part_merger_suff = Params.sm_mem_part_merger_suff;
 	sm_mem_part_merger_lut = Params.sm_mem_part_merger_lut;
@@ -70,8 +70,6 @@ CBigKmerBinMerger<SIZE>::CBigKmerBinMerger(CKMCParams& Params, CKMCQueues& Queue
 template<unsigned SIZE>
 CBigKmerBinMerger<SIZE>::~CBigKmerBinMerger()
 {
-	for (auto p : sub_bins)
-		delete p;
 	sm_pmm_sub_bin_lut->free(sub_bin_lut_buff);
 	sm_pmm_sub_bin_suff->free(sub_bin_suff_buff);
 }
@@ -89,7 +87,7 @@ void CBigKmerBinMerger<SIZE>::init(int32 bin_id, uint32 _size)
 		curr_min.resize(size);
 		for (uint32 i = prev_size; i < size; ++i)
 		{
-			sub_bins[i] = new CSubBin<SIZE>(disk_logger);
+			sub_bins[i] = std::make_unique<CSubBin<SIZE>>(disk_logger);
 		}
 	}
 
@@ -244,10 +242,9 @@ void CBigKmerBinMerger<SIZE>::Process()
 template<unsigned SIZE>
 class CWBigKmerBinMerger
 {
-	CBigKmerBinMerger<SIZE> *merger;
+	std::unique_ptr<CBigKmerBinMerger<SIZE>> merger;
 public:
 	CWBigKmerBinMerger(CKMCParams& Params, CKMCQueues& Queues);
-	~CWBigKmerBinMerger();
 	void operator()();
 };
 
@@ -256,16 +253,9 @@ public:
 template<unsigned SIZE>
 CWBigKmerBinMerger<SIZE>::CWBigKmerBinMerger(CKMCParams& Params, CKMCQueues& Queues)
 {
-	merger = new CBigKmerBinMerger<SIZE>(Params, Queues);
+	merger = std::make_unique<CBigKmerBinMerger<SIZE>>(Params, Queues);
 }
 
-//----------------------------------------------------------------------------------
-// Destructor
-template<unsigned SIZE>
-CWBigKmerBinMerger<SIZE>::~CWBigKmerBinMerger()
-{
-	delete merger;
-}
 
 #endif
 

@@ -26,9 +26,9 @@ CSplitter::CSplitter(CKMCParams &Params, CKMCQueues &Queues)
 	file_type = Params.file_type;
 	both_strands = Params.both_strands;
 
-	bin_part_queue = Queues.bpq;
-	bd = Queues.bd;
-	pmm_reads = Queues.pmm_reads;
+	bin_part_queue = Queues.bpq.get();
+	bd = Queues.bd.get();
+	pmm_reads = Queues.pmm_reads.get();
 	kmer_len = Params.kmer_len;
 	signature_len = Params.signature_len;
 
@@ -36,7 +36,7 @@ CSplitter::CSplitter(CKMCParams &Params, CKMCQueues &Queues)
 
 	mem_part_pmm_reads = Params.mem_part_pmm_reads; 
 
-	s_mapper = Queues.s_mapper;
+	s_mapper = Queues.s_mapper.get();
 
 	part = nullptr;
 
@@ -49,11 +49,10 @@ CSplitter::CSplitter(CKMCParams &Params, CKMCQueues &Queues)
 	codes['T'] = codes['t'] = 3;
 
 	n_reads = 0;
-	bins = nullptr;
 
 	homopolymer_compressed = Params.homopolymer_compressed;
 
-	ntHashEstimator = Queues.ntHashEstimator;
+	ntHashEstimator = Queues.ntHashEstimator.get();
 
 	onlyEstimateHistogram = Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ONLY_ESTIMATE;
 }
@@ -63,10 +62,10 @@ void CSplitter::InitBins(CKMCParams &Params, CKMCQueues &Queues)
 	n_bins = Params.n_bins;
 	uint32 buffer_size = Params.bin_part_size;
 	// Create objects for all bin
-	bins = new CKmerBinCollector*[n_bins];
+	bins.resize(n_bins);
 	for (uint32 i = 0; i < n_bins; ++i)
 	{
-		bins[i] = new CKmerBinCollector(Queues, Params, buffer_size, i);
+		bins[i] = std::make_unique<CKmerBinCollector>(Queues, Params, buffer_size, i);
 		bd->insert(i, nullptr, "", 0, 0, 0, 0, buffer_size, kmer_len);
 	}
 }
@@ -805,25 +804,10 @@ bool CSplitter::ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType rea
 // Finish the processing of input file
 void CSplitter::Complete()
 {
-	if (bins)
-		for (uint32 i = 0; i < n_bins; ++i)
-			if (bins[i])
-				bins[i]->Flush();
+	for (auto& bin : bins)
+		if (bin)
+			bin->Flush();
 }
-
-//----------------------------------------------------------------------------------
-// Release memory
-CSplitter::~CSplitter()
-{
-	if (bins)
-	{
-		for (uint32 i = 0; i < n_bins; ++i)
-			if (bins[i])
-				delete bins[i];
-		delete[] bins;
-	}
-}
-
 
 //************************************************************************************************************
 // CWSplitter class - wrapper for multithreading purposes
@@ -832,10 +816,10 @@ CSplitter::~CSplitter()
 // Constructor
 CWSplitter::CWSplitter(CKMCParams &Params, CKMCQueues &Queues)
 {
-	pq = Queues.part_queue;
-	bpq = Queues.bpq;
-	pmm_fastq = Queues.pmm_fastq;
-	spl = new CSplitter(Params, Queues);
+	pq = Queues.part_queue.get();
+	bpq = Queues.bpq.get();
+	pmm_fastq = Queues.pmm_fastq.get();
+	spl = std::make_unique<CSplitter>(Params, Queues);
 	spl->InitBins(Params, Queues);
 }
 
@@ -860,8 +844,7 @@ void CWSplitter::operator()()
 
 	spl->GetTotal(n_reads);
 
-	delete spl;
-	spl = nullptr;
+	spl.reset();
 }
 
 //----------------------------------------------------------------------------------
@@ -890,10 +873,10 @@ void CWSplitter::GetTotal(uint64 &_n_reads)
 // Constructor
 CWStatsSplitter::CWStatsSplitter(CKMCParams &Params, CKMCQueues &Queues)
 {
-	spq = Queues.stats_part_queue;
-	pmm_fastq = Queues.pmm_fastq;
-	pmm_stats = Queues.pmm_stats;
-	spl = new CSplitter(Params, Queues);
+	spq = Queues.stats_part_queue.get();
+	pmm_fastq = Queues.pmm_fastq.get();
+	pmm_stats = Queues.pmm_stats.get();
+	spl = std::make_unique<CSplitter>(Params, Queues);
 
 	signature_len = Params.signature_len;
 	pmm_stats->reserve(stats);
@@ -924,8 +907,7 @@ void CWStatsSplitter::operator()()
 		}
 	}
 
-	delete spl;
-	spl = nullptr;
+	spl.reset();
 }
 
 //----------------------------------------------------------------------------------
@@ -946,11 +928,11 @@ void CWStatsSplitter::GetStats(uint32* _stats)
 // Constructor
 template <typename COUNTER_TYPE> CWSmallKSplitter<COUNTER_TYPE>::CWSmallKSplitter(CKMCParams &Params, CKMCQueues &Queues)
 {
-	pq = Queues.part_queue;
-	pmm_fastq = Queues.pmm_fastq;
-	pmm_small_k = Queues.pmm_small_k_buf;
+	pq = Queues.part_queue.get();
+	pmm_fastq = Queues.pmm_fastq.get();
+	pmm_small_k = Queues.pmm_small_k_buf.get();
 	kmer_len = Params.kmer_len;
-	spl = new CSplitter(Params, Queues);
+	spl = std::make_unique<CSplitter>(Params, Queues);
 }
 
 //----------------------------------------------------------------------------------
@@ -982,8 +964,7 @@ template <typename COUNTER_TYPE> void CWSmallKSplitter<COUNTER_TYPE>::operator()
 
 	spl->GetTotal(n_reads);
 	total_kmers = spl->GetTotalKmers();
-	delete spl;
-	spl = nullptr;
+	spl.reset();
 }
 
 //----------------------------------------------------------------------------------

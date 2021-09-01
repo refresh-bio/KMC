@@ -20,13 +20,13 @@
 //----------------------------------------------------------------------------------
 CBigKmerBinWriter::CBigKmerBinWriter(CKMCParams& Params, CKMCQueues& Queues)
 {
-	disk_logger = Queues.disk_logger;
-	bbspq = Queues.bbspq;
-	sm_pmm_sorter_suffixes = Queues.sm_pmm_sorter_suffixes;
-	sm_pmm_sorter_lut = Queues.sm_pmm_sorter_lut;
+	disk_logger = Queues.disk_logger.get();
+	bbspq = Queues.bbspq.get();
+	sm_pmm_sorter_suffixes = Queues.sm_pmm_sorter_suffixes.get();
+	sm_pmm_sorter_lut = Queues.sm_pmm_sorter_lut.get();
 	working_directory = Params.working_directory;
-	bbd = Queues.bbd;
-	sm_cbc = Queues.sm_cbc;
+	bbd = Queues.bbd.get();
+	sm_cbc = Queues.sm_cbc.get();
 }
 
 //----------------------------------------------------------------------------------
@@ -127,14 +127,7 @@ string CBigKmerBinWriter::GetName()
 // Constructor
 CWBigKmerBinWriter::CWBigKmerBinWriter(CKMCParams& Params, CKMCQueues& Queues)
 {
-	bkb_writer = new CBigKmerBinWriter(Params, Queues);
-}
-
-//----------------------------------------------------------------------------------
-// Destructor
-CWBigKmerBinWriter::~CWBigKmerBinWriter()
-{
-	delete bkb_writer;
+	bkb_writer = std::make_unique<CBigKmerBinWriter>(Params, Queues);
 }
 
 //----------------------------------------------------------------------------------

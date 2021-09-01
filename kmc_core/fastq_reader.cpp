@@ -1223,19 +1223,16 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file)
 //************************************************************************************************************
 CWFastqReader::CWFastqReader(CKMCParams &Params, CKMCQueues &Queues, CBinaryPackQueue* _binary_pack_queue)
 {
-	pmm_fastq = Queues.pmm_fastq;
-	pmm_binary_file_reader = Queues.pmm_binary_file_reader;
+	pmm_fastq = Queues.pmm_fastq.get();
+	pmm_binary_file_reader = Queues.pmm_binary_file_reader.get();
 	//input_files_queue = Queues.input_files_queue;
 	binary_pack_queue = _binary_pack_queue;
-	missingEOL_at_EOF_counter = Queues.missingEOL_at_EOF_counter;
-	bam_task_manager = Queues.bam_task_manager;
+	missingEOL_at_EOF_counter = Queues.missingEOL_at_EOF_counter.get();
+	bam_task_manager = Queues.bam_task_manager.get();
 	part_size = Params.fastq_buffer_size; 
-	part_queue = Queues.part_queue;
+	part_queue = Queues.part_queue.get();
 	file_type = Params.file_type;
 	kmer_len = Params.kmer_len;
-
-
-	fqr = nullptr;
 }
 
 //----------------------------------------------------------------------------------
@@ -1249,20 +1246,19 @@ void CWFastqReader::operator()()
 	uchar *part;
 	uint64 part_filled;
 
-	fqr = new CFastqReader(pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader, bam_task_manager, part_queue, nullptr, missingEOL_at_EOF_counter);
-	fqr->SetPartSize(part_size);
+	CFastqReader fqr(pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader, bam_task_manager, part_queue, nullptr, missingEOL_at_EOF_counter);
+	fqr.SetPartSize(part_size);
 	if (file_type == InputType::BAM)
 	{
-		fqr->ProcessBam();
+		fqr.ProcessBam();
 	}
 	else
 	{
-		fqr->Init();
+		fqr.Init();
 		ReadType read_type;
-		while (fqr->GetPartNew(part, part_filled, read_type))
+		while (fqr.GetPartNew(part, part_filled, read_type))
 			part_queue->push(part, part_filled, read_type);
 	}
-	delete fqr;
 	part_queue->mark_completed();
 }
 
@@ -1273,20 +1269,18 @@ void CWFastqReader::operator()()
 //************************************************************************************************************
 CWStatsFastqReader::CWStatsFastqReader(CKMCParams &Params, CKMCQueues &Queues, CBinaryPackQueue* _binary_pack_queue)
 {
-	pmm_fastq = Queues.pmm_fastq;
-	pmm_binary_file_reader = Queues.pmm_binary_file_reader;
+	pmm_fastq = Queues.pmm_fastq.get();
+	pmm_binary_file_reader = Queues.pmm_binary_file_reader.get();
 
 	binary_pack_queue = _binary_pack_queue;
-	bam_task_manager = Queues.bam_task_manager;
+	bam_task_manager = Queues.bam_task_manager.get();
 
 	part_size = Params.fastq_buffer_size;
-	stats_part_queue = Queues.stats_part_queue;
+	stats_part_queue = Queues.stats_part_queue.get();
 	file_type = Params.file_type;
 	kmer_len = Params.kmer_len;
 
-	missingEOL_at_EOF_counter = Queues.missingEOL_at_EOF_counter;
-
-	fqr = nullptr;
+	missingEOL_at_EOF_counter = Queues.missingEOL_at_EOF_counter.get();
 }
 
 //----------------------------------------------------------------------------------
@@ -1300,30 +1294,30 @@ void CWStatsFastqReader::operator()()
 	uchar *part;
 	uint64 part_filled;
 
-	fqr = new CFastqReader(pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader, bam_task_manager, nullptr, stats_part_queue, missingEOL_at_EOF_counter);
-	fqr->SetPartSize(part_size);
+
+	CFastqReader fqr(pmm_fastq, file_type, kmer_len, binary_pack_queue, pmm_binary_file_reader, bam_task_manager, nullptr, stats_part_queue, missingEOL_at_EOF_counter);
+	fqr.SetPartSize(part_size);
 	if (file_type == InputType::BAM)
 	{
-		fqr->ProcessBam();
+		fqr.ProcessBam();
 	}
 	else
 	{
-		fqr->Init();
+		fqr.Init();
 		bool finished = false;
 		ReadType read_type;
-		while (fqr->GetPartNew(part, part_filled, read_type) && !finished)
+		while (fqr.GetPartNew(part, part_filled, read_type) && !finished)
 		{
 			if (!stats_part_queue->push(part, part_filled, read_type))
 			{
 				finished = true;
 				pmm_fastq->free(part);
 				binary_pack_queue->ignore_rest();
-				fqr->IgnoreRest();
+				fqr.IgnoreRest();
 				break;
 			}
 		}
 	}
-	delete fqr;
 	stats_part_queue->mark_completed();
 }
 

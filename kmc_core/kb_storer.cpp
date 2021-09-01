@@ -27,17 +27,17 @@ extern uint64 total_reads;
 // Constructor
 CKmerBinStorer::CKmerBinStorer(CKMCParams &Params, CKMCQueues &Queues)
 {
-	pmm_bins			= Queues.pmm_bins;
+	pmm_bins			= Queues.pmm_bins.get();
 	n_bins			    = Params.n_bins;
-	q_part			    = Queues.bpq;
-	bd                  = Queues.bd;
-	epd					= Queues.epd;
+	q_part			    = Queues.bpq.get();
+	bd                  = Queues.bd.get();
+	epd					= Queues.epd.get();
 	working_directory = Params.working_directory;
 
 	mem_mode			= Params.mem_mode;
 
-	s_mapper			= Queues.s_mapper;
-	disk_logger			= Queues.disk_logger;
+	s_mapper			= Queues.s_mapper.get();
+	disk_logger			= Queues.disk_logger.get();
 	files                  = nullptr;
 	buf_sizes		       = nullptr;
 	buffer_size_bytes      = 0;
@@ -253,15 +253,8 @@ void CKmerBinStorer::ProcessQueue()
 // Constructor
 CWKmerBinStorer::CWKmerBinStorer(CKMCParams &Params, CKMCQueues &Queues)
 {
-	kbs = new CKmerBinStorer(Params, Queues);
+	kbs = std::make_unique<CKmerBinStorer>(Params, Queues);
 	kbs->OpenFiles();
-}
-
-//----------------------------------------------------------------------------------
-// Destructore
-CWKmerBinStorer::~CWKmerBinStorer()
-{
-	delete kbs;
 }
 
 //----------------------------------------------------------------------------------

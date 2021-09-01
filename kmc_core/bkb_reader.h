@@ -39,10 +39,9 @@ public:
 //************************************************************************************************************
 class CWBigKmerBinReader
 {
-	CBigKmerBinReader* bkb_reader;
+	std::unique_ptr<CBigKmerBinReader> bkb_reader;
 public:
 	CWBigKmerBinReader(CKMCParams& Params, CKMCQueues& Queues);
-	~CWBigKmerBinReader();
 	void operator()();
 };
 

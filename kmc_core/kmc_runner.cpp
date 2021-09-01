@@ -25,8 +25,8 @@ namespace KMC
 //    * SIZE     - maximal size of the k-mer (divided by 32)
 	template<unsigned SIZE> class CApplication
 	{
-		CApplication<SIZE - 1>* app_1;
-		CKMC<SIZE>* kmc;
+		std::unique_ptr<CApplication<SIZE - 1>> app_1;
+		std::unique_ptr<CKMC<SIZE>> kmc;
 		int p_k;
 		bool is_selected;
 
@@ -37,20 +37,11 @@ namespace KMC
 			this->p_k = p_k;
 			is_selected = p_k <= (int32)SIZE * 32 && p_k > ((int32)SIZE - 1) * 32;
 
-			app_1 = new CApplication<SIZE - 1>(p_k);
+			app_1 = std::make_unique<CApplication<SIZE - 1>>(p_k);
 			if (is_selected)
 			{
-				kmc = new CKMC<SIZE>;
+				kmc = std::make_unique<CKMC<SIZE>>();
 			}
-			else
-			{
-				kmc = nullptr;
-			}
-		}
-		~CApplication() {
-			delete app_1;
-			if (kmc)
-				delete kmc;
 		}
 
 		KMC::Stage1Results ProcessStage1(const KMC::Stage1Params& stage1Params)
@@ -80,7 +71,7 @@ namespace KMC
 	// Specialization of the application class for the SIZE=1
 	template<> class CApplication<1>
 	{
-		CKMC<1>* kmc;
+		std::unique_ptr<CKMC<1>> kmc;
 		int p_k;
 		bool is_selected;
 
@@ -90,17 +81,8 @@ namespace KMC
 			is_selected = p_k <= 32;
 			if (is_selected)
 			{
-				kmc = new CKMC<1>;
+				kmc = std::make_unique<CKMC<1>>();
 			}
-			else
-			{
-				kmc = nullptr;
-			}
-		};
-
-		~CApplication() {
-			if (kmc)
-				delete kmc;
 		};
 
 		KMC::Stage1Results ProcessStage1(const KMC::Stage1Params& stage1Params)

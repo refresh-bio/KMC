@@ -53,8 +53,6 @@ using namespace std;
 template <unsigned SIZE> class CKMC {
 	bool initialized;
 
-	CStopWatch w0, heuristic_time , w1, w2, w3;//w3 - strict memory time
-
 	// Parameters (input and internal)
 	CKMCParams Params;
 
@@ -63,20 +61,6 @@ template <unsigned SIZE> class CKMC {
 
 	uint64 n_reads;
 	bool was_small_k_opt;
-
-	// Threads
-	vector<CWStatsFastqReader*> w_stats_fastqs;
-	vector<CWStatsSplitter*> w_stats_splitters;
-	vector<CWFastqReader*> w_fastqs;
-	vector<CWSplitter*> w_splitters;
-
-	CWBinaryFilesReader* w_bin_file_reader;
-
-	CWKmerBinStorer *w_storer;
-
-	CWKmerBinReader<SIZE>* w_reader;
-	vector<CWKmerBinSorter<SIZE>*> w_sorters;
-	CWKmerBinCompleter *w_completer; //TODO: co nie musi byc polem klasy niech nie jest
 
 	void SetThreads1Stage(const KMC::Stage1Params& stage1Params);
 	void SetThreads2Stage(const KMC::Stage2Params& stage2Params);
@@ -93,7 +77,7 @@ template <unsigned SIZE> class CKMC {
 
 	//small k
 	bool AdjustMemoryLimitsSmallK();
-	vector<CWSmallKSplitter<uint64_t>*> w_small_k_splitters;
+	vector<std::unique_ptr<CWSmallKSplitter<uint64_t>>> w_small_k_splitters;
 	KMC::Stage1Results ProcessSmallKOptimization_Stage1();
 	KMC::Stage2Results ProcessSmallKOptimization_Stage2();
 
@@ -117,8 +101,7 @@ template <unsigned SIZE> CKMC<SIZE>::CKMC()
 	Params.kmer_len      = 0;
 	Params.n_readers     = 1;
 	Params.n_splitters   = 1;
-	Params.n_sorters     = 1;	
-	Queues.s_mapper = nullptr;
+	Params.n_sorters     = 1;
 }
 
 //----------------------------------------------------------------------------------
@@ -743,16 +726,17 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 	}
 
-	w1.startTimer();
-	Queues.input_files_queue = new CInputFilesQueue(Params.input_file_names);
-	Queues.part_queue = new CPartQueue(Params.n_readers);
+	CStopWatch timer_stage1;
+	timer_stage1.startTimer();
+	Queues.input_files_queue = std::make_unique<CInputFilesQueue>(Params.input_file_names);
+	Queues.part_queue = std::make_unique<CPartQueue>(Params.n_readers);
 
-	Queues.pmm_fastq = new CMemoryPoolWithBamSupport(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
-	Queues.pmm_binary_file_reader = new CMemoryPool(Params.mem_tot_pmm_binary_file_reader, Params.mem_part_pmm_binary_file_reader);
-	Queues.pmm_reads = new CMemoryPool(Params.mem_tot_pmm_reads, Params.mem_part_pmm_reads);
-	Queues.pmm_small_k_buf = new CMemoryPool(Params.mem_tot_small_k_buf, Params.mem_part_small_k_buf);
+	Queues.pmm_fastq = std::make_unique<CMemoryPoolWithBamSupport>(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
+	Queues.pmm_binary_file_reader = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_binary_file_reader, Params.mem_part_pmm_binary_file_reader);
+	Queues.pmm_reads = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_reads, Params.mem_part_pmm_reads);
+	Queues.pmm_small_k_buf = std::make_unique<CMemoryPool>(Params.mem_tot_small_k_buf, Params.mem_part_small_k_buf);
 
-	Queues.missingEOL_at_EOF_counter = new CMissingEOL_at_EOF_counter;
+	Queues.missingEOL_at_EOF_counter = std::make_unique<CMissingEOL_at_EOF_counter>();
 
 	w_small_k_splitters.resize(Params.n_splitters);
 
@@ -760,33 +744,33 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 
 	for (int i = 0; i < Params.n_splitters; ++i)
 	{
-		w_small_k_splitters[i] = new CWSmallKSplitter<uint64_t>(Params, Queues);
-		splitters_threads.emplace_back(std::ref(*w_small_k_splitters[i]));
+		w_small_k_splitters[i] = std::make_unique<CWSmallKSplitter<uint64_t>>(Params, Queues);
+		splitters_threads.emplace_back(std::ref(*w_small_k_splitters[i].get()));
 	}
 
-	w_fastqs.resize(Params.n_readers);
+	std::vector<std::unique_ptr<CWFastqReader>> w_fastqs(Params.n_readers);
 	if (Params.file_type != InputType::BAM)
 	{
 		Queues.binary_pack_queues.resize(Params.n_readers);
 		for (int i = 0; i < Params.n_readers; ++i)
 		{
-			Queues.binary_pack_queues[i] = new CBinaryPackQueue;
-			w_fastqs[i] = new CWFastqReader(Params, Queues, Queues.binary_pack_queues[i]);
-			fastqs_threads.emplace_back(std::ref(*w_fastqs[i]));
+			Queues.binary_pack_queues[i] = std::make_unique<CBinaryPackQueue>();
+			w_fastqs[i] = std::make_unique<CWFastqReader>(Params, Queues, Queues.binary_pack_queues[i].get());
+			fastqs_threads.emplace_back(std::ref(*w_fastqs[i].get()));
 		}
 	}
 	else
 	{
-		Queues.bam_task_manager = new CBamTaskManager;
+		Queues.bam_task_manager = std::make_unique<CBamTaskManager>();
 		for (int i = 0; i < Params.n_readers; ++i)
 		{
-			w_fastqs[i] = new CWFastqReader(Params, Queues, nullptr);
-			fastqs_threads.emplace_back(std::ref(*w_fastqs[i]));
+			w_fastqs[i] = std::make_unique<CWFastqReader>(Params, Queues, nullptr);
+			fastqs_threads.emplace_back(std::ref(*w_fastqs[i].get()));
 		}
 	}
 
-	w_bin_file_reader = new CWBinaryFilesReader(Params, Queues);
-	CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader));
+	std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues);
+	CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader.get()));
 
 	for (auto& t : fastqs_threads)
 		t.join();
@@ -794,8 +778,8 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 	for (auto& t : splitters_threads)
 		t.join();
 
-	for (auto r : w_fastqs)
-		delete r;
+	for (auto& r : w_fastqs)
+		r.reset();
 
 	bin_file_reader_thread.join();
 
@@ -807,27 +791,27 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 
 	bin_file_reader_thread.RethrowIfException();
 
-	delete w_bin_file_reader;
+	w_bin_file_reader.reset();
 
 	for (auto& ptr : Queues.binary_pack_queues)
-		delete ptr;
+		ptr.reset();
 
 	if (Params.file_type == InputType::BAM)
-		delete Queues.bam_task_manager;
+		Queues.bam_task_manager.reset();
 
 	uint64 tmp_n_reads;
 	n_reads = 0;
 	results.nTotalSuperKmers = 0;
-	for (auto s : w_small_k_splitters)
+	for (auto& s : w_small_k_splitters)
 	{
 		s->GetTotal(tmp_n_reads);
 		n_reads += tmp_n_reads;
 	}
 	results.nSeqences = n_reads;
 
-	w1.stopTimer();
+	timer_stage1.stopTimer();
 
-	results.time = w1.getElapsedTime();
+	results.time = timer_stage1.getElapsedTime();
 	results.tmpSize = 0;
 
 
@@ -839,7 +823,9 @@ template <unsigned SIZE>
 KMC::Stage2Results CKMC<SIZE>::ProcessSmallKOptimization_Stage2()
 {
 	KMC::Stage2Results results;
-	w2.startTimer();
+
+	CStopWatch timer_stage2;
+	timer_stage2.startTimer();
 
 	vector<CSmallKBuf<uint64_t>> count_results(Params.n_splitters);
 
@@ -862,17 +848,17 @@ KMC::Stage2Results CKMC<SIZE>::ProcessSmallKOptimization_Stage2()
 	for (int j = 0; j < (1 << 2 * Params.kmer_len); ++j)
 		if (count_results[0].buf[j]) ++n_kmers;
 
-	for (auto s : w_small_k_splitters)
+	for (auto& s : w_small_k_splitters)
 	{
 		results.nTotalKmers += s->GetTotalKmers();
 		s->Release();
-		delete s;
+		s.reset();
 	}
 
 
 	Queues.pmm_fastq->release();
-	delete Queues.pmm_fastq;
-	delete Queues.pmm_binary_file_reader;
+	Queues.pmm_fastq.reset();
+	Queues.pmm_binary_file_reader.reset();
 
 
 	uint32 best_lut_prefix_len = 0;
@@ -916,7 +902,7 @@ KMC::Stage2Results CKMC<SIZE>::ProcessSmallKOptimization_Stage2()
 		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 	}
 
-	Queues.pmm_small_k_completer = new CMemoryPool(Params.mem_tot_small_k_completer, Params.mem_part_small_k_completer);
+	Queues.pmm_small_k_completer = std::make_unique<CMemoryPool>(Params.mem_tot_small_k_completer, Params.mem_part_small_k_completer);
 
 	CSmallKCompleter small_k_completer(Params, Queues);
 	small_k_completer.Complete(count_results[0]);
@@ -925,17 +911,18 @@ KMC::Stage2Results CKMC<SIZE>::ProcessSmallKOptimization_Stage2()
 	Queues.pmm_reads->release();
 	Queues.pmm_small_k_buf->release();
 	Queues.pmm_small_k_completer->release();
-	delete Queues.pmm_small_k_completer;
-	delete Queues.pmm_reads;
-	delete Queues.pmm_small_k_buf;
-	w2.stopTimer();
+	Queues.pmm_small_k_completer.reset();
+	Queues.pmm_reads.reset();
+	Queues.pmm_small_k_buf.reset();
+	timer_stage2.stopTimer();
 	//cerr << "\n";
 
 
 	results.maxDiskUsage = 0;
+	results.time = timer_stage2.getElapsedTime();
 
 	CheckAndReportMissingEOLs();
-	delete Queues.missingEOL_at_EOF_counter;
+	Queues.missingEOL_at_EOF_counter.reset();
 
 	return results;
 }
@@ -944,7 +931,8 @@ KMC::Stage2Results CKMC<SIZE>::ProcessSmallKOptimization_Stage2()
 // Run the counter stage 1
 template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 {
-	w1.startTimer();
+	CStopWatch timer_stage1;
+	timer_stage1.startTimer();
 	KMC::Stage1Results results{};
 	if (!initialized)
 		throw std::runtime_error("Error: kmc was not initialized!\n");
@@ -963,70 +951,71 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 		throw std::runtime_error("Error: cannot adjust memory, please contact authors");
 
 	// Create queues
-	Queues.input_files_queue = new CInputFilesQueue(Params.input_file_names);
-	Queues.part_queue = new CPartQueue(Params.n_readers);
-	Queues.bpq = new CBinPartQueue(Params.n_splitters);
-	Queues.bd = new CBinDesc;
-	Queues.epd = new CExpanderPackDesc(Params.n_bins);
-	Queues.bq = new CBinQueue(1);
+	Queues.input_files_queue = std::make_unique<CInputFilesQueue>(Params.input_file_names);
+	Queues.part_queue = std::make_unique<CPartQueue>(Params.n_readers);
+	Queues.bpq = std::make_unique<CBinPartQueue>(Params.n_splitters);
+	Queues.bd = std::make_unique<CBinDesc>();
+	Queues.epd = std::make_unique<CExpanderPackDesc>(Params.n_bins);
+	Queues.bq = std::make_unique<CBinQueue>(1);
 
 
 	// Create memory manager
-	Queues.pmm_binary_file_reader = new CMemoryPool(Params.mem_tot_pmm_binary_file_reader, Params.mem_part_pmm_binary_file_reader);
-	Queues.pmm_bins = new CMemoryPool(Params.mem_tot_pmm_bins, Params.mem_part_pmm_bins);
-	Queues.pmm_fastq = new CMemoryPoolWithBamSupport(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
-	Queues.pmm_reads = new CMemoryPool(Params.mem_tot_pmm_reads, Params.mem_part_pmm_reads);
-	Queues.pmm_stats = new CMemoryPool(Params.mem_tot_pmm_stats, Params.mem_part_pmm_stats);
+	Queues.pmm_binary_file_reader = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_binary_file_reader, Params.mem_part_pmm_binary_file_reader);
+	Queues.pmm_bins = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_bins, Params.mem_part_pmm_bins);
+	Queues.pmm_fastq = std::make_unique<CMemoryPoolWithBamSupport>(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
+	Queues.pmm_reads = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_reads, Params.mem_part_pmm_reads);
+	Queues.pmm_stats = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_stats, Params.mem_part_pmm_stats);
 
-	Queues.missingEOL_at_EOF_counter = new CMissingEOL_at_EOF_counter;
+	Queues.missingEOL_at_EOF_counter = std::make_unique<CMissingEOL_at_EOF_counter>();
 
 	if (Params.file_type != InputType::BAM)
 	{
 		Queues.binary_pack_queues.resize(Params.n_readers);
 		for (int i = 0; i < Params.n_readers; ++i)
 		{
-			Queues.binary_pack_queues[i] = new CBinaryPackQueue;
+			Queues.binary_pack_queues[i] =  std::make_unique<CBinaryPackQueue>();
 		}
 	}
 	else //for bam
 	{
-		Queues.bam_task_manager = new CBamTaskManager;
+		Queues.bam_task_manager = std::make_unique<CBamTaskManager>();
 	}
-	w_bin_file_reader = new CWBinaryFilesReader(Params, Queues, false);
+	std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false);
 	auto predicted_total_input_size = w_bin_file_reader->GetPredictedSize();
-	Queues.stats_part_queue = new CStatsPartQueue(Params.n_readers, MAX(STATS_FASTQ_SIZE, predicted_total_input_size / 100));
+	Queues.stats_part_queue = std::make_unique<CStatsPartQueue>(Params.n_readers, MAX(STATS_FASTQ_SIZE, predicted_total_input_size / 100));
 
-	Queues.s_mapper = new CSignatureMapper(Queues.pmm_stats, Params.signature_len, Params.n_bins
+	Queues.s_mapper = std::make_unique<CSignatureMapper>(Queues.pmm_stats.get(), Params.signature_len, Params.n_bins
 #ifdef DEVELOP_MODE
 		, Params.verbose_log
 #endif
 	);
-	Queues.disk_logger = new CDiskLogger;
+	Queues.disk_logger = std::make_unique<CDiskLogger>();
 	// ***** Stage 0 *****
 
-	w0.startTimer();
+	CStopWatch timer_stage0;
+	timer_stage0.startTimer();
 	if(Params.file_type != InputType::KMC)
 	{
 		vector<CExceptionAwareThread> stats_fastqs_threads;
 		vector<CExceptionAwareThread> stats_splitters_threads;
 
-		w_stats_splitters.resize(Params.n_splitters);
+		std::vector<std::unique_ptr<CWStatsSplitter>> w_stats_splitters(Params.n_splitters);
 
 		for (int i = 0; i < Params.n_splitters; ++i)
 		{
-			w_stats_splitters[i] = new CWStatsSplitter(Params, Queues);
-			stats_splitters_threads.emplace_back(std::ref(*w_stats_splitters[i]));
+			w_stats_splitters[i] = std::make_unique<CWStatsSplitter>(Params, Queues);
+			stats_splitters_threads.emplace_back(std::ref(*w_stats_splitters[i].get()));
 		}
 
-		w_stats_fastqs.resize(Params.n_readers);
+		std::vector<std::unique_ptr<CWStatsFastqReader>> w_stats_fastqs(Params.n_readers);
 
 
 		for (int i = 0; i < Params.n_readers; ++i)
 		{
-			w_stats_fastqs[i] = new CWStatsFastqReader(Params, Queues, Params.file_type == InputType::BAM ? nullptr : Queues.binary_pack_queues[i]);
-			stats_fastqs_threads.emplace_back(std::ref(*w_stats_fastqs[i]));
+			w_stats_fastqs[i] = std::make_unique<CWStatsFastqReader>(Params, Queues, Params.file_type == InputType::BAM ? nullptr : Queues.binary_pack_queues[i].get());
+			stats_fastqs_threads.emplace_back(std::ref(*w_stats_fastqs[i].get()));
 		}
-		CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader));
+		CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader.get()));
 
 		for(auto& t : stats_fastqs_threads)
 			t.join();
@@ -1045,13 +1034,13 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 		bin_file_reader_thread.RethrowIfException();
 
 
-		delete w_bin_file_reader;
+		w_bin_file_reader.reset();
 
 		for (auto& ptr : Queues.binary_pack_queues)
-			delete ptr;
+			ptr.reset();
 
 		if (Params.file_type == InputType::BAM)
-			delete Queues.bam_task_manager;
+			Queues.bam_task_manager.reset();
 
 		uint32 *stats;
 		Queues.pmm_stats->reserve(stats);
@@ -1059,18 +1048,19 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 
 
 		for (int i = 0; i < Params.n_readers; ++i)
-			delete w_stats_fastqs[i];
+			w_stats_fastqs[i].reset();
 
 		for (int i = 0; i < Params.n_splitters; ++i)
 		{
 			w_stats_splitters[i]->GetStats(stats);
-			delete w_stats_splitters[i];
+			w_stats_splitters[i].reset();
 		}
 
-		delete Queues.stats_part_queue;
-		Queues.stats_part_queue = nullptr;
-		delete Queues.input_files_queue;
-		Queues.input_files_queue = new CInputFilesQueue(Params.input_file_names);
+		Queues.stats_part_queue.reset();
+		Queues.input_files_queue.reset();
+		Queues.input_files_queue = std::make_unique<CInputFilesQueue>(Params.input_file_names);
+
+		CStopWatch heuristic_time;
 
 		heuristic_time.startTimer();
 		Queues.s_mapper->Init(stats);
@@ -1080,29 +1070,27 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 
 		Queues.pmm_stats->free(stats);
 		Queues.pmm_stats->release();
-		delete Queues.pmm_stats;
-		Queues.pmm_stats = nullptr;
-
+		Queues.pmm_stats.reset();
 	}
 	else
 	{
 		Queues.s_mapper->InitKMC(Params.input_file_names.front());
 	}
-	w0.stopTimer();
+	timer_stage0.stopTimer();
 
 	// ***** Stage 1 *****
 	ShowSettingsStage1();
 	Queues.missingEOL_at_EOF_counter->Reset();
 
-	w_splitters.resize(Params.n_splitters);
+	std::vector<std::unique_ptr<CWSplitter>> w_splitters(Params.n_splitters);
 
 	if (Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS ||
 		Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ONLY_ESTIMATE)
 	{
 		if (predicted_total_input_size < 50000000000ull)
-			Queues.ntHashEstimator = new CntHashEstimator(Params.kmer_len, 7);
+			Queues.ntHashEstimator = std::make_unique<CntHashEstimator>(Params.kmer_len, 7);
 		else
-			Queues.ntHashEstimator = new CntHashEstimator(Params.kmer_len, 11);
+			Queues.ntHashEstimator = std::make_unique<CntHashEstimator>(Params.kmer_len, 11);
 	}
 
 	std::vector<CExceptionAwareThread> fastqs_threads;
@@ -1111,36 +1099,36 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 
 	for (int i = 0; i < Params.n_splitters; ++i)
 	{
-		w_splitters[i] = new CWSplitter(Params, Queues);
-		splitters_threads.emplace_back(std::ref(*w_splitters[i]));
+		w_splitters[i] = std::make_unique<CWSplitter>(Params, Queues);
+		splitters_threads.emplace_back(std::ref(*w_splitters[i].get()));
 	}
 
-	w_storer = new CWKmerBinStorer(Params, Queues);
-	CExceptionAwareThread storerer_thread(std::ref(*w_storer));
+	std::unique_ptr<CWKmerBinStorer> w_storer = std::make_unique<CWKmerBinStorer>(Params, Queues);
+	CExceptionAwareThread storerer_thread(std::ref(*w_storer.get()));
 
-	w_fastqs.resize(Params.n_readers);
+	std::vector<std::unique_ptr<CWFastqReader>> w_fastqs(Params.n_readers);
 	if (Params.file_type != InputType::BAM)
 	{
 		Queues.binary_pack_queues.resize(Params.n_readers);
 		for (int i = 0; i < Params.n_readers; ++i)
 		{
-			Queues.binary_pack_queues[i] = new CBinaryPackQueue;
-			w_fastqs[i] = new CWFastqReader(Params, Queues, Queues.binary_pack_queues[i]);
-			fastqs_threads.emplace_back(std::ref(*w_fastqs[i]));
+			Queues.binary_pack_queues[i] = std::make_unique<CBinaryPackQueue>();
+			w_fastqs[i] = std::make_unique<CWFastqReader>(Params, Queues, Queues.binary_pack_queues[i].get());
+			fastqs_threads.emplace_back(std::ref(*w_fastqs[i].get()));
 		}
 	}
 	else //bam
 	{
-		Queues.bam_task_manager = new CBamTaskManager;
+		Queues.bam_task_manager = std::make_unique<CBamTaskManager>();
 		for (int i = 0; i < Params.n_readers; ++i)
 		{
-			w_fastqs[i] = new CWFastqReader(Params, Queues, nullptr);
-			fastqs_threads.emplace_back(std::ref(*w_fastqs[i]));
+			w_fastqs[i] = std::make_unique<CWFastqReader>(Params, Queues, nullptr);
+			fastqs_threads.emplace_back(std::ref(*w_fastqs[i].get()));
 		}
 	}
 
-	w_bin_file_reader = new CWBinaryFilesReader(Params, Queues);
-	CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader));
+	w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues);
+	CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader.get()));
 
 	for (auto& t: fastqs_threads)
 		t.join();
@@ -1149,26 +1137,26 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 		t.join();
 
 	bin_file_reader_thread.join();
-	delete w_bin_file_reader;
+	w_bin_file_reader.reset();
 
 	if(Queues.ntHashEstimator)
 	{
 		Queues.ntHashEstimator->EstimateHistogram(results.estimatedHistogram);
-		delete Queues.ntHashEstimator;
+		Queues.ntHashEstimator.reset();
 	}
 
 	for (auto& ptr : Queues.binary_pack_queues)
-		delete ptr;
+		ptr.reset();
 
 	if (Params.file_type == InputType::BAM)
-		delete Queues.bam_task_manager;
+		Queues.bam_task_manager.reset();
 
 	Queues.pmm_fastq->release();
 	Queues.pmm_reads->release();
 
-	delete Queues.pmm_fastq;
-	delete Queues.pmm_reads;
-	delete Queues.pmm_binary_file_reader;
+	Queues.pmm_fastq.reset();
+	Queues.pmm_reads.reset();
+	Queues.pmm_binary_file_reader.reset();
 
 	storerer_thread.join();
 
@@ -1182,33 +1170,30 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 
 	n_reads = 0;
 
-	thread* release_thr_st1_1 = new thread([&] {
+	thread release_thr_st1_1([&] {
 		for (int i = 0; i < Params.n_readers; ++i)
-			delete w_fastqs[i];
+			w_fastqs[i].reset();
 
 		for (int i = 0; i < Params.n_splitters; ++i)
 		{
 			uint64 _n_reads;
 			w_splitters[i]->GetTotal(_n_reads);
 			n_reads += _n_reads;
-			delete w_splitters[i];
+			w_splitters[i].reset();
 		}
 
-		delete w_storer;
+		w_storer.reset();
 	});
 
-	thread* release_thr_st1_2 = new thread([&] {
+	thread release_thr_st1_2([&] {
 		Queues.pmm_bins->release();
-		delete Queues.pmm_bins;
+		Queues.pmm_bins.reset();
 	});
 
 
-	release_thr_st1_1->join();
+	release_thr_st1_1.join();
 	results.nSeqences = n_reads;
-	release_thr_st1_2->join();
-
-	delete release_thr_st1_1;
-	delete release_thr_st1_2;
+	release_thr_st1_2.join();
 
 	// ***** Getting disk usage statistics *****
 
@@ -1228,13 +1213,13 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 		results.nTotalSuperKmers += n_super_kmers;
 	}
 
-	w1.stopTimer();
+	timer_stage1.stopTimer();
 
 	CheckAndReportMissingEOLs();
-	delete Queues.missingEOL_at_EOF_counter;
+	Queues.missingEOL_at_EOF_counter.reset();
 
 	// ***** End of Stage 1 *****
-	results.time = w1.getElapsedTime();
+	results.time = timer_stage1.getElapsedTime();
 	return results;
 }
 //----------------------------------------------------------------------------------
@@ -1246,7 +1231,8 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	{
 		return ProcessSmallKOptimization_Stage2();
 	}
-	w2.startTimer();
+	CStopWatch timer_stage2;
+	timer_stage2.startTimer();
 
 	if (!initialized)
 		throw std::runtime_error("Error: kmc was not initialized!\n");
@@ -1312,15 +1298,9 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 
 	if (Params.use_strict_mem)
 	{
-		Queues.tlbq = new CTooLargeBinsQueue;
-		Queues.bbkpq = new CBigBinKmerPartQueue(Params.sm_n_mergers);
+		Queues.tlbq = std::make_unique<CTooLargeBinsQueue>();
+		Queues.bbkpq = std::make_unique<CBigBinKmerPartQueue>(Params.sm_n_mergers);
 	}
-	else
-	{
-		Queues.tlbq = nullptr;
-		Queues.bbkpq = nullptr;
-	}
-
 
 	int64 stage2_size = 0;
 	for (auto bin_size : bin_sizes)
@@ -1332,8 +1312,8 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 
 	// ***** Stage 2 *****
 	Queues.bd->reset_reading();
-	Queues.pmm_radix_buf = new CMemoryPool(Params.mem_tot_pmm_radix_buf, Params.mem_part_pmm_radix_buf);
-	Queues.memory_bins = new CMemoryBins(Params.max_mem_stage2, Params.n_bins, Params.use_strict_mem, Params.n_threads);
+	Queues.pmm_radix_buf = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_radix_buf, Params.mem_part_pmm_radix_buf);
+	Queues.memory_bins = std::make_unique<CMemoryBins>(Params.max_mem_stage2, Params.n_bins, Params.use_strict_mem, Params.n_threads);
 
 	auto sorted_bins = Queues.bd->get_sorted_req_sizes(Params.max_x, sizeof(CKmer<SIZE>), Params.cutoff_min, Params.cutoff_max, Params.counter_max, Params.lut_prefix_len);
 	Queues.bd->init_sort(sorted_bins);
@@ -1376,7 +1356,7 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	}
 #endif
 
-	Queues.kq = new CKmerQueue(Params.n_bins, Params.n_sorters);
+	Queues.kq = std::make_unique<CKmerQueue>(Params.n_bins, Params.n_sorters);
 	//max memory is specified by user
 	int64 max_mem_size = Queues.memory_bins->GetTotalSize();
 
@@ -1386,23 +1366,23 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	if (max_mem_size < sorted_bins.front().second && !Params.use_strict_mem)
 		max_mem_size = sorted_bins.front().second;
 
-	Queues.sorters_manager = new CSortersManager(Params.n_bins, Params.n_sorters, Queues.bq, max_mem_size, sorted_bins);
+	Queues.sorters_manager = std::make_unique<CSortersManager>(Params.n_bins, Params.n_sorters, Queues.bq.get(), max_mem_size, sorted_bins);
 
-	w_sorters.resize(Params.n_sorters);
+	vector<std::unique_ptr<CWKmerBinSorter<SIZE>>> w_sorters(Params.n_sorters);
 
 	std::vector<CExceptionAwareThread> sorters_threads;
 
 	for (int i = 0; i < Params.n_sorters; ++i)
 	{
-		w_sorters[i] = new CWKmerBinSorter<SIZE>(Params, Queues, sort_func);
-		sorters_threads.emplace_back(std::ref(*w_sorters[i]));
+		w_sorters[i] = std::make_unique<CWKmerBinSorter<SIZE>>(Params, Queues, sort_func);
+		sorters_threads.emplace_back(std::ref(*w_sorters[i].get()));
 	}
 
-	w_reader = new CWKmerBinReader<SIZE>(Params, Queues);
-	CExceptionAwareThread read_thread(std::ref(*w_reader));
+	std::unique_ptr<CWKmerBinReader<SIZE>> w_reader = std::make_unique<CWKmerBinReader<SIZE>>(Params, Queues);
+	CExceptionAwareThread read_thread(std::ref(*w_reader.get()));
 
-	w_completer = new CWKmerBinCompleter(Params, Queues);
-	CExceptionAwareThread completer_thread_stage1(std::ref(*w_completer), true);
+	std::unique_ptr<CWKmerBinCompleter> w_completer = std::make_unique<CWKmerBinCompleter>(Params, Queues);
+	CExceptionAwareThread completer_thread_stage1(std::ref(*w_completer.get()), true);
 
 	CExceptionAwareThread completer_thread_stage2;
 
@@ -1421,72 +1401,71 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 
 	completer_thread_stage1.RethrowIfException();
 
-
-	thread* release_thr_st2_1 = new thread([&] {
-		//Queues.pmm_radix_buf->release();
+	thread release_thr_st2_1([&] {
 		Queues.memory_bins->release();
-		//delete Queues.pmm_radix_buf;
-		delete Queues.memory_bins;
+		Queues.memory_bins.reset();
 	});
 
 	//process big bins if necessary (only in strict memory limit mode)
-	thread* release_thr_sm = nullptr;
+	thread release_thr_sm;
 
+	CStopWatch timer_stage3; //strict memory timer
 	if (Params.use_strict_mem)
 	{
-		w2.stopTimer();
-		results.time = w2.getElapsedTime();
-		w3.startTimer();
-		release_thr_st2_1->join(); //need to be sure that memory_bins is released
+		timer_stage2.stopTimer();
+		results.time = timer_stage2.getElapsedTime();
+
+		timer_stage3.startTimer();
+		release_thr_st2_1.join(); //need to be sure that memory_bins is released
 		AdjustMemoryLimitsStrictMemoryMode();
 
 		cerr << "\n";
 
-		Queues.sm_pmm_input_file = new CMemoryPool(Params.sm_mem_tot_input_file, Params.sm_mem_part_input_file);
-		Queues.sm_pmm_expand = new CMemoryPool(Params.sm_mem_tot_expand, Params.sm_mem_part_expand);
-		Queues.sm_pmm_sort = new CMemoryPool(Params.sm_mem_tot_sort, Params.sm_mem_part_sort);
-		Queues.sm_pmm_sorter_suffixes = new CMemoryPool(Params.sm_mem_tot_suffixes, Params.sm_mem_part_suffixes);
-		Queues.sm_pmm_sorter_lut = new CMemoryPool(Params.sm_mem_tot_lut, Params.sm_mem_part_lut);
+		Queues.sm_pmm_input_file = std::make_unique<CMemoryPool>(Params.sm_mem_tot_input_file, Params.sm_mem_part_input_file);
+		Queues.sm_pmm_expand = std::make_unique<CMemoryPool>(Params.sm_mem_tot_expand, Params.sm_mem_part_expand);
+		Queues.sm_pmm_sort = std::make_unique<CMemoryPool>(Params.sm_mem_tot_sort, Params.sm_mem_part_sort);
+		Queues.sm_pmm_sorter_suffixes = std::make_unique<CMemoryPool>(Params.sm_mem_tot_suffixes, Params.sm_mem_part_suffixes);
+		Queues.sm_pmm_sorter_lut = std::make_unique<CMemoryPool>(Params.sm_mem_tot_lut, Params.sm_mem_part_lut);
 
-		Queues.sm_pmm_merger_lut = new CMemoryPool(Params.sm_mem_tot_merger_lut, Params.sm_mem_part_merger_lut);
-		Queues.sm_pmm_merger_suff = new CMemoryPool(Params.sm_mem_tot_merger_suff, Params.sm_mem_part_merger_suff);
-		Queues.sm_pmm_sub_bin_lut = new CMemoryPool(Params.sm_mem_tot_sub_bin_lut, Params.sm_mem_part_sub_bin_lut);
-		Queues.sm_pmm_sub_bin_suff = new CMemoryPool(Params.sm_mem_tot_sub_bin_suff, Params.sm_mem_part_sub_bin_suff);
+		Queues.sm_pmm_merger_lut = std::make_unique<CMemoryPool>(Params.sm_mem_tot_merger_lut, Params.sm_mem_part_merger_lut);
+		Queues.sm_pmm_merger_suff = std::make_unique<CMemoryPool>(Params.sm_mem_tot_merger_suff, Params.sm_mem_part_merger_suff);
+		Queues.sm_pmm_sub_bin_lut = std::make_unique<CMemoryPool>(Params.sm_mem_tot_sub_bin_lut, Params.sm_mem_part_sub_bin_lut);
+		Queues.sm_pmm_sub_bin_suff = std::make_unique<CMemoryPool>(Params.sm_mem_tot_sub_bin_suff, Params.sm_mem_part_sub_bin_suff);
 
-		Queues.bbpq = new CBigBinPartQueue();
-		Queues.bbkq = new CBigBinKXmersQueue(Params.sm_n_uncompactors);
-		Queues.bbd = new CBigBinDesc();
-		Queues.bbspq = new CBigBinSortedPartQueue(1);
-		Queues.sm_cbc = new CCompletedBinsCollector(1);
+		Queues.bbpq = std::make_unique<CBigBinPartQueue>();
+		Queues.bbkq = std::make_unique<CBigBinKXmersQueue>(Params.sm_n_uncompactors);
+		Queues.bbd = std::make_unique<CBigBinDesc>();
+		Queues.bbspq = std::make_unique<CBigBinSortedPartQueue>(1);
+		Queues.sm_cbc = std::make_unique<CCompletedBinsCollector>(1);
 
-		CWBigKmerBinReader* w_bkb_reader = new CWBigKmerBinReader(Params, Queues);
-		thread bkb_reader(std::ref(*w_bkb_reader));
+		std::unique_ptr<CWBigKmerBinReader> w_bkb_reader = std::make_unique<CWBigKmerBinReader>(Params, Queues);
+		thread bkb_reader(std::ref(*w_bkb_reader.get()));
 
-		vector<CWBigKmerBinUncompactor<SIZE>*> w_bkb_uncompactors(Params.sm_n_uncompactors);
+		std::vector<std::unique_ptr<CWBigKmerBinUncompactor<SIZE>>> w_bkb_uncompactors(Params.sm_n_uncompactors);
 		vector<thread> bkb_uncompactors;
 		for (int32 i = 0; i < Params.sm_n_uncompactors; ++i)
 		{
-			w_bkb_uncompactors[i] = new CWBigKmerBinUncompactor<SIZE>(Params, Queues);
-			bkb_uncompactors.push_back(thread(std::ref(*w_bkb_uncompactors[i])));
+			w_bkb_uncompactors[i] = std::make_unique<CWBigKmerBinUncompactor<SIZE>>(Params, Queues);
+			bkb_uncompactors.push_back(thread(std::ref(*w_bkb_uncompactors[i].get())));
 		}
 
-		CWBigKmerBinSorter<SIZE>* w_bkb_sorter = new CWBigKmerBinSorter<SIZE>(Params, Queues, sort_func);
-		thread bkb_sorter(std::ref(*w_bkb_sorter));
+		std::unique_ptr<CWBigKmerBinSorter<SIZE>> w_bkb_sorter = std::make_unique<CWBigKmerBinSorter<SIZE>>(Params, Queues, sort_func);
+		thread bkb_sorter(std::ref(*w_bkb_sorter.get()));
 
-		CWBigKmerBinWriter* w_bkb_writer = new CWBigKmerBinWriter(Params, Queues);
-		thread bkb_writer(std::ref(*w_bkb_writer));
+		std::unique_ptr<CWBigKmerBinWriter> w_bkb_writer = std::make_unique<CWBigKmerBinWriter>(Params, Queues);
+		thread bkb_writer(std::ref(*w_bkb_writer.get()));
 
-		vector<CWBigKmerBinMerger<SIZE>*> w_bkb_mergers(Params.sm_n_mergers);
+		std::vector<std::unique_ptr<CWBigKmerBinMerger<SIZE>>> w_bkb_mergers(Params.sm_n_mergers);
 		vector<thread> bkb_mergers;
 		for (int32 i = 0; i < Params.sm_n_mergers; ++i)
 		{
-			w_bkb_mergers[i] = new CWBigKmerBinMerger<SIZE>(Params, Queues);
-			bkb_mergers.push_back(thread(std::ref(*w_bkb_mergers[i])));
+			w_bkb_mergers[i] = std::make_unique<CWBigKmerBinMerger<SIZE>>(Params, Queues);
+			bkb_mergers.push_back(thread(std::ref(*w_bkb_mergers[i].get())));
 		}
 
 		w_completer->InitStage2(Params, Queues);
 
-		completer_thread_stage2 = CExceptionAwareThread(std::ref(*w_completer), false);
+		completer_thread_stage2 = CExceptionAwareThread(std::ref(*w_completer.get()), false);
 		for (auto& m : bkb_mergers)
 			m.join();
 
@@ -1495,31 +1474,31 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 		for (auto& u : bkb_uncompactors)
 			u.join();
 		bkb_reader.join();
-		delete w_bkb_reader;
+		w_bkb_reader.reset();
 		for (auto& u : w_bkb_uncompactors)
-			delete u;
+			u.reset();
 
-		delete w_bkb_sorter;
-		delete w_bkb_writer;
+		w_bkb_sorter.reset();
+		w_bkb_writer.reset();
 
 
 		for (auto& m : w_bkb_mergers)
-			delete m;
+			m.reset();
 
-		release_thr_sm = new thread([&] {
-			delete Queues.bbpq;
-			delete Queues.bbkq;
-			delete Queues.sm_cbc;
-			delete Queues.bbspq;
+		release_thr_sm = thread([&] {
+			Queues.bbpq.reset();
+			Queues.bbkq.reset();
+			Queues.sm_cbc.reset();
+			Queues.bbspq.reset();
 		});
 	}
 	else
 	{
-		completer_thread_stage2 = CExceptionAwareThread(std::ref(*w_completer), false);
+		completer_thread_stage2 = CExceptionAwareThread(std::ref(*w_completer.get()), false);
 	}
 
 	Queues.pmm_radix_buf->release();
-	delete Queues.pmm_radix_buf;
+	Queues.pmm_radix_buf.reset();
 
 	completer_thread_stage2.join();
 
@@ -1534,21 +1513,21 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 		Queues.sm_pmm_sorter_suffixes->release();
 		Queues.sm_pmm_sorter_lut->release();
 
-		delete Queues.sm_pmm_input_file;
-		delete Queues.sm_pmm_expand;
-		delete Queues.sm_pmm_sort;
-		delete Queues.sm_pmm_sorter_suffixes;
-		delete Queues.sm_pmm_sorter_lut;
+		Queues.sm_pmm_input_file.reset();
+		Queues.sm_pmm_expand.reset();
+		Queues.sm_pmm_sort.reset();
+		Queues.sm_pmm_sorter_suffixes.reset();
+		Queues.sm_pmm_sorter_lut.reset();
 
 		Queues.sm_pmm_merger_lut->release();
 		Queues.sm_pmm_merger_suff->release();
 		Queues.sm_pmm_sub_bin_lut->release();
 		Queues.sm_pmm_sub_bin_suff->release();
 
-		delete Queues.sm_pmm_merger_lut;
-		delete Queues.sm_pmm_merger_suff;
-		delete Queues.sm_pmm_sub_bin_lut;
-		delete Queues.sm_pmm_sub_bin_suff;
+		Queues.sm_pmm_merger_lut.reset();
+		Queues.sm_pmm_merger_suff.reset();
+		Queues.sm_pmm_sub_bin_lut.reset();
+		Queues.sm_pmm_sub_bin_suff.reset();
 	}
 
 	// ***** End of Stage 2 *****
@@ -1557,26 +1536,25 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	uint64 stat_n_plus_x_recs, stat_n_recs, stat_n_recs_tmp, stat_n_plus_x_recs_tmp;
 	stat_n_plus_x_recs = stat_n_recs = stat_n_recs_tmp = stat_n_plus_x_recs_tmp = 0;
 
-	thread* release_thr_st2_2 = new thread([&] {
-
-		delete w_reader;
+	thread release_thr_st2_2([&] {
+		w_reader.reset();
 		for (int i = 0; i < Params.n_sorters; ++i)
 		{
 			w_sorters[i]->GetDebugStats(stat_n_recs_tmp, stat_n_plus_x_recs_tmp);
 			stat_n_plus_x_recs += stat_n_plus_x_recs_tmp;
 			stat_n_recs += stat_n_recs_tmp;
-			delete w_sorters[i];
+			w_sorters[i].reset();
 		}
-		delete w_completer;
+		w_completer.reset();
 
-		delete Queues.sorters_manager;
+		Queues.sorters_manager.reset();
 
-		delete Queues.input_files_queue;
-		delete Queues.bq;
-		delete Queues.part_queue;
-		delete Queues.bpq;
-		delete Queues.kq;
-		delete Queues.tlbq;
+		Queues.input_files_queue.reset();
+		Queues.bq.reset();
+		Queues.part_queue.reset();
+		Queues.bpq.reset();
+		Queues.kq.reset();
+		Queues.tlbq.reset();
 	});
 
 	Queues.bd->reset_reading();
@@ -1586,17 +1564,17 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 		delete file;
 	}
 
-	delete Queues.bd;
-	delete Queues.epd;
+	Queues.bd.reset();
+	Queues.epd.reset();
 
 	results.tmpSizeStrictMemory = 0;
 	if (!Params.use_strict_mem)
 	{
-		release_thr_st2_1->join();
+		release_thr_st2_1.join();
 	}
 	else
 	{
-		release_thr_sm->join();
+		release_thr_sm.join();
 		Queues.bbd->reset_reading();
 		int32 sub_bin_id = 0;
 		uint32 lut_prefix_len = 0;
@@ -1611,26 +1589,23 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 				results.tmpSizeStrictMemory += file_size;
 			}
 		}
-		delete Queues.bbd;
-		delete release_thr_sm;
+		Queues.bbd.reset();
 	}
-	release_thr_st2_2->join();
+	release_thr_st2_2.join();
 
-	delete release_thr_st2_1;
-	delete release_thr_st2_2;
-	delete Queues.s_mapper;
+	Queues.s_mapper.reset();
 	results.maxDiskUsage = Queues.disk_logger->get_max();
 
-	delete Queues.disk_logger;
+	Queues.disk_logger.reset();
 	if (!Params.use_strict_mem)
 	{
-		w2.stopTimer();
-		results.time = w2.getElapsedTime();
+		timer_stage2.stopTimer();
+		results.time = timer_stage2.getElapsedTime();
 	}
 	else
 	{
-		w3.stopTimer();
-		results.timeStrictMem = w3.getElapsedTime();
+		timer_stage3.stopTimer();
+		results.timeStrictMem = timer_stage3.getElapsedTime();
 	}
 
 	return results;

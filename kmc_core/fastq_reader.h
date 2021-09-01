@@ -157,7 +157,6 @@ class CWFastqReader {
 	CMemoryPoolWithBamSupport *pmm_fastq;
 	CMemoryPool *pmm_binary_file_reader;
 
-	CFastqReader *fqr;
 	uint64 part_size;
 	CBinaryPackQueue* binary_pack_queue;
 	CBamTaskManager* bam_task_manager = nullptr; //only for bam input
@@ -185,7 +184,6 @@ class CWStatsFastqReader
 {
 	CMemoryPoolWithBamSupport *pmm_fastq;
 	CMemoryPool *pmm_binary_file_reader;
-	CFastqReader *fqr;
 	uint64 part_size;
 	CBamTaskManager* bam_task_manager = nullptr; //only for bam input
 	CStatsPartQueue *stats_part_queue;

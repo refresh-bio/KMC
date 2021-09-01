@@ -30,12 +30,12 @@ extern uint64 total_reads;
 CKmerBinCompleter::CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues) 
 {
 	file_name      = Params.output_file_name;
-	kq             = Queues.kq;
-	bd		       = Queues.bd;
-	s_mapper	   = Queues.s_mapper;
-	memory_bins    = Queues.memory_bins;
+	kq             = Queues.kq.get();
+	bd		       = Queues.bd.get();
+	s_mapper	   = Queues.s_mapper.get();
+	memory_bins    = Queues.memory_bins.get();
 
-	bbkpq		   = Queues.bbkpq;
+	bbkpq		   = Queues.bbkpq.get();
 	use_strict_mem = Params.use_strict_mem;
 	kmer_file_name = file_name + ".kmc_suf";
 	lut_file_name  = file_name + ".kmc_pre";
@@ -52,14 +52,7 @@ CKmerBinCompleter::CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues)
 
 	kmer_t_size    = Params.KMER_T_size;
 
-	kff_writer = nullptr;
 	output_type = Params.output_type;		
-}
-
-//----------------------------------------------------------------------------------
-CKmerBinCompleter::~CKmerBinCompleter()
-{
-	delete kff_writer;
 }
 
 
@@ -108,7 +101,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		}
 		else if (output_type == OutputType::KFF)
 		{			
-			kff_writer = new CKFFWriter(file_name + ".kff", both_strands, kmer_len, counter_size, cutoff_min, cutoff_max);
+			kff_writer = std::make_unique<CKFFWriter>(file_name + ".kff", both_strands, kmer_len, counter_size, cutoff_min, cutoff_max);
 		}
 		else
 		{
@@ -359,8 +352,8 @@ bool CKmerBinCompleter::store_uint(FILE *out, uint64 x, uint32 size)
 //Init memory pools for 2nd stage
 void CKmerBinCompleter::InitStage2(CKMCParams& /*Params*/, CKMCQueues& Queues)
 {
-	sm_pmm_merger_lut = Queues.sm_pmm_merger_lut;
-	sm_pmm_merger_suff = Queues.sm_pmm_merger_suff;
+	sm_pmm_merger_lut = Queues.sm_pmm_merger_lut.get();
+	sm_pmm_merger_suff = Queues.sm_pmm_merger_suff.get();
 }
 
 
@@ -372,19 +365,12 @@ void CKmerBinCompleter::InitStage2(CKMCParams& /*Params*/, CKMCQueues& Queues)
 // Constructor
 CWKmerBinCompleter::CWKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues)
 {
-	kbc = new CKmerBinCompleter(Params, Queues);
+	kbc = std::make_unique<CKmerBinCompleter>(Params, Queues);
 }
 
 void CWKmerBinCompleter::InitStage2(CKMCParams& Params, CKMCQueues& Queues)
 {
 	kbc->InitStage2(Params, Queues);
-}
-
-//----------------------------------------------------------------------------------
-// Destructor
-CWKmerBinCompleter::~CWKmerBinCompleter()
-{
-	delete kbc;
 }
 
 //----------------------------------------------------------------------------------

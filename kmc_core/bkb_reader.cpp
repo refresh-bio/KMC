@@ -19,11 +19,11 @@
 //----------------------------------------------------------------------------------
 CBigKmerBinReader::CBigKmerBinReader(CKMCParams& Params, CKMCQueues& Queues)
 {
-	tlbq = Queues.tlbq;
-	disk_logger = Queues.disk_logger;
-	bd   = Queues.bd;
-	bbpq = Queues.bbpq;
-	sm_pmm_input_file = Queues.sm_pmm_input_file;
+	tlbq = Queues.tlbq.get();
+	disk_logger = Queues.disk_logger.get();
+	bd   = Queues.bd.get();
+	bbpq = Queues.bbpq.get();
+	sm_pmm_input_file = Queues.sm_pmm_input_file.get();
 	sm_mem_part_input_file = Params.sm_mem_part_input_file;
 }
 
@@ -79,14 +79,7 @@ CBigKmerBinReader::~CBigKmerBinReader()
 // Constructor
 CWBigKmerBinReader::CWBigKmerBinReader(CKMCParams& Params, CKMCQueues& Queues)
 {
-	bkb_reader = new CBigKmerBinReader(Params, Queues);
-}
-
-//----------------------------------------------------------------------------------
-// Destructor
-CWBigKmerBinReader::~CWBigKmerBinReader()
-{
-	delete bkb_reader;
+	bkb_reader = std::make_unique<CBigKmerBinReader>(Params, Queues);
 }
 
 //----------------------------------------------------------------------------------

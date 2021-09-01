@@ -312,10 +312,16 @@ public:
 		percent_progress("Stage 1: ", _show_progress, Params.percentProgressObserver)
 	{
 		part_size = (uint32)Params.mem_part_pmm_binary_file_reader;
-		input_files_queue = Queues.input_files_queue;
-		pmm_binary_file_reader = Queues.pmm_binary_file_reader;
-		binary_pack_queues = Queues.binary_pack_queues;		
-		bam_task_manager = Queues.bam_task_manager;
+		input_files_queue = Queues.input_files_queue.get();
+		pmm_binary_file_reader = Queues.pmm_binary_file_reader.get();
+		//binary_pack_queues = Queues.binary_pack_queues;
+		std::transform(
+			Queues.binary_pack_queues.begin(),
+			Queues.binary_pack_queues.end(),
+			std::back_inserter(binary_pack_queues),
+			[](const auto& uptr) {return uptr.get(); });
+
+		bam_task_manager = Queues.bam_task_manager.get();
 		auto files_copy = input_files_queue->GetCopy();		
 		total_size = 0;
 		predicted_size = 0;
@@ -517,11 +523,11 @@ public:
 
 class CWBinaryFilesReader
 {
-	CBinaryFilesReader *reader;
+	std::unique_ptr<CBinaryFilesReader> reader;
 public:
 	CWBinaryFilesReader(CKMCParams &Params, CKMCQueues &Queues, bool show_progress = true)
 	{
-		reader = new CBinaryFilesReader(Params, Queues, show_progress);
+		reader = std::make_unique<CBinaryFilesReader>(Params, Queues, show_progress);
 	}
 
 	uint64 GetPredictedSize()
@@ -536,10 +542,6 @@ public:
 	void operator()()
 	{
 		reader->Process();
-	}
-	~CWBinaryFilesReader()
-	{
-		delete reader;
 	}
 };
 

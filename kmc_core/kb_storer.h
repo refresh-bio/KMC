@@ -74,7 +74,7 @@ public:
 // CWKmerBinStorer - wrapper for multithreading purposes
 //************************************************************************************************************
 class CWKmerBinStorer {
-	CKmerBinStorer *kbs;
+	std::unique_ptr<CKmerBinStorer> kbs;
 
 public:
 	void GetTotal(uint64& _total)
@@ -82,7 +82,6 @@ public:
 		kbs->GetTotal(_total);
 	}
 	CWKmerBinStorer(CKMCParams &Params, CKMCQueues &Queues);
-	~CWKmerBinStorer();
 
 	void operator()();
 };

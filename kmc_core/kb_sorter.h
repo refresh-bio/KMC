@@ -170,18 +170,18 @@ template <unsigned SIZE> CKmerBinSorter<SIZE>::CKmerBinSorter(CKMCParams &Params
 {
 	both_strands = Params.both_strands;
 	n_bins = Params.n_bins;
-	bd = Queues.bd;
-	epd = Queues.epd;
-	bq = Queues.bq;
-	kq = Queues.kq;
+	bd = Queues.bd.get();
+	epd = Queues.epd.get();
+	bq = Queues.bq.get();
+	kq = Queues.kq.get();
 	
-	sorters_manager = Queues.sorters_manager;
+	sorters_manager = Queues.sorters_manager.get();
 
-	s_mapper = Queues.s_mapper;
+	s_mapper = Queues.s_mapper.get();
 
-	pmm_radix_buf = Queues.pmm_radix_buf;	
+	pmm_radix_buf = Queues.pmm_radix_buf.get();
 	
-	memory_bins = Queues.memory_bins;
+	memory_bins = Queues.memory_bins.get();
 
 	cutoff_min = Params.cutoff_min;
 	cutoff_max = (uint32)Params.cutoff_max;
@@ -575,12 +575,12 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::ExpandKxmersBoth(uint64 tmp_
 	{	
 		CExpanderPackQueue q(l);
 
-		vector<thread> ths;
-		vector<CExpandThread<SIZE>*> exp;
+		std::vector<thread> ths;
+		std::vector<std::unique_ptr<CExpandThread<SIZE>>> exp;
 		for (uint32 i = 0; i < threads; ++i)
 		{
-			exp.push_back(new CExpandThread<SIZE>(*this, q));
-			ths.push_back(thread(std::ref(*exp.back())));
+			exp.emplace_back(std::make_unique<CExpandThread<SIZE>>(*this, q));
+			ths.push_back(thread(std::ref(*exp.back().get())));
 		}
 		
 		for (auto& t : ths)
@@ -589,19 +589,18 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::ExpandKxmersBoth(uint64 tmp_
 		uint64 n_fake_recs_after_expand = 0;
 		vector<pair<uint64, uint64>> filled_regions;
 		uint64 filled_regions_size = 0;
-		for (auto _ptr : exp)
+		for (auto& _ptr : exp)
 		{
 			filled_regions_size += _ptr->GetFilledRegions().size();
 		}
 		filled_regions.reserve(filled_regions_size);
 		
-		for (auto _ptr : exp)
+		for (auto& _ptr : exp)
 		{
 			n_fake_recs_after_expand += _ptr->GetNFakeRecs();
 			filled_regions.insert(filled_regions.end(), _ptr->GetFilledRegions().begin(), _ptr->GetFilledRegions().end());
-			delete _ptr;
 		}
-
+		exp.clear();
 
 		//remove fakes
 		sort(filled_regions.begin(), filled_regions.end(), [](const pair<uint64, uint64>& e1, const pair<uint64, uint64>& e2) {return e1.first < e2.first; });
@@ -1297,11 +1296,10 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::Compact()
 // CWKmerBinSorter - wrapper for multithreading purposes
 //************************************************************************************************************
 template <unsigned SIZE> class CWKmerBinSorter {
-	CKmerBinSorter<SIZE> *kbs;
+	std::unique_ptr<CKmerBinSorter<SIZE>> kbs;
 
 public:	
 	CWKmerBinSorter(CKMCParams &Params, CKMCQueues &Queues, SortFunction<CKmer<SIZE>> sort_func);
-	~CWKmerBinSorter();
 	void GetDebugStats(uint64& _sum_n_recs, uint64& _sum_n_plus_x_recs)
 	{
 		kbs->GetDebugStats(_sum_n_recs, _sum_n_plus_x_recs);
@@ -1313,14 +1311,7 @@ public:
 // Constructor
 template <unsigned SIZE> CWKmerBinSorter<SIZE>::CWKmerBinSorter(CKMCParams &Params, CKMCQueues &Queues, SortFunction<CKmer<SIZE>> sort_func)
 {
-	kbs = new CKmerBinSorter<SIZE>(Params, Queues, sort_func);
-}
-
-//----------------------------------------------------------------------------------
-// Destructor
-template <unsigned SIZE> CWKmerBinSorter<SIZE>::~CWKmerBinSorter()
-{
-	delete kbs;
+	kbs = std::make_unique<CKmerBinSorter<SIZE>>(Params, Queues, sort_func);
 }
 
 //----------------------------------------------------------------------------------

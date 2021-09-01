@@ -204,7 +204,7 @@ namespace KMC
 	class Runner
 	{
 		class RunnerImpl;
-		std::unique_ptr<RunnerImpl> pImpl;
+		const std::unique_ptr<RunnerImpl> pImpl;
 	public:
 		Runner();
 		~Runner();

@@ -134,13 +134,13 @@ CBigKmerBinSorter<SIZE>::CBigKmerBinSorter(CKMCParams& Params, CKMCQueues& Queue
 {	
 	sorted_kxmers = nullptr;
 	kxmer_counters = nullptr;
-	bbkq = Queues.bbkq;	
-	bbspq = Queues.bbspq;
-	pmm_radix_buf = Queues.pmm_radix_buf;
-	sm_pmm_expand = Queues.sm_pmm_expand;
-	sm_pmm_sorter_suffixes = Queues.sm_pmm_sorter_suffixes;
-	sm_pmm_sorter_lut = Queues.sm_pmm_sorter_lut;
-	sm_pmm_sort = Queues.sm_pmm_sort;
+	bbkq = Queues.bbkq.get();
+	bbspq = Queues.bbspq.get();
+	pmm_radix_buf = Queues.pmm_radix_buf.get();
+	sm_pmm_expand = Queues.sm_pmm_expand.get();
+	sm_pmm_sorter_suffixes = Queues.sm_pmm_sorter_suffixes.get();
+	sm_pmm_sorter_lut = Queues.sm_pmm_sorter_lut.get();
+	sm_pmm_sort = Queues.sm_pmm_sort.get();
 
 	kxmers_size = Params.sm_mem_part_sort / 2 / sizeof(CKmer<SIZE>);
 
@@ -151,7 +151,7 @@ CBigKmerBinSorter<SIZE>::CBigKmerBinSorter(CKMCParams& Params, CKMCQueues& Queue
 	
 	sort_tmp = kxmers + kxmers_size;
 	max_x = Params.max_x;
-	bbd = Queues.bbd;	
+	bbd = Queues.bbd.get();
 	kmer_len = Params.kmer_len;	
 
 	lut_prefix_len = Params.lut_prefix_len;
@@ -476,10 +476,9 @@ template<unsigned SIZE> void CBigKmerBinSorter<SIZE>::PostProcessSort()
 template<unsigned SIZE>
 class CWBigKmerBinSorter
 {
-	CBigKmerBinSorter<SIZE>* bkb_sorter;
+	std::unique_ptr<CBigKmerBinSorter<SIZE>> bkb_sorter;
 public:
 	CWBigKmerBinSorter(CKMCParams& Params, CKMCQueues& Queues, SortFunction<CKmer<SIZE>> sort_func);
-	~CWBigKmerBinSorter();
 	void operator()();
 };
 
@@ -488,15 +487,7 @@ public:
 template<unsigned SIZE>
 CWBigKmerBinSorter<SIZE>::CWBigKmerBinSorter(CKMCParams& Params, CKMCQueues& Queues, SortFunction<CKmer<SIZE>> sort_func)
 {
-	bkb_sorter = new CBigKmerBinSorter<SIZE>(Params, Queues, sort_func);
-}
-
-//----------------------------------------------------------------------------------
-// Destructor
-template<unsigned SIZE>
-CWBigKmerBinSorter<SIZE>::~CWBigKmerBinSorter()
-{
-	delete bkb_sorter;
+	bkb_sorter = std::make_unique<CBigKmerBinSorter<SIZE>>(Params, Queues, sort_func);
 }
 
 //----------------------------------------------------------------------------------

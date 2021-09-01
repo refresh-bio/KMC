@@ -57,12 +57,11 @@ class CKmerBinCompleter
 	bool both_strands;
 	bool without_output;
 	bool store_uint(FILE *out, uint64 x, uint32 size);
-	CKFFWriter* kff_writer;
+	std::unique_ptr<CKFFWriter> kff_writer;
 	OutputType output_type;
 
 public:
 	CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues);
-	~CKmerBinCompleter();
 
 	void ProcessBinsFirstStage();
 	void ProcessBinsSecondStage();
@@ -75,11 +74,10 @@ public:
 // CWKmerBinCompleter - wrapper for multithreading purposes
 //************************************************************************************************************
 class CWKmerBinCompleter {
-	CKmerBinCompleter *kbc;
+	std::unique_ptr<CKmerBinCompleter> kbc;
 
 public:
 	CWKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues);
-	~CWKmerBinCompleter();
 
 	void operator()(bool first_stage);
 
@@ -124,7 +122,7 @@ public:
 
 CSmallKCompleter::CSmallKCompleter(CKMCParams& Params, CKMCQueues& Queues)
 {
-	pmm_small_k_completer = Queues.pmm_small_k_completer;
+	pmm_small_k_completer = Queues.pmm_small_k_completer.get();
 	n_unique = n_cutoff_min = n_cutoff_max = 0;
 	lut_prefix_len = Params.lut_prefix_len;
 	cutoff_max = Params.cutoff_max;
@@ -316,10 +314,10 @@ bool CSmallKCompleter::CompleteKFFFormat(CSmallKBuf<COUNTER_TYPE> result)
 	pmm_small_k_completer->reserve(raw_buffer);
 
 
-	CKFFWriter* kff_writer = nullptr;
+	std::unique_ptr<CKFFWriter> kff_writer;
 	if (!without_output)
 	{
-		kff_writer = new CKFFWriter(output_file_name + ".kff", both_strands, kmer_len, counter_size, cutoff_min, cutoff_max);
+		kff_writer = std::make_unique<CKFFWriter>(output_file_name + ".kff", both_strands, kmer_len, counter_size, cutoff_min, cutoff_max);
 		kff_writer->InitSection();
 	}
 
@@ -368,7 +366,7 @@ bool CSmallKCompleter::CompleteKFFFormat(CSmallKBuf<COUNTER_TYPE> result)
 		if (buff_pos)
 			kff_writer->StoreSectionPart(buff, buff_pos / rec_bytes);
 		kff_writer->FinishSection();
-		delete kff_writer;
+		kff_writer.reset();
 	}
 
 	pmm_small_k_completer->free(raw_buffer);

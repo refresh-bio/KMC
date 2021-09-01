@@ -14,11 +14,11 @@ Date   : 2019-05-19
 
 CKmerBinCollector::CKmerBinCollector(CKMCQueues& Queues, CKMCParams& Params, uint32 _buffer_size, uint32 _bin_no)
 {
-	bin_part_queue = Queues.bpq;
+	bin_part_queue = Queues.bpq.get();
 	kmer_len = Params.kmer_len;
-	bd = Queues.bd;
+	bd = Queues.bd.get();
 	buffer_size = _buffer_size;
-	pmm_bins = Queues.pmm_bins;
+	pmm_bins = Queues.pmm_bins.get();
 	max_x = Params.max_x;
 
 	bin_no = _bin_no;

@@ -30,11 +30,10 @@ using namespace std;
 //************************************************************************************************************
 class CSplitter
 {
-	//CMemoryMonitor *mm;
 	uint64 total_kmers = 0;	
 	uchar *part;
 	uint64_t part_size, part_pos;
-	CKmerBinCollector **bins;
+	std::vector<std::unique_ptr<CKmerBinCollector>> bins;
 	CBinPartQueue *bin_part_queue;
 	CBinDesc *bd;
 	CMemoryPool *pmm_reads;
@@ -78,7 +77,6 @@ public:
 	void Complete();
 	inline void GetTotal(uint64 &_n_reads);
 	inline uint64 GetTotalKmers();
-	~CSplitter();
 };
 
 //----------------------------------------------------------------------------------
@@ -105,7 +103,7 @@ class CWSplitter {
 	CBinPartQueue *bpq;
 	CMemoryPool *pmm_fastq;
 
-	CSplitter *spl;
+	std::unique_ptr<CSplitter> spl;
 	uint64 n_reads;
 
 public:
@@ -124,7 +122,7 @@ class CWStatsSplitter {
 	CStatsPartQueue *spq;
 	CMemoryPool *pmm_fastq, *pmm_stats;
 	uint32 *stats;
-	CSplitter *spl;
+	std::unique_ptr<CSplitter> spl;
 	uint32 signature_len;
 
 public:
@@ -145,7 +143,7 @@ template <typename COUNTER_TYPE> class CWSmallKSplitter {
 	CMemoryPool *pmm_fastq, *pmm_small_k;	
 	CSmallKBuf<COUNTER_TYPE> small_k_buf;
 
-	CSplitter *spl;
+	std::unique_ptr<CSplitter> spl;
 	uint64 n_reads;
 	uint64 total_kmers;
 	uint32 kmer_len;

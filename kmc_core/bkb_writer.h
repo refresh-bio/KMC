@@ -38,12 +38,10 @@ public:
 //************************************************************************************************************
 class CWBigKmerBinWriter
 {
-	CBigKmerBinWriter* bkb_writer;
+	std::unique_ptr<CBigKmerBinWriter> bkb_writer;
 public:
 	CWBigKmerBinWriter(CKMCParams& Params, CKMCQueues& Queues);
 	void operator()();
-	~CWBigKmerBinWriter();
-	
 };
 
 #endif

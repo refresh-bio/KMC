@@ -59,9 +59,9 @@ class CBigKmerBinUncompactor
 //----------------------------------------------------------------------------------
 template<unsigned SIZE> CBigKmerBinUncompactor<SIZE>::CBigKmerBinUncompactor(CKMCParams& Params, CKMCQueues& Queues)
 {	
-	sm_pmm_expand = Queues.sm_pmm_expand;
-	bbpq = Queues.bbpq;
-	bbkq = Queues.bbkq;
+	sm_pmm_expand = Queues.sm_pmm_expand.get();
+	bbpq = Queues.bbpq.get();
+	bbkq = Queues.bbkq.get();
 	kmer_len = Params.kmer_len;
 	max_x = Params.max_x;
 	both_strands = Params.both_strands;
@@ -602,13 +602,12 @@ template<unsigned SIZE> void CBigKmerBinUncompactor<SIZE>::Uncompact()
 template<unsigned SIZE>
 class CWBigKmerBinUncompactor
 {
-	CBigKmerBinUncompactor<SIZE>* bkb_uncompactor;
+	std::unique_ptr<CBigKmerBinUncompactor<SIZE>> bkb_uncompactor;
 	CBigBinPartQueue* bbpq;
 	CBigBinKXmersQueue* bbkq;
 	CMemoryPool* sm_pmm_input_file;
 public:
 	CWBigKmerBinUncompactor(CKMCParams& Params, CKMCQueues& Queues);
-	~CWBigKmerBinUncompactor();
 	void operator()();
 };
 
@@ -617,18 +616,10 @@ public:
 template<unsigned SIZE>
 CWBigKmerBinUncompactor<SIZE>::CWBigKmerBinUncompactor(CKMCParams& Params, CKMCQueues& Queues)
 {
-	bkb_uncompactor = new CBigKmerBinUncompactor<SIZE>(Params, Queues);
-	bbpq = Queues.bbpq;
-	bbkq = Queues.bbkq;
-	sm_pmm_input_file = Queues.sm_pmm_input_file;
-}
-
-//----------------------------------------------------------------------------------
-// Destructor
-template<unsigned SIZE>
-CWBigKmerBinUncompactor<SIZE>::~CWBigKmerBinUncompactor()
-{
-	delete bkb_uncompactor;
+	bkb_uncompactor =  std::make_unique<CBigKmerBinUncompactor<SIZE>>(Params, Queues);
+	bbpq = Queues.bbpq.get();
+	bbkq = Queues.bbkq.get();
+	sm_pmm_input_file = Queues.sm_pmm_input_file.get();
 }
 
 //----------------------------------------------------------------------------------

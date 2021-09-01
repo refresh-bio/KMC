@@ -69,13 +69,13 @@ public:
 // Assign monitors and queues
 template <unsigned SIZE> CKmerBinReader<SIZE>::CKmerBinReader(CKMCParams &Params, CKMCQueues &Queues)
 {
-	bd = Queues.bd;
-	bq = Queues.bq;
-	sorters_manager = Queues.sorters_manager;
-	tlbq = Queues.tlbq;
-	disk_logger = Queues.disk_logger;
+	bd = Queues.bd.get();
+	bq = Queues.bq.get();
+	sorters_manager = Queues.sorters_manager.get();
+	tlbq = Queues.tlbq.get();
+	disk_logger = Queues.disk_logger.get();
 
-	memory_bins = Queues.memory_bins;
+	memory_bins = Queues.memory_bins.get();
 
 	kmer_len       = Params.kmer_len;	
 	cutoff_min     = Params.cutoff_min;
@@ -83,7 +83,7 @@ template <unsigned SIZE> CKmerBinReader<SIZE>::CKmerBinReader(CKMCParams &Params
 	counter_max    = (uint32)Params.counter_max;
 	both_strands   = Params.both_strands;
 	max_x = Params.max_x;
-	s_mapper	   = Queues.s_mapper;
+	s_mapper	   = Queues.s_mapper.get();
 	lut_prefix_len = Params.lut_prefix_len;
 
 #ifdef DEVELOP_MODE
@@ -232,11 +232,10 @@ template <unsigned SIZE> void CKmerBinReader<SIZE>::ProcessBins()
 
 //----------------------------------------------------------------------------------
 template <unsigned SIZE> class CWKmerBinReader {
-	CKmerBinReader<SIZE> *kbr;
+	std::unique_ptr<CKmerBinReader<SIZE>> kbr;
 
 public:
 	CWKmerBinReader(CKMCParams &Params, CKMCQueues &Queues);
-	~CWKmerBinReader();
 
 	void operator()();
 };
@@ -245,14 +244,7 @@ public:
 // Constructor
 template <unsigned SIZE> CWKmerBinReader<SIZE>::CWKmerBinReader(CKMCParams &Params, CKMCQueues &Queues)
 {
-	kbr = new CKmerBinReader<SIZE>(Params, Queues);
-}
-
-//----------------------------------------------------------------------------------
-// Destructor
-template <unsigned SIZE> CWKmerBinReader<SIZE>::~CWKmerBinReader()
-{
-	delete kbr;
+	kbr = std::make_unique<CKmerBinReader<SIZE>>(Params, Queues);
 }
 
 //----------------------------------------------------------------------------------

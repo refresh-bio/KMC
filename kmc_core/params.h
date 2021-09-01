@@ -17,6 +17,7 @@
 #include "s_mapper.h"
 #include <vector>
 #include <string>
+#include <memory>
 #include "libs/ntHash/ntHashWrapper.h"
 
 using InputType = KMC::InputFileType;
@@ -127,45 +128,60 @@ struct CKMCParams {
 struct CKMCQueues 
 {
 	//Signature mapper
-	CSignatureMapper* s_mapper;
+	std::unique_ptr<CSignatureMapper> s_mapper;
 
-	vector<CBinaryPackQueue*> binary_pack_queues;
+	std::vector<std::unique_ptr<CBinaryPackQueue>> binary_pack_queues;
 
-	CBamTaskManager* bam_task_manager = nullptr;
+	std::unique_ptr<CBamTaskManager> bam_task_manager;
 
 	// Queues
-	CInputFilesQueue *input_files_queue;
-	CPartQueue *part_queue;
-	CStatsPartQueue* stats_part_queue;
+	std::unique_ptr<CInputFilesQueue> input_files_queue;
+	std::unique_ptr<CPartQueue> part_queue;
+	std::unique_ptr<CStatsPartQueue> stats_part_queue;
 
-	CBinPartQueue *bpq;
-	CBinDesc *bd;
-	CExpanderPackDesc* epd;
-	CBinQueue *bq;
-	CKmerQueue *kq;
-	CMemoryPool *pmm_bins, *pmm_reads, *pmm_radix_buf, *pmm_stats, *pmm_binary_file_reader;
-	CMemoryPoolWithBamSupport *pmm_fastq;
-	CMissingEOL_at_EOF_counter* missingEOL_at_EOF_counter{};
-	CMemoryBins *memory_bins;
-	CMemoryPool* pmm_small_k_buf, *pmm_small_k_completer;
+	std::unique_ptr<CBinPartQueue> bpq;
+	std::unique_ptr<CBinDesc> bd;
+	std::unique_ptr<CExpanderPackDesc> epd;
+	std::unique_ptr<CBinQueue> bq;
+	std::unique_ptr<CKmerQueue> kq;
+	std::unique_ptr<CMemoryPool> pmm_bins;
+	std::unique_ptr<CMemoryPool> pmm_reads;
+	std::unique_ptr<CMemoryPool> pmm_radix_buf;
+	std::unique_ptr<CMemoryPool> pmm_stats;
+	std::unique_ptr<CMemoryPool> pmm_binary_file_reader;
+
+	std::unique_ptr<CMemoryPoolWithBamSupport> pmm_fastq;
+	std::unique_ptr<CMissingEOL_at_EOF_counter> missingEOL_at_EOF_counter{};
+	std::unique_ptr<CMemoryBins> memory_bins;
+	std::unique_ptr<CMemoryPool> pmm_small_k_buf;
+	std::unique_ptr<CMemoryPool> pmm_small_k_completer;
 
 
-	CDiskLogger* disk_logger;
+	std::unique_ptr<CDiskLogger> disk_logger;
 
 	//for strict memory mode
-	CTooLargeBinsQueue* tlbq;
-	CBigBinPartQueue* bbpq;
-	CBigBinKXmersQueue* bbkq;
-	CBigBinDesc* bbd;
-	CBigBinKmerPartQueue* bbkpq;
-	CBigBinSortedPartQueue* bbspq;
+	std::unique_ptr<CTooLargeBinsQueue> tlbq;
+	std::unique_ptr<CBigBinPartQueue> bbpq;
+	std::unique_ptr<CBigBinKXmersQueue> bbkq;
+	std::unique_ptr<CBigBinDesc> bbd;
+	std::unique_ptr<CBigBinKmerPartQueue> bbkpq;
+	std::unique_ptr<CBigBinSortedPartQueue> bbspq;
 	CKMCQueues() {}
-	CMemoryPool* sm_pmm_input_file, *sm_pmm_expand, *sm_pmm_sort, *sm_pmm_sorter_suffixes, *sm_pmm_sorter_lut, *sm_pmm_sub_bin_lut, *sm_pmm_sub_bin_suff, *sm_pmm_merger_lut, *sm_pmm_merger_suff;
-	
-	CCompletedBinsCollector* sm_cbc;
-	CSortersManager* sorters_manager = nullptr;
 
-	CntHashEstimator* ntHashEstimator = nullptr;
+	std::unique_ptr<CMemoryPool> sm_pmm_input_file;
+	std::unique_ptr<CMemoryPool> sm_pmm_expand;
+	std::unique_ptr<CMemoryPool> sm_pmm_sort;
+	std::unique_ptr<CMemoryPool> sm_pmm_sorter_suffixes;
+	std::unique_ptr<CMemoryPool> sm_pmm_sorter_lut;
+	std::unique_ptr<CMemoryPool> sm_pmm_sub_bin_lut;
+	std::unique_ptr<CMemoryPool> sm_pmm_sub_bin_suff;
+	std::unique_ptr<CMemoryPool> sm_pmm_merger_lut;
+	std::unique_ptr<CMemoryPool> sm_pmm_merger_suff;
+	
+	std::unique_ptr<CCompletedBinsCollector> sm_cbc;
+	std::unique_ptr<CSortersManager> sorters_manager;
+
+	std::unique_ptr<CntHashEstimator> ntHashEstimator;
 };
 
 #endif
