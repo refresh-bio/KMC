@@ -173,6 +173,7 @@
     <ClInclude Include="cpu_info.h" />
     <ClInclude Include="defs.h" />
     <ClInclude Include="develop.h" />
+    <ClInclude Include="exception_aware_thread.h" />
     <ClInclude Include="fastq_reader.h" />
     <ClInclude Include="bkb_uncompactor.h" />
     <ClInclude Include="first_dispatch.h" />

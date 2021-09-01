@@ -202,6 +202,9 @@
     <ClInclude Include="critical_error_handler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="exception_aware_thread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="libs\libbzip2.lib" />

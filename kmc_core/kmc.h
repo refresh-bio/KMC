@@ -46,6 +46,7 @@
 #include "binary_reader.h"
 #include "kmc_runner.h"
 #include "critical_error_handler.h"
+#include "exception_aware_thread.h"
 
 using namespace std;
 
@@ -59,11 +60,6 @@ template <unsigned SIZE> class CKMC {
 
 	// Memory monitor and queues
 	CKMCQueues Queues;
-
-	// Thread groups
-	vector<thread> gr0_1, gr0_2;
-	vector<thread> gr1_1, gr1_2, gr1_3, gr1_4, gr1_5, gr1_6;		// thread groups for 1st stage
-	vector<thread> gr2_1, gr2_2, gr2_3;						// thread groups for 2nd stage
 
 	uint64 n_reads;
 	bool was_small_k_opt;
@@ -80,7 +76,7 @@ template <unsigned SIZE> class CKMC {
 
 	CWKmerBinReader<SIZE>* w_reader;
 	vector<CWKmerBinSorter<SIZE>*> w_sorters;
-	CWKmerBinCompleter *w_completer;
+	CWKmerBinCompleter *w_completer; //TODO: co nie musi byc polem klasy niech nie jest
 
 	void SetThreads1Stage(const KMC::Stage1Params& stage1Params);
 	void SetThreads2Stage(const KMC::Stage2Params& stage2Params);
@@ -142,6 +138,7 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 
 	//TODO: for now if there is only histogram to estimate (no k-mer counting) KMC will work further and do nothing, maybe it shouldn't
 	//create empty tmp files and empty output database
+	//also if the option is to count and estimate the estimation may be used to calculate best_lut_prefix_len
 
 	Params.estimateHistogramCfg = stage1Params.GetEstimateHistogramCfg();
 
@@ -759,10 +756,12 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 
 	w_small_k_splitters.resize(Params.n_splitters);
 
+	std::vector<CExceptionAwareThread> splitters_threads, fastqs_threads;
+
 	for (int i = 0; i < Params.n_splitters; ++i)
 	{
 		w_small_k_splitters[i] = new CWSmallKSplitter<uint64_t>(Params, Queues);
-		gr1_2.push_back(thread(std::ref(*w_small_k_splitters[i])));
+		splitters_threads.emplace_back(std::ref(*w_small_k_splitters[i]));
 	}
 
 	w_fastqs.resize(Params.n_readers);
@@ -773,7 +772,7 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 		{
 			Queues.binary_pack_queues[i] = new CBinaryPackQueue;
 			w_fastqs[i] = new CWFastqReader(Params, Queues, Queues.binary_pack_queues[i]);
-			gr1_1.push_back(thread(std::ref(*w_fastqs[i])));
+			fastqs_threads.emplace_back(std::ref(*w_fastqs[i]));
 		}
 	}
 	else
@@ -782,23 +781,32 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 		for (int i = 0; i < Params.n_readers; ++i)
 		{
 			w_fastqs[i] = new CWFastqReader(Params, Queues, nullptr);
-			gr1_1.push_back(thread(std::ref(*w_fastqs[i])));
+			fastqs_threads.emplace_back(std::ref(*w_fastqs[i]));
 		}
 	}
 
 	w_bin_file_reader = new CWBinaryFilesReader(Params, Queues);
-	thread bin_file_reader_th(std::ref(*w_bin_file_reader));
+	CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader));
 
-	for (auto& t : gr1_1)
+	for (auto& t : fastqs_threads)
 		t.join();
 
-	for (auto& t : gr1_2)
+	for (auto& t : splitters_threads)
 		t.join();
 
 	for (auto r : w_fastqs)
 		delete r;
 
-	bin_file_reader_th.join();
+	bin_file_reader_thread.join();
+
+	for (auto& t : fastqs_threads)
+		t.RethrowIfException();
+
+	for (auto& t : splitters_threads)
+		t.RethrowIfException();
+
+	bin_file_reader_thread.RethrowIfException();
+
 	delete w_bin_file_reader;
 
 	for (auto& ptr : Queues.binary_pack_queues)
@@ -821,6 +829,8 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 
 	results.time = w1.getElapsedTime();
 	results.tmpSize = 0;
+
+
 
 	return results;
 }
@@ -994,33 +1004,47 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 	Queues.disk_logger = new CDiskLogger;
 	// ***** Stage 0 *****
 
-	thread bin_file_reader_th;
 	w0.startTimer();
 	if(Params.file_type != InputType::KMC)
 	{
+		vector<CExceptionAwareThread> stats_fastqs_threads;
+		vector<CExceptionAwareThread> stats_splitters_threads;
+
 		w_stats_splitters.resize(Params.n_splitters);
 
 		for (int i = 0; i < Params.n_splitters; ++i)
 		{
 			w_stats_splitters[i] = new CWStatsSplitter(Params, Queues);
-			gr0_2.push_back(thread(std::ref(*w_stats_splitters[i])));
+			stats_splitters_threads.emplace_back(std::ref(*w_stats_splitters[i]));
 		}
 
 		w_stats_fastqs.resize(Params.n_readers);
+
+
 		for (int i = 0; i < Params.n_readers; ++i)
 		{
 			w_stats_fastqs[i] = new CWStatsFastqReader(Params, Queues, Params.file_type == InputType::BAM ? nullptr : Queues.binary_pack_queues[i]);
-			gr0_1.push_back(thread(std::ref(*w_stats_fastqs[i])));
+			stats_fastqs_threads.emplace_back(std::ref(*w_stats_fastqs[i]));
 		}
-		bin_file_reader_th = std::thread(std::ref(*w_bin_file_reader));
+		CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader));
 
-		for (auto p = gr0_1.begin(); p != gr0_1.end(); ++p)
-			p->join();
+		for(auto& t : stats_fastqs_threads)
+			t.join();
 
-		for (auto p = gr0_2.begin(); p != gr0_2.end(); ++p)
-			p->join();
+		for (auto& t : stats_splitters_threads)
+			t.join();
 
-		bin_file_reader_th.join();
+		bin_file_reader_thread.join();
+
+		for (auto& t : stats_fastqs_threads)
+			t.RethrowIfException();
+
+		for (auto& t : stats_splitters_threads)
+			t.RethrowIfException();
+
+		bin_file_reader_thread.RethrowIfException();
+
+
 		delete w_bin_file_reader;
 
 		for (auto& ptr : Queues.binary_pack_queues)
@@ -1081,14 +1105,18 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 			Queues.ntHashEstimator = new CntHashEstimator(Params.kmer_len, 11);
 	}
 
+	std::vector<CExceptionAwareThread> fastqs_threads;
+	std::vector<CExceptionAwareThread> splitters_threads;
+
+
 	for (int i = 0; i < Params.n_splitters; ++i)
 	{
 		w_splitters[i] = new CWSplitter(Params, Queues);
-		gr1_2.push_back(thread(std::ref(*w_splitters[i])));
+		splitters_threads.emplace_back(std::ref(*w_splitters[i]));
 	}
 
 	w_storer = new CWKmerBinStorer(Params, Queues);
-	gr1_3.push_back(thread(std::ref(*w_storer)));
+	CExceptionAwareThread storerer_thread(std::ref(*w_storer));
 
 	w_fastqs.resize(Params.n_readers);
 	if (Params.file_type != InputType::BAM)
@@ -1098,7 +1126,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 		{
 			Queues.binary_pack_queues[i] = new CBinaryPackQueue;
 			w_fastqs[i] = new CWFastqReader(Params, Queues, Queues.binary_pack_queues[i]);
-			gr1_1.push_back(thread(std::ref(*w_fastqs[i])));
+			fastqs_threads.emplace_back(std::ref(*w_fastqs[i]));
 		}
 	}
 	else //bam
@@ -1107,19 +1135,20 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 		for (int i = 0; i < Params.n_readers; ++i)
 		{
 			w_fastqs[i] = new CWFastqReader(Params, Queues, nullptr);
-			gr1_1.push_back(thread(std::ref(*w_fastqs[i])));
+			fastqs_threads.emplace_back(std::ref(*w_fastqs[i]));
 		}
 	}
 
 	w_bin_file_reader = new CWBinaryFilesReader(Params, Queues);
-	bin_file_reader_th = thread(std::ref(*w_bin_file_reader));
+	CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader));
 
-	for (auto p = gr1_1.begin(); p != gr1_1.end(); ++p)
-		p->join();
-	for (auto p = gr1_2.begin(); p != gr1_2.end(); ++p)
-		p->join();
+	for (auto& t: fastqs_threads)
+		t.join();
 
-	bin_file_reader_th.join();
+	for (auto& t : splitters_threads)
+		t.join();
+
+	bin_file_reader_thread.join();
 	delete w_bin_file_reader;
 
 	if(Queues.ntHashEstimator)
@@ -1141,8 +1170,15 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 	delete Queues.pmm_reads;
 	delete Queues.pmm_binary_file_reader;
 
-	for (auto p = gr1_3.begin(); p != gr1_3.end(); ++p)
-		p->join();
+	storerer_thread.join();
+
+	storerer_thread.RethrowIfException();
+	bin_file_reader_thread.RethrowIfException();
+	for (auto& t : fastqs_threads)
+		t.RethrowIfException();
+
+	for (auto& t : splitters_threads)
+		t.RethrowIfException();
 
 	n_reads = 0;
 
@@ -1340,47 +1376,43 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	}
 #endif
 
+	Queues.kq = new CKmerQueue(Params.n_bins, Params.n_sorters);
+	//max memory is specified by user
+	int64 max_mem_size = Queues.memory_bins->GetTotalSize();
+
+	//but in some cases we will need more memory to process some big bins
+	//so max memory size will be higher
+	//but it is not true in strict memory mode, where such big bins are processed after stage 2
+	if (max_mem_size < sorted_bins.front().second && !Params.use_strict_mem)
+		max_mem_size = sorted_bins.front().second;
+
+	Queues.sorters_manager = new CSortersManager(Params.n_bins, Params.n_sorters, Queues.bq, max_mem_size, sorted_bins);
+
+	w_sorters.resize(Params.n_sorters);
+
+	std::vector<CExceptionAwareThread> sorters_threads;
+
+	for (int i = 0; i < Params.n_sorters; ++i)
 	{
-		auto _2nd_stage_threads = Params.n_sorters;
-		Queues.kq = new CKmerQueue(Params.n_bins, _2nd_stage_threads);
-		//max memory is specified by user
-		int64 max_mem_size = Queues.memory_bins->GetTotalSize();
-
-		//but in some cases we will need more memory to process some big bins
-		//so max memory size will be higher
-		//but it is not true in strict memory mode, where such big bins are processed after stage 2
-		if (max_mem_size < sorted_bins.front().second && !Params.use_strict_mem)
-			max_mem_size = sorted_bins.front().second;
-
-		Queues.sorters_manager = new CSortersManager(Params.n_bins, _2nd_stage_threads, Queues.bq, max_mem_size, sorted_bins);
-
-		w_sorters.resize(_2nd_stage_threads);
-
-		for (int i = 0; i < _2nd_stage_threads; ++i)
-		{
-			w_sorters[i] = new CWKmerBinSorter<SIZE>(Params, Queues, sort_func);
-			gr2_2.push_back(thread(std::ref(*w_sorters[i])));
-		}
+		w_sorters[i] = new CWKmerBinSorter<SIZE>(Params, Queues, sort_func);
+		sorters_threads.emplace_back(std::ref(*w_sorters[i]));
 	}
 
 	w_reader = new CWKmerBinReader<SIZE>(Params, Queues);
-	gr2_1.push_back(thread(std::ref(*w_reader)));
+	CExceptionAwareThread read_thread(std::ref(*w_reader));
 
 	w_completer = new CWKmerBinCompleter(Params, Queues);
-	gr2_3.push_back(thread(std::ref(*w_completer), true));
+	CExceptionAwareThread completer_thread_stage1(std::ref(*w_completer), true);
 
+	CExceptionAwareThread completer_thread_stage2;
 
+	read_thread.join();
 
-	for (auto p = gr2_1.begin(); p != gr2_1.end(); ++p)
-		p->join();
-	for (auto p = gr2_2.begin(); p != gr2_2.end(); ++p)
-		p->join();
+	for (auto& t : sorters_threads)
+		t.join();
 
 	//Finishing first stage of completer
-	for (auto p = gr2_3.begin(); p != gr2_3.end(); ++p)
-		p->join();
-
-	gr2_3.clear();
+	completer_thread_stage1.join();
 
 	thread* release_thr_st2_1 = new thread([&] {
 		//Queues.pmm_radix_buf->release();
@@ -1445,7 +1477,8 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 		}
 
 		w_completer->InitStage2(Params, Queues);
-		gr2_3.push_back(thread(std::ref(*w_completer), false));
+
+		completer_thread_stage2 = CExceptionAwareThread(std::ref(*w_completer), false);
 		for (auto& m : bkb_mergers)
 			m.join();
 
@@ -1474,14 +1507,13 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	}
 	else
 	{
-		gr2_3.push_back(thread(std::ref(*w_completer), false));
+		completer_thread_stage2 = CExceptionAwareThread(std::ref(*w_completer), false);
 	}
 
 	Queues.pmm_radix_buf->release();
 	delete Queues.pmm_radix_buf;
 
-	for (auto p = gr2_3.begin(); p != gr2_3.end(); ++p)
-		p->join();
+	completer_thread_stage2.join();
 
 
 	if (Params.use_strict_mem)
