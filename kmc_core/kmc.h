@@ -1414,6 +1414,14 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	//Finishing first stage of completer
 	completer_thread_stage1.join();
 
+	read_thread.RethrowIfException();
+
+	for (auto& t : sorters_threads)
+		t.RethrowIfException();
+
+	completer_thread_stage1.RethrowIfException();
+
+
 	thread* release_thr_st2_1 = new thread([&] {
 		//Queues.pmm_radix_buf->release();
 		Queues.memory_bins->release();
@@ -1514,6 +1522,8 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	delete Queues.pmm_radix_buf;
 
 	completer_thread_stage2.join();
+
+	completer_thread_stage2.RethrowIfException();
 
 
 	if (Params.use_strict_mem)
