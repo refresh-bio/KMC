@@ -1207,6 +1207,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 		ostr << "Error: unknown compression";
 		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 	}
+	assert(false); //should never be here
 }
 //----------------------------------------------------------------------------------
 uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file)

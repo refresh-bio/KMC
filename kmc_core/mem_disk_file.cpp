@@ -72,7 +72,14 @@ int CMemDiskFile::Close()
 	}
 	else
 	{
-		return fclose(file);
+		if (file)
+		{
+			auto ret = fclose(file);
+			file = nullptr;
+			return ret;
+		}
+		else
+			return 0;
 	}
 }
 //----------------------------------------------------------------------------------
@@ -116,6 +123,13 @@ size_t CMemDiskFile::Write(const uchar * ptr, size_t size, size_t count)
 	{
 		return fwrite(ptr, size, count, file);
 	}
+}
+
+//----------------------------------------------------------------------------------
+CMemDiskFile::~CMemDiskFile()
+{
+	Close();
+	Remove();
 }
 
 // ***** EOF

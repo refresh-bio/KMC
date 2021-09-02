@@ -103,7 +103,7 @@ void CKmerBinCollector::Flush()
 
 	bin_part_queue->push(bin_no, buffer, buffer_pos, buffer_size, expander_parts);
 	expander_parts.clear();
-	bd->insert(bin_no, nullptr, "", buffer_pos, n_recs, n_plus_x_recs, n_super_kmers);
+	bd->update(bin_no, buffer_pos, n_recs, n_plus_x_recs, n_super_kmers);
 }
 
 // ***** EOF

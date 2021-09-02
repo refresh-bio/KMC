@@ -32,13 +32,12 @@ CKmerBinStorer::CKmerBinStorer(CKMCParams &Params, CKMCQueues &Queues)
 	q_part			    = Queues.bpq.get();
 	bd                  = Queues.bd.get();
 	epd					= Queues.epd.get();
-	working_directory = Params.working_directory;
+	working_directory	= Params.working_directory;
 
-	mem_mode			= Params.mem_mode;
+	tmp_files_owner		= Queues.tmp_files_owner.get();
 
 	s_mapper			= Queues.s_mapper.get();
 	disk_logger			= Queues.disk_logger.get();
-	files                  = nullptr;
 	buf_sizes		       = nullptr;
 	buffer_size_bytes      = 0;
 	max_buf_size		   = 0;
@@ -68,17 +67,12 @@ CKmerBinStorer::~CKmerBinStorer()
 // Write ends of bins and release memory
 void CKmerBinStorer::Release()
 {
-	if(!files)
-		return;
 	for(int i = 0; i < n_bins; ++i)
 		if(buffer[i])
 			delete buffer[i];
 
 	delete[] buffer;
 	buffer = nullptr;
-
-	delete[] files;
-	files = nullptr;
 
 	delete[] buf_sizes;
 	buf_sizes = nullptr;
@@ -163,7 +157,7 @@ void CKmerBinStorer::PutBinToTmpFile(uint32 n)
 		}
 
 		disk_logger->log_write(tmp_buff_pos);
-		w = files[n]->Write(tmp_buff, 1, tmp_buff_pos);
+		w = tmp_files_owner->Get(n)->Write(tmp_buff, 1, tmp_buff_pos);
 		if(w != tmp_buff_pos)
 		{
 			std::ostringstream ostr;
@@ -184,21 +178,19 @@ bool CKmerBinStorer::OpenFiles()
 {
 	string f_name;
 
-	files     = new CMemDiskFile*[n_bins];
-	for (int i = 0 ; i < n_bins ; ++i)
-	{
-		files[i] = new CMemDiskFile(mem_mode);
-	}
+	tmp_files_owner->CreateInstances();
+
 	buf_sizes = new uint64[n_bins];
 
 	for(int i = 0; i < n_bins; ++i)
 	{
 		f_name = GetName(i);
 		buf_sizes[i] = 0;
-		
-		files[i]->Open(f_name);
 
-		bd->insert(i, files[i], f_name, 0, 0, 0, 0);
+		auto file = tmp_files_owner->Get(i);
+		file->Open(f_name);
+
+		bd->insert(i, file, f_name);
 	}
 
 	return true;

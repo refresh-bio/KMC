@@ -19,6 +19,7 @@
 #include <string>
 #include <memory>
 #include "libs/ntHash/ntHashWrapper.h"
+#include "tmp_files_owner.h"
 
 using InputType = KMC::InputFileType;
 using OutputType = KMC::OutputFileType;
@@ -182,6 +183,8 @@ struct CKMCQueues
 	std::unique_ptr<CSortersManager> sorters_manager;
 
 	std::unique_ptr<CntHashEstimator> ntHashEstimator;
+
+	std::unique_ptr<CTmpFilesOwner> tmp_files_owner;
 };
 
 #endif

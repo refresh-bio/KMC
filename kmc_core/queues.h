@@ -21,6 +21,7 @@
 #include <map>
 #include <string>
 #include "mem_disk_file.h"
+#include <cassert>
 
 using namespace std;
 
@@ -396,8 +397,26 @@ public:
 	}
 };
 class CBinDesc {
-	typedef tuple<string, int64, uint64, uint32, uint32, CMemDiskFile*, uint64, uint64> desc_t;
-	typedef map<int32, desc_t> map_t;
+	struct desc_t
+	{
+		string desc;
+		CMemDiskFile* file;
+		int64 size{};
+		uint64 n_rec{};
+		uint64 n_plus_x_recs{};
+		uint64 n_super_kmers{};
+
+		desc_t(string desc, CMemDiskFile* file) :
+			desc(desc),
+			file(file)
+		{
+
+		}
+	};
+
+	typedef map<int32, desc_t> map_t; //no default ctor of desc_t, so cannot use map_t[] and thats OK
+
+	uint32 kmer_len;
 
 	map_t m;
 	int32 bin_id;
@@ -409,7 +428,9 @@ class CBinDesc {
 	mutable mutex mtx;
 
 public:
-	CBinDesc() {
+	CBinDesc(uint32 kmer_len):
+		kmer_len(kmer_len)
+	{
 		lock_guard<mutex> lck(mtx);
 		bin_id = -1;
 	}
@@ -468,7 +489,7 @@ public:
 	{
 		uint64 res = 0;
 		for (auto& e : m)
-			res += get<2>(e.second);		
+			res += e.second.n_rec;
 		return res;
 	}
 
@@ -480,16 +501,12 @@ public:
 		uint64 size;
 		uint64 n_rec;
 		uint64 n_plus_x_recs;		
-		uint32 kmer_len;
 
 		for (auto& p : m)
 		{
-			int32 bin_id = p.first;
-
-			size = (uint64)get<1>(m[bin_id]);
-			n_rec = get<2>(m[bin_id]);			
-			kmer_len = get<4>(m[bin_id]);
-			n_plus_x_recs = get<6>(m[bin_id]);
+			size = (uint64)p.second.size;
+			n_rec = p.second.n_rec;
+			n_plus_x_recs = p.second.n_plus_x_recs;
 
 			uint64 input_kmer_size;
 			uint64 kxmer_counter_size;
@@ -555,7 +572,7 @@ public:
 		vector<pair<int32, int64>> bin_sizes;
 
 		for (auto& p : m)
-			bin_sizes.push_back(make_pair(p.first, get<2>(p.second)));
+			bin_sizes.push_back(make_pair(p.first, p.second.n_rec));
 
 		sort(bin_sizes.begin(), bin_sizes.end(), [](const pair<int32, int64>& l, const pair<int32, int64>& r){
 			return l.second > r.second;
@@ -609,50 +626,52 @@ public:
 
 		return bin_id;
 	}
-	void insert(int32 bin_id, CMemDiskFile *file, string desc, int64 size, uint64 n_rec, uint64 n_plus_x_recs, uint64 n_super_kmers, uint32 buffer_size = 0, uint32 kmer_len = 0) {
+
+	void insert(int32 bin_id, CMemDiskFile* file, string desc)
+	{
 		lock_guard<mutex> lck(mtx);
 
 		map_t::iterator p = m.find(bin_id);
-		if(p != m.end())
-		{
-			if(desc != "")
-			{
-				get<0>(m[bin_id]) = desc;
-				get<5>(m[bin_id]) = file;
-			}
-			get<1>(m[bin_id]) += size;
-			get<2>(m[bin_id]) += n_rec;
-			get<6>(m[bin_id]) += n_plus_x_recs;
-			get<7>(m[bin_id]) += n_super_kmers;
-			if(buffer_size)
-			{
-				get<3>(m[bin_id]) = buffer_size;
-				get<4>(m[bin_id]) = kmer_len;
-			}
-		}
-		else
-			m[bin_id] = std::make_tuple(desc, size, n_rec, buffer_size, kmer_len, file, n_plus_x_recs, n_super_kmers);
+
+		assert(p == m.end());
+		m.emplace(bin_id, desc_t(desc, file));
 	}
-	void read(int32 bin_id, CMemDiskFile *&file, string &desc, uint64 &size, uint64 &n_rec, uint64 &n_plus_x_recs, uint32 &buffer_size, uint32 &kmer_len) {
+
+	void update(int32 bin_id, int64 size, uint64 n_rec, uint64 n_plus_x_recs, uint64 n_super_kmers) {
 		lock_guard<mutex> lck(mtx);
 
-		desc			= get<0>(m[bin_id]);
-		file			= get<5>(m[bin_id]);
-		size			= (uint64) get<1>(m[bin_id]);
-		n_rec			= get<2>(m[bin_id]);
-		buffer_size		= get<3>(m[bin_id]);
-		kmer_len		= get<4>(m[bin_id]);
-		n_plus_x_recs	= get<6>(m[bin_id]);
+		map_t::iterator p = m.find(bin_id);
+		assert(p != m.end());
+
+		p->second.size += size;
+		p->second.n_rec += n_rec;
+		p->second.n_plus_x_recs += n_plus_x_recs;
+		p->second.n_super_kmers += n_super_kmers;
+	}
+	void read(int32 bin_id, CMemDiskFile *&file, string &desc, uint64 &size, uint64 &n_rec, uint64 &n_plus_x_recs) {
+		lock_guard<mutex> lck(mtx);
+
+		auto p = m.find(bin_id);
+		assert(p != m.end());
+
+		desc			= p->second.desc;
+		file			= p->second.file;
+		size			= (uint64) p->second.size;
+		n_rec			= p->second.n_rec;
+		n_plus_x_recs	= p->second.n_plus_x_recs;
 	}
 	void read(int32 bin_id, CMemDiskFile *&file, string &desc, uint64 &size, uint64 &n_rec, uint64 &n_plus_x_recs, uint64 &n_super_kmers) {
 		lock_guard<mutex> lck(mtx);
 
-		desc			= get<0>(m[bin_id]);
-		file			= get<5>(m[bin_id]);
-		size			= (uint64) get<1>(m[bin_id]);
-		n_rec			= get<2>(m[bin_id]);
-		n_plus_x_recs	= get<6>(m[bin_id]);
-		n_super_kmers		= get<7>(m[bin_id]);
+		auto p = m.find(bin_id);
+		assert(p != m.end());
+
+		desc			= p->second.desc;
+		file			= p->second.file;
+		size			= (uint64)p->second.size;
+		n_rec			= p->second.n_rec;
+		n_plus_x_recs	= p->second.n_plus_x_recs;
+		n_super_kmers	= p->second.n_super_kmers;
 	}
 };
 

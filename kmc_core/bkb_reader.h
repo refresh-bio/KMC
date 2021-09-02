@@ -27,6 +27,7 @@ class CBigKmerBinReader
 	CMemoryPool* sm_pmm_input_file;
 
 	uint64 sm_mem_part_input_file;
+	uint32 kmer_len;
 public:
 	CBigKmerBinReader(CKMCParams& Params, CKMCQueues& Queues);
 	~CBigKmerBinReader();

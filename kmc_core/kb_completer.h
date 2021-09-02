@@ -386,6 +386,7 @@ bool CSmallKCompleter::Complete(CSmallKBuf<COUNTER_TYPE> result)
 		ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
 		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 	}
+	assert(false); //Should never be here
 }
 
 void CSmallKCompleter::GetTotal(uint64 &_n_unique, uint64 &_n_cutoff_min, uint64 &_n_cutoff_max)

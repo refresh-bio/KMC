@@ -205,6 +205,9 @@
     <ClInclude Include="exception_aware_thread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tmp_files_owner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="libs\libbzip2.lib" />

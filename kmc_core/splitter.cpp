@@ -27,7 +27,6 @@ CSplitter::CSplitter(CKMCParams &Params, CKMCQueues &Queues)
 	both_strands = Params.both_strands;
 
 	bin_part_queue = Queues.bpq.get();
-	bd = Queues.bd.get();
 	pmm_reads = Queues.pmm_reads.get();
 	kmer_len = Params.kmer_len;
 	signature_len = Params.signature_len;
@@ -66,7 +65,6 @@ void CSplitter::InitBins(CKMCParams &Params, CKMCQueues &Queues)
 	for (uint32 i = 0; i < n_bins; ++i)
 	{
 		bins[i] = std::make_unique<CKmerBinCollector>(Queues, Params, buffer_size, i);
-		bd->insert(i, nullptr, "", 0, 0, 0, 0, buffer_size, kmer_len);
 	}
 }
 

@@ -954,7 +954,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 	Queues.input_files_queue = std::make_unique<CInputFilesQueue>(Params.input_file_names);
 	Queues.part_queue = std::make_unique<CPartQueue>(Params.n_readers);
 	Queues.bpq = std::make_unique<CBinPartQueue>(Params.n_splitters);
-	Queues.bd = std::make_unique<CBinDesc>();
+	Queues.bd = std::make_unique<CBinDesc>(Params.kmer_len);
 	Queues.epd = std::make_unique<CExpanderPackDesc>(Params.n_bins);
 	Queues.bq = std::make_unique<CBinQueue>(1);
 
@@ -1093,9 +1093,10 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 			Queues.ntHashEstimator = std::make_unique<CntHashEstimator>(Params.kmer_len, 11);
 	}
 
+	Queues.tmp_files_owner = std::make_unique<CTmpFilesOwner>(Params.n_bins, Params.mem_mode);
+
 	std::vector<CExceptionAwareThread> fastqs_threads;
 	std::vector<CExceptionAwareThread> splitters_threads;
-
 
 	for (int i = 0; i < Params.n_splitters; ++i)
 	{
@@ -1557,13 +1558,8 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 		Queues.tlbq.reset();
 	});
 
-	Queues.bd->reset_reading();
-	while ((bin_id = Queues.bd->get_next_bin()) >= 0)
-	{
-		Queues.bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs, n_super_kmers);
-		delete file;
-	}
-
+	Queues.tmp_files_owner->Release();
+	Queues.tmp_files_owner.reset();
 	Queues.bd.reset();
 	Queues.epd.reset();
 

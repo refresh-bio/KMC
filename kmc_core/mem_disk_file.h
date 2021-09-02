@@ -38,6 +38,7 @@ public:
 	size_t Read(uchar * ptr, size_t size, size_t count);
 	size_t Write(const uchar * ptr, size_t size, size_t count);
 	void Remove();
+	~CMemDiskFile();
 };
 
 #endif

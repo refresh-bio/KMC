@@ -65,8 +65,7 @@ private:
 	uint64 n_rec;
 
 	uint64 n_plus_x_recs;
-	string desc;
-	uint32 buffer_size;
+	string desc;	
 	uint32 kmer_len;
 	uint32 max_x;
 
@@ -194,9 +193,10 @@ template <unsigned SIZE> CKmerBinSorter<SIZE>::CKmerBinSorter(CKMCParams &Params
 	output_type = Params.output_type;
 
 	n_sorting_threads = 0;
-	//n_sorting_threads = Params.n_sorting_threads[thread_no];
 
 	sum_n_rec = sum_n_plus_x_rec = 0;
+
+	kmer_len = Params.kmer_len;
 }
 
 //----------------------------------------------------------------------------------
@@ -216,7 +216,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::ProcessBins()
 	while (sorters_manager->GetNext(bin_id, data, size, n_rec, n_sorting_threads))
 	{
 		// Get bin data
-		bd->read(bin_id, file, desc, tmp_size, tmp_n_rec, n_plus_x_recs, buffer_size, kmer_len);
+		bd->read(bin_id, file, desc, tmp_size, tmp_n_rec, n_plus_x_recs);
 
 		// Uncompact the kmers - append truncate prefixes		
 

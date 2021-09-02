@@ -35,7 +35,6 @@ class CSplitter
 	uint64_t part_size, part_pos;
 	std::vector<std::unique_ptr<CKmerBinCollector>> bins;
 	CBinPartQueue *bin_part_queue;
-	CBinDesc *bd;
 	CMemoryPool *pmm_reads;
 	int64 mem_part_pmm_bins;
 	int64 mem_part_pmm_reads;

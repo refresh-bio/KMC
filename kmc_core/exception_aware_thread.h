@@ -19,14 +19,11 @@ class CExceptionAwareThread
 			thread([this] {
 			try
 			{
-				//	std::cerr << "running: " << this << "\n";
 				fun();
 			}
 			catch (...)
 			{
-				auto ex = std::current_exception();
-				exc_ptr = ex;
-				int a = 5;
+				exc_ptr = std::current_exception();
 			}
 		})
 		{

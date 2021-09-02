@@ -42,7 +42,7 @@ template <unsigned SIZE> class CKmerBinReader
 
 	uint32 cutoff_min, cutoff_max;
 	uint32 counter_max;
-	int32 kmer_len;
+	uint32 kmer_len;
 	int32 lut_prefix_len;
 	uint32 max_x;
 
@@ -77,7 +77,7 @@ template <unsigned SIZE> CKmerBinReader<SIZE>::CKmerBinReader(CKMCParams &Params
 
 	memory_bins = Queues.memory_bins.get();
 
-	kmer_len       = Params.kmer_len;	
+	kmer_len       = (uint32)Params.kmer_len;
 	cutoff_min     = Params.cutoff_min;
 	cutoff_max	   = (uint32)Params.cutoff_max;
 	counter_max    = (uint32)Params.counter_max;
@@ -112,8 +112,6 @@ template <unsigned SIZE> void CKmerBinReader<SIZE>::ProcessBins()
 	uint64 size;
 	uint64 n_rec;
 	uint64 n_plus_x_recs;
-	uint32 buffer_size;
-	uint32 kmer_len;
 
 	CPercentProgress percent_progress("Stage 2: ", true, percentProgressObserver);
 	percent_progress.SetMaxVal(bd->get_n_rec_sum());
@@ -121,7 +119,7 @@ template <unsigned SIZE> void CKmerBinReader<SIZE>::ProcessBins()
 
 	while ((bin_id = bd->get_next_sort_bin()) >= 0)		// Get id of the next bin to read
 	{				
-		bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs, buffer_size, kmer_len);
+		bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs);
 		fflush(stdout);
 
 		// Reserve memory necessary to process the current bin at all next stages

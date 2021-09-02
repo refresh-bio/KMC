@@ -43,11 +43,10 @@ class CKmerBinStorer
 	CSignatureMapper *s_mapper;
 	CDiskLogger *disk_logger;
 	uchar* tmp_buff;
-	CMemDiskFile** files;
 	uint64 *buf_sizes;
 	uint64 max_buf_size;
 	uint32 max_buf_size_id;
-	bool mem_mode;
+	CTmpFilesOwner* tmp_files_owner;
 
 	typedef list<tuple<uchar *, uint32, uint32>> elem_t; 
 	elem_t** buffer;

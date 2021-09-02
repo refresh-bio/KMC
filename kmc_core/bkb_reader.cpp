@@ -25,6 +25,8 @@ CBigKmerBinReader::CBigKmerBinReader(CKMCParams& Params, CKMCQueues& Queues)
 	bbpq = Queues.bbpq.get();
 	sm_pmm_input_file = Queues.sm_pmm_input_file.get();
 	sm_mem_part_input_file = Params.sm_mem_part_input_file;
+
+	kmer_len = (uint32)Params.kmer_len;
 }
 
 //----------------------------------------------------------------------------------
@@ -34,12 +36,12 @@ void CBigKmerBinReader::ProcessBigBin()
 	CMemDiskFile *file;
 	string name;
 	uint64 size, n_rec, n_plus_x_recs, in_buffer, end_pos;
-	uint32 buffer_size, kmer_len;		
+
 	uchar *file_buff, *tmp;
 	
 	while (tlbq->get_next(bin_id))
 	{
-		bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs, buffer_size, kmer_len);
+		bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs);
 		cerr << "*";
 		file->Rewind();
 		end_pos = 0;
