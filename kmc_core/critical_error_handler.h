@@ -6,8 +6,9 @@
 class IFinishableQueue
 {
 public:
+	IFinishableQueue();
 	virtual void ForceToFinish() = 0;
-	virtual ~IFinishableQueue() = default;
+	virtual ~IFinishableQueue();
 };
 
 class CCriticalErrorHandler
@@ -42,9 +43,19 @@ public:
 
 	void HandleCriticalError(const std::string& msg)
 	{
-		std::cerr << msg << "\n";
-		exit(1);
-		//finishAllQueues();
-		//throw std::runtime_error(msg);
+		//std::cerr << msg << "\n";
+		//exit(1);
+		finishAllQueues();
+		throw std::runtime_error(msg);
 	}
 };
+
+inline IFinishableQueue::IFinishableQueue()
+{
+	CCriticalErrorHandler::Inst().RegisterQueue(this);
+}
+
+inline IFinishableQueue::~IFinishableQueue()
+{
+	CCriticalErrorHandler::Inst().UnregisterQueue(this);
+}

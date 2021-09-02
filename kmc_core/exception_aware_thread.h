@@ -57,4 +57,11 @@ public:
 		if (details->exc_ptr)
 			std::rethrow_exception(details->exc_ptr);
 	}
+
+	~CExceptionAwareThread()
+	{
+		if(details)
+			if (details->thread.joinable())
+				details->thread.join();
+	}
 };

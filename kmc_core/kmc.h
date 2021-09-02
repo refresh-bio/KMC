@@ -954,7 +954,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 	Queues.input_files_queue = std::make_unique<CInputFilesQueue>(Params.input_file_names);
 	Queues.part_queue = std::make_unique<CPartQueue>(Params.n_readers);
 	Queues.bpq = std::make_unique<CBinPartQueue>(Params.n_splitters);
-	Queues.bd = std::make_unique<CBinDesc>(Params.kmer_len);
+	Queues.bd = std::make_unique<CBinDesc>(Params.kmer_len, Params.n_bins);
 	Queues.epd = std::make_unique<CExpanderPackDesc>(Params.n_bins);
 	Queues.bq = std::make_unique<CBinQueue>(1);
 
@@ -1504,7 +1504,6 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	completer_thread_stage2.join();
 
 	completer_thread_stage2.RethrowIfException();
-
 
 	if (Params.use_strict_mem)
 	{

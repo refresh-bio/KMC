@@ -21,14 +21,13 @@
 #include <map>
 #include <string>
 #include "mem_disk_file.h"
+#include "critical_error_handler.h"
 #include <cassert>
-
-using namespace std;
-
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 
+using namespace std;
 using std::thread;
 
 //************************************************************************************************************
@@ -42,14 +41,23 @@ enum class CompressionType { plain, gzip, bzip2 };
 enum class ReadType { normal_read, long_read, na }; //there is no strict distincion between normal and long reads, read will be clasified as long if reader is not able to determine whole fastq/fasta record (header, read, header, qual/header, read)
 
 
-class CBinaryPackQueue
+class CBinaryPackQueue : public IFinishableQueue
 {
 	std::queue<tuple<uchar*, uint64, FilePart, CompressionType>> q;
 	std::mutex mtx;
 	std::condition_variable cv_pop, cv_push;
 	bool completed = false;
 	bool stop = false;
+
+	bool forced_to_finish = false;
 public:
+	void ForceToFinish() override
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv_pop.notify_all();
+	}
+
 	bool push(uchar* data, uint64 size, FilePart file_part, CompressionType mode)
 	{
 		std::lock_guard<std::mutex> lck(mtx);
@@ -70,7 +78,9 @@ public:
 	bool pop(uchar* &data, uint64 &size, FilePart &file_part, CompressionType &mode)
 	{
 		std::unique_lock<std::mutex> lck(mtx);
-		cv_pop.wait(lck, [this]{return !q.empty() || completed; });
+		cv_pop.wait(lck, [this]{return !q.empty() || completed || forced_to_finish; });
+		if (forced_to_finish)
+			return false;
 		if (q.empty())
 			return false;
 
@@ -188,7 +198,8 @@ public:
 };
 
 //************************************************************************************************************
-class CPartQueue {
+class CPartQueue : public IFinishableQueue
+{
 	typedef tuple<uchar *, uint64, ReadType> elem_t;
 	typedef queue<elem_t, list<elem_t>> queue_t;
 
@@ -197,15 +208,23 @@ class CPartQueue {
 	int n_readers;
 
 	mutable mutex mtx;								// The mutex to synchronise on
-	condition_variable cv_queue_empty;
+	condition_variable cv_pop;
 
+	bool forced_to_finish = false;
 public:
-	CPartQueue(int _n_readers) {
+
+	void ForceToFinish() override
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv_pop.notify_all();
+	}
+	CPartQueue(int _n_readers)
+	{
 		unique_lock<mutex> lck(mtx);
 		is_completed    = false;
 		n_readers       = _n_readers;
 	};
-	~CPartQueue() {};
 
 	bool empty() {
 		lock_guard<mutex> lck(mtx);
@@ -214,14 +233,14 @@ public:
 
 	bool completed() {
 		lock_guard<mutex> lck(mtx);
-		return q.empty() && !n_readers;
+		return forced_to_finish || (q.empty() && !n_readers);
 	}
 
 	void mark_completed() {
 		lock_guard<mutex> lck(mtx);
 		n_readers--;
 		if(!n_readers)
-			cv_queue_empty.notify_all();
+			cv_pop.notify_all();
 	}
 
 	void push(uchar *part, uint64 size, ReadType read_type) {
@@ -231,14 +250,17 @@ public:
 		q.push(make_tuple(part, size, read_type));
 
 		if(was_empty)
-			cv_queue_empty.notify_all();
+			cv_pop.notify_all();
 	}
 
 	bool pop(uchar *&part, uint64 &size, ReadType& read_type) {
 		unique_lock<mutex> lck(mtx);
-		cv_queue_empty.wait(lck, [this]{return !this->q.empty() || !this->n_readers;}); 
+		cv_pop.wait(lck, [this]{return !this->q.empty() || !this->n_readers || forced_to_finish; });
 
-		if(q.empty())
+		if (forced_to_finish)
+			return false;
+
+		if (q.empty())
 			return false;
 		std::tie(part, size, read_type) = q.front();
 		q.pop();
@@ -248,7 +270,7 @@ public:
 };
 
 //************************************************************************************************************
-class CStatsPartQueue
+class CStatsPartQueue : public IFinishableQueue
 {
 	typedef tuple<uchar *, uint64, ReadType> elem_t;
 	typedef queue<elem_t, list<elem_t>> queue_t;
@@ -256,9 +278,11 @@ class CStatsPartQueue
 	queue_t q;
 
 	mutable mutex mtx;
-	condition_variable cv_queue_empty;
+	condition_variable cv_pop;
 	int n_readers;
 	int64 bytes_to_read;
+
+	bool forced_to_finish = false;
 public:
 	CStatsPartQueue(int _n_readers, int64 _bytes_to_read)
 	{
@@ -267,18 +291,23 @@ public:
 		bytes_to_read = _bytes_to_read;
 	}
 
-	~CStatsPartQueue() {};
+	void ForceToFinish() override
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv_pop.notify_all();
+	}
 
 	void mark_completed() {
 		lock_guard<mutex> lck(mtx);
 		n_readers--;
 		if (!n_readers)
-			cv_queue_empty.notify_all();
+			cv_pop.notify_all();
 	}
 
 	bool completed() {
 		lock_guard<mutex> lck(mtx);
-		return q.empty() && !n_readers;
+		return forced_to_finish || (q.empty() && !n_readers);
 	}
 
 	bool push(uchar *part, uint64 size, ReadType read_type) {
@@ -291,14 +320,17 @@ public:
 		q.push(make_tuple(part, size, read_type));
 		bytes_to_read -= size;
 		if (was_empty)
-			cv_queue_empty.notify_one();
+			cv_pop.notify_one();
 
 		return true;
 	}
 
 	bool pop(uchar *&part, uint64 &size, ReadType& read_type) {
 		unique_lock<mutex> lck(mtx);
-		cv_queue_empty.wait(lck, [this]{return !this->q.empty() || !this->n_readers; });
+		cv_pop.wait(lck, [this]{return !this->q.empty() || !this->n_readers || forced_to_finish; });
+
+		if (forced_to_finish)
+			return false;
 
 		if (q.empty())
 			return false;
@@ -308,12 +340,11 @@ public:
 
 		return true;
 	}
-
-
 };
 
 //************************************************************************************************************
-class CBinPartQueue {
+class CBinPartQueue : public IFinishableQueue
+{
 	typedef tuple<int32, uchar *, uint32, uint32, list<pair<uint64, uint64>>> elem_t;
 	typedef queue<elem_t, list<elem_t>> queue_t;
 	queue_t q;
@@ -322,16 +353,25 @@ class CBinPartQueue {
 	bool is_completed;
 
 	mutable mutex mtx;						// The mutex to synchronise on
-	condition_variable cv_queue_empty;
+	condition_variable cv_pop;
+
+	bool forced_to_finish = false;
 
 public:
-	CBinPartQueue(int _n_writers) {
+	CBinPartQueue(int _n_writers)
+	{
 		lock_guard<mutex> lck(mtx);
 
 		n_writers       = _n_writers;
 		is_completed    = false;
 	}
-	~CBinPartQueue() {}
+
+	void ForceToFinish() override
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv_pop.notify_all();
+	}
 
 	bool empty() {
 		lock_guard<mutex> lck(mtx);
@@ -339,13 +379,13 @@ public:
 	}
 	bool completed() {
 		lock_guard<mutex> lck(mtx);
-		return q.empty() && !n_writers;
+		return forced_to_finish || (q.empty() && !n_writers);
 	}
 	void mark_completed() {
 		lock_guard<mutex> lck(mtx);
 		n_writers--;
 		if(!n_writers)
-			cv_queue_empty.notify_all();
+			cv_pop.notify_all();
 	}
 	void push(int32 bin_id, uchar *part, uint32 true_size, uint32 alloc_size, list<pair<uint64, uint64>>& expander_parts) {
 		unique_lock<mutex> lck(mtx);
@@ -354,11 +394,14 @@ public:
 		q.push(std::make_tuple(bin_id, part, true_size, alloc_size, std::move(expander_parts)));
 		
 		if(was_empty)
-			cv_queue_empty.notify_all();
+			cv_pop.notify_all();
 	}
 	bool pop(int32 &bin_id, uchar *&part, uint32 &true_size, uint32 &alloc_size, list<pair<uint64, uint64>>& expander_parts) {
 		unique_lock<mutex> lck(mtx);
-		cv_queue_empty.wait(lck, [this]{return !q.empty() || !n_writers;}); 
+		cv_pop.wait(lck, [this]{return !q.empty() || !n_writers || forced_to_finish ; });
+
+		if (forced_to_finish)
+			return false;
 
 		if(q.empty())
 			return false;
@@ -396,16 +439,19 @@ public:
 		data[bin_id].clear();
 	}
 };
-class CBinDesc {
+
+class CBinDesc
+{
 	struct desc_t
 	{
 		string desc;
-		CMemDiskFile* file;
+		CMemDiskFile* file{};
 		int64 size{};
 		uint64 n_rec{};
 		uint64 n_plus_x_recs{};
 		uint64 n_super_kmers{};
 
+		desc_t() = default;
 		desc_t(string desc, CMemDiskFile* file) :
 			desc(desc),
 			file(file)
@@ -414,7 +460,7 @@ class CBinDesc {
 		}
 	};
 
-	typedef map<int32, desc_t> map_t; //no default ctor of desc_t, so cannot use map_t[] and thats OK
+	typedef map<int32, desc_t> map_t;
 
 	uint32 kmer_len;
 
@@ -428,11 +474,13 @@ class CBinDesc {
 	mutable mutex mtx;
 
 public:
-	CBinDesc(uint32 kmer_len):
+	CBinDesc(uint32 kmer_len, uint32_t n_bins):
 		kmer_len(kmer_len)
 	{
 		lock_guard<mutex> lck(mtx);
 		bin_id = -1;
+		for (int32_t i = 0; i < n_bins; ++i)
+			m.emplace(i, desc_t{});
 	}
 	~CBinDesc() {}
 
@@ -633,8 +681,8 @@ public:
 
 		map_t::iterator p = m.find(bin_id);
 
-		assert(p == m.end());
-		m.emplace(bin_id, desc_t(desc, file));
+		assert(p != m.end());
+		p->second = desc_t(desc, file);
 	}
 
 	void update(int32 bin_id, int64 size, uint64 n_rec, uint64 n_plus_x_recs, uint64 n_super_kmers) {
@@ -676,7 +724,8 @@ public:
 };
 
 //************************************************************************************************************
-class CBinQueue {
+class CBinQueue : public IFinishableQueue
+{
 	typedef tuple<int32, uchar *, uint64, uint64> elem_t;
 	typedef queue<elem_t, list<elem_t>> queue_t;
 	queue_t q;
@@ -684,14 +733,23 @@ class CBinQueue {
 	int n_writers;
 
 	mutable mutex mtx;								// The mutex to synchronise on
-	condition_variable cv_queue_empty;
+	condition_variable cv_pop;
+
+	bool forced_to_finish = false;
 
 public:
-	CBinQueue(int _n_writers) {
+	CBinQueue(int _n_writers)
+	{
 		lock_guard<mutex> lck(mtx);
 		n_writers = _n_writers;
 	}
-	~CBinQueue() {}
+
+	void ForceToFinish() override
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv_pop.notify_all();
+	}
 
 	bool empty() {
 		lock_guard<mutex> lck(mtx);
@@ -699,20 +757,20 @@ public:
 	}
 	bool completed() {
 		lock_guard<mutex> lck(mtx);
-		return q.empty() && !n_writers;
+		return forced_to_finish || (q.empty() && !n_writers);
 	}
 	void mark_completed() {
 		lock_guard<mutex> lck(mtx);
 		n_writers--;
 		if(n_writers == 0)
-			cv_queue_empty.notify_all();
+			cv_pop.notify_all();
 	}
 	void push(int32 bin_id, uchar *part, uint64 size, uint64 n_rec) {
 		lock_guard<mutex> lck(mtx);
 		bool was_empty = q.empty();
 		q.push(std::make_tuple(bin_id, part, size, n_rec));
 		if(was_empty)
-			cv_queue_empty.notify_all();
+			cv_pop.notify_all();
 	}
 	int32 top_bin_id()
 	{
@@ -724,7 +782,10 @@ public:
 	bool pop(int32 &bin_id, uchar *&part, uint64 &size, uint64 &n_rec, bool& is_allowed, const set<int>& allowed) {
 		unique_lock<mutex> lck(mtx);
 
-		cv_queue_empty.wait(lck, [this]{return !q.empty() || !n_writers; });
+		cv_pop.wait(lck, [this]{return !q.empty() || !n_writers || forced_to_finish; });
+
+		if (forced_to_finish)
+			return false;
 
 		if (q.empty())
 			return false;
@@ -765,7 +826,10 @@ public:
 	bool pop(int32 &bin_id, uchar *&part, uint64 &size, uint64 &n_rec) {
 		unique_lock<mutex> lck(mtx);
 
-		cv_queue_empty.wait(lck, [this]{return !q.empty() || !n_writers;}); 
+		cv_pop.wait(lck, [this]{return !q.empty() || !n_writers || forced_to_finish; });
+
+		if (forced_to_finish)
+			return false;
 
 		if(q.empty())
 			return false;
@@ -781,22 +845,35 @@ public:
 };
 
 //************************************************************************************************************
-class CKmerQueue {
+class CKmerQueue : public IFinishableQueue
+{
 	typedef tuple<int32, uchar*, list<pair<uint64, uint64>>, uchar*, uint64, uint64, uint64, uint64, uint64> data_t;
 	typedef list<data_t> list_t;
 	int n_writers;
 private:
 	mutable mutex mtx;								// The mutex to synchronise on
-	condition_variable cv_queue_empty;
+	condition_variable cv_pop;
 
 	list_t l;
 	int32 n_bins;
+
+	bool forced_to_finish = false;
 public:
-	CKmerQueue(int32 _n_bins, int _n_writers) {
+	CKmerQueue(int32 _n_bins, int _n_writers)
+	{
 		lock_guard<mutex> lck(mtx);
+
 		n_bins = _n_bins;
 		n_writers = _n_writers;
 	}
+
+	void ForceToFinish() override
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv_pop.notify_all();
+	}
+
 	~CKmerQueue() {
 	}
 
@@ -808,7 +885,7 @@ public:
 		lock_guard<mutex> lck(mtx);
 		n_writers--;
 		if (!n_writers)
-			cv_queue_empty.notify_all();
+			cv_pop.notify_all();
 	}
 
 	void add_n_writers(int32 n)
@@ -820,11 +897,15 @@ public:
 	void push(int32 bin_id, uchar *data, list<pair<uint64, uint64>> data_packs, uchar *lut, uint64 lut_size, uint64 n_unique, uint64 n_cutoff_min, uint64 n_cutoff_max, uint64 n_total) {
 		lock_guard<mutex> lck(mtx);
 		l.push_back(std::make_tuple(bin_id, data, std::move(data_packs), lut, lut_size, n_unique, n_cutoff_min, n_cutoff_max, n_total));
-		cv_queue_empty.notify_all();
+		cv_pop.notify_all();
 	}
 	bool pop(int32 &bin_id, uchar *&data, list<pair<uint64, uint64>>& data_packs, uchar *&lut, uint64 &lut_size, uint64 &n_unique, uint64 &n_cutoff_min, uint64 &n_cutoff_max, uint64 &n_total) {
 		unique_lock<mutex> lck(mtx);
-		cv_queue_empty.wait(lck, [this]{return !l.empty() || !n_writers; });
+		cv_pop.wait(lck, [this]{return !l.empty() || !n_writers || forced_to_finish ; });
+
+		if (forced_to_finish)
+			return false;
+
 		if (l.empty())
 			return false;
 
@@ -841,7 +922,7 @@ public:
 		l.pop_front();
 
 		if (l.empty())
-			cv_queue_empty.notify_all();
+			cv_pop.notify_all();
 
 		return true;
 	}
@@ -906,7 +987,7 @@ public:
 	void reserve(uchar* &part)
 	{
 		unique_lock<mutex> lck(mtx);
-		cv.wait(lck, [this]{return n_parts_free > 0;});
+		cv.wait(lck, [this]{return n_parts_free > 0; });
 
 		part = buffer + stack[--n_parts_free]*part_size;
 	}
@@ -914,7 +995,7 @@ public:
 	void reserve(char* &part)
 	{
 		unique_lock<mutex> lck(mtx);
-		cv.wait(lck, [this]{return n_parts_free > 0;});
+		cv.wait(lck, [this]{return n_parts_free > 0; });
 
 		part = (char*) (buffer + stack[--n_parts_free]*part_size);
 	}
@@ -922,7 +1003,7 @@ public:
 	void reserve(uint32* &part)
 	{
 		unique_lock<mutex> lck(mtx);
-		cv.wait(lck, [this]{return n_parts_free > 0;});
+		cv.wait(lck, [this]{return n_parts_free > 0; });
 
 		part = (uint32*) (buffer + stack[--n_parts_free]*part_size);
 	}
@@ -930,7 +1011,7 @@ public:
 	void reserve(uint64* &part)
 	{
 		unique_lock<mutex> lck(mtx);
-		cv.wait(lck, [this]{return n_parts_free > 0;});
+		cv.wait(lck, [this]{return n_parts_free > 0; });
 
 		part = (uint64*) (buffer + stack[--n_parts_free]*part_size);
 	}
@@ -938,7 +1019,7 @@ public:
 	void reserve(double* &part)
 	{
 		unique_lock<mutex> lck(mtx);
-		cv.wait(lck, [this]{return n_parts_free > 0;});
+		cv.wait(lck, [this]{return n_parts_free > 0; });
 
 		part = (double*) (buffer + stack[--n_parts_free]*part_size);
 	}
@@ -1042,7 +1123,8 @@ public:
 	}
 };
 
-class CMemoryBins {
+class CMemoryBins
+{
 	int64 total_size;
 	int64 free_size;
 	uint32 n_bins;
@@ -1594,22 +1676,23 @@ public:
 };
 
 
-class CBigBinPartQueue
+class CBigBinPartQueue : public IFinishableQueue
 {
 	typedef std::tuple<int32, uchar*, uint64> data_t;
 	typedef list<data_t> list_t;
 	list_t l;	
-	bool completed;
+	bool completed = false;
 	mutable mutex mtx;
 	condition_variable cv_pop;
+
+	bool forced_to_finish = false;
 public:
-	void init()
+
+	void ForceToFinish() override
 	{
-		completed = false;
-	}
-	CBigBinPartQueue()
-	{
-		init();
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv_pop.notify_all();
 	}
 
 	void push(int32 bin_id, uchar* data, uint64 size)
@@ -1624,10 +1707,14 @@ public:
 	bool pop(int32& bin_id, uchar* &data, uint64& size)
 	{
 		unique_lock<mutex> lck(mtx);
-		cv_pop.wait(lck, [this]{return !l.empty() || completed; });
+		cv_pop.wait(lck, [this]{return !l.empty() || completed || forced_to_finish; });
+
+		if (forced_to_finish)
+			return false;
+
 		if (completed && l.empty())
 			return false;
-		
+
 		bin_id = get<0>(l.front());
 		data = get<1>(l.front());
 		size = get<2>(l.front());
@@ -1643,7 +1730,7 @@ public:
 	}
 };
 
-class CBigBinKXmersQueue
+class CBigBinKXmersQueue : public IFinishableQueue
 {
 	typedef std::tuple<int32, uchar*, uint64> data_t;
 	typedef list<data_t> list_t;
@@ -1654,7 +1741,9 @@ class CBigBinKXmersQueue
 
 	uint32 n_waiters;
 	int32 current_id;
-	condition_variable cv_push;	
+	condition_variable cv_push;
+
+	bool forced_to_finish = false;
 public:
 	CBigBinKXmersQueue(uint32 _n_writers)
 	{
@@ -1663,13 +1752,26 @@ public:
 		n_writers = _n_writers;
 	}
 
+	void ForceToFinish() override
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv_pop.notify_all();
+		cv_push.notify_all();
+	}
+
 	void push(int32 bin_id, uchar* data, uint64 size)
 	{
 		unique_lock<mutex> lck(mtx);
 		++n_waiters;
 		if (current_id == -1)
 			current_id = bin_id;
-		cv_push.wait(lck, [this, bin_id]{return bin_id == current_id || n_waiters == n_writers; });
+		cv_push.wait(lck, [this, bin_id]{return bin_id == current_id || n_waiters == n_writers || forced_to_finish; });
+		if (forced_to_finish)
+		{
+			cv_pop.notify_all();
+			return;
+		}
 		if (n_waiters == n_writers)
 		{
 			current_id = bin_id;
@@ -1686,7 +1788,11 @@ public:
 	bool pop(int32& bin_id, uchar* &data, uint64& size)
 	{
 		unique_lock<mutex> lck(mtx);
-		cv_pop.wait(lck, [this]{return !l.empty() || !n_writers; });
+		cv_pop.wait(lck, [this]{return !l.empty() || !n_writers || forced_to_finish; });
+
+		if (forced_to_finish)
+			return false;
+
 		if (l.empty() && !n_writers)
 			return false;		
 		bin_id = get<0>(l.front());
@@ -1712,7 +1818,7 @@ public:
 
 };
 
-class CBigBinSortedPartQueue
+class CBigBinSortedPartQueue : public IFinishableQueue
 {
 	//bin_id, sub_bin_id,suff_buff, suff_buff_size, lut, lut_size, last_one_in_bin
 	typedef std::tuple<int32, int32, uchar*, uint64, uint64*, uint64, bool> data_t;
@@ -1721,11 +1827,22 @@ class CBigBinSortedPartQueue
 	uint32 n_writers;
 	mutable mutex mtx;
 	condition_variable cv_pop;
+
+	bool forced_to_finish = false;
+
 public:
 	CBigBinSortedPartQueue(uint32 _n_writers)
 	{
 		n_writers = _n_writers;
 	}
+
+	void ForceToFinish() override
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv_pop.notify_all();
+	}
+
 	void push(int32 bin_id, int32 sub_bin_id, uchar* suff_buff, uint64 suff_buff_size, uint64* lut, uint64 lut_size, bool last_one_in_sub_bin)
 	{
 		lock_guard<mutex> lck(mtx);
@@ -1737,7 +1854,11 @@ public:
 	bool pop(int32& bin_id, int32& sub_bin_id, uchar* &suff_buff, uint64& suff_buff_size, uint64* &lut, uint64 &lut_size, bool &last_one_in_sub_bin)
 	{
 		unique_lock<mutex> lck(mtx);
-		cv_pop.wait(lck, [this]{return !n_writers || !l.empty(); });
+		cv_pop.wait(lck, [this]{return !n_writers || !l.empty() || forced_to_finish; });
+
+		if (forced_to_finish)
+			return false;
+
 		if (!n_writers && l.empty())
 			return false;
 
@@ -1760,7 +1881,7 @@ public:
 	}
 };
 
-class CBigBinKmerPartQueue
+class CBigBinKmerPartQueue : public IFinishableQueue
 {
 	typedef std::tuple<int32, uchar*, uint64, uchar*, uint64, uint64, uint64, uint64, uint64, bool> data_t;
 	typedef list<data_t> list_t;
@@ -1771,16 +1892,34 @@ class CBigBinKmerPartQueue
 	condition_variable cv_push;
 	int32 curr_id;
 	bool allow_next;
+
+	bool forced_to_finish = false;
+
 public:
 	CBigBinKmerPartQueue(uint32 _n_writers)
 	{
 		n_writers = _n_writers;
 		allow_next = true;
 	}
+
+	void ForceToFinish() override
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv_pop.notify_all();
+		cv_push.notify_all();
+	}
+
 	void push(int32 bin_id, uchar* suff_buff, uint64 suff_buff_size, uchar* lut, uint64 lut_size, uint64 n_unique, uint64 n_cutoff_min, uint64 n_cutoff_max, uint64 n_total, bool last_in_bin)
 	{
-		unique_lock<mutex> lck(mtx);	
-		cv_push.wait(lck, [this, bin_id, lut_size]{return curr_id == bin_id || allow_next; });
+		unique_lock<mutex> lck(mtx);
+		cv_push.wait(lck, [this, bin_id, lut_size]{return curr_id == bin_id || allow_next || forced_to_finish; });
+
+		if (forced_to_finish)
+		{
+			cv_pop.notify_all();
+			return;
+		}
 		allow_next = false;
 		if (last_in_bin)
 		{
@@ -1799,7 +1938,11 @@ public:
 	{
 		unique_lock<mutex> lck(mtx);
 
-		cv_pop.wait(lck, [this]{return !l.empty() || !n_writers; });
+		cv_pop.wait(lck, [this]{return !l.empty() || !n_writers || forced_to_finish; });
+
+		if (forced_to_finish)
+			return false;
+
 		if (!n_writers && l.empty())
 			return false;
 		bin_id = get<0>(l.front());
@@ -1824,7 +1967,6 @@ public:
 			cv_pop.notify_all();
 	}
 };
-
 
 class CBigBinDesc
 {
@@ -1940,17 +2082,29 @@ public:
 	}
 };
 
-class CCompletedBinsCollector
+class CCompletedBinsCollector : public IFinishableQueue
 {
 	list<int32> l;
 	mutable mutex mtx;
 	condition_variable cv_pop;
 	uint32 n_writers;
+
+	bool forced_to_finish = false;
+
 public:
 	CCompletedBinsCollector(uint32 _n_writers)
 	{
 		n_writers = _n_writers;
 	}
+
+
+	void ForceToFinish() override
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv_pop.notify_all();
+	}
+
 	void push(int32 bin_id)
 	{
 		lock_guard<mutex> lck(mtx);
@@ -1963,7 +2117,11 @@ public:
 	bool pop(int32& bin_id)
 	{
 		unique_lock<mutex> lck(mtx);
-		cv_pop.wait(lck, [this]{return !n_writers || !l.empty(); });
+		cv_pop.wait(lck, [this]{return !n_writers || !l.empty() || forced_to_finish; });
+
+		if (forced_to_finish)
+			return false;
+
 		if (!n_writers && l.empty())
 			return false;
 
@@ -2016,7 +2174,7 @@ public:
 	}
 };
 
-class CSortersManager
+class CSortersManager : public IFinishableQueue
 {
 	int free_threads = 0;
 	int max_sorters = 0;
@@ -2025,7 +2183,9 @@ class CSortersManager
 	CBinQueue *bq;
 
 	mutex mtx;
-	condition_variable cv_get_next;	
+	condition_variable cv_get_next;
+
+	bool forced_to_finish = false;
 public:
 	CSortersManager(uint32 n_bins, uint32 n_threads, CBinQueue *_bq, int64 max_mem_size, const vector<pair<int32, int64>>& sorted_bins)
 	{
@@ -2057,6 +2217,13 @@ public:
 			n_sorters[sorted_bins[i].first] = max_sorters/*1*/;		
 	}
 
+	void ForceToFinish() override
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv_get_next.notify_all();
+	}
+
 	bool GetNext(int32 &bin_id, uchar *&part, uint64 &size, uint64 &n_rec, int& n_threads)
 	{
 		unique_lock<mutex> lck(mtx);
@@ -2065,6 +2232,8 @@ public:
 		bool poped = false;
 		cv_get_next.wait(lck, [this, &bin_id, &part, &size, &n_rec, &no_more, &poped, &n_threads]
 		{
+			if (forced_to_finish)
+				return true;
 			if (!poped)
 			{
 				poped = bq->pop_if_any(bin_id, part, size, n_rec);
@@ -2085,6 +2254,10 @@ public:
 			}
 			return free_threads >= n_threads;
 		});
+
+		if (forced_to_finish)
+			return false;
+
 		if (no_more)
 			return false;
 	
@@ -2117,7 +2290,7 @@ public:
 	}
 };
 
-class CBamTaskManager
+class CBamTaskManager : public IFinishableQueue
 {
 	mutex mtx;
 	condition_variable cv;
@@ -2198,8 +2371,17 @@ class CBamTaskManager
 	};
 
 	GunzippedQueue gunzipped_queue;
+
+	bool forced_to_finish = false;
 public:
-	
+
+	void ForceToFinish() override
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		forced_to_finish = true;
+		cv.notify_all();
+	}
+
 	enum TaskType { Gunzip, PrepareForSplitter}; 
 	bool PushBinaryPack(uchar* data, uint64 size, uint32 id, uint32 file_no)
 	{
@@ -2268,6 +2450,9 @@ public:
 		GunzippedQueue::NextPackState state = GunzippedQueue::NextPackState::NOT_YET_PRESENT;
 		cv.wait(lck, [this, &data, &size, &id, &file_no, &state]
 		{
+			if (forced_to_finish)
+				return true;
+
 			if (ignore_rest)
 				return true;
 			if (!splitters_preparer_is_working) //only one thread can prepare parts for splitters
@@ -2284,6 +2469,9 @@ public:
 			return false;			
 		});
 		
+		if (forced_to_finish)
+			return false;
+
 		if (ignore_rest)
 			return false;
 
