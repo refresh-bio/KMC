@@ -17,8 +17,6 @@
 
 using namespace std;
 
-extern uint64 total_reads;
-
 //************************************************************************************************************
 // CKmerBinStorer - storer for bins
 //************************************************************************************************************
@@ -38,19 +36,15 @@ CKmerBinStorer::CKmerBinStorer(CKMCParams &Params, CKMCQueues &Queues)
 
 	s_mapper			= Queues.s_mapper.get();
 	disk_logger			= Queues.disk_logger.get();
-	buf_sizes		       = nullptr;
 	buffer_size_bytes      = 0;
 	max_buf_size		   = 0;
 	max_buf_size_id		   = 0;
 	max_mem_buffer         = Params.max_mem_storer;
 
 	max_mem_single_package = Params.max_mem_storer_pkg;
-	tmp_buff = new uchar[max_mem_single_package*2]; 
+	tmp_buff = std::unique_ptr<uchar[]>(new uchar[max_mem_single_package*2]); //no std::make_unique<uchar[]>(max_mem_single_package*2), because it clears memory which I don't want here
 	
-	buffer = new elem_t*[n_bins];
-	for(int i = 0; i < n_bins; ++i)
-		buffer[i] = nullptr;
-
+	buffer.resize(n_bins);
 
 	total_size = 0 ; 
 
@@ -67,19 +61,9 @@ CKmerBinStorer::~CKmerBinStorer()
 // Write ends of bins and release memory
 void CKmerBinStorer::Release()
 {
-	for(int i = 0; i < n_bins; ++i)
-		if(buffer[i])
-			delete buffer[i];
-
-	delete[] buffer;
-	buffer = nullptr;
-
-	delete[] buf_sizes;
-	buf_sizes = nullptr;
-	
-	delete [] tmp_buff;
-
-//	cerr << "\n";
+	buffer.clear();
+	buf_sizes.clear();
+	tmp_buff.reset();
 }
 
 //----------------------------------------------------------------------------------
@@ -90,12 +74,7 @@ void CKmerBinStorer::ReleaseBuffer()
 		if(buffer[i])
 			PutBinToTmpFile(i);
 
-	for(int i = n_bins-1; i >= 0; --i)
-		if(buffer[i])
-		{
-			delete buffer[i];
-			buffer[i] = nullptr;
-		}
+	buffer.clear();
 }
 
 //----------------------------------------------------------------------------------
@@ -151,13 +130,13 @@ void CKmerBinStorer::PutBinToTmpFile(uint32 n)
 		{
 			buf = get<0>(*p);
 			size = get<1>(*p);
-			memcpy(tmp_buff + tmp_buff_pos, buf, size);
+			memcpy(tmp_buff.get() + tmp_buff_pos, buf, size);
 			tmp_buff_pos += size;
 			pmm_bins->free(buf);
 		}
 
 		disk_logger->log_write(tmp_buff_pos);
-		w = tmp_files_owner->Get(n)->Write(tmp_buff, 1, tmp_buff_pos);
+		w = tmp_files_owner->Get(n)->Write(tmp_buff.get(), 1, tmp_buff_pos);
 		if(w != tmp_buff_pos)
 		{
 			std::ostringstream ostr;
@@ -180,7 +159,7 @@ bool CKmerBinStorer::OpenFiles()
 
 	tmp_files_owner->CreateInstances();
 
-	buf_sizes = new uint64[n_bins];
+	buf_sizes.resize(n_bins);
 
 	for(int i = 0; i < n_bins; ++i)
 	{
@@ -195,7 +174,6 @@ bool CKmerBinStorer::OpenFiles()
 
 	return true;
 }
-
 
 //----------------------------------------------------------------------------------
 // 
@@ -215,7 +193,7 @@ void CKmerBinStorer::ProcessQueue()
 			epd->push(bin_id, expander_parts);
 			expander_parts.clear();
 			if(!buffer[bin_id])
-				buffer[bin_id] = new elem_t;
+				buffer[bin_id] = std::make_unique<elem_t>();
 			buffer[bin_id]->push_back(make_tuple(part, true_size, alloc_size));
 			buffer_size_bytes += alloc_size;
 			buf_sizes[bin_id] += alloc_size;

@@ -42,14 +42,15 @@ class CKmerBinStorer
 
 	CSignatureMapper *s_mapper;
 	CDiskLogger *disk_logger;
-	uchar* tmp_buff;
-	uint64 *buf_sizes;
+	std::unique_ptr<uchar[]> tmp_buff;
+
+	std::vector<uint64> buf_sizes;
 	uint64 max_buf_size;
 	uint32 max_buf_size_id;
 	CTmpFilesOwner* tmp_files_owner;
 
 	typedef list<tuple<uchar *, uint32, uint32>> elem_t; 
-	elem_t** buffer;
+	std::vector<std::unique_ptr<elem_t>> buffer;
 
 	void Release();
 	string GetName(int n);
