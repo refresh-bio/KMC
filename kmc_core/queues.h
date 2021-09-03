@@ -479,8 +479,8 @@ public:
 	{
 		lock_guard<mutex> lck(mtx);
 		bin_id = -1;
-		for (int32_t i = 0; i < n_bins; ++i)
-			m.emplace(i, desc_t{});
+		for (uint32_t i = 0; i < n_bins; ++i)
+			m.emplace((int32)i, desc_t{});
 	}
 	~CBinDesc() {}
 
