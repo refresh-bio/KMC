@@ -17,6 +17,8 @@
 #include <thread>
 
 
+#define DEVELOP_MODE
+
 namespace KMC
 {
 	class IPercentProgressObserver
@@ -95,6 +97,9 @@ namespace KMC
 		IPercentProgressObserver* percentProgressObserver = &defaults.defaultPercentProgressObserver;
 		ILogger* warningsLogger = &defaults.defaultWarningsLogger;
 		EstimateHistogramCfg estimateHistogramCfg = EstimateHistogramCfg::DONT_ESTIMATE;
+#ifdef DEVELOP_MODE
+		bool developVerbose = false;
+#endif
 	public:		
 		Stage1Params& SetInputFiles(const std::vector<std::string>& inputFiles);
 		Stage1Params& SetTmpPath(const std::string& tmpPath);
@@ -113,6 +118,9 @@ namespace KMC
 		Stage1Params& SetPercentProgressObserver(IPercentProgressObserver* percentProgressObserver);
 		Stage1Params& SetWarningsLogger(ILogger* warningsLogger);
 		Stage1Params& SetEstimateHistogramCfg(EstimateHistogramCfg estimateHistogramCfg);
+#ifdef DEVELOP_MODE
+		Stage1Params& SetDevelopVerbose(bool developVerbose);
+#endif
 
 		const std::vector<std::string>& GetInputFiles() const noexcept { return inputFiles; }
 		const std::string& GetTmpPath() const noexcept { return tmpPath; }
@@ -131,6 +139,9 @@ namespace KMC
 		IPercentProgressObserver* GetPercentProgressObserver() const noexcept { return percentProgressObserver; }
 		ILogger* GetWarningsLogger() const noexcept { return warningsLogger; }
 		EstimateHistogramCfg GetEstimateHistogramCfg() const noexcept { return estimateHistogramCfg; }
+#ifdef DEVELOP_MODE
+		bool GetDevelopVerbose() const noexcept { return developVerbose; }
+#endif
 	};
 
 

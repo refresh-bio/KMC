@@ -118,7 +118,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		}
 		// k-mer length
 		else if (strncmp(argv[i], "-k", 2) == 0)
-			stage1Params.SetKmerLen(atoi(&argv[i][2]));		
+			stage1Params.SetKmerLen(atoi(&argv[i][2]));
 		// Memory limit
 		else if (strncmp(argv[i], "-m", 2) == 0)
 		{
@@ -163,9 +163,9 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			stage1Params.SetInputFileType(KMC::InputFileType::BAM);
 		else if (strncmp(argv[i], "-fkmc", 5) == 0)
 			stage1Params.SetInputFileType(KMC::InputFileType::KMC);
-#ifdef DEVELOP_MODE //TODO: reconsider !!!! 
+#ifdef DEVELOP_MODE
 		else if (strncmp(argv[i], "-vl", 3) == 0)
-			Params.p_verbose_log = true;
+			stage1Params.SetDevelopVerbose(true);
 #endif
 		else if (strncmp(argv[i], "-v", 2) == 0)
 		{

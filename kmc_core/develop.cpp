@@ -39,8 +39,6 @@ void map_log(uint32 signature_len, uint32 map_size, int32* signature_map)
 	#endif
 }
 
-
-
 void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, uint64 n_reads, uint32 /*signature_len*/, uint32 map_size, int32* signature_map)
 {
 #ifdef KMERS_PER_BIN_LOG_FILE
@@ -143,7 +141,6 @@ void save_bins_stats(CKMCQueues& Queues, CKMCParams& Params, uint32 kmer_size, u
 	fclose(stats_file);
 
 	Queues.bd->reset_reading();
-	exit(1); //TODO: consider what with this exit!
 #endif
 }
 

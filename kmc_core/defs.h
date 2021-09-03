@@ -27,7 +27,6 @@
 #include <time.h>
 
 //#define DEBUG_MODE
-//#define DEVELOP_MODE 
 
 //#define USE_META_PROG
 

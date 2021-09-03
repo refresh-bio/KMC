@@ -138,12 +138,9 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 	Params.signature_len = stage1Params.GetSignatureLen();
 	Params.bin_part_size = 1 << 16;
 
-	
-
-//TODO: reconsider !!!!
-//#ifdef DEVELOP_MODE
-//	Params.verbose_log = Params.p_verbose_log;
-//#endif
+#ifdef DEVELOP_MODE
+	Params.verbose_log = stage1Params.GetDevelopVerbose();
+#endif
 
 	Params.both_strands = stage1Params.GetCanonicalKmers();
 	Params.homopolymer_compressed = stage1Params.GetHomopolymerCompressed();

@@ -268,6 +268,12 @@ namespace KMC
 		return *this;
 	}
 
+	Stage1Params& Stage1Params::SetDevelopVerbose(bool developVerbose)
+	{
+		this->developVerbose = developVerbose;
+		return *this;
+	}
+
 	Stage2Params& Stage2Params::SetMaxRamGB(uint32_t maxRamGB)
 	{
 		if (maxRamGB < MIN_MEM)
