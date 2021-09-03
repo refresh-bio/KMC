@@ -161,6 +161,10 @@ public:
 				uint32 in_current = 0;
 				for (auto it = _stats.begin(); it != _stats.end();)
 				{
+					//very simple optimization to decrease the number of unnecessary iterations in this loop
+					if (tmp_sum + _stats.back().second >= max_bin_size)
+						break;
+
 					if (tmp_sum + it->second < max_bin_size)
 					{
 						tmp_sum += it->second;
