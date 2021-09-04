@@ -27,7 +27,6 @@
 #include <condition_variable>
 
 using namespace std;
-using std::thread;
 
 //************************************************************************************************************
 
@@ -1171,9 +1170,9 @@ public:
 	void parallel_memory_init()
 	{
 		// Initialize the memory in parallel
-		vector<thread> v_thr;
+		vector<std::thread> v_thr;
 		for (uint32 i = 0; i < n_threads; ++i)
-			v_thr.push_back(thread([&, i]{
+			v_thr.push_back(std::thread([&, i]{
 			uint64 part_size = total_size / n_threads;
 			for (uint64 pos = part_size * i; pos < part_size*(i + 1); pos += 1 << 20)
 				buffer[pos] = 0;

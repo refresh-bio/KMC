@@ -4,12 +4,38 @@
 #include <functional>
 #include <cassert>
 
+class CThreadExceptionCollector
+{
+	std::mutex mtx;
+	std::vector<std::exception_ptr> collected_exceptions;
+public:
+	static CThreadExceptionCollector& Inst()
+	{
+		static CThreadExceptionCollector inst;
+		return inst;
+	}
+
+	void CollectException(std::exception_ptr&& exc_ptr)
+	{
+		std::lock_guard<std::mutex> lck(mtx);
+		collected_exceptions.push_back(std::move(exc_ptr));
+	}
+
+	void RethrowIfAnyException()
+	{
+		if (!collected_exceptions.empty())
+		{
+			auto first_exception = std::move(collected_exceptions.front());
+			collected_exceptions.clear();
+			std::rethrow_exception(first_exception);
+		}
+	}
+};
 
 class CExceptionAwareThread
 {
 	struct Details
 	{
-		std::exception_ptr exc_ptr;
 		std::function<void()> fun; //TODO: it should be possible to implement without std::function, some information avaiable here: https://stackoverflow.com/questions/47496358/c-lambdas-how-to-capture-variadic-parameter-pack-from-the-upper-scope
 		std::thread thread;
 
@@ -23,14 +49,14 @@ class CExceptionAwareThread
 			}
 			catch (...)
 			{
-				exc_ptr = std::current_exception();
+				CThreadExceptionCollector::Inst().CollectException(std::current_exception());
 			}
 		})
 		{
 
 		}
 	};
-	//I'm wraping everythin into unique_ptr because if one creates a vector of CExceptionAwareThread, push_back may cause moves which may invalidate this pointer, which is needed to bound thread with state (exc_ptr)
+	//I'm wraping everythin into unique_ptr because if one creates a vector of CExceptionAwareThread, push_back may cause moves which may invalidate this pointer, which is needed to bound thread object with state
 	std::unique_ptr<Details> details;
 public:
 	CExceptionAwareThread() = default;
@@ -49,13 +75,6 @@ public:
 	void join()
 	{
 		details->thread.join();
-	}
-
-	void RethrowIfException()
-	{
-		assert(details->thread.joinable() == false); //must be joined
-		if (details->exc_ptr)
-			std::rethrow_exception(details->exc_ptr);
 	}
 
 	~CExceptionAwareThread()

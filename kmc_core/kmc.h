@@ -83,6 +83,9 @@ template <unsigned SIZE> class CKMC {
 
 	void CheckAndReportMissingEOLs();
 	
+	KMC::Stage1Results ProcessStage1_impl();
+	KMC::Stage2Results ProcessStage2_impl();
+
 public:
 	CKMC();
 	~CKMC();
@@ -780,14 +783,6 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 
 	bin_file_reader_thread.join();
 
-	for (auto& t : fastqs_threads)
-		t.RethrowIfException();
-
-	for (auto& t : splitters_threads)
-		t.RethrowIfException();
-
-	bin_file_reader_thread.RethrowIfException();
-
 	w_bin_file_reader.reset();
 
 	for (auto& ptr : Queues.binary_pack_queues)
@@ -810,8 +805,6 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 
 	results.time = timer_stage1.getElapsedTime();
 	results.tmpSize = 0;
-
-
 
 	return results;
 }
@@ -926,7 +919,7 @@ KMC::Stage2Results CKMC<SIZE>::ProcessSmallKOptimization_Stage2()
 
 //----------------------------------------------------------------------------------
 // Run the counter stage 1
-template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
+template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 {
 	CStopWatch timer_stage1;
 	timer_stage1.startTimer();
@@ -1022,15 +1015,6 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 		Params.progressObserver->End();
 
 		bin_file_reader_thread.join();
-
-		for (auto& t : stats_fastqs_threads)
-			t.RethrowIfException();
-
-		for (auto& t : stats_splitters_threads)
-			t.RethrowIfException();
-
-		bin_file_reader_thread.RethrowIfException();
-
 
 		w_bin_file_reader.reset();
 
@@ -1157,14 +1141,6 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 
 	storerer_thread.join();
 
-	storerer_thread.RethrowIfException();
-	bin_file_reader_thread.RethrowIfException();
-	for (auto& t : fastqs_threads)
-		t.RethrowIfException();
-
-	for (auto& t : splitters_threads)
-		t.RethrowIfException();
-
 	n_reads = 0;
 
 	thread release_thr_st1_1([&] {
@@ -1217,11 +1193,12 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 
 	// ***** End of Stage 1 *****
 	results.time = timer_stage1.getElapsedTime();
+
 	return results;
 }
 //----------------------------------------------------------------------------------
 // Run the counter stage 2
-template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
+template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 {
 	KMC::Stage2Results results;
 	if (was_small_k_opt)
@@ -1391,13 +1368,6 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	//Finishing first stage of completer
 	completer_thread_stage1.join();
 
-	read_thread.RethrowIfException();
-
-	for (auto& t : sorters_threads)
-		t.RethrowIfException();
-
-	completer_thread_stage1.RethrowIfException();
-
 	thread release_thr_st2_1([&] {
 		Queues.memory_bins->release();
 		Queues.memory_bins.reset();
@@ -1436,28 +1406,28 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 		Queues.sm_cbc = std::make_unique<CCompletedBinsCollector>(1);
 
 		std::unique_ptr<CWBigKmerBinReader> w_bkb_reader = std::make_unique<CWBigKmerBinReader>(Params, Queues);
-		thread bkb_reader(std::ref(*w_bkb_reader.get()));
+		CExceptionAwareThread bkb_reader(std::ref(*w_bkb_reader.get()));
 
 		std::vector<std::unique_ptr<CWBigKmerBinUncompactor<SIZE>>> w_bkb_uncompactors(Params.sm_n_uncompactors);
-		vector<thread> bkb_uncompactors;
+		vector<CExceptionAwareThread> bkb_uncompactors;
 		for (int32 i = 0; i < Params.sm_n_uncompactors; ++i)
 		{
 			w_bkb_uncompactors[i] = std::make_unique<CWBigKmerBinUncompactor<SIZE>>(Params, Queues);
-			bkb_uncompactors.push_back(thread(std::ref(*w_bkb_uncompactors[i].get())));
+			bkb_uncompactors.emplace_back(std::ref(*w_bkb_uncompactors[i].get()));
 		}
 
 		std::unique_ptr<CWBigKmerBinSorter<SIZE>> w_bkb_sorter = std::make_unique<CWBigKmerBinSorter<SIZE>>(Params, Queues, sort_func);
-		thread bkb_sorter(std::ref(*w_bkb_sorter.get()));
+		CExceptionAwareThread bkb_sorter(std::ref(*w_bkb_sorter.get()));
 
 		std::unique_ptr<CWBigKmerBinWriter> w_bkb_writer = std::make_unique<CWBigKmerBinWriter>(Params, Queues);
-		thread bkb_writer(std::ref(*w_bkb_writer.get()));
+		CExceptionAwareThread bkb_writer(std::ref(*w_bkb_writer.get()));
 
 		std::vector<std::unique_ptr<CWBigKmerBinMerger<SIZE>>> w_bkb_mergers(Params.sm_n_mergers);
-		vector<thread> bkb_mergers;
+		vector<CExceptionAwareThread> bkb_mergers;
 		for (int32 i = 0; i < Params.sm_n_mergers; ++i)
 		{
 			w_bkb_mergers[i] = std::make_unique<CWBigKmerBinMerger<SIZE>>(Params, Queues);
-			bkb_mergers.push_back(thread(std::ref(*w_bkb_mergers[i].get())));
+			bkb_mergers.emplace_back(std::ref(*w_bkb_mergers[i].get()));
 		}
 
 		w_completer->InitStage2(Params, Queues);
@@ -1498,8 +1468,6 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	Queues.pmm_radix_buf.reset();
 
 	completer_thread_stage2.join();
-
-	completer_thread_stage2.RethrowIfException();
 
 	if (Params.use_strict_mem)
 	{
@@ -1602,6 +1570,19 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 	return results;
 }
 
+template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
+{
+	auto res = ProcessStage1_impl();
+	CThreadExceptionCollector::Inst().RethrowIfAnyException();
+	return res;
+}
+
+template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
+{
+	auto res = ProcessStage2_impl();
+	CThreadExceptionCollector::Inst().RethrowIfAnyException();
+	return res;
+}
 
 #endif
 

@@ -639,8 +639,8 @@ public:
 		uint32 n_parts = 8 * n_threads;
 		
 		CLutUpdater lut_updater(lut);
-		vector<thread> threads;
-		vector<CKXmerMerger<SIZE>*> mergers;
+		vector<CExceptionAwareThread> threads;
+		vector<std::unique_ptr<CKXmerMerger<SIZE>>> mergers;
 		uint32 counter_size = calc_counter_size(cutoff_max, counter_max);
 
 		uint32 rec_len = (kmer_len - lut_prefix_len) / 4 + counter_size;
@@ -648,9 +648,9 @@ public:
 		CSubArrayDescGenerator<SIZE> sub_array_desc_generator(kmer_len, n_parts, sub_array_descs, buffer, cutoff_min, rec_len, kxmer_counters, n_kxmer_counters, n_threads);
 		for (uint32 i = 0; i < n_threads; ++i)
 		{
-			mergers.push_back(new CKXmerMerger<SIZE>(sub_array_descs, sub_array_desc_generator, lut_updater, buffer, kxmer_counters, cutoff_min, 
+			mergers.push_back(std::make_unique<CKXmerMerger<SIZE>>(sub_array_descs, sub_array_desc_generator, lut_updater, buffer, kxmer_counters, cutoff_min, 
 				cutoff_max, counter_max, kmer_len, lut, counter_size, lut_prefix_len, out_buffer, without_output, output_type));
-			threads.push_back(thread(ref(*mergers.back())));
+			threads.emplace_back(ref(*mergers.back()));
 		}
 
 		for (auto& t : threads)
@@ -661,7 +661,7 @@ public:
 		uint64 tmp_n_cutoff_max = 0;
 		uint64 tmp_n_total = 0;
 
-		for (auto ptr : mergers)
+		for (auto& ptr : mergers)
 		{
 			ptr->GetStats(tmp_n_unique, tmp_n_cutoff_min, tmp_n_cutoff_max, tmp_n_total);
 			output_packs_desc.splice(output_packs_desc.end(), move(ptr->GetPacks()));
@@ -671,8 +671,8 @@ public:
 			n_total += tmp_n_total;
 		}
 
-		for (auto ptr : mergers)
-			delete ptr;
+		for (auto& ptr : mergers)
+			ptr.reset();
 		output_packs_desc.sort([](const pair<uint64, uint64>& e1, const pair<uint64, uint64>& e2){return e1.first < e2.first; });
 	}
 
