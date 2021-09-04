@@ -17,6 +17,7 @@
 
 #include <emmintrin.h>
 #include <immintrin.h>
+#include "critical_error_handler.h"
 
 #ifndef WIN32
 typedef long long __int64;
@@ -54,7 +55,8 @@ template <unsigned SIZE, unsigned MODE> struct IntrCopy128
 {
 	static inline void Copy(void *_dest, void *_src)
 	{
-		cerr << "Error\n";
+		//cerr << "Error\n";
+		CCriticalErrorHandler::Inst().HandleCriticalError("IntrCopy error");
 	}
 };
 
