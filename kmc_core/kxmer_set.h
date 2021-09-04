@@ -12,6 +12,7 @@
 #include "defs.h"
 #include <tuple>
 #include <queue>
+#include "exception_aware_thread.h"
 
 using namespace std;
 
