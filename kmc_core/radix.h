@@ -24,27 +24,20 @@ Date   : 2019-05-19
 
 namespace RadixSort
 {
-	// Thresholds chosen experimentally. Must be extended if MAX_K > 512 !!!
-	const uint64 insertion_sort_thresholds[] = { 32, 32, 32, 25, 54, 42, 42, 32, 32, 32, 32, 32, 32, 32, 32, 32 };
-	const uint64 shell_sort_thresholds[] = { 32, 180, 180, 256, 134, 165, 87, 103, 103, 103, 103, 103, 103, 103, 103, 103 };
-	const uint64 std_sort_thresholds[] = { 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384 };
-	const uint64 small_sort_thresholds[] = { 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384 };
+	constexpr uint64 small_sort_thresholds[] = { 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384 };
 
-	static_assert(sizeof(small_sort_thresholds) / sizeof(uint64) >= MAX_K / 32, "Extend small_sort_threshold and 3 similar arrays");
+	constexpr uint64 get_small_sort_threshold(uint32 index)
+	{
+		if (index < 16)
+			return small_sort_thresholds[index];
+		else
+			return 384;
+	}
 
 	template<typename KMER_T, unsigned SIZE>
 	inline void SmallSortDispatch(KMER_T* kmers, uint64 size)
 	{
 		CSmallSort<SIZE>::Sort(kmers, size);
-
-
-		/*
-		if (size <= insertion_sort_thresholds[KMER_T::KMER_SIZE])
-		InsertionSortDispatch(kmers, (int)size);
-		else if (size <= shell_sort_thresholds[KMER_T::KMER_SIZE])
-		ShellSortDispatch(kmers, (int)size);
-		else if (size <= std_sort_thresholds[KMER_T::KMER_SIZE])
-		StdSortDispatch(kmers, size);*/
 	}
 
 
@@ -303,9 +296,7 @@ namespace RadixSort
 			}
 			else
 			{
-				//const int32 BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
-
-				constexpr uint32_t BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
+				constexpr uint32_t BUFFER_WIDTH = GetBufferWidth(sizeof(KMER_T) / 8);
 				constexpr uint32_t BUFFER_WIDTH_IN_128BIT_WORDS = BUFFER_WIDTH * sizeof(KMER_T) / 16;
 				constexpr uint32_t BUFFER_16B_ALIGNED = sizeof(KMER_T) % 16 == 0;
 
@@ -433,7 +424,7 @@ namespace RadixSort
 				{
 					uint64_t new_n = copy_globalHisto[i + 1] - copy_globalHisto[i];
 
-					if (new_n <= small_sort_thresholds[KMER_T::KMER_SIZE])
+					if (new_n <= get_small_sort_threshold(KMER_T::KMER_SIZE))
 					{
 						SmallSortDispatch<KMER_T, SIZE>(tmp + copy_globalHisto[i], new_n);
 						if (byte % 2 != 0)
@@ -479,7 +470,7 @@ namespace RadixSort
 	void RadixSortMSD_impl(KMER_T* kmers, KMER_T* tmp, uint64 n_recs, uint32 byte, uint32 n_threads, CMemoryPool* pmm_radix_buf, bool is_first_level,
 		uint64 is_big_threshold, uint64 n_total_recs)
 	{
-		if (n_recs <= small_sort_thresholds[KMER_T::KMER_SIZE])
+		if (n_recs <= get_small_sort_threshold(KMER_T::KMER_SIZE))
 		{
 			SmallSortDispatch<KMER_T, SIZE>(kmers, n_recs);
 			if (byte % 2 == 0)
@@ -601,8 +592,7 @@ namespace RadixSort
 
 				KMER_T* src = kmers + th_id*per_thread;
 
-				//const int32 BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
-				constexpr uint32_t BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
+				constexpr uint32_t BUFFER_WIDTH = GetBufferWidth(sizeof(KMER_T) / 8);
 				constexpr uint32_t BUFFER_WIDTH_IN_128BIT_WORDS = BUFFER_WIDTH * sizeof(KMER_T) / 16;
 				constexpr uint32_t BUFFER_16B_ALIGNED = sizeof(KMER_T) % 16 == 0;
 
@@ -723,7 +713,7 @@ namespace RadixSort
 				int64_t index_start;
 				int64_t elemWrittenIntoBuffer;
 
-				const uint32 BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
+				const uint32 BUFFER_WIDTH = GetBufferWidth(sizeof(KMER_T) / 8);
 
 				for (uint32_t private_i = 0; private_i < 256; private_i++)
 				{

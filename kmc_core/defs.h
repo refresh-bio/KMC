@@ -134,6 +134,12 @@ const int32 MAX_STR_LEN = 32768;
 #define WIN_ALIGNMENT 64
 //designated experimentally
 constexpr int32 BUFFER_WIDTHS[] = { -1, 32, 16, 16, 8, 8, 4, 8, 4 };
+constexpr int32_t BUFFER_WIDTHS_ABOVE_CACHE_LINE_SIZE[] = { -1, 8, 4, 8, 2, 8, 4, 8, 1 };
+constexpr uint32_t GetBufferWidth(uint32_t index)
+{
+	return (index <= 8) ? BUFFER_WIDTHS[index] : BUFFER_WIDTHS_ABOVE_CACHE_LINE_SIZE[(index - 1) % 8 + 1];
+}
+
 #ifdef WIN32
 #define ALIGN_ARRAY __declspec(align(WIN_ALIGNMENT))
 #else

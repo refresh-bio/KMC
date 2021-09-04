@@ -215,7 +215,7 @@ void pierwsze_kolko_etap2(uint32_t /*th_id*/, KMER_T *kmers, KMER_T* tmp,
 	uint8_t* ptr;
 	uint64_t n;
 	KMER_T* src;
-	constexpr uint32_t BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
+	constexpr uint32_t BUFFER_WIDTH = GetBufferWidth(sizeof(KMER_T) / 8);
 	constexpr uint32_t BUFFER_WIDTH_IN_128BIT_WORDS = BUFFER_WIDTH * sizeof(KMER_T) / 16;
 	constexpr uint32_t BUFFER_16B_ALIGNED = sizeof(KMER_T) % 16 == 0;
 	//constexpr uint32_t BUFFER_16B_ALIGNED = 1;		// At the 1st level the pointers are always aligned to 16B
@@ -395,7 +395,7 @@ void pierwsze_kolko_etap3(uint32_t /*th_id*/, KMER_T */*kmers*/, KMER_T* tmp,
 	int64_t index_stop;
 	int64_t index_start;
 	int64_t elemWrittenIntoBuffer;
-	const uint32 BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
+	const uint32 BUFFER_WIDTH = GetBufferWidth(sizeof(KMER_T) / 8);
 
 	while (rq.get(idx1, idx2, part_id))
 	{

@@ -358,7 +358,7 @@ template <unsigned SIZE> void CKMC<SIZE>::AdjustMemoryLimitsStage2()
 {
 	// Memory for 2nd stage
 	// Settings for memory manager of radix internal buffers
-	Params.mem_part_pmm_radix_buf = (256 * BUFFER_WIDTHS[sizeof(CKmer<SIZE>)/8] + ALIGNMENT) * sizeof(CKmer<SIZE>);
+	Params.mem_part_pmm_radix_buf = (256 * GetBufferWidth(sizeof(CKmer<SIZE>)/8) + ALIGNMENT) * sizeof(CKmer<SIZE>);
 
 	Params.mem_tot_pmm_radix_buf = Params.mem_part_pmm_radix_buf * Params.n_sorters * MAGIC_NUMBER;
 

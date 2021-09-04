@@ -33,15 +33,46 @@
 
 namespace RadulsSort
 {
-	// Thresholds chosen experimentally. Must be extended if MAX_K > 512 !!!
 	const uint64 insertion_sort_thresholds[] = { 32, 32, 32, 25, 54, 42, 42, 32, 32, 32, 32, 32, 32, 32, 32, 32 };
 	const uint64 shell_sort_thresholds[] = { 32, 180, 180, 256, 134, 165, 87, 103, 103, 103, 103, 103, 103, 103, 103, 103 };
 	const uint64 std_sort_thresholds[] = { 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384 };
 	const uint64 small_sort_thresholds[] = { 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384 };
 	const uint64 wide_small_sort_thresholds[] = { 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32 };
 
-	static_assert(sizeof(small_sort_thresholds) / sizeof(uint64) >= MAX_K / 32, "Extend small_sort_threshold and 3 similar arrays");
+	constexpr uint64 get_insertion_sort_threshold(uint32 index)
+	{
+		if (index < 16)
+			return insertion_sort_thresholds[index];
+		return 32;
+	}
 
+	constexpr uint64 get_shell_sort_threshold(uint32 index)
+	{
+		if (index < 16)
+			return shell_sort_thresholds[index];
+		return 103;
+	}
+
+	constexpr uint64 get_std_sort_threshold(uint32 index)
+	{
+		if (index < 16)
+			return std_sort_thresholds[index];
+		return 384;
+	}
+
+	constexpr uint64 get_small_sort_threshold(uint32 index)
+	{
+		if (index < 16)
+			return small_sort_thresholds[index];
+		return 384;
+	}
+
+	constexpr uint64 get_wide_small_sort_threshold(uint32 index)
+	{
+		if (index < 16)
+			return wide_small_sort_thresholds[index];
+		return 32;
+	}
 
 
 	template<typename KMER_T>
@@ -102,11 +133,11 @@ namespace RadulsSort
 	template<typename KMER_T>
 	inline void SmallSortDispatch(KMER_T* kmers, uint64 size)
 	{
-		if (size <= insertion_sort_thresholds[KMER_T::KMER_SIZE])
+		if (size <= get_insertion_sort_threshold(KMER_T::KMER_SIZE))
 			InsertionSortDispatch(kmers, (int)size);
-		else if (size <= shell_sort_thresholds[KMER_T::KMER_SIZE])
+		else if (size <= get_shell_sort_threshold(KMER_T::KMER_SIZE))
 			ShellSortDispatch(kmers, (int)size);
-		else if (size <= std_sort_thresholds[KMER_T::KMER_SIZE])
+		else if (size <= get_std_sort_threshold(KMER_T::KMER_SIZE))
 			StdSortDispatch(kmers, size);
 	}
 
@@ -318,7 +349,7 @@ namespace RadulsSort
 #ifdef MEASURE_TIMES
 				tw.startTimer();
 #endif
-				constexpr uint32_t BUFFER_WIDTH = BUFFER_WIDTHS[sizeof(KMER_T) / 8];
+				constexpr uint32_t BUFFER_WIDTH = GetBufferWidth(sizeof(KMER_T) / 8);
 				constexpr uint32_t BUFFER_WIDTH_IN_128BIT_WORDS = BUFFER_WIDTH * sizeof(KMER_T) / 16;
 				constexpr uint32_t BUFFER_16B_ALIGNED = sizeof(KMER_T) % 16 == 0;
 
@@ -464,8 +495,8 @@ namespace RadulsSort
 			{
 				bool must_copy_tmp = byte % 2 != 0;
 
-				uint64_t narrow_small_sort_threshold = small_sort_thresholds[KMER_T::KMER_SIZE];
-				uint64_t wide_small_sort_threshold = wide_small_sort_thresholds[KMER_T::KMER_SIZE];
+				uint64_t narrow_small_sort_threshold = get_small_sort_threshold(KMER_T::KMER_SIZE);
+				uint64_t wide_small_sort_threshold = get_wide_small_sort_threshold(KMER_T::KMER_SIZE);
 
 				for (int i = 0; i < 256; i++)
 				{
