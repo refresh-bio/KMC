@@ -10,7 +10,6 @@
 */
 #include <algorithm>
 #include <numeric>
-#include <iostream>
 #include "kb_storer.h"
 #include "critical_error_handler.h"
 #include <sstream>

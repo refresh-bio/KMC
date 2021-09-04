@@ -11,7 +11,6 @@
 #include "stdafx.h"
 #include "mmer.h"
 #include "kmc_file.h"
-#include <iostream>
 #include <tuple>
 
 

@@ -12,7 +12,7 @@
 #include "kmc_runner.h"
 #include "kmc.h"
 #include "defs.h"
-#include <iostream>
+
 #include <string>
 #include <exception>
 #include <memory>
@@ -129,6 +129,38 @@ namespace KMC
 	{
 		
 	}
+
+	void CerrProgressObserver::Start(const std::string& /*name*/)
+	{
+
+	}
+
+	void CerrProgressObserver::Step()
+	{
+		std::cerr << '*';
+	}
+
+	void CerrProgressObserver::End()
+	{
+		std::cerr << '\n';
+	}
+
+	void NullProgressObserver::Start(const std::string& /*name*/)
+	{
+
+	}
+
+	void NullProgressObserver::Step()
+	{
+
+	}
+
+	void NullProgressObserver::End()
+	{
+
+	}
+
+
 
 	void NullLogger::Log(const std::string& msg)
 	{
@@ -265,6 +297,11 @@ namespace KMC
 	Stage1Params& Stage1Params::SetEstimateHistogramCfg(EstimateHistogramCfg estimateHistogramCfg)
 	{
 		this->estimateHistogramCfg = estimateHistogramCfg;
+		return *this;
+	}
+	Stage1Params& Stage1Params::SetProgressObserver(IProgressObserver* progressObserver)
+	{
+		this->progressObserver = progressObserver;
 		return *this;
 	}
 

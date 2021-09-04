@@ -530,10 +530,6 @@ void CSplitter::CalcStats(uchar* _part, uint64 _part_size, ReadType read_type, u
 		if (len >= kmer_len)//last one in read
 			_stats[current_signature.get()] += 1 + len - kmer_len;
 	}
-
-	cerr << '*';
-	cerr.flush();
-
 	pmm_reads->free(seq);
 }
 
@@ -659,11 +655,7 @@ bool CSplitter::ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type
 		}
 	}
 
-	//putchar('*');
-	//fflush(stdout);
-
 	pmm_reads->free(seq);
-
 
 	return true;
 }
@@ -791,8 +783,6 @@ bool CSplitter::ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType rea
 				++total_kmers;
 			}
 		}
-	//putchar('*');
-	//fflush(stdout);
 
 	pmm_reads->free(seq);
 	return true;
@@ -874,6 +864,7 @@ CWStatsSplitter::CWStatsSplitter(CKMCParams &Params, CKMCQueues &Queues)
 	spq = Queues.stats_part_queue.get();
 	pmm_fastq = Queues.pmm_fastq.get();
 	pmm_stats = Queues.pmm_stats.get();
+	progressObserver = Params.progressObserver;
 	spl = std::make_unique<CSplitter>(Params, Queues);
 
 	signature_len = Params.signature_len;
@@ -901,6 +892,7 @@ void CWStatsSplitter::operator()()
 		if (spq->pop(part, size, read_type))
 		{
 			spl->CalcStats(part, size, read_type, stats);
+			progressObserver->Step();
 			pmm_fastq->free(part);
 		}
 	}

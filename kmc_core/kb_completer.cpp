@@ -10,7 +10,6 @@
 */
 #include <algorithm>
 #include <numeric>
-#include <iostream>
 #include "kb_completer.h"
 #include "critical_error_handler.h"
 #include <sstream>
@@ -322,7 +321,6 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 			fclose(out_lut);
 		}
 	}
-	cerr << "\n";
 
 	if (output_type == OutputType::KMC)	
 		delete[] sig_map;

@@ -15,7 +15,6 @@
 #include "params.h"
 #include "kmer.h"
 #include <fstream>
-#include <iostream>
 #include <cstdio>
 #include <iomanip>
 #include <string>
@@ -133,6 +132,7 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 	Params.verboseLogger = stage1Params.GetVerboseLogger();
 	Params.percentProgressObserver = stage1Params.GetPercentProgressObserver();
 	Params.warningsLogger = stage1Params.GetWarningsLogger();
+	Params.progressObserver = stage1Params.GetProgressObserver();
 
 	// Technical parameters related to temporary files
 	Params.signature_len = stage1Params.GetSignatureLen();
@@ -997,7 +997,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 		vector<CExceptionAwareThread> stats_splitters_threads;
 
 		std::vector<std::unique_ptr<CWStatsSplitter>> w_stats_splitters(Params.n_splitters);
-
+		Params.progressObserver->Start("Splitter for stats calculation");
 		for (int i = 0; i < Params.n_splitters; ++i)
 		{
 			w_stats_splitters[i] = std::make_unique<CWStatsSplitter>(Params, Queues);
@@ -1019,6 +1019,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 
 		for (auto& t : stats_splitters_threads)
 			t.join();
+		Params.progressObserver->End();
 
 		bin_file_reader_thread.join();
 
@@ -1062,8 +1063,6 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 		heuristic_time.startTimer();
 		Queues.s_mapper->Init(stats);
 		heuristic_time.stopTimer();
-
-		cerr << "\n";
 
 		Queues.pmm_stats->free(stats);
 		Queues.pmm_stats->release();

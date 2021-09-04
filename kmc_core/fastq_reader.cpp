@@ -388,7 +388,9 @@ void CFastqReader::ProcessBam()
 		}
 		else
 		{
-			cerr << "Error: should never be here, plase contact authors, CODE: FastqReader_" << __LINE__ << "\n";
+			std::ostringstream ostr;
+			ostr << "Error: should never be here, plase contact authors, CODE: FastqReader_" << __LINE__;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 	}
 }
@@ -1090,7 +1092,9 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 					bool queue_end = !binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type);
 					if (!queue_end && file_part != FilePart::End && !garbage)
 					{
-						cerr << "Error: An internal error occurred. Please contact authors\n";
+						std::ostringstream ostr;
+						ostr << "Error: An internal error occurred. Please contact authors. File: " << __FILE__ << ", line: " << __LINE__;
+						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 					}
 					if (garbage)
 					{
@@ -1138,8 +1142,10 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 			ret = BZ2_bzDecompress(&_bz_stram);
 			if (ret == BZ_PARAM_ERROR || ret == BZ_DATA_ERROR || ret == BZ_DATA_ERROR_MAGIC || ret == BZ_MEM_ERROR)
 			{
+				std::ostringstream ostr;
+				ostr << "Error: An internal error occurred during bz2 reading. Please contact authors. File: " << __FILE__ << ", line: " << __LINE__;
 				BZ2_bzDecompressEnd(&_bz_stram);
-				cerr << "bz2 reading error\n";
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			if (ret == BZ_STREAM_END)
 			{
@@ -1154,7 +1160,9 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 					bool queue_end = !binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type);
 					if (!queue_end && file_part != FilePart::End)
 					{
-						cerr << "Error: An internal error occurred. Please contact authors\n";
+						std::ostringstream ostr;
+						ostr << "Error: An internal error occurred. Please contact authors";
+						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 					}
 					last_in_file = true;
 					break;

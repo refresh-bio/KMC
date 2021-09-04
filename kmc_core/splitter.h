@@ -18,7 +18,6 @@
 #include "s_mapper.h"
 #include "mmer.h"
 #include <stdio.h>
-#include <iostream>
 #include <vector>
 #include "small_k_buf.h"
 #include "bam_utils.h"
@@ -123,7 +122,7 @@ class CWStatsSplitter {
 	uint32 *stats;
 	std::unique_ptr<CSplitter> spl;
 	uint32 signature_len;
-
+	KMC::IProgressObserver* progressObserver;
 public:
 	CWStatsSplitter(CKMCParams &Params, CKMCQueues &Queues);
 	~CWStatsSplitter();

@@ -25,6 +25,7 @@ CBigKmerBinReader::CBigKmerBinReader(CKMCParams& Params, CKMCQueues& Queues)
 	bbpq = Queues.bbpq.get();
 	sm_pmm_input_file = Queues.sm_pmm_input_file.get();
 	sm_mem_part_input_file = Params.sm_mem_part_input_file;
+	progressObserver = Params.progressObserver;
 
 	kmer_len = (uint32)Params.kmer_len;
 }
@@ -39,10 +40,11 @@ void CBigKmerBinReader::ProcessBigBin()
 
 	uchar *file_buff, *tmp;
 	
+	progressObserver->Start("Big bins");
 	while (tlbq->get_next(bin_id))
 	{
 		bd->read(bin_id, file, name, size, n_rec, n_plus_x_recs);
-		cerr << "*";
+		progressObserver->Step();
 		file->Rewind();
 		end_pos = 0;
 		sm_pmm_input_file->reserve(file_buff);
@@ -65,6 +67,7 @@ void CBigKmerBinReader::ProcessBigBin()
 		disk_logger->log_remove(size);
 	}
 	bbpq->mark_completed();
+	progressObserver->End();
 }
 
 //----------------------------------------------------------------------------------

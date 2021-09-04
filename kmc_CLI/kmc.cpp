@@ -180,7 +180,9 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		else if (strncmp(argv[i], "-hp", 3) == 0 && strlen(argv[i]) == 3)
 		{
 			static KMC::NullPercentProgressObserver nullPercentProgressObserver;
+			static KMC::NullProgressObserver nullProgressObserver;
 			stage1Params.SetPercentProgressObserver(&nullPercentProgressObserver);
+			stage1Params.SetProgressObserver(&nullProgressObserver);
 		}
 		else if (strncmp(argv[i], "-hc", 3) == 0 && strlen(argv[i]) == 3)
 			stage1Params.SetHomopolymerCompressed(true);

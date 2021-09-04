@@ -29,6 +29,23 @@ namespace KMC
 		virtual ~IPercentProgressObserver() = default;
 	};
 	
+	//In cases where KMC does not estimate percentage, just informs that some progress is made
+	class IProgressObserver
+	{
+	public:
+		virtual void Start(const std::string& name) = 0;
+		virtual void Step() = 0;
+		virtual void End() = 0;
+		virtual ~IProgressObserver() = default;
+	};
+
+	class ILogger
+	{
+	public:
+		virtual void Log(const std::string& msg) = 0;
+		virtual ~ILogger() = default;
+	};
+
 	class CerrPercentProgressObserver : public IPercentProgressObserver
 	{
 		std::string label;
@@ -44,12 +61,22 @@ namespace KMC
 		void ProgressChanged(int newValue) override;
 	};
 
-	class ILogger
+	class CerrProgressObserver : public IProgressObserver
 	{
-	public:		
-		virtual void Log(const std::string& msg) = 0;
-		virtual ~ILogger() = default;
+	public:
+		void Start(const std::string& name) override;
+		void Step() override;
+		void End() override;
 	};
+
+	class NullProgressObserver : public IProgressObserver
+	{
+	public:
+		void Start(const std::string& name) override;
+		void Step() override;
+		void End() override;
+	};
+
 	class NullLogger : public ILogger
 	{
 		void Log(const std::string& msg) override;
@@ -77,6 +104,7 @@ namespace KMC
 			NullLogger defaultVerboseLogger;
 			CerrPercentProgressObserver defaultPercentProgressObserver;
 			CerrWarningLogger defaultWarningsLogger;
+			CerrProgressObserver defaultProgressObserver;
 		} defaults;
 		
 		
@@ -97,6 +125,7 @@ namespace KMC
 		IPercentProgressObserver* percentProgressObserver = &defaults.defaultPercentProgressObserver;
 		ILogger* warningsLogger = &defaults.defaultWarningsLogger;
 		EstimateHistogramCfg estimateHistogramCfg = EstimateHistogramCfg::DONT_ESTIMATE;
+		IProgressObserver* progressObserver = &defaults.defaultProgressObserver;
 #ifdef DEVELOP_MODE
 		bool developVerbose = false;
 #endif
@@ -118,6 +147,7 @@ namespace KMC
 		Stage1Params& SetPercentProgressObserver(IPercentProgressObserver* percentProgressObserver);
 		Stage1Params& SetWarningsLogger(ILogger* warningsLogger);
 		Stage1Params& SetEstimateHistogramCfg(EstimateHistogramCfg estimateHistogramCfg);
+		Stage1Params& SetProgressObserver(IProgressObserver* progressObserver);
 #ifdef DEVELOP_MODE
 		Stage1Params& SetDevelopVerbose(bool developVerbose);
 #endif
@@ -139,6 +169,7 @@ namespace KMC
 		IPercentProgressObserver* GetPercentProgressObserver() const noexcept { return percentProgressObserver; }
 		ILogger* GetWarningsLogger() const noexcept { return warningsLogger; }
 		EstimateHistogramCfg GetEstimateHistogramCfg() const noexcept { return estimateHistogramCfg; }
+		IProgressObserver* GetProgressObserver() const noexcept { return progressObserver; }
 #ifdef DEVELOP_MODE
 		bool GetDevelopVerbose() const noexcept { return developVerbose; }
 #endif

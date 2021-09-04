@@ -10,7 +10,6 @@
 */
 
 #include "mem_disk_file.h"
-#include <iostream>
 #include "critical_error_handler.h"
 #include <sstream>
 using namespace std;

@@ -16,7 +16,6 @@
 #include <condition_variable>
 #include <cstring>
 #include <cstdlib>
-#include <iostream>
 #include <algorithm>
 #include "defs.h"
 #include "kmer.h"

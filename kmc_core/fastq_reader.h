@@ -14,7 +14,6 @@
 #include "defs.h"
 #include "params.h"
 #include <stdio.h>
-#include <iostream>
 
 #include "libs/zlib.h"
 #include "libs/bzlib.h"

@@ -74,6 +74,7 @@ struct CKMCParams {
 	KMC::ILogger* verboseLogger;
 	KMC::IPercentProgressObserver* percentProgressObserver;
 	KMC::ILogger* warningsLogger;
+	KMC::IProgressObserver* progressObserver;
 #ifdef DEVELOP_MODE
 	bool verbose_log;
 #endif

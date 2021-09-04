@@ -26,6 +26,7 @@ class CBigKmerBinReader
 	CBigBinPartQueue* bbpq;
 	CMemoryPool* sm_pmm_input_file;
 
+	KMC::IProgressObserver* progressObserver;
 	uint64 sm_mem_part_input_file;
 	uint32 kmer_len;
 public:

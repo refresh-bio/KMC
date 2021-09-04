@@ -13,7 +13,6 @@
 
 #include "defs.h"
 #include <stdio.h>
-#include <iostream>
 #include <tuple>
 #include <queue>
 #include <list>
@@ -1219,14 +1218,14 @@ public:
 	{
 		return;			// !!! Log will be removed 
 
-		cerr << info;
-		if (size)
-			cerr << " [" << size << "]: ";
-		else
-			cerr << ": ";
-		for (auto &p : map_reserved)
-			cerr << "(" << p.first << ", " << p.second << ")   ";
-		cerr << endl;
+		//cerr << info;
+		//if (size)
+		//	cerr << " [" << size << "]: ";
+		//else
+		//	cerr << ": ";
+		//for (auto &p : map_reserved)
+		//	cerr << "(" << p.first << ", " << p.second << ")   ";
+		//cerr << endl;
 
 	}
 
