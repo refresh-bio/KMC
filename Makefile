@@ -53,8 +53,6 @@ $(KMC_MAIN_DIR)/kmer.o \
 $(KMC_MAIN_DIR)/splitter.o \
 $(KMC_MAIN_DIR)/kb_collector.o \
 $(KMC_MAIN_DIR)/kff_writer.o \
-$(KMC_API_DIR)/kmc_file.o \
-$(KMC_API_DIR)/kmer_api.o \
 $(KMC_MAIN_DIR)/kmc_runner.o
 
 ifeq ($(UNAME_S),Darwin)
@@ -131,7 +129,7 @@ $(KMC_MAIN_DIR)/raduls_avx.o: $(KMC_MAIN_DIR)/raduls_avx.cpp
 $(KMC_MAIN_DIR)/raduls_avx2.o: $(KMC_MAIN_DIR)/raduls_avx2.cpp
 	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
 
-$(LIB_KMC_CORE): $(KMC_CORE_OBJS) $(RADULS_OBJS)
+$(LIB_KMC_CORE): $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(OUT_INCLUDE_DIR)
 	cp $(KMC_MAIN_DIR)/kmc_runner.h $(OUT_INCLUDE_DIR)/kmc_runner.h
 	-mkdir -p $(OUT_BIN_DIR)
