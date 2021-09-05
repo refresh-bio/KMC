@@ -29,11 +29,6 @@ After that, you can run make to compile kmc and kmc_dump applications.
 
 ##### Additional infromation for MAC OS installation
 
-For compilation under MAC OS there is makefile_mac.
-Usage:
-
-    make -f makefile_mac
-
 There might be a need to change g++ path in makefile_mac.
 If needed we recommend install g++ with brew (http://brew.sh/).
 
@@ -61,8 +56,7 @@ The wrapper is designed and was tested only for python3. The main goal was to ma
 
 Python module wrapping KMC API must be compiled.
  * for windows there is a visual studio project (note that there will be probably the need to change include directories and library directories to point python include and libs location)
- * for linux one should run ```make py_kmc_api```
- * for mac on should run ```make -f makefile_mac py_kmc_api```
+ * for linux or mac one should run ```make py_kmc_api```
 
 As a result of pybind11 *.so file (for linux and mac os) or *.pyd (for windows) is created and may be used as a python module. *.pyd file is in fact DLL file, the only difference is its extension.
   * for windows following file is created: x64/Release/py_kmc_api.pyd
