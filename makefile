@@ -1,5 +1,7 @@
 all: kmc kmc_dump kmc_tools py_kmc_api
 
+UNAME_S := $(shell uname -s)
+
 KMC_MAIN_DIR = kmc_core
 KMC_CLI_DIR = kmc_CLI
 KMC_API_DIR = kmc_api
@@ -10,16 +12,23 @@ PY_KMC_API_DIR = py_kmc_api
 OUT_BIN_DIR = bin
 OUT_INCLUDE_DIR = include
 
+ifeq ($(UNAME_S),Darwin)
+	CC = /usr/local/bin/g++-10
 
-CC 	= g++
-CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
-CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
+	CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -pthread -std=c++14
+	CLINK	= -lm -static-libgcc -static-libstdc++ -O3 -pthread -std=c++14
 
-KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
-KMC_TOOLS_CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
+	KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -pthread -std=c++14
+	KMC_TOOLS_CLINK	= -lm -static-libgcc -static-libstdc++ -O3 -pthread -std=c++14
+else
+	CC 	= g++
 
+	CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
+	CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 
-LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.a
+	KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
+	KMC_TOOLS_CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
+endif
 
 KMC_CLI_OBJS = \
 $(KMC_CLI_DIR)/kmc.o
@@ -44,15 +53,36 @@ $(KMC_API_DIR)/kmc_file.o \
 $(KMC_API_DIR)/kmer_api.o \
 $(KMC_MAIN_DIR)/kmc_runner.o
 
-RADULS_OBJS = \
-$(KMC_MAIN_DIR)/raduls_sse2.o \
-$(KMC_MAIN_DIR)/raduls_sse41.o \
-$(KMC_MAIN_DIR)/raduls_avx2.o \
-$(KMC_MAIN_DIR)/raduls_avx.o
+ifeq ($(UNAME_S),Darwin)
+	RADULS_OBJS =
 
-KMC_LIBS = \
-$(KMC_MAIN_DIR)/libs/libz.a \
-$(KMC_MAIN_DIR)/libs/libbz2.a
+	KMC_LIBS = \
+	$(KMC_MAIN_DIR)/libs/libz.1.2.5.dylib \
+	$(KMC_MAIN_DIR)/libs/libbz2.1.0.5.dylib
+
+	KMC_TOOLS_LIBS = \
+	$(KMC_TOOLS_DIR)/libs/libz.1.2.5.dylib \
+	$(KMC_TOOLS_DIR)/libs/libbz2.1.0.5.dylib
+
+	LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.mac.a
+else
+	RADULS_OBJS = \
+	$(KMC_MAIN_DIR)/raduls_sse2.o \
+	$(KMC_MAIN_DIR)/raduls_sse41.o \
+	$(KMC_MAIN_DIR)/raduls_avx2.o \
+	$(KMC_MAIN_DIR)/raduls_avx.o
+
+	KMC_LIBS = \
+	$(KMC_MAIN_DIR)/libs/libz.a \
+	$(KMC_MAIN_DIR)/libs/libbz2.a
+
+	KMC_TOOLS_LIBS = \
+	$(KMC_TOOLS_DIR)/libs/libz.a \
+	$(KMC_TOOLS_DIR)/libs/libbz2.a
+
+	LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.a
+endif
+
 
 KMC_DUMP_OBJS = \
 $(KMC_DUMP_DIR)/nc_utils.o \
@@ -80,9 +110,7 @@ $(KMC_TOOLS_DIR)/percent_progress.o \
 $(KMC_TOOLS_DIR)/kff_info_reader.o \
 $(KMC_MAIN_DIR)/kff_writer.o
 
-KMC_TOOLS_LIBS = \
-$(KMC_TOOLS_DIR)/libs/libz.a \
-$(KMC_TOOLS_DIR)/libs/libbz2.a
+
 
 $(KMC_CLI_OBJS) $(KMC_CORE_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS): %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -137,4 +165,3 @@ clean:
 	-rm -f $(PY_KMC_API_DIR)/*.so
 	-rm -rf $(OUT_BIN_DIR)
 	-rm -rf $(OUT_INCLUDE_DIR)
-
