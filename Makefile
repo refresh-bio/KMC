@@ -18,9 +18,6 @@ ifeq ($(UNAME_S),Darwin)
 	CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -pthread -std=c++14
 	CLINK	= -lm -static-libgcc -static-libstdc++ -O3 -pthread -std=c++14
 
-	KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -pthread -std=c++14
-	KMC_TOOLS_CLINK	= -lm -static-libgcc -static-libstdc++ -O3 -pthread -std=c++14
-
 	PY_KMC_API_CFLAGS = -Wl,-undefined,dynamic_lookup -fPIC -Wall -shared -std=c++11 -O3
 else
 	CC 	= g++
@@ -28,14 +25,14 @@ else
 	CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 	CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 
-	KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
-	KMC_TOOLS_CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
-
 	PY_KMC_API_CFLAGS = -fPIC -Wall -shared -std=c++11 -O3
 endif
 
 KMC_CLI_OBJS = \
 $(KMC_CLI_DIR)/kmc.o
+
+KFF_OBJS = \
+$(KMC_MAIN_DIR)/kff_writer.o
 
 KMC_CORE_OBJS = \
 $(KMC_MAIN_DIR)/mmer.o \
@@ -52,7 +49,6 @@ $(KMC_MAIN_DIR)/kb_storer.o \
 $(KMC_MAIN_DIR)/kmer.o \
 $(KMC_MAIN_DIR)/splitter.o \
 $(KMC_MAIN_DIR)/kb_collector.o \
-$(KMC_MAIN_DIR)/kff_writer.o \
 $(KMC_MAIN_DIR)/kmc_runner.o
 
 ifeq ($(UNAME_S),Darwin)
@@ -109,16 +105,12 @@ $(KMC_TOOLS_DIR)/fastq_filter.o \
 $(KMC_TOOLS_DIR)/fastq_reader.o \
 $(KMC_TOOLS_DIR)/fastq_writer.o \
 $(KMC_TOOLS_DIR)/percent_progress.o \
-$(KMC_TOOLS_DIR)/kff_info_reader.o \
-$(KMC_MAIN_DIR)/kff_writer.o
+$(KMC_TOOLS_DIR)/kff_info_reader.o
 
 
 
-$(KMC_CLI_OBJS) $(KMC_CORE_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS): %.o: %.cpp
+$(KMC_CLI_OBJS) $(KMC_CORE_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS) $(KFF_OBJS) $(KMC_TOOLS_OBJS): %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
-
-$(KMC_TOOLS_OBJS): %.o: %.cpp
-	$(CC) $(KMC_TOOLS_CFLAGS) -c $< -o $@
 
 $(KMC_MAIN_DIR)/raduls_sse2.o: $(KMC_MAIN_DIR)/raduls_sse2.cpp
 	$(CC) $(CFLAGS) -msse2 -c $< -o $@
@@ -135,7 +127,7 @@ $(LIB_KMC_CORE): $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
 	ar rcs $@ $^
 
-kmc: $(KMC_CLI_OBJS) $(LIB_KMC_CORE)
+kmc: $(KMC_CLI_OBJS) $(LIB_KMC_CORE) $(KFF_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
 	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^ $(KMC_LIBS)
 
@@ -143,9 +135,9 @@ kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
 	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^
 
-kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS)
+kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
-	$(CC) $(KMC_TOOLS_CLINK) -o $(OUT_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS)
+	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS)
 
 $(PY_KMC_API_DIR)/%.o: $(KMC_API_DIR)/%.cpp
 	$(CC) -c -fPIC -Wall -O3 -m64 -std=c++11 $^ -o $@
