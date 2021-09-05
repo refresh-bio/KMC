@@ -20,6 +20,8 @@ ifeq ($(UNAME_S),Darwin)
 
 	KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -pthread -std=c++14
 	KMC_TOOLS_CLINK	= -lm -static-libgcc -static-libstdc++ -O3 -pthread -std=c++14
+
+	PY_KMC_API_CFLAGS = -Wl,-undefined,dynamic_lookup -fPIC -Wall -shared -std=c++11 -O3
 else
 	CC 	= g++
 
@@ -28,6 +30,8 @@ else
 
 	KMC_TOOLS_CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 	KMC_TOOLS_CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
+
+	PY_KMC_API_CFLAGS = -fPIC -Wall -shared -std=c++11 -O3
 endif
 
 KMC_CLI_OBJS = \
@@ -150,7 +154,7 @@ $(PY_KMC_API_DIR)/%.o: $(KMC_API_DIR)/%.cpp
 
 py_kmc_api: $(PY_KMC_API_OBJS) $(PY_KMC_API_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
-	$(CC) -fPIC -Wall -shared -std=c++11 -O3 $(PY_KMC_API_DIR)/py_kmc_api.cpp $(PY_KMC_API_OBJS) \
+	$(CC) $(PY_KMC_API_CFLAGS) $(PY_KMC_API_DIR)/py_kmc_api.cpp $(PY_KMC_API_OBJS) \
 	-I $(KMC_API_DIR) \
 	-I $(PY_KMC_API_DIR)/libs/pybind11/include \
 	-I `python3 -c "import sysconfig;print(sysconfig.get_paths()['include'])"` \
