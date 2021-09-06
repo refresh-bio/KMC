@@ -15,6 +15,8 @@
 #include "kmer_api.h"
 #include <string>
 #include <vector>
+#include <memory>
+#include <cassert>
 
 struct CKMCFileInfo
 {
@@ -46,6 +48,7 @@ class CKMCFile
 			buffPosInFile += buffSize;
 			buffSize = (std::min)(buffCapacity, leftToRead);
 			auto readed = fread(buff, 1, 8 * buffSize, file);
+			assert(readed == 8 * buffSize);
 			leftToRead -= buffSize;
 			posInBuf = 0;
 		}
