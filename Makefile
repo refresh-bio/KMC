@@ -18,14 +18,14 @@ ifeq ($(UNAME_S),Darwin)
 	CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -pthread -std=c++14
 	CLINK	= -lm -static-libgcc -static-libstdc++ -O3 -pthread -std=c++14
 
-	PY_KMC_API_CFLAGS = -Wl,-undefined,dynamic_lookup -fPIC -Wall -shared -std=c++11 -O3
+	PY_KMC_API_CFLAGS = -Wl,-undefined,dynamic_lookup -fPIC -Wall -shared -std=c++14 -O3
 else
 	CC 	= g++
 
 	CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 	CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 
-	PY_KMC_API_CFLAGS = -fPIC -Wall -shared -std=c++11 -O3
+	PY_KMC_API_CFLAGS = -fPIC -Wall -shared -std=c++14 -O3
 endif
 
 KMC_CLI_OBJS = \
@@ -140,7 +140,7 @@ kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
 	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS)
 
 $(PY_KMC_API_DIR)/%.o: $(KMC_API_DIR)/%.cpp
-	$(CC) -c -fPIC -Wall -O3 -m64 -std=c++11 $^ -o $@
+	$(CC) -c -fPIC -Wall -O3 -m64 -std=c++14 $^ -o $@
 
 py_kmc_api: $(PY_KMC_API_OBJS) $(PY_KMC_API_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
