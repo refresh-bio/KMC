@@ -31,6 +31,56 @@ struct CKMCFileInfo
 
 class CKMCFile
 {
+	class CPrefixFileBufferForListingMode
+	{
+		const uint64_t buffCapacity = 1 << 22;
+		uint64_t* buff{};
+		uint64_t buffPosInFile{};
+		uint64_t buffSize{};
+		uint64_t posInBuf{};
+		uint64_t leftToRead{};
+		uint64 prefixMask; //for kmc2 db
+		FILE* file;
+		void reload()
+		{
+			buffPosInFile += buffSize;
+			buffSize = (std::min)(buffCapacity, leftToRead);
+			auto readed = fread(buff, 1, 8 * buffSize, file);
+			leftToRead -= buffSize;
+			posInBuf = 0;
+		}
+	public:
+		CPrefixFileBufferForListingMode (FILE* file, uint64_t wholeLutSize, uint64_t lutPrefixLen)
+			:
+			buff(new uint64_t[buffCapacity]),
+			leftToRead(wholeLutSize),
+			prefixMask((1ull << (2 * lutPrefixLen)) - 1),
+			file(file)
+		{
+			my_fseek(file, 4 + 8, SEEK_SET); //	skip KMCP and LUT[0] (always = 0)
+		}
+
+		//no control if next prefix exists here, responsibility to the caller
+		uint64_t GetPrefix(uint64_t suffix_number)
+		{
+			while(true)
+			{
+				if (posInBuf >= buffSize)
+					reload();
+
+				if (suffix_number != buff[posInBuf])
+					break;
+				else
+					++posInBuf;
+			}
+			return (buffPosInFile + posInBuf) & prefixMask;
+		}
+
+		~CPrefixFileBufferForListingMode()
+		{
+			delete[] buff;
+		}
+	};
 protected:
 	enum open_mode {closed, opened_for_RA, opened_for_listing};
 	open_mode is_opened;
@@ -41,8 +91,10 @@ protected:
 	FILE *file_pre;
 	FILE *file_suf;
 
-	uint64* prefix_file_buf;
-	uint64 prefix_file_buf_size;
+	uint64* prefix_file_buf; //only for random access mode
+	uint64 prefix_file_buf_size; //only for random access mode
+	std::unique_ptr<CPrefixFileBufferForListingMode> prefixFileBufferForListingMode;
+
 	uint64 prefix_index;			// The current prefix's index in an array "prefix_file_buf", readed from *.kmc_pre
 	uint32 single_LUT_size;			// The size of a single LUT (in no. of elements)
 
@@ -78,7 +130,7 @@ protected:
 	bool OpenASingleFile(const std::string &file_name, FILE *&file_handler, uint64 &size, char marker[]);	
 
 	// Recognize current parameters. Auxiliary function.
-	bool ReadParamsFrom_prefix_file_buf(uint64 &size);	
+	bool ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode);
 
 	// Reload a contents of an array "sufix_file_buf" for listing mode. Auxiliary function. 
 	void Reload_sufix_file_buf();
