@@ -443,9 +443,14 @@ int main(int argc, char** argv)
 		print_summary(params, stage1Results, stage2Results);
 		save_stats_in_json_file(params, stage1Results, stage2Results);
 	}
-	catch (const std::runtime_error& err)
+	catch (const std::exception& err)
 	{
-		std::cerr << err.what() << "\n";
+		std::cerr << "Error: " << err.what() << "\n";
+		return 1;
+	}
+	catch (...)
+	{
+		std::cerr << "Error: unknown exception\n";
 		return 1;
 	}
 	

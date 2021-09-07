@@ -551,10 +551,7 @@ bool CSplitter::ProcessReadsOnlyEstimate(uchar* _part, uint64 _part_size, ReadTy
 	uint32 len;//length of extended kmer
 
 	while (GetSeq(seq, seq_size, read_type))
-		if(both_strands)
-			ntHashEstimator->ProcessCanonical(seq, seq_size);
-		else
-			ntHashEstimator->ProcessDirect(seq, seq_size);
+		ntHashEstimator->Process(seq, seq_size);
 
 	pmm_reads->free(seq);
 
@@ -583,11 +580,7 @@ bool CSplitter::ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type
 	while (GetSeq(seq, seq_size, read_type))
 	{		
 		if (ntHashEstimator)
-			if(both_strands)
-				ntHashEstimator->ProcessCanonical(seq, seq_size);
-			else
-				ntHashEstimator->ProcessDirect(seq, seq_size);
-
+			ntHashEstimator->Process(seq, seq_size);
 
 		if (homopolymer_compressed)
 			HomopolymerCompressSeq(seq, seq_size);

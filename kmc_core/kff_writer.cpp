@@ -12,7 +12,7 @@ CKFFWriter::CKFFWriter(const std::string& path, uint8_t canonical, uint64_t k, u
 {
 	file = fopen(path.c_str(), "wb");
 	if (!file)
-		throw std::runtime_error("Error: cannot open file " + path);
+		throw std::runtime_error("Cannot open file " + path);
 	fwrite("KFF", 1, 3, file);
 	cur_file_size += 3;
 

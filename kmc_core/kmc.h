@@ -178,6 +178,9 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 	Params.max_mem_size = NORM(((uint64)stage1Params.GetMaxRamGB()) * 1000000000ull, (uint64)MIN_MEM * 1000000000ull, 1024ull * 1000000000ull);
 	Params.KMER_T_size = sizeof(CKmer<SIZE>);
 
+	if (Params.estimateHistogramCfg != KMC::EstimateHistogramCfg::DONT_ESTIMATE && !Params.both_strands)
+		throw std::runtime_error("k-mer histogram estimation possible only for canonical k-mers");
+
 	initialized = true;
 }
 
@@ -1208,7 +1211,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 	timer_stage1.startTimer();
 	KMC::Stage1Results results{};
 	if (!initialized)
-		throw std::runtime_error("Error: kmc was not initialized!\n");
+		throw std::runtime_error("KMC was not initialized!");
 
 	if (Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ONLY_ESTIMATE)
 	{
@@ -1226,7 +1229,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 	}
 
 	if (!AdjustMemoryLimits())
-		throw std::runtime_error("Error: cannot adjust memory, please contact authors");
+		throw std::runtime_error("Cannot adjust memory, please contact authors");
 
 	// Create queues
 	Queues.input_files_queue = std::make_unique<CInputFilesQueue>(Params.input_file_names);
@@ -1416,7 +1419,7 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 	timer_stage2.startTimer();
 
 	if (!initialized)
-		throw std::runtime_error("Error: kmc was not initialized!\n");
+		throw std::runtime_error("KMC was not initialized!\n");
 
 	int32 bin_id;
 	CMemDiskFile* file;
@@ -1440,8 +1443,9 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 			auto end = MIN(Params.cutoff_max + 1, estimated_histogram.size());
 			for (uint64_t i = start; i < end; ++i)
 				n_est_unique_kmers += estimated_histogram[i];
+
+			Params.verboseLogger->Log(std::string("Estimated number of unique counted k-mers: ") + std::to_string(n_est_unique_kmers));
 		}
-		Params.verboseLogger->Log(std::string("Estimated number of unique counted k-mers: ") + std::to_string(n_est_unique_kmers));
 
 		uint32 best_lut_prefix_len = 0;
 		uint64 best_mem_amount = 1ull << 62;
