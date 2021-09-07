@@ -121,13 +121,13 @@ $(KMC_MAIN_DIR)/raduls_avx.o: $(KMC_MAIN_DIR)/raduls_avx.cpp
 $(KMC_MAIN_DIR)/raduls_avx2.o: $(KMC_MAIN_DIR)/raduls_avx2.cpp
 	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
 
-$(LIB_KMC_CORE): $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS)
+$(LIB_KMC_CORE): $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
 	-mkdir -p $(OUT_INCLUDE_DIR)
 	cp $(KMC_MAIN_DIR)/kmc_runner.h $(OUT_INCLUDE_DIR)/kmc_runner.h
 	-mkdir -p $(OUT_BIN_DIR)
 	ar rcs $@ $^
 
-kmc: $(KMC_CLI_OBJS) $(LIB_KMC_CORE) $(KFF_OBJS)
+kmc: $(KMC_CLI_OBJS) $(LIB_KMC_CORE)
 	-mkdir -p $(OUT_BIN_DIR)
 	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^ $(KMC_LIBS)
 
