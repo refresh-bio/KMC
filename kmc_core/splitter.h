@@ -64,7 +64,6 @@ class CSplitter
 
 public:
 	static uint32 MAX_LINE_SIZE;
-
 	
 	CSplitter(CKMCParams &Params, CKMCQueues &Queues); 
 	void InitBins(CKMCParams &Params, CKMCQueues &Queues);	

@@ -51,7 +51,7 @@ void usage()
 		<< "  -w - without output\n"
 		<< "  -o<kmc/kff> - output in KMC of KFF format; default: KMC\n"
 		<< "  -hp - hide percentage progress (default: false)\n"
-		<< "  -e<file_name> - only estimate histogram of k-mers counts\n"
+		<< "  -e - only estimate histogram of k-mers occurrences instead of exact k-mer counting\n"
 		<< "  --opt-out-size - optimize output database size (may increase running time)\n"
 		<< "Example:\n"
 		<< "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
@@ -212,12 +212,6 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		}
 		else if (strncmp(argv[i], "-e", 2) == 0)
 		{
-			cliParams.estimatedHistogramFileName = &argv[i][2];
-			if (cliParams.estimatedHistogramFileName == "")
-			{
-				cerr << "Error: file name for estimated histogram missed (-e switch)\n";
-				return false;
-			}
 			stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ONLY_ESTIMATE);
 		}
 		else if (strcmp(argv[i], "--opt-out-size") == 0)
@@ -244,8 +238,11 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	if (argc - i < 3)
 		return false;
 
-	string input_file_name = string(argv[i++]);	
-	stage2Params.SetOutputFileName(argv[i++]);
+	string input_file_name = string(argv[i++]);
+	if (stage1Params.GetEstimateHistogramCfg() == KMC::EstimateHistogramCfg::ONLY_ESTIMATE)
+		cliParams.estimatedHistogramFileName = argv[i++];
+	else
+		stage2Params.SetOutputFileName(argv[i++]);
 	stage1Params.SetTmpPath(argv[i++]);
 
 	std::vector<std::string> input_file_names;	
