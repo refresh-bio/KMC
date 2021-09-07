@@ -55,7 +55,6 @@ class CSplitter
 	bool homopolymer_compressed;
 
 	CntHashEstimator* ntHashEstimator;
-	bool onlyEstimateHistogram = false;
 
 	bool GetSeqLongRead(char *seq, uint32 &seq_size, uchar header_marker);
 
@@ -70,6 +69,7 @@ public:
 	CSplitter(CKMCParams &Params, CKMCQueues &Queues); 
 	void InitBins(CKMCParams &Params, CKMCQueues &Queues);	
 	void CalcStats(uchar* _part, uint64 _part_size, ReadType read_type, uint32* _stats);
+	bool ProcessReadsOnlyEstimate(uchar* _part, uint64 _part_size, ReadType read_type);
 	bool ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type);
 	template<typename COUNTER_TYPE> bool ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType read_type, CSmallKBuf<COUNTER_TYPE>& small_k_buf);
 	void Complete();
@@ -170,6 +170,29 @@ public:
 		pmm_small_k->free(small_k_buf.buf);
 	}
 };
+
+
+
+//************************************************************************************************************
+// CWEstimateOnlySplitter class - wrapper for multithreading purposes
+//************************************************************************************************************
+
+//----------------------------------------------------------------------------------
+class CWEstimateOnlySplitter {
+	CPartQueue* pq;
+	CBinPartQueue* bpq;
+	CMemoryPool* pmm_fastq;
+
+	std::unique_ptr<CSplitter> spl;
+	uint64 n_reads;
+
+public:
+	CWEstimateOnlySplitter(CKMCParams& Params, CKMCQueues& Queues);
+	void operator()();
+	void GetTotal(uint64& _n_reads);
+	~CWEstimateOnlySplitter();
+};
+
 
 
 #endif

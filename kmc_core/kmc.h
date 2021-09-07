@@ -59,7 +59,10 @@ template <unsigned SIZE> class CKMC {
 	CKMCQueues Queues;
 
 	uint64 n_reads;
+
 	bool was_small_k_opt;
+	bool is_only_estimating_histogram = false;
+	std::vector<uint64_t> estimated_histogram;
 
 	void SetThreads1Stage(const KMC::Stage1Params& stage1Params);
 	void SetThreads2Stage(const KMC::Stage2Params& stage2Params);
@@ -68,6 +71,8 @@ template <unsigned SIZE> class CKMC {
 	void AdjustMemoryLimitsStrictMemoryMode();
 	bool AdjustMemoryLimits();
 	void AdjustMemoryLimitsStage2();
+
+	void AdjustMemoryLimitsForOnlyEstimate();
 
 	void ShowSettingsStage1();
 	void ShowSettingsStage2();
@@ -83,6 +88,10 @@ template <unsigned SIZE> class CKMC {
 
 	void CheckAndReportMissingEOLs();
 	
+	void buildSignatureMapping();
+
+	KMC::Stage1Results ProcessOnlyEstimateHistogram();
+
 	KMC::Stage1Results ProcessStage1_impl();
 	KMC::Stage2Results ProcessStage2_impl();
 
@@ -369,14 +378,57 @@ template <unsigned SIZE> void CKMC<SIZE>::AdjustMemoryLimitsStage2()
 }
 
 //----------------------------------------------------------------------------------
+// Adjust the memory limits for queues and other large data structures when only estimating histogram
+template <unsigned SIZE> void CKMC<SIZE>::AdjustMemoryLimitsForOnlyEstimate()
+{
+	int64 m_rest = Params.max_mem_size;
+
+	m_rest -= 1ull << 30; //TODO: 1GB is assumed for estimation, but depending on the parameters it may be different
+
+	// Settings for memory manager of FASTQ buffers
+	Params.fastq_buffer_size = 32 << 20;
+
+	do {
+		if (Params.fastq_buffer_size & (Params.fastq_buffer_size - 1))
+			Params.fastq_buffer_size &= Params.fastq_buffer_size - 1;
+		else
+			Params.fastq_buffer_size = Params.fastq_buffer_size / 2 + Params.fastq_buffer_size / 4;
+		Params.mem_part_pmm_fastq = Params.fastq_buffer_size + CFastqReader::OVERHEAD_SIZE;
+		Params.mem_tot_pmm_fastq = Params.mem_part_pmm_fastq * (Params.n_readers + Params.n_splitters + 96);
+	} while (Params.mem_tot_pmm_fastq > m_rest * 0.17);
+
+	Params.mem_part_pmm_binary_file_reader = 1ll << 28;
+	Params.mem_tot_pmm_binary_file_reader = Params.mem_part_pmm_binary_file_reader * Params.n_readers * 3;
+	while (Params.mem_tot_pmm_binary_file_reader > m_rest * 0.10)
+	{
+		Params.mem_part_pmm_binary_file_reader = Params.mem_part_pmm_binary_file_reader / 2 + Params.mem_part_pmm_binary_file_reader / 4;
+		Params.mem_tot_pmm_binary_file_reader = Params.mem_part_pmm_binary_file_reader * Params.n_readers * 3;
+	}
+
+	if (Params.mem_part_pmm_binary_file_reader < (1ll << 23)) //8 MiB is a required minimum
+	{
+		Params.mem_part_pmm_binary_file_reader = 1ll << 23;
+		Params.mem_tot_pmm_binary_file_reader = Params.mem_part_pmm_binary_file_reader * Params.n_readers * 3;
+	}
+
+	m_rest -= Params.mem_tot_pmm_fastq;
+	m_rest -= Params.mem_tot_pmm_binary_file_reader;
+
+	// Settings for memory manager of reads
+	Params.mem_part_pmm_reads = (CSplitter::MAX_LINE_SIZE + 1) * sizeof(double);
+	Params.mem_tot_pmm_reads = Params.mem_part_pmm_reads * 2 * Params.n_splitters;
+	m_rest -= Params.mem_tot_pmm_reads;
+
+}
+
+//----------------------------------------------------------------------------------
 // Adjust the memory limits for queues and other large data structures
 template <unsigned SIZE> bool CKMC<SIZE>::AdjustMemoryLimits()
 {
 	// Memory for splitter internal buffers
 	int64 m_rest = Params.max_mem_size;
 
-	if(Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS || 
-		Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ONLY_ESTIMATE)
+	if(Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS)
 	{
 		m_rest -= 1ull << 30; //TODO: 1GB is assumed for estimation, but depending on the parameters it may be different
 	}
@@ -384,7 +436,6 @@ template <unsigned SIZE> bool CKMC<SIZE>::AdjustMemoryLimits()
 	Params.mem_part_pmm_stats = ((1 << Params.signature_len * 2) + 1) * sizeof(uint32);
 	Params.mem_tot_pmm_stats = (Params.n_splitters + 1 + 1) * Params.mem_part_pmm_stats; //1 merged in main thread, 1 for sorting indices
 
-	
 	// Settings for memory manager of FASTQ buffers
 	Params.fastq_buffer_size = 32 << 20;
 
@@ -918,74 +969,37 @@ KMC::Stage2Results CKMC<SIZE>::ProcessSmallKOptimization_Stage2()
 }
 
 //----------------------------------------------------------------------------------
-// Run the counter stage 1
-template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
+// Run the heuristic stage
+template <unsigned SIZE> void CKMC<SIZE>::buildSignatureMapping()
 {
-	CStopWatch timer_stage1;
-	timer_stage1.startTimer();
-	KMC::Stage1Results results{};
-	if (!initialized)
-		throw std::runtime_error("Error: kmc was not initialized!\n");
-
-	was_small_k_opt = false;
-	if (AdjustMemoryLimitsSmallK())
-	{
-		was_small_k_opt = true;
-
-		Params.verboseLogger->Log("\nInfo: Small k optimization on!\n");
-
-		return ProcessSmallKOptimization_Stage1();
-	}
-
-	if (!AdjustMemoryLimits())
-		throw std::runtime_error("Error: cannot adjust memory, please contact authors");
-
-	// Create queues
-	Queues.input_files_queue = std::make_unique<CInputFilesQueue>(Params.input_file_names);
-	Queues.part_queue = std::make_unique<CPartQueue>(Params.n_readers);
-	Queues.bpq = std::make_unique<CBinPartQueue>(Params.n_splitters);
-	Queues.bd = std::make_unique<CBinDesc>(Params.kmer_len, Params.n_bins);
-	Queues.epd = std::make_unique<CExpanderPackDesc>(Params.n_bins);
-	Queues.bq = std::make_unique<CBinQueue>(1);
-
-
-	// Create memory manager
-	Queues.pmm_binary_file_reader = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_binary_file_reader, Params.mem_part_pmm_binary_file_reader);
-	Queues.pmm_bins = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_bins, Params.mem_part_pmm_bins);
-	Queues.pmm_fastq = std::make_unique<CMemoryPoolWithBamSupport>(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
-	Queues.pmm_reads = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_reads, Params.mem_part_pmm_reads);
-	Queues.pmm_stats = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_stats, Params.mem_part_pmm_stats);
-
-	Queues.missingEOL_at_EOF_counter = std::make_unique<CMissingEOL_at_EOF_counter>();
-
-	if (Params.file_type != InputType::BAM)
-	{
-		Queues.binary_pack_queues.resize(Params.n_readers);
-		for (int i = 0; i < Params.n_readers; ++i)
-		{
-			Queues.binary_pack_queues[i] =  std::make_unique<CBinaryPackQueue>();
-		}
-	}
-	else //for bam
-	{
-		Queues.bam_task_manager = std::make_unique<CBamTaskManager>();
-	}
-	std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false);
-	auto predicted_total_input_size = w_bin_file_reader->GetPredictedSize();
-	Queues.stats_part_queue = std::make_unique<CStatsPartQueue>(Params.n_readers, MAX(STATS_FASTQ_SIZE, predicted_total_input_size / 100));
-
-	Queues.s_mapper = std::make_unique<CSignatureMapper>(Queues.pmm_stats.get(), Params.signature_len, Params.n_bins
-#ifdef DEVELOP_MODE
-		, Params.verbose_log
-#endif
-	);
-	Queues.disk_logger = std::make_unique<CDiskLogger>();
-	// ***** Stage 0 *****
-
 	CStopWatch timer_stage0;
 	timer_stage0.startTimer();
-	if(Params.file_type != InputType::KMC)
+
+	if (Params.file_type != InputType::KMC)
 	{
+		if (Params.file_type != InputType::BAM)
+		{
+			Queues.binary_pack_queues.resize(Params.n_readers);
+			for (int i = 0; i < Params.n_readers; ++i)
+			{
+				Queues.binary_pack_queues[i] = std::make_unique<CBinaryPackQueue>();
+			}
+		}
+		else //for bam
+		{
+			Queues.bam_task_manager = std::make_unique<CBamTaskManager>();
+		}
+
+		std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false);
+
+		Queues.stats_part_queue = std::make_unique<CStatsPartQueue>(Params.n_readers, MAX(STATS_FASTQ_SIZE, w_bin_file_reader->GetPredictedSize() / 100));
+
+		Queues.s_mapper = std::make_unique<CSignatureMapper>(Queues.pmm_stats.get(), Params.signature_len, Params.n_bins
+#ifdef DEVELOP_MODE
+			, Params.verbose_log
+#endif
+			);
+
 		vector<CExceptionAwareThread> stats_fastqs_threads;
 		vector<CExceptionAwareThread> stats_splitters_threads;
 
@@ -1007,7 +1021,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 		}
 		CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader.get()));
 
-		for(auto& t : stats_fastqs_threads)
+		for (auto& t : stats_fastqs_threads)
 			t.join();
 
 		for (auto& t : stats_splitters_threads)
@@ -1024,7 +1038,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 		if (Params.file_type == InputType::BAM)
 			Queues.bam_task_manager.reset();
 
-		uint32 *stats;
+		uint32* stats;
 		Queues.pmm_stats->reserve(stats);
 		fill_n(stats, (1 << Params.signature_len * 2) + 1, 0);
 
@@ -1057,17 +1071,210 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 		Queues.s_mapper->InitKMC(Params.input_file_names.front());
 	}
 	timer_stage0.stopTimer();
+}
+
+//----------------------------------------------------------------------------------
+// Run the counter stage 1
+template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessOnlyEstimateHistogram()
+{
+	CStopWatch timer;
+	is_only_estimating_histogram = true;
+	KMC::Stage1Results results{};
+	timer.startTimer();
+
+	AdjustMemoryLimitsForOnlyEstimate();
+
+	// Create queues
+	Queues.input_files_queue = std::make_unique<CInputFilesQueue>(Params.input_file_names);
+	Queues.part_queue = std::make_unique<CPartQueue>(Params.n_readers);
+
+	// Create memory manager
+	Queues.pmm_binary_file_reader = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_binary_file_reader, Params.mem_part_pmm_binary_file_reader);
+	Queues.pmm_fastq = std::make_unique<CMemoryPoolWithBamSupport>(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
+	Queues.pmm_reads = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_reads, Params.mem_part_pmm_reads);
+
+	Queues.missingEOL_at_EOF_counter = std::make_unique<CMissingEOL_at_EOF_counter>();
+
+	if (Params.file_type != InputType::BAM)
+	{
+		Queues.binary_pack_queues.resize(Params.n_readers);
+		for (int i = 0; i < Params.n_readers; ++i)
+		{
+			Queues.binary_pack_queues[i] = std::make_unique<CBinaryPackQueue>();
+		}
+	}
+	else //for bam
+	{
+		Queues.bam_task_manager = std::make_unique<CBamTaskManager>();
+	}
+
+
+	ShowSettingsStage1();
+
+	std::vector<std::unique_ptr<CWEstimateOnlySplitter>> w_splitters(Params.n_splitters);
+	std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues);
+
+	if (w_bin_file_reader->GetPredictedSize() < 50000000000ull)
+		Queues.ntHashEstimator = std::make_unique<CntHashEstimator>(Params.kmer_len, 7);
+	else
+		Queues.ntHashEstimator = std::make_unique<CntHashEstimator>(Params.kmer_len, 11);
+
+	std::vector<CExceptionAwareThread> fastqs_threads;
+	std::vector<CExceptionAwareThread> splitters_threads;
+
+	for (int i = 0; i < Params.n_splitters; ++i)
+	{
+		w_splitters[i] = std::make_unique<CWEstimateOnlySplitter>(Params, Queues);
+		splitters_threads.emplace_back(std::ref(*w_splitters[i].get()));
+	}
+
+	std::vector<std::unique_ptr<CWFastqReader>> w_fastqs(Params.n_readers);
+	if (Params.file_type != InputType::BAM)
+	{
+		Queues.binary_pack_queues.resize(Params.n_readers);
+		for (int i = 0; i < Params.n_readers; ++i)
+		{
+			w_fastqs[i] = std::make_unique<CWFastqReader>(Params, Queues, Queues.binary_pack_queues[i].get());
+			fastqs_threads.emplace_back(std::ref(*w_fastqs[i].get()));
+		}
+	}
+	else //bam
+	{
+		for (int i = 0; i < Params.n_readers; ++i)
+		{
+			w_fastqs[i] = std::make_unique<CWFastqReader>(Params, Queues, nullptr);
+			fastqs_threads.emplace_back(std::ref(*w_fastqs[i].get()));
+		}
+	}
+
+	CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader.get()));
+
+	for (auto& t : fastqs_threads)
+		t.join();
+
+	for (auto& t : splitters_threads)
+		t.join();
+
+	bin_file_reader_thread.join();
+	w_bin_file_reader.reset();
+
+	Queues.ntHashEstimator->EstimateHistogram(results.estimatedHistogram);
+	Queues.ntHashEstimator.reset();
+
+	for (auto& ptr : Queues.binary_pack_queues)
+		ptr.reset();
+
+	if (Params.file_type == InputType::BAM)
+		Queues.bam_task_manager.reset();
+
+	Queues.pmm_fastq->release();
+	Queues.pmm_reads->release();
+
+	Queues.pmm_fastq.reset();
+	Queues.pmm_reads.reset();
+	Queues.pmm_binary_file_reader.reset();
+
+	n_reads = 0;
+
+	for (int i = 0; i < Params.n_readers; ++i)
+		w_fastqs[i].reset();
+
+	for (int i = 0; i < Params.n_splitters; ++i)
+	{
+		uint64 _n_reads;
+		w_splitters[i]->GetTotal(_n_reads);
+		n_reads += _n_reads;
+		w_splitters[i].reset();
+	}
+
+	results.nSeqences = n_reads;
+
+	timer.stopTimer();
+
+	CheckAndReportMissingEOLs();
+	Queues.missingEOL_at_EOF_counter.reset();
+
+	// ***** End of Stage 1 *****
+	results.time = timer.getElapsedTime();
+
+	return results;
+}
+
+//----------------------------------------------------------------------------------
+// Run the counter stage 1
+template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
+{
+	CStopWatch timer_stage1;
+	timer_stage1.startTimer();
+	KMC::Stage1Results results{};
+	if (!initialized)
+		throw std::runtime_error("Error: kmc was not initialized!\n");
+
+	if (Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ONLY_ESTIMATE)
+	{
+		return ProcessOnlyEstimateHistogram();
+	}
+
+	was_small_k_opt = false;
+	if (AdjustMemoryLimitsSmallK())
+	{
+		was_small_k_opt = true;
+
+		Params.verboseLogger->Log("\nInfo: Small k optimization on!\n");
+
+		return ProcessSmallKOptimization_Stage1();
+	}
+
+	if (!AdjustMemoryLimits())
+		throw std::runtime_error("Error: cannot adjust memory, please contact authors");
+
+	// Create queues
+	Queues.input_files_queue = std::make_unique<CInputFilesQueue>(Params.input_file_names);
+	Queues.part_queue = std::make_unique<CPartQueue>(Params.n_readers);
+	Queues.bpq = std::make_unique<CBinPartQueue>(Params.n_splitters);
+	Queues.bd = std::make_unique<CBinDesc>(Params.kmer_len, Params.n_bins);
+	Queues.epd = std::make_unique<CExpanderPackDesc>(Params.n_bins);
+	Queues.bq = std::make_unique<CBinQueue>(1);
+
+
+	// Create memory manager
+	Queues.pmm_binary_file_reader = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_binary_file_reader, Params.mem_part_pmm_binary_file_reader);
+	Queues.pmm_bins = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_bins, Params.mem_part_pmm_bins);
+	Queues.pmm_fastq = std::make_unique<CMemoryPoolWithBamSupport>(Params.mem_tot_pmm_fastq, Params.mem_part_pmm_fastq);
+	Queues.pmm_reads = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_reads, Params.mem_part_pmm_reads);
+	Queues.pmm_stats = std::make_unique<CMemoryPool>(Params.mem_tot_pmm_stats, Params.mem_part_pmm_stats);
+
+	Queues.missingEOL_at_EOF_counter = std::make_unique<CMissingEOL_at_EOF_counter>();
+
+	Queues.disk_logger = std::make_unique<CDiskLogger>();
+	// ***** Stage 0 *****
+
+	buildSignatureMapping();
 
 	// ***** Stage 1 *****
+
+	if (Params.file_type != InputType::BAM)
+	{
+		Queues.binary_pack_queues.resize(Params.n_readers);
+		for (int i = 0; i < Params.n_readers; ++i)
+		{
+			Queues.binary_pack_queues[i] = std::make_unique<CBinaryPackQueue>();
+		}
+	}
+	else //for bam
+	{
+		Queues.bam_task_manager = std::make_unique<CBamTaskManager>();
+	}
+
 	ShowSettingsStage1();
 	Queues.missingEOL_at_EOF_counter->Reset();
 
 	std::vector<std::unique_ptr<CWSplitter>> w_splitters(Params.n_splitters);
+	std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues);
 
-	if (Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS ||
-		Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ONLY_ESTIMATE)
+	if (Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS)
 	{
-		if (predicted_total_input_size < 50000000000ull)
+		if (w_bin_file_reader->GetPredictedSize() < 50000000000ull)
 			Queues.ntHashEstimator = std::make_unique<CntHashEstimator>(Params.kmer_len, 7);
 		else
 			Queues.ntHashEstimator = std::make_unique<CntHashEstimator>(Params.kmer_len, 11);
@@ -1093,14 +1300,12 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 		Queues.binary_pack_queues.resize(Params.n_readers);
 		for (int i = 0; i < Params.n_readers; ++i)
 		{
-			Queues.binary_pack_queues[i] = std::make_unique<CBinaryPackQueue>();
 			w_fastqs[i] = std::make_unique<CWFastqReader>(Params, Queues, Queues.binary_pack_queues[i].get());
 			fastqs_threads.emplace_back(std::ref(*w_fastqs[i].get()));
 		}
 	}
 	else //bam
 	{
-		Queues.bam_task_manager = std::make_unique<CBamTaskManager>();
 		for (int i = 0; i < Params.n_readers; ++i)
 		{
 			w_fastqs[i] = std::make_unique<CWFastqReader>(Params, Queues, nullptr);
@@ -1108,7 +1313,6 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 		}
 	}
 
-	w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues);
 	CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader.get()));
 
 	for (auto& t: fastqs_threads)
@@ -1123,6 +1327,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 	if(Queues.ntHashEstimator)
 	{
 		Queues.ntHashEstimator->EstimateHistogram(results.estimatedHistogram);
+		estimated_histogram = results.estimatedHistogram;
 		Queues.ntHashEstimator.reset();
 	}
 
@@ -1201,6 +1406,8 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 {
 	KMC::Stage2Results results;
+	if (is_only_estimating_histogram)
+		return results;
 	if (was_small_k_opt)
 	{
 		return ProcessSmallKOptimization_Stage2();
@@ -1219,12 +1426,23 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 	uint64 n_plus_x_recs;
 	uint64 n_super_kmers;
 
-
 	// Adjust RAM for 2nd stage
 	// Calculate LUT size
 
 	if (Params.output_type == OutputType::KMC)
 	{
+		uint64_t n_est_unique_kmers = 4 * n_reads;
+
+		if (estimated_histogram.size()) //histogram was estimated at stage 1
+		{
+			n_est_unique_kmers = 0;
+			auto start = Params.cutoff_min;
+			auto end = MIN(Params.cutoff_max + 1, estimated_histogram.size());
+			for (uint64_t i = start; i < end; ++i)
+				n_est_unique_kmers += estimated_histogram[i];
+		}
+		Params.verboseLogger->Log(std::string("Estimated number of unique counted k-mers: ") + std::to_string(n_est_unique_kmers));
+
 		uint32 best_lut_prefix_len = 0;
 		uint64 best_mem_amount = 1ull << 62;
 
@@ -1234,7 +1452,7 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 			if (suffix_len % 4)
 				continue;
 
-			uint64 est_suf_mem = n_reads * suffix_len;
+			uint64 est_suf_mem = n_est_unique_kmers * suffix_len / 4;
 			uint64 lut_mem = Params.n_bins * (1ull << (2 * Params.lut_prefix_len)) * sizeof(uint64);
 
 			if (est_suf_mem + lut_mem < best_mem_amount)

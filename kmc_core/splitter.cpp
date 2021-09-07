@@ -52,8 +52,6 @@ CSplitter::CSplitter(CKMCParams &Params, CKMCQueues &Queues)
 	homopolymer_compressed = Params.homopolymer_compressed;
 
 	ntHashEstimator = Queues.ntHashEstimator.get();
-
-	onlyEstimateHistogram = Params.estimateHistogramCfg == KMC::EstimateHistogramCfg::ONLY_ESTIMATE;
 }
 
 void CSplitter::InitBins(CKMCParams &Params, CKMCQueues &Queues)
@@ -534,6 +532,33 @@ void CSplitter::CalcStats(uchar* _part, uint64 _part_size, ReadType read_type, u
 }
 
 //----------------------------------------------------------------------------------
+// Process the reads from the given FASTQ file part, but only for k-mer occurence estimation
+bool CSplitter::ProcessReadsOnlyEstimate(uchar* _part, uint64 _part_size, ReadType read_type)
+{
+	part = _part;
+	part_size = _part_size;
+	part_pos = 0;
+
+	char* seq;
+	uint32 seq_size;
+	pmm_reads->reserve(seq);
+
+	uint32 signature_start_pos;
+	CMmer current_signature(signature_len), end_mmer(signature_len);
+	uint32 bin_no;
+
+	uint32 i;
+	uint32 len;//length of extended kmer
+
+	while (GetSeq(seq, seq_size, read_type))
+		ntHashEstimator->Process(seq, seq_size);
+
+	pmm_reads->free(seq);
+
+	return true;
+}
+
+//----------------------------------------------------------------------------------
 // Process the reads from the given FASTQ file part
 bool CSplitter::ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type)
 {
@@ -555,11 +580,8 @@ bool CSplitter::ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type
 	while (GetSeq(seq, seq_size, read_type))
 	{		
 		if (ntHashEstimator)
-		{
 			ntHashEstimator->Process(seq, seq_size);
-			if (onlyEstimateHistogram)
-				continue;
-		}
+
 		if (homopolymer_compressed)
 			HomopolymerCompressSeq(seq, seq_size);
 		//if (file_type != multiline_fasta && file_type != fastq) //read conting moved to GetSeq
@@ -965,6 +987,63 @@ template <typename COUNTER_TYPE> void CWSmallKSplitter<COUNTER_TYPE>::GetTotal(u
 		spl->GetTotal(n_reads);
 	_n_reads = n_reads;
 }
+
+
+
+
+//************************************************************************************************************
+// CWSplitter class - wrapper for multithreading purposes
+//************************************************************************************************************
+//----------------------------------------------------------------------------------
+// Constructor
+CWEstimateOnlySplitter::CWEstimateOnlySplitter(CKMCParams& Params, CKMCQueues& Queues)
+{
+	pq = Queues.part_queue.get();
+	pmm_fastq = Queues.pmm_fastq.get();
+	spl = std::make_unique<CSplitter>(Params, Queues);
+}
+
+//----------------------------------------------------------------------------------
+// Execution
+void CWEstimateOnlySplitter::operator()()
+{
+	// Splitting parts
+	while (!pq->completed())
+	{
+		uchar* part;
+		uint64 size;
+		ReadType read_type;
+		if (pq->pop(part, size, read_type))
+		{
+			spl->ProcessReadsOnlyEstimate(part, size, read_type);
+			pmm_fastq->free(part);
+		}
+	}
+
+	spl->GetTotal(n_reads);
+
+	spl.reset();
+}
+
+//----------------------------------------------------------------------------------
+// Destructor
+CWEstimateOnlySplitter::~CWEstimateOnlySplitter()
+{
+}
+
+//----------------------------------------------------------------------------------
+// Return statistics
+void CWEstimateOnlySplitter::GetTotal(uint64& _n_reads)
+{
+	if (spl)
+		spl->GetTotal(n_reads);
+
+	_n_reads = n_reads;
+}
+
+
+
+
 
 //instantiate some templates
 template bool CSplitter::ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType read_type, CSmallKBuf<uint32>& small_k_buf);

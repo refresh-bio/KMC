@@ -51,8 +51,8 @@ void usage()
 		<< "  -w - without output\n"
 		<< "  -o<kmc/kff> - output in KMC of KFF format; default: KMC\n"
 		<< "  -hp - hide percentage progress (default: false)\n"
-		<< "  -e<file_name> - estimage histogram of k-mers counts and work as usual\n"
-		<< "  -E<file_name> - only estimage histogram of k-mers counts and stop after stage1\n"
+		<< "  -e<file_name> - only estimate histogram of k-mers counts\n"
+		<< "  --opt-out-size - optimize output database size (may increase running time)\n"
 		<< "Example:\n"
 		<< "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
 		<< "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
@@ -210,16 +210,24 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			if (cliParams.jsonSummaryFileName == "")
 				cerr << "Warning: file name for json summary file missed (-j switch)\n";
 		}
-		else if (strncmp(argv[i], "-e", 2) == 0 || strncmp(argv[i], "-E", 2) == 0)
+		else if (strncmp(argv[i], "-e", 2) == 0)
 		{
 			cliParams.estimatedHistogramFileName = &argv[i][2];
-			auto eE = argv[i][1]; //small or capital e
 			if (cliParams.estimatedHistogramFileName == "")
-				cerr << "Warning: file name for estimated histogram missed (-" << eE << " switch)\n";
-			if (eE == 'e')
+			{
+				cerr << "Error: file name for estimated histogram missed (-e switch)\n";
+				return false;
+			}
+			stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ONLY_ESTIMATE);
+		}
+		else if (strcmp(argv[i], "--opt-out-size") == 0)
+		{
+			if(stage1Params.GetEstimateHistogramCfg() != KMC::EstimateHistogramCfg::ONLY_ESTIMATE) //ONLY_ESTIMATE has priority over estimate and count
 				stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS);
-			else // 'E'
-				stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ONLY_ESTIMATE);
+			else
+			{
+				std::cerr << "Warning: --opt-out-size is ignored because -e was used\n";
+			}
 		}
 		else if (strncmp(argv[i], "-w", 2) == 0)
 			stage2Params.SetWithoutOutput(true);			
