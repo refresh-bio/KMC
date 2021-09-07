@@ -102,6 +102,9 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 
 	bool was_sm = false;
 	bool was_r = false;	
+
+	bool was_e = false;
+	bool was_opt_out_size = false;
 	if (argc < 4)
 		return false;
 
@@ -212,16 +215,14 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		}
 		else if (strncmp(argv[i], "-e", 2) == 0)
 		{
+			was_e = true;
 			stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ONLY_ESTIMATE);
 		}
 		else if (strcmp(argv[i], "--opt-out-size") == 0)
 		{
-			if(stage1Params.GetEstimateHistogramCfg() != KMC::EstimateHistogramCfg::ONLY_ESTIMATE) //ONLY_ESTIMATE has priority over estimate and count
+			was_opt_out_size = true;
+			if (stage1Params.GetEstimateHistogramCfg() != KMC::EstimateHistogramCfg::ONLY_ESTIMATE) //ONLY_ESTIMATE has priority over estimate and count
 				stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS);
-			else
-			{
-				std::cerr << "Warning: --opt-out-size is ignored because -e was used\n";
-			}
 		}
 		else if (strncmp(argv[i], "-w", 2) == 0)
 			stage2Params.SetWithoutOutput(true);			
@@ -268,7 +269,11 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	stage1Params.SetInputFiles(input_file_names);
 
 	//Validate and resolve conflicts in parameters
-		
+	if (was_e && was_opt_out_size)
+	{
+		std::cerr << "Warning: --opt-out-size is ignored because -e was used\n";
+	}
+
 	if (was_sm && was_r)
 	{
 		cerr << "Error: -sm can not be used with -r\n";

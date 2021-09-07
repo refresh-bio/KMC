@@ -361,7 +361,7 @@ public:
 	}
 
 	// **************************************************
-	void Process(const char* str, uint32_t len)
+	void ProcessCanonical(const char* str, uint32_t len)
 	{
 		if (len < k)
 			return;
@@ -399,6 +399,49 @@ public:
 
 					if (c_buf.almost_full())
 						try_insert(hVal);
+				}
+
+				c_buf.push(c_in);
+			}
+		}
+	}
+
+	void ProcessDirect(const char* str, uint32_t len)
+	{
+		if (len < k)
+			return;
+
+		uint64_t fhVal = 0;
+
+		uint8_t c_out;
+		uint8_t c_in;
+
+		cyclic_buffer<uint8_t> c_buf(k);
+
+		for (uint32_t i = 0; i < len; ++i)
+		{
+			c_in = (uint8_t) str[i];
+
+			if (c_in == 255)		// N
+			{
+				c_buf.clear();
+				fhVal = 0;
+			}
+			else
+			{
+				if (c_buf.full())
+				{
+					c_buf.pop(c_out);
+
+					fhVal = M_NTF64(fhVal, c_out, c_in);
+					try_insert(fhVal);
+				}
+				else
+				{
+					fhVal = M_NTF64_N(fhVal, c_in);
+
+					if (c_buf.almost_full())
+						try_insert(fhVal);
 				}
 
 				c_buf.push(c_in);
