@@ -1440,7 +1440,7 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 		{
 			n_est_unique_kmers = 0;
 			auto start = Params.cutoff_min;
-			auto end = MIN(Params.cutoff_max + 1, estimated_histogram.size());
+			auto end = MIN(static_cast<size_t>(Params.cutoff_max + 1), estimated_histogram.size());
 			for (uint64_t i = start; i < end; ++i)
 				n_est_unique_kmers += estimated_histogram[i];
 

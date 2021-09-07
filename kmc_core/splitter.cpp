@@ -543,13 +543,6 @@ bool CSplitter::ProcessReadsOnlyEstimate(uchar* _part, uint64 _part_size, ReadTy
 	uint32 seq_size;
 	pmm_reads->reserve(seq);
 
-	uint32 signature_start_pos;
-	CMmer current_signature(signature_len), end_mmer(signature_len);
-	uint32 bin_no;
-
-	uint32 i;
-	uint32 len;//length of extended kmer
-
 	while (GetSeq(seq, seq_size, read_type))
 		ntHashEstimator->Process(seq, seq_size);
 
