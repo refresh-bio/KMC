@@ -33,7 +33,7 @@ bool help_or_version(int argc, char** argv)
 	return false;
 }
 
-int _tmain(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
 	if (argc == 1 || help_or_version(argc, argv))
 	{
