@@ -28,7 +28,6 @@
 #define IS_NARROW(x, y)	((x) < (y) * 16)
 
 //#define USE_TIMERS
-#include "stdafx.h"
 #include "raduls_impl.h"
 
 namespace RadulsSort

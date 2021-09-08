@@ -8,7 +8,6 @@
   Date   : 2019-05-19
 */
 
-#include "stdafx.h"
 #include "mmer.h"
 #include "kmc_file.h"
 #include <tuple>

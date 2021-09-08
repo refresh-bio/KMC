@@ -8,8 +8,6 @@
   Date   : 2017-01-28
 */
 
-#include "stdafx.h"
-
 #ifdef WIN32
 #include <windows.h>
 #endif

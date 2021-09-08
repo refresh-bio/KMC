@@ -8,7 +8,6 @@
   Date   : 2019-05-19
 */
 
-#include "stdafx.h"
 #include "kmc_runner.h"
 #include "kmc.h"
 #include "defs.h"

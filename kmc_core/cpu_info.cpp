@@ -8,7 +8,6 @@
   Date   : 2019-05-19
 */
 
-#include "stdafx.h"
 #include "cpu_info.h"
 #ifdef _MSC_VER
 #include <intrin.h>

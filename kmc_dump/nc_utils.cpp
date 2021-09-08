@@ -11,7 +11,6 @@
   Date   : 2019-05-19
 */
 
-#include "stdafx.h"
 #include "nc_utils.h"
 
 

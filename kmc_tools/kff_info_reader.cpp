@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "kff_info_reader.h"
 #include "defs.h"
 #include <stdexcept>

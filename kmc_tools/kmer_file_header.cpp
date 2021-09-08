@@ -8,7 +8,6 @@
   Date   : 2019-05-19
 */
 
-#include "stdafx.h"
 #include "kmer_file_header.h"
 #include "kff_info_reader.h"
 #include <cstring>

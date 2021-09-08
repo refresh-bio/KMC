@@ -8,7 +8,6 @@
   Date   : 2019-05-19
 */
 
-#include "stdafx.h"
 #include "fastq_writer.h"
 #include <iostream>
 using namespace std;

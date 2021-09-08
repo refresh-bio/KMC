@@ -11,7 +11,6 @@
   Date   : 2019-05-19
 */
 
-#include "stdafx.h"
 #include <iostream>
 #include "../kmc_api/kmc_file.h"
 #include "nc_utils.h"

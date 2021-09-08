@@ -8,7 +8,6 @@
   Date   : 2019-05-19
 */
 
-#include "stdafx.h"
 #include <iostream>
 #include <vector>
 #include <utility>

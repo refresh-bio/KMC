@@ -8,8 +8,6 @@
   Date   : 2019-05-19
 */
 
-
-#include "stdafx.h"
 #include "kmer_api.h"
 #include <vector>
 #include <math.h>

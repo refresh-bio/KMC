@@ -8,7 +8,6 @@
   Date   : 2019-05-19
 */
 
-#include "stdafx.h"
 #include "bkb_writer.h"
 #include "critical_error_handler.h"
 #include <sstream>

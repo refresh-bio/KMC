@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "kff_writer.h"
 #include <stdexcept>
 #include <cstring>

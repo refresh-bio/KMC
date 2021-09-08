@@ -1,4 +1,3 @@
-#include "stdafx.h"
 
 #include "develop.h"
 #include "params.h"

@@ -46,9 +46,6 @@
     <ClCompile Include="rev_byte.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="timer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -169,9 +166,6 @@
     <ClInclude Include="raduls.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="rev_byte.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -185,9 +179,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="splitter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="timer.h">
