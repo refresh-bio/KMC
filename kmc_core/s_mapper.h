@@ -11,7 +11,7 @@
 #ifndef _S_MAPPER_H
 #define _S_MAPPER_H
 #include "defs.h"
-#include "mmer.h"
+#include "../kmc_api/mmer.h"
 #include "params.h"
 #include "critical_error_handler.h"
 #include <sstream>

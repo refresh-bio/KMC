@@ -28,9 +28,6 @@
     <ClCompile Include="mem_disk_file.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mmer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="raduls_avx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -63,6 +60,9 @@
     </ClCompile>
     <ClCompile Include="..\kmc_api\kmc_file.cpp" />
     <ClCompile Include="..\kmc_api\kmer_api.cpp" />
+    <ClCompile Include="..\kmc_api\mmer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libs\zconf.h" />
@@ -148,9 +148,6 @@
     <ClInclude Include="meta_oper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="mmer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="params.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -197,6 +194,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="tmp_files_owner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmc_api\mmer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

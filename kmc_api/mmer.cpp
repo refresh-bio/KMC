@@ -11,19 +11,19 @@
 #include "../kmc_api/mmer.h"
 
 
-uint32 CMmer::norm5[];
-uint32 CMmer::norm6[];
-uint32 CMmer::norm7[];
-uint32 CMmer::norm8[];
-uint32 CMmer::norm9[];
-uint32 CMmer::norm10[];
-uint32 CMmer::norm11[];
+uint32_t CMmer::norm5[];
+uint32_t CMmer::norm6[];
+uint32_t CMmer::norm7[];
+uint32_t CMmer::norm8[];
+uint32_t CMmer::norm9[];
+uint32_t CMmer::norm10[];
+uint32_t CMmer::norm11[];
 
 CMmer::_si CMmer::_init;
 
 
 //--------------------------------------------------------------------------
-CMmer::CMmer(uint32 _len)
+CMmer::CMmer(uint32_t _len)
 {
 	switch (_len)
 	{

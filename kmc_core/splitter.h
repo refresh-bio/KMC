@@ -16,7 +16,7 @@
 #include "kb_collector.h"
 #include "queues.h"
 #include "s_mapper.h"
-#include "mmer.h"
+#include "../kmc_api/mmer.h"
 #include <stdio.h>
 #include <vector>
 #include "small_k_buf.h"

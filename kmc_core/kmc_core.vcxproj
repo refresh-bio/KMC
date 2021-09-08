@@ -163,6 +163,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\kmc_api\mmer.h" />
     <ClInclude Include="bam_utils.h" />
     <ClInclude Include="binary_reader.h" />
     <ClInclude Include="bkb_merger.h" />
@@ -194,7 +195,6 @@
     <ClInclude Include="libs\zlib.h" />
     <ClInclude Include="mem_disk_file.h" />
     <ClInclude Include="meta_oper.h" />
-    <ClInclude Include="mmer.h" />
     <ClInclude Include="percent_progress.h" />
     <ClInclude Include="critical_error_handler.h" />
     <ClInclude Include="raduls.h" />
@@ -213,6 +213,7 @@
   <ItemGroup>
     <ClCompile Include="..\kmc_api\kmc_file.cpp" />
     <ClCompile Include="..\kmc_api\kmer_api.cpp" />
+    <ClCompile Include="..\kmc_api\mmer.cpp" />
     <ClCompile Include="bkb_reader.cpp" />
     <ClCompile Include="bkb_writer.cpp" />
     <ClCompile Include="cpu_info.cpp" />
@@ -225,7 +226,6 @@
     <ClCompile Include="kmc_runner.cpp" />
     <ClCompile Include="kmer.cpp" />
     <ClCompile Include="mem_disk_file.cpp" />
-    <ClCompile Include="mmer.cpp" />
     <ClCompile Include="raduls_avx.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/arch:AVX %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/arch:AVX %(AdditionalOptions)</AdditionalOptions>

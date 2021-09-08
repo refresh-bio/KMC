@@ -10,7 +10,13 @@
 
 #ifndef _MMER_H
 #define _MMER_H
-#include "kmer_defs.h"
+#include <cinttypes>
+#ifndef MIN
+#define MIN(x,y)	((x) < (y) ? (x) : (y))
+#endif
+#ifndef uchar
+using uchar = unsigned char;
+#endif
 
 // *************************************************************************
 // *************************************************************************
@@ -18,20 +24,20 @@
 
 class CMmer
 {
-	uint32 str;
-	uint32 mask;
-	uint32 current_val;
-	uint32* norm;
-	uint32 len;
-	static uint32 norm5[1 << 10];
-	static uint32 norm6[1 << 12];
-	static uint32 norm7[1 << 14];	
-	static uint32 norm8[1 << 16];
-	static uint32 norm9[1 << 18];
-	static uint32 norm10[1 << 20];
-	static uint32 norm11[1 << 22];
+	uint32_t str;
+	uint32_t mask;
+	uint32_t current_val;
+	uint32_t* norm;
+	uint32_t len;
+	static uint32_t norm5[1 << 10];
+	static uint32_t norm6[1 << 12];
+	static uint32_t norm7[1 << 14];
+	static uint32_t norm8[1 << 16];
+	static uint32_t norm9[1 << 18];
+	static uint32_t norm10[1 << 20];
+	static uint32_t norm11[1 << 22];
 
-	static bool is_allowed(uint32 mmer, uint32 len)
+	static bool is_allowed(uint32_t mmer, uint32_t len)
 	{
 		if ((mmer & 0x3f) == 0x3f)            // TTT suffix
 			return false;
@@ -40,11 +46,11 @@ class CMmer
 		if ((mmer & 0x3c) == 0x3c)            // TG* suffix !!!! consider issue #152
 			return false;
 
-		for (uint32 j = 0; j < len - 3; ++j)
-		if ((mmer & 0xf) == 0)                // AA inside
-			return false;
-		else
-			mmer >>= 2;
+		for (uint32_t j = 0; j < len - 3; ++j)
+			if ((mmer & 0xf) == 0)                // AA inside
+				return false;
+			else
+				mmer >>= 2;
 
 		if (mmer == 0)            // AAA prefix
 			return false;
@@ -59,11 +65,11 @@ class CMmer
 	friend class CSignatureMapper;
 	struct _si
 	{			
-		static uint32 get_rev(uint32 mmer, uint32 len)
+		static uint32_t get_rev(uint32_t mmer, uint32_t len)
 		{
-			uint32 rev = 0;
-			uint32 shift = len*2 - 2;
-			for(uint32 i = 0 ; i < len ; ++i)
+			uint32_t rev = 0;
+			uint32_t shift = len*2 - 2;
+			for(uint32_t i = 0 ; i < len ; ++i)
 			{
 				rev += (3 - (mmer & 3)) << shift;
 				mmer >>= 2;
@@ -72,16 +78,14 @@ class CMmer
 			return rev;
 		}
 
-		
-
-		static void init_norm(uint32* norm, uint32 len)
+		static void init_norm(uint32_t* norm, uint32_t len)
 		{
-			uint32 special = 1 << len * 2;
-			for(uint32 i = 0 ; i < special ; ++i)
+			uint32_t special = 1 << len * 2;
+			for(uint32_t i = 0 ; i < special ; ++i)
 			{				
-				uint32 rev = get_rev(i, len);
-				uint32 str_val = is_allowed(i, len) ? i : special;
-				uint32 rev_val = is_allowed(rev, len) ? rev : special;
+				uint32_t rev = get_rev(i, len);
+				uint32_t str_val = is_allowed(i, len) ? i : special;
+				uint32_t rev_val = is_allowed(rev, len) ? rev : special;
 				norm[i] = MIN(str_val, rev_val);				
 			}
 		}
@@ -99,9 +103,9 @@ class CMmer
 
 	}static _init;
 public:
-	CMmer(uint32 _len);
+	CMmer(uint32_t _len);
 	inline void insert(uchar symb);
-	inline uint32 get() const;
+	inline uint32_t get() const;
 	inline bool operator==(const CMmer& x);
 	inline bool operator<(const CMmer& x);
 	inline void clear();
@@ -124,7 +128,7 @@ inline void CMmer::insert(uchar symb)
 }
 
 //--------------------------------------------------------------------------
-inline uint32 CMmer::get() const
+inline uint32_t CMmer::get() const
 {
 	return current_val;
 }

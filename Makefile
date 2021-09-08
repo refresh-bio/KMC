@@ -35,7 +35,6 @@ KFF_OBJS = \
 $(KMC_MAIN_DIR)/kff_writer.o
 
 KMC_CORE_OBJS = \
-$(KMC_MAIN_DIR)/mmer.o \
 $(KMC_MAIN_DIR)/mem_disk_file.o \
 $(KMC_MAIN_DIR)/rev_byte.o \
 $(KMC_MAIN_DIR)/bkb_writer.o \
@@ -106,7 +105,6 @@ $(KMC_TOOLS_DIR)/fastq_reader.o \
 $(KMC_TOOLS_DIR)/fastq_writer.o \
 $(KMC_TOOLS_DIR)/percent_progress.o \
 $(KMC_TOOLS_DIR)/kff_info_reader.o
-
 
 
 $(KMC_CLI_OBJS) $(KMC_CORE_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS) $(KFF_OBJS) $(KMC_TOOLS_OBJS): %.o: %.cpp
