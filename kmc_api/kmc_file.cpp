@@ -198,6 +198,11 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 		my_fseek(file_pre, (0LL - (header_offset + 8)), SEEK_END);
 		result = fread(&kmer_length, 1, sizeof(uint32), file_pre);
 		result = fread(&mode, 1, sizeof(uint32), file_pre);
+		if (mode != 0)
+		{
+			std::cerr << "Error: Quake quake compatible counters are not supported anymore\n";
+			return false;
+		}
 		result = fread(&counter_size, 1, sizeof(uint32), file_pre);
 		result = fread(&lut_prefix_length, 1, sizeof(uint32), file_pre);
 		result = fread(&signature_len, 1, sizeof(uint32), file_pre);
@@ -265,6 +270,11 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 		my_fseek(file_pre, (0LL - (header_offset + 8)), SEEK_END);
 		result = fread(&kmer_length, 1, sizeof(uint32), file_pre);
 		result = fread(&mode, 1, sizeof(uint32), file_pre);
+		if (mode != 0)
+		{
+			std::cerr << "Error: Quake quake compatible counters are not supported anymore\n";
+			return false;
+		}
 		result = fread(&counter_size, 1, sizeof(uint32), file_pre);
 		result = fread(&lut_prefix_length, 1, sizeof(uint32), file_pre);
 		result = fread(&min_count, 1, sizeof(uint32), file_pre);
@@ -310,26 +320,6 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 
 		return true;
 
-	}
-	return false;
-}
-
-//------------------------------------------------------------------------------------------
-// Check if kmer exists. 
-// IN : kmer  - kmer
-// OUT: count - kmer's counter if kmer exists
-// RET: true  - if kmer exists
-//------------------------------------------------------------------------------------------
-bool CKMCFile::CheckKmer(CKmerAPI &kmer, float &count)
-{
-	uint32 int_counter;
-	if (CheckKmer(kmer, int_counter))
-	{
-		if (mode == 0)
-			count = (float)int_counter;
-		else
-			memcpy(&count, &int_counter, counter_size);
-		return true;
 	}
 	return false;
 }
@@ -428,20 +418,6 @@ bool CKMCFile::Eof(void)
 	return end_of_file;	
 }
 
-bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, float &count)
-{
-	uint32 int_counter;
-	if (ReadNextKmer(kmer, int_counter))
-	{
-		if (mode == 0)
-			count = (float)int_counter;
-		else
-			memcpy(&count, &int_counter, counter_size);
-		return true;
-	}
-	return false;
-
-}
 //-----------------------------------------------------------------------------------------------
 // Read next kmer
 // OUT: kmer - next kmer
@@ -516,17 +492,6 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint32 &count)
 	
 		if(sufix_number == total_kmers)
 			end_of_file = true;
-
-		if (mode != 0)
-		{
-			float float_counter;
-			memcpy(&float_counter, &count, counter_size);
-			if ((float_counter < min_count) || (float_counter > max_count))
-				continue;
-			else
-				break;
-		}
-
 	}
 	while ((counter_size != 0) && ((count < min_count) || (count > max_count))); //do not applay filtering if counter_size == 0 as it does not make sense
 
@@ -797,7 +762,6 @@ uint64 CKMCFile::KmerCount(void)
 		else
 		{
 			uint32 count;
-			uint32 int_counter;
 			uint64 aux_kmerCount = 0;
 
 			if(is_opened == opened_for_RA)
@@ -809,26 +773,20 @@ uint64 CKMCFile::KmerCount(void)
 					ptr += sufix_size;
 
 					if (counter_size == 0)
-						int_counter = 1;
+						count = 1;
 					else
 					{
-						int_counter = *ptr;
+						count = *ptr;
 						ptr++;
 
 						for(uint32 b = 1; b < counter_size; b ++)
 						{
 							uint32 aux = 0x000000ff & *(ptr);
 							aux = aux << 8 * ( b);
-							int_counter = aux | int_counter;
+							count = aux | count;
 							ptr++;
 						}
 					}
-
-					if(mode == 0)
-						count = int_counter;
-					else
-						memcpy(&count, &int_counter, counter_size);
-	
 					//applay filtering only if counter_size != 0
 					if((counter_size == 0) || ((count >= min_count) && (count <= max_count)))
 						aux_kmerCount++;
@@ -837,7 +795,7 @@ uint64 CKMCFile::KmerCount(void)
 			else //opened_for_listing
 			{
 				CKmerAPI kmer(kmer_length);
-				float count;
+				uint32 count;
 				RestartListing();
 				for(uint64 i = 0; i < total_kmers; i++)		
 				{
@@ -939,37 +897,6 @@ bool CKMCFile::GetCountersForRead(const std::string& read, std::vector<uint32>& 
 	}
 	else
 		return false; //never should be here
-}
-
-//---------------------------------------------------------------------------------
-// Get counters from read
-// OUT	:	counters    	- vector of counters of each k-mer in read (of size read_len - kmer_len + 1), if some k-mer is invalid (i.e. contains 'N') the counter is equal to 0
-// IN   :   read			- 
-// RET	: true if success
-//---------------------------------------------------------------------------------
-bool CKMCFile::GetCountersForRead(const std::string& read, std::vector<float>& counters)
-{
-	if (is_opened != opened_for_RA)
-		return false;
-	std::vector<uint32> uint32_v;
-	if (GetCountersForRead(read, uint32_v))
-	{
-		counters.clear();
-		counters.resize(uint32_v.size());
-		if (mode == 0)
-		{
-			for (uint32 i = 0; i < uint32_v.size(); ++i)
-				counters[i] = static_cast<float>(uint32_v[i]);
-		}
-		else
-		{
-			for (uint32 i = 0; i < uint32_v.size(); ++i)
-				memcpy(&counters[i], &uint32_v[i], counter_size);
-		}
-
-		return true;
-	}
-	return false;
 }
 
 //---------------------------------------------------------------------------------
@@ -1463,12 +1390,6 @@ bool CKMCFile::BinarySearch(int64 index_start, int64 index_stop, const CKmerAPI&
 
 				aux = aux << 8 * (b);
 				counter = aux | counter;
-			}
-			if (mode != 0)
-			{
-				float float_counter;
-				memcpy(&float_counter, &counter, counter_size);
-				return (float_counter >= min_count) && (float_counter <= max_count);
 			}
 		}
 		//applay filtering only if counter_size != 0

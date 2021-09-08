@@ -116,28 +116,13 @@ int main(int argc, char* argv[])
 		if (!(kmer_data_base.SetMaxCount(max_count_to_set)))
 				return EXIT_FAILURE;	
 
-		
 		std::string str;
-		if (_mode) //quake compatible mode
+		uint32 counter;
+		while (kmer_data_base.ReadNextKmer(kmer_object, counter))
 		{
-			float counter;			
-			while (kmer_data_base.ReadNextKmer(kmer_object, counter))
-			{
-				kmer_object.to_string(str);	
-				fprintf(out_file, "%s\t%f\n", str.c_str(), counter);			
-			}
+			kmer_object.to_string(str);
+			fprintf(out_file, "%s\t%u\n", str.c_str(), counter);
 		}
-		else 
-		{
-			uint32 counter;			
-			while (kmer_data_base.ReadNextKmer(kmer_object, counter))
-			{
-				kmer_object.to_string(str);
-				fprintf(out_file, "%s\t%u\n", str.c_str(), counter);
-			}
-		}
-		
-	
 		fclose(out_file);
 		kmer_data_base.Close();
 	}

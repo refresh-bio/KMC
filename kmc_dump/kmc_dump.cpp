@@ -124,31 +124,15 @@ int main(int argc, char* argv[])
 		if (!(kmer_data_base.SetMaxCount(max_count_to_set)))
 				return EXIT_FAILURE;	
 
-		if (_mode) //quake compatible mode
+		uint64 counter;
+		while (kmer_data_base.ReadNextKmer(kmer_object, counter))
 		{
-			float counter;
-			while (kmer_data_base.ReadNextKmer(kmer_object, counter))
-			{
-				kmer_object.to_string(str);
-				str[_kmer_length] = '\t';				
-				counter_len = CNumericConversions::Double2PChar(counter, 6, (uchar*)str + _kmer_length + 1);				
-				str[_kmer_length + 1 + counter_len] = '\n';
-				fwrite(str, 1, _kmer_length + counter_len + 2, out_file);			
-			}
+			kmer_object.to_string(str);
+			str[_kmer_length] = '\t';
+			counter_len = CNumericConversions::Int2PChar(counter, (uchar*)str + _kmer_length + 1);
+			str[_kmer_length + 1 + counter_len] = '\n';
+			fwrite(str, 1, _kmer_length + counter_len + 2, out_file);
 		}
-		else
-		{
-			uint64 counter;
-			while (kmer_data_base.ReadNextKmer(kmer_object, counter))
-			{
-				kmer_object.to_string(str);
-				str[_kmer_length] = '\t';
-				counter_len = CNumericConversions::Int2PChar(counter, (uchar*)str + _kmer_length + 1);
-				str[_kmer_length + 1 + counter_len] = '\n';
-				fwrite(str, 1, _kmer_length + counter_len + 2, out_file);
-			}
-		}
-		
 	
 		fclose(out_file);
 		kmer_data_base.Close();

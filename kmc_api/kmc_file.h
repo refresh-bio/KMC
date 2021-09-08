@@ -166,9 +166,7 @@ public:
 	// Return true if kmc is in KMC2 compatiblie format
 	bool IsKMC2() const noexcept { return kmc_version == 0x200; }
 
-	// Return next kmer in CKmerAPI &kmer. Return its counter in float &count. Return true if not EOF
-	bool ReadNextKmer(CKmerAPI &kmer, float &count);
-
+	// Return next kmer in CKmerAPI &kmer. Return its counter in uint64 &count. Return true if not EOF
 	bool ReadNextKmer(CKmerAPI &kmer, uint64 &count); //for small k-values when counter may be longer than 4bytes
 	
 	bool ReadNextKmer(CKmerAPI &kmer, uint32 &count);
@@ -203,8 +201,6 @@ public:
 	bool Eof(void);
 
 	// Return true if kmer exists. In this case return kmer's counter in count
-	bool CheckKmer(CKmerAPI &kmer, float &count);
-
 	bool CheckKmer(CKmerAPI &kmer, uint32 &count);
 
 	bool CheckKmer(CKmerAPI &kmer, uint64 &count);
@@ -223,7 +219,6 @@ public:
 
 	// Get counters for all k-mers in read
 	bool GetCountersForRead(const std::string& read, std::vector<uint32>& counters);
-	bool GetCountersForRead(const std::string& read, std::vector<float>& counters);
 	private:
 		uint32 count_for_kmer_kmc1(CKmerAPI& kmer);
 		uint32 count_for_kmer_kmc2(CKmerAPI& kmer, uint32 bin_start_pos);
