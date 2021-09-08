@@ -12,7 +12,7 @@ Date   : 2019-05-19
 #ifndef _TIMER_H
 #define _TIMER_H
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 
 typedef struct {

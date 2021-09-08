@@ -19,7 +19,7 @@
 #include <immintrin.h>
 #include "critical_error_handler.h"
 
-#ifndef WIN32
+#ifndef _WIN32
 typedef long long __int64;
 #endif
 

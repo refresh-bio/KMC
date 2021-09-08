@@ -154,7 +154,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 				for (auto& e : data_packs)
 				{
 					// Write bin data to the output file
-#ifdef WIN32 //fwrite bug https://connect.microsoft.com/VisualStudio/feedback/details/755018/fwrite-hangs-with-large-size-count
+#ifdef _WIN32 //fwrite bug https://connect.microsoft.com/VisualStudio/feedback/details/755018/fwrite-hangs-with-large-size-count
 					uint64 write_offset = e.first;
 					uint64 left_to_write = e.second - e.first;
 					while (left_to_write)

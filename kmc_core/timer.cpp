@@ -9,7 +9,7 @@ Version: 3.1.1
 Date   : 2019-05-19
 */
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #endif
 
@@ -17,7 +17,7 @@ Date   : 2019-05-19
 #include "timer.h"
 
 
-#ifdef WIN32
+#ifdef _WIN32
 double CStopWatch::LIToSecs(LARGE_INTEGER & L) {
 	return ((double)L.QuadPart / (double)frequency.QuadPart);
 }

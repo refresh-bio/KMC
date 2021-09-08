@@ -620,7 +620,7 @@ template<unsigned SIZE> bool CKMC1DbReader<SIZE>::fill_bundle()
 	bundle_data.kmers_with_counters[bundle_pos].kmer = kmer;								\
 	bundle_data.kmers_with_counters[bundle_pos++].counter = counter;						\
 	}
-#ifdef WIN32 //VS is better if unroll by hand
+#ifdef _WIN32 //VS is better if unroll by hand
 	for (uint32 ii = 0; ii < iter; ++ii)
 	{
 		FILL_BUNDLE_LOOP_UNROLL_CODE

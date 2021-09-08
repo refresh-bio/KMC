@@ -47,7 +47,7 @@ struct CBinBuff //must be moveble
 
 	}
 
-#ifdef WIN32
+#ifdef _WIN32
 	CBinBuff& operator=(CBinBuff&& rhs) throw()
 #else
 	CBinBuff& operator=(CBinBuff&& rhs) noexcept
@@ -63,7 +63,7 @@ struct CBinBuff //must be moveble
 		return *this;
 	}
 
-#ifdef WIN32
+#ifdef _WIN32
 	CBinBuff(CBinBuff&& rhs) throw()
 #else
 	CBinBuff(CBinBuff&& rhs) noexcept
@@ -229,7 +229,7 @@ public:
 	}
 
 
-#ifdef WIN32
+#ifdef _WIN32
 	//Because VS2013 does generate default move ctor here
 	CBin(CBin&& o) throw() :
 		bin_id(o.bin_id),

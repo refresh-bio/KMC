@@ -25,7 +25,7 @@ class CBinaryFilesReader
 {
 	bool is_file(const char* path)
 	{
-#ifdef WIN32
+#ifdef _WIN32
 		typedef struct _stat64 stat_struct;
 		const auto& stat_func = _stat64;
 #else

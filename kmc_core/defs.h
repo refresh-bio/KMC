@@ -84,7 +84,7 @@ typedef float	count_t;
 #define KMER_WORDS		((MAX_K + 31) / 32)
 
 
-#ifdef WIN32
+#ifdef _WIN32
 #define my_fopen	fopen
 #define my_fseek	_fseeki64
 #define my_ftell	_ftelli64
@@ -122,7 +122,7 @@ const int32 MAX_STR_LEN = 32768;
 
 #define BYTE_LOG_ULL(x) (((x) < (1ull << 8)) ? 1 : ((x) < (1ull << 16)) ? 2 : ((x) < (1ull << 24)) ? 3 : ((x) < (1ull << 32)) ? 4 : ((x) < (1ull << 40) ? 5 : ((x) < (1ull << 48) ? 6 : ((x) < (1ull << 56)) ? 7 : 8)))
 
-#ifdef WIN32
+#ifdef _WIN32
 #define FORCE_INLINE __forceinline
 #else
 #define FORCE_INLINE inline __attribute__((always_inline))
@@ -138,13 +138,13 @@ constexpr uint32_t GetBufferWidth(uint32_t index)
 	return (index <= 8) ? BUFFER_WIDTHS[index] : BUFFER_WIDTHS_ABOVE_CACHE_LINE_SIZE[(index - 1) % 8 + 1];
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 #define ALIGN_ARRAY __declspec(align(WIN_ALIGNMENT))
 #else
 #define ALIGN_ARRAY __attribute__((aligned(ALIGNMENT)))
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 typedef unsigned __int8 uint8_t;
 #else
 #include <stdint.h>

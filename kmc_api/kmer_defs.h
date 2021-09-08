@@ -21,7 +21,7 @@
 #define MIN(x,y)	((x) < (y) ? (x) : (y))
 #endif
 
-#ifndef WIN32
+#ifndef _WIN32
 	#include <stdint.h>
 	#include <stdio.h>
 	#include <stdlib.h>

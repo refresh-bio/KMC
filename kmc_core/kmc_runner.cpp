@@ -410,7 +410,7 @@ namespace KMC
 		Stage1Results RunStage1(const Stage1Params& stage1Params)
 		{
 			stage1WasCalled = true;
-#ifdef WIN32
+#ifdef _WIN32
 			_setmaxstdio(2040);
 #endif			
 			app = std::make_unique<CApplication<KMER_WORDS>>(stage1Params.GetKmerLen());
@@ -420,7 +420,7 @@ namespace KMC
 		Stage2Results RunStage2(const Stage2Params& stage2Params)
 		{
 			if (!stage1WasCalled)
-				throw std::runtime_error("Error: cannot run stage 2 when stage 1 was not run");			
+				throw std::runtime_error("Cannot run stage 2 when stage 1 was not run");
 			return app->ProcessStage2(stage2Params);
 		}
 	};

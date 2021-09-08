@@ -79,7 +79,7 @@ using uchar = unsigned char;
 
 #define USE_META_PROG
 
-#ifdef WIN32
+#ifdef _WIN32
 #define my_fopen	fopen
 #define my_fseek	_fseeki64
 #define my_ftell	_ftelli64
