@@ -97,8 +97,6 @@ using uint64 = uint64_t;
 #define my_fopen	fopen
 #define my_fseek	fseek
 #define my_ftell	ftell
-#define _TCHAR	char
-#define _tmain	main
 
 using int32 = int32_t;
 using uint32 = uint32_t;

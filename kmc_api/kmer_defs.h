@@ -28,9 +28,6 @@
 	#include <cmath>
 	#include <string.h>
 
-	#define _TCHAR	char
-	#define _tmain	main
-
 	#define my_fopen    fopen
 	#define my_fseek    fseek
 	#define my_ftell    ftell
