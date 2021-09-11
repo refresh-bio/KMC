@@ -978,6 +978,12 @@ template <unsigned SIZE> void CKMC<SIZE>::buildSignatureMapping()
 	CStopWatch timer_stage0;
 	timer_stage0.startTimer();
 
+	Queues.s_mapper = std::make_unique<CSignatureMapper>(Queues.pmm_stats.get(), Params.signature_len, Params.n_bins
+#ifdef DEVELOP_MODE
+		, Params.verbose_log
+#endif
+		);
+
 	if (Params.file_type != InputType::KMC)
 	{
 		if (Params.file_type != InputType::BAM)
@@ -996,12 +1002,6 @@ template <unsigned SIZE> void CKMC<SIZE>::buildSignatureMapping()
 		std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false);
 
 		Queues.stats_part_queue = std::make_unique<CStatsPartQueue>(Params.n_readers, MAX(STATS_FASTQ_SIZE, w_bin_file_reader->GetPredictedSize() / 100));
-
-		Queues.s_mapper = std::make_unique<CSignatureMapper>(Queues.pmm_stats.get(), Params.signature_len, Params.n_bins
-#ifdef DEVELOP_MODE
-			, Params.verbose_log
-#endif
-			);
 
 		vector<CExceptionAwareThread> stats_fastqs_threads;
 		vector<CExceptionAwareThread> stats_splitters_threads;
