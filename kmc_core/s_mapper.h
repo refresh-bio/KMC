@@ -15,7 +15,6 @@
 #include "params.h"
 #include "critical_error_handler.h"
 #include <sstream>
-
 #ifdef DEVELOP_MODE
 #include "develop.h"
 #endif
@@ -53,7 +52,7 @@ public:
 		if(!file)
 		{
 			std::ostringstream ostr;
-			ostr << "Error: cannot open " << pre_file_name;
+			ostr << "Cannot open " << pre_file_name;
 			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
@@ -68,7 +67,27 @@ public:
 		fread(&lut_prefix_len, sizeof(uint32_t), 1, file);
 		fread(&sig_len, sizeof(uint32_t), 1, file);
 
+		if (sig_len != signature_len)
+		{
+			std::ostringstream ostr;
+			ostr << "Wrong signature length, should be the same as input KMC database: " << signature_len;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+		}
+
 		my_fseek(file, -(8 + (int)header_offset + map_size * sizeof(int32_t)), SEEK_END);
+
+		auto map_start_pos = my_ftell(file);
+		auto tot_prefixes_size_bytes = map_start_pos - 4;
+
+		auto single_prefix_array_size_bytes = (1ull << (2 * lut_prefix_len)) * sizeof(uint64_t);
+		auto n_prefixes_arrays = (tot_prefixes_size_bytes - sizeof(uint64_t)) / single_prefix_array_size_bytes; //n_bins
+
+		if (n_bins != n_prefixes_arrays)
+		{
+			std::ostringstream ostr;
+			ostr << "Wrong number of bins, should be the same as input KMC database: " << n_prefixes_arrays;
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+		}
 
 		std::map<uint32_t, std::vector<uint32>> m;
 		for(uint32_t sig = 0 ; sig < map_size ; ++sig)
