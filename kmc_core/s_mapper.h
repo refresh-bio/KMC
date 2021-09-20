@@ -70,7 +70,7 @@ public:
 		if (sig_len != signature_len)
 		{
 			std::ostringstream ostr;
-			ostr << "Wrong signature length, should be the same as input KMC database: " << signature_len;
+			ostr << "Wrong signature length, should be the same as input KMC database: " << sig_len;
 			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 
