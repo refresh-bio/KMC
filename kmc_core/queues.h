@@ -1503,6 +1503,14 @@ public:
 				else
 					prev_end_pos = p.first + p.second;
 
+			//maybe there is only one allocated area and it is for current's bin file_size only
+			if (map_reserved.size() == 2 && map_reserved.begin()->first == present_pos)
+			{
+				found_pos = 0;
+				must_reallocate = true;
+				return true;
+			}
+
 			return false;
 		});
 
