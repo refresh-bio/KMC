@@ -450,7 +450,7 @@ bool CFastqReader::GetPartFromMultilneFasta(uchar *&_part, uint64 &_size)
 	{
 		part_filled = kmer_len - 1;
 		_size = pos;
-		if (_size < part_filled) //fixes 96
+		if (_size < part_filled || last_in_file) //fixes 96 (first part) and prevents copying if it was the last part of a single input file
 			part_filled = 0;
 		pmm_fastq->reserve(part);
 		copy(_part + _size - part_filled, _part + _size, part);
