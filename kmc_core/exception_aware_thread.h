@@ -3,6 +3,7 @@
 #include <thread>
 #include <functional>
 #include <cassert>
+#include "thread_cancellation_exception.h"
 
 class CThreadExceptionCollector
 {
@@ -46,6 +47,10 @@ class CExceptionAwareThread
 			try
 			{
 				fun();
+			}
+			catch (const CThreadCancellationException& ex) //threads is exiting because it was cancelled by critical error in other thread
+			{
+
 			}
 			catch (...)
 			{

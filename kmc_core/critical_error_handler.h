@@ -2,25 +2,53 @@
 
 #include <set>
 #include <mutex>
+#include "thread_cancellation_exception.h" //TODO: moze ten wyjatek zdefiniowac tutaj?
+#include <condition_variable>
 
-class IFinishableQueue
+class CThrowingOnCancelConditionVariable
 {
+	std::condition_variable cv;
+	bool canceled = false;
 public:
-	IFinishableQueue();
-	virtual void ForceToFinish() = 0;
-	virtual ~IFinishableQueue();
+	CThrowingOnCancelConditionVariable();
+	~CThrowingOnCancelConditionVariable();
+	template<typename Predicate>
+	void wait(std::unique_lock<std::mutex>& lock, Predicate predicate)
+	{
+		cv.wait(lock, [this, &predicate] {
+			if (canceled)
+				throw CThreadCancellationException{};
+			return predicate();
+		});
+	}
+
+	void notify_all()
+	{
+		cv.notify_all();
+	}
+
+	void notify_one()
+	{
+		cv.notify_one();
+	}
+
+	void CancelAllThreads()
+	{
+		canceled = true;
+		notify_all();
+	}
 };
 
 class CCriticalErrorHandler
 {
-	std::set<IFinishableQueue*> observed_queues;
+	std::set<CThrowingOnCancelConditionVariable*> observed_condition_variables;
 	std::mutex mtx;
 
-	void finishAllQueues()
+	void cancelAllThreads()
 	{
 		std::unique_lock<std::mutex> lck(mtx);
-		for (auto queue : observed_queues)
-			queue->ForceToFinish();
+		for (auto cv : observed_condition_variables)
+			cv->CancelAllThreads();
 	}
 public:
 	static CCriticalErrorHandler& Inst()
@@ -29,33 +57,33 @@ public:
 		return inst;
 	}
 
-	void RegisterQueue(IFinishableQueue* queue)
+	void RegisterConditionVariable(CThrowingOnCancelConditionVariable* cv)
 	{
 		std::unique_lock<std::mutex> lck(mtx);
-		observed_queues.insert(queue);
+		observed_condition_variables.insert(cv);
 	}
 
-	void UnregisterQueue(IFinishableQueue* queue)
+	void UnregisterConditionVariable(CThrowingOnCancelConditionVariable* cv)
 	{
 		std::unique_lock<std::mutex> lck(mtx);
-		observed_queues.erase(queue);
+		observed_condition_variables.erase(cv);
 	}
 
 	void HandleCriticalError(const std::string& msg)
 	{
 		//std::cerr << msg << "\n";
 		//exit(1);
-		finishAllQueues();
+		cancelAllThreads();
 		throw std::runtime_error(msg);
 	}
 };
 
-inline IFinishableQueue::IFinishableQueue()
+inline CThrowingOnCancelConditionVariable::CThrowingOnCancelConditionVariable()
 {
-	CCriticalErrorHandler::Inst().RegisterQueue(this);
+	CCriticalErrorHandler::Inst().RegisterConditionVariable(this);
 }
 
-inline IFinishableQueue::~IFinishableQueue()
+inline CThrowingOnCancelConditionVariable::~CThrowingOnCancelConditionVariable()
 {
-	CCriticalErrorHandler::Inst().UnregisterQueue(this);
+	CCriticalErrorHandler::Inst().UnregisterConditionVariable(this);
 }

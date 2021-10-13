@@ -207,6 +207,7 @@
     <ClInclude Include="queues.h" />
     <ClInclude Include="radix.h" />
     <ClInclude Include="splitter.h" />
+    <ClInclude Include="thread_cancellation_exception.h" />
     <ClInclude Include="timer.h" />
     <ClInclude Include="tmp_files_owner.h" />
   </ItemGroup>

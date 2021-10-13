@@ -199,6 +199,9 @@
     <ClInclude Include="..\kmc_api\mmer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="thread_cancellation_exception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="libs\libbzip2.lib" />
