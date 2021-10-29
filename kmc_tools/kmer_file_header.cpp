@@ -132,6 +132,11 @@ void CKmerFileHeader::read_from_kff_file(const std::string& fname)
 
 	std::set<uint64_t> k_values;
 	this->counter_size = 0;
+	if (kff_file_struct.scopes.empty())
+	{
+		std::cerr << "Error: no not-empty scope was found in KFF file. Make sure KFF file is fully indexed\n";
+		exit(1);
+	}
 	for (auto& s : kff_file_struct.scopes)
 	{
 		k_values.insert(s.kmer_size);
