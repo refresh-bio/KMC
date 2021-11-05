@@ -32,11 +32,11 @@
 
 namespace RadulsSort
 {
-	const uint64 insertion_sort_thresholds[] = { 32, 32, 32, 25, 54, 42, 42, 32, 32, 32, 32, 32, 32, 32, 32, 32 };
-	const uint64 shell_sort_thresholds[] = { 32, 180, 180, 256, 134, 165, 87, 103, 103, 103, 103, 103, 103, 103, 103, 103 };
-	const uint64 std_sort_thresholds[] = { 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384 };
-	const uint64 small_sort_thresholds[] = { 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384 };
-	const uint64 wide_small_sort_thresholds[] = { 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32 };
+	constexpr uint64 insertion_sort_thresholds[] = { 32, 32, 32, 25, 54, 42, 42, 32, 32, 32, 32, 32, 32, 32, 32, 32 };
+	constexpr uint64 shell_sort_thresholds[] = { 32, 180, 180, 256, 134, 165, 87, 103, 103, 103, 103, 103, 103, 103, 103, 103 };
+	constexpr uint64 std_sort_thresholds[] = { 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384 };
+	constexpr uint64 small_sort_thresholds[] = { 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384, 384 };
+	constexpr uint64 wide_small_sort_thresholds[] = { 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32 };
 
 	constexpr uint64 get_insertion_sort_threshold(uint32 index)
 	{
