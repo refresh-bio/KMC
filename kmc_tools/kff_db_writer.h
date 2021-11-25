@@ -81,8 +81,8 @@ public:
 			CConfig::GetInstance().kmer_len,
 			counter_size,
 			output_desc.cutoff_min,
-			output_desc.cutoff_max
-			/*TODO KFF: store encoding info!*/),
+			output_desc.cutoff_max,
+			output_desc.encoding),
 		output_desc(output_desc)
 	{
 		buff = new uchar[KFF_DB_WRITER_BUFF_BYTES];

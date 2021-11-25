@@ -74,6 +74,7 @@ struct COutputDesc : public CDescBase
 {
 	uint32 counter_max = 0; //0 means it is not set yet
 	uint64 counter_value = 0; //only for SET_COUNTER operation, 0 means not set yet
+	uint8_t encoding = 0b00011011; //for KFF writers
 	OutputType output_type = OutputType::KMC1;
 	COutputDesc(const std::string& file_src) :
 		CDescBase(file_src)		
