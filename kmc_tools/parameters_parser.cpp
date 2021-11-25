@@ -794,6 +794,37 @@ bool CParametersParser::validate_input_dbs()
 
 	config.kmer_len = kmer_len;
 
+	//KMC output file format cannot be used if encoding is different than 00011011
+	if (encoding != 0b00011011)
+	{
+		bool was_output_format_overridden = false;
+		for (auto& c : config.simple_output_desc)
+		{
+			if (c.output_type == OutputType::KMC1)
+			{
+				was_output_format_overridden = true;
+				c.output_type = OutputType::KFF1;
+			}
+		}
+		for (auto& c : config.transform_output_desc)
+		{
+			//dump and histogram writes in text format
+			if (c.op_type == CTransformOutputDesc::OpType::DUMP ||
+				c.op_type == CTransformOutputDesc::OpType::HISTOGRAM)
+				continue;
+
+			if (c.output_type == OutputType::KMC1)
+			{
+				was_output_format_overridden = true;
+				c.output_type = OutputType::KFF1;
+			}
+		}
+
+		if (was_output_format_overridden)
+		{
+			std::cerr << "Warning: only A -> 0, C -> 1, G -> 2, T -> 3 encoding is supported by KMC format. Because different encoding was used for input database(s) KKF file format is enforced for each output\n";
+		}
+	}
 
 	//update cutoff_min and coutoff_max if it was not set with parameters
 	for (uint32 i = 0; i < config.input_desc.size(); ++i)
