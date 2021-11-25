@@ -798,8 +798,19 @@ bool CParametersParser::validate_input_dbs()
 	if (encoding != 0b00011011)
 	{
 		bool was_output_format_overridden = false;
+		if (config.mode == CConfig::Mode::COMPLEX)
+		{
+			config.output_desc.encoding = encoding;
+			if (config.output_desc.output_type == OutputType::KMC1)
+			{
+				was_output_format_overridden = true;
+				config.output_desc.output_type = OutputType::KFF1;
+			}
+		}
+
 		for (auto& c : config.simple_output_desc)
 		{
+			c.encoding = encoding;
 			if (c.output_type == OutputType::KMC1)
 			{
 				was_output_format_overridden = true;
@@ -808,6 +819,7 @@ bool CParametersParser::validate_input_dbs()
 		}
 		for (auto& c : config.transform_output_desc)
 		{
+			c.encoding = encoding;
 			//dump and histogram writes in text format
 			if (c.op_type == CTransformOutputDesc::OpType::DUMP ||
 				c.op_type == CTransformOutputDesc::OpType::HISTOGRAM)
