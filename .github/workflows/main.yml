@@ -1,0 +1,40 @@
+name: GitHub Actions CI
+
+on:
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+
+  
+  linux-remote:
+    name: Linux test (remote)
+    runs-on: ubuntu-latest
+    env: 
+      EXE: ./bin/kmc      
+      KMC_SINGLE_READ: ./tests/kmc_CLI/data/single_read.fq      
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: make
+      run: make -j12 kmc
+    
+
+    - name: KMC single read, k=28, ci=1
+      run: |
+        $EXE -k28 -ci1 -jstats.json $KMC_SINGLE_READ 28mers .        
+        cmp <(cat stats.json | grep '#Total no. of k-mers' | cut -f 2 -d ':' | cut -f 2 -d ' ' | cut -f 1 -d ',') <(echo "70")
+        
+  macos-remote:
+    name: macOS build (remote)
+    runs-on: macOS-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: make
+      run: make -j12 kmc
+
+ 
