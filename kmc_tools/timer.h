@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 3.1.1
-  Date   : 2019-05-19
+  Version: 3.2.0
+  Date   : 2021-12-23
 */
 
 #ifndef _TIMER_H

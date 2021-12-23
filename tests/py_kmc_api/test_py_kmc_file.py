@@ -21,7 +21,7 @@ def create_kmc_db():
     Set up tests and clean up after.
     '''
     kmer_len = 17
-    memory = 1 #GB
+    memory = 2 #GB
     cutoff_min = 1
     sig_len = 9
     reads_src = 'input.fastq'
@@ -120,6 +120,7 @@ def _run_kmc(cutoff_min, kmer_len, memory, sig_len, reads_src):
 
     if init_sys_path.is_mac():        
         resource.setrlimit(resource.RLIMIT_NOFILE, (2048, 2048))
+
     subprocess.call([kmc_path,
                      '-ci{}'.format(cutoff_min),
                      '-k{}'.format(kmer_len),
@@ -129,8 +130,7 @@ def _run_kmc(cutoff_min, kmer_len, memory, sig_len, reads_src):
                      'kmc_db',
                      '.'
                     ])
-
-
+    
 
 def _open_for_listing():
     ''' Open kmc database for listing and check if opened sucessfully. '''
