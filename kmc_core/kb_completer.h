@@ -160,7 +160,11 @@ bool CSmallKCompleter::CompleteKMCFormat(CSmallKBuf<COUNTER_TYPE> result)
 	uint32 lut_buf_recs = (uint32)(MIN(lut_recs * sizeof(uint64), (uint64)mem_tot_small_k_completer / 2) / sizeof(uint64));
 	uint32 lut_buf_pos = 0;
 	uint32 suf_size = (uint32)(mem_tot_small_k_completer - lut_buf_recs * sizeof(uint64));
-	uint32 suf_recs = (uint32)(suf_size / (counter_size + kmer_suf_bytes) * (counter_size + kmer_suf_bytes));
+	uint32 suf_recs;
+	if (counter_size + kmer_suf_bytes == 0) //fixes #178
+		suf_recs = 0;
+	else
+		suf_recs = (uint32)(suf_size / (counter_size + kmer_suf_bytes) * (counter_size + kmer_suf_bytes));
 	uint32 suf_pos = 0;
 
 	uint64* lut = (uint64*)raw_buffer;

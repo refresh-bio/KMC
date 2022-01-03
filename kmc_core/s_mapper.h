@@ -44,7 +44,6 @@ class CSignatureMapper
 	};
 	
 public:	
-
 	void InitKMC(const std::string& path)
 	{
 		std::string pre_file_name = path + ".kmc_pre";
@@ -57,6 +56,16 @@ public:
 		}
 
 		my_fseek(file, 0, SEEK_END);
+
+		my_fseek(file, -12, SEEK_END);
+		uint32_t kmc_version;
+		fread(&kmc_version, sizeof(uint32), 1, file);
+		if (kmc_version != 0x200)
+		{
+			std::ostringstream ostr;
+			ostr << "currently only KMC databases in version 2 can be readed. If needed to read other version please post an GitHub issue.";
+			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+		}
 
 		uint32_t header_offset;
 		my_fseek(file, -8, SEEK_END);

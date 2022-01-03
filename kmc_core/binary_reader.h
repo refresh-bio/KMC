@@ -339,13 +339,7 @@ public:
 					std::ostringstream ostr;
 					ostr << "Cannot open KMC database: " << f_name;
 					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
-				}
-				if (!kmc_file.IsKMC2())
-				{
-					std::ostringstream ostr;
-					ostr << "Error: currently only KMC databases in version 2 can be readed. If needed to read other version please post an GitHub issue.";
-					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
-				}
+				}				
 				CKMCFileInfo info;
 				kmc_file.Info(info);
 				fsize = info.total_kmers;

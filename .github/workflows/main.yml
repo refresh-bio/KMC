@@ -5,6 +5,8 @@ on:
     branches: [ master ]
     paths-ignore:
       - '**.md'
+  pull_request:
+    branches: [ master ]      
   workflow_dispatch:
 
 jobs:
@@ -27,6 +29,15 @@ jobs:
       run: |
         $EXE -k28 -ci1 -jstats.json $KMC_SINGLE_READ 28mers .        
         cmp <(cat stats.json | grep '#Total no. of k-mers' | cut -f 2 -d ':' | cut -f 2 -d ' ' | cut -f 1 -d ',') <(echo "70")
+    
+    - name: small k, no counters
+      run: |
+        $EXE -k4 -cs1 -v $KMC_SINGLE_READ 4mers .
+        
+    - name: count k-mers from KMC1 database when small-k-opt may be applied
+      run: |
+        $EXE -k10 -v  $KMC_SINGLE_READ 10mers .
+        $EXE -k9 -v -fkmc 10mers 9mers .
         
   macos-remote:
     name: macOS build (remote)
