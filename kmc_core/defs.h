@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 3.2.0
-  Date   : 2021-12-23
+  Version: 3.2.1
+  Date   : 2022-01-04
 */
 
 #ifndef _DEFS_H
@@ -13,8 +13,8 @@
 
 #include <cinttypes>
 
-#define KMC_VER		"3.2.0"
-#define KMC_DATE	"2021-12-23"
+#define KMC_VER		"3.2.1"
+#define KMC_DATE	"2022-01-04"
 
 #define _CRT_SECURE_NO_WARNINGS
 

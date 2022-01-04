@@ -4,8 +4,8 @@
 
   Authors: Sebastian Deorowicz and Agnieszka Debudaj-Grabysz
 
-  Version: 3.2.0
-  Date   : 2021-12-23
+  Version: 3.2.1
+  Date   : 2022-01-04
 */
 
 #include "kmer_api.h"

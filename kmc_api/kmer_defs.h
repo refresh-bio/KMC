@@ -4,8 +4,8 @@
 
   Authors: Sebastian Deorowicz and Agnieszka Debudaj-Grabysz
 
-  Version: 3.2.0
-  Date   : 2021-12-23
+  Version: 3.2.1
+  Date   : 2022-01-04
 */
 
 
@@ -14,8 +14,8 @@
 
 #include <cinttypes>
 
-#define KMC_VER		"3.2.0"
-#define KMC_DATE	"2021-12-23"
+#define KMC_VER		"3.2.1"
+#define KMC_DATE	"2022-01-04"
 
 #ifndef MIN
 #define MIN(x,y)	((x) < (y) ? (x) : (y))

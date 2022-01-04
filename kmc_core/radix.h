@@ -5,7 +5,7 @@ The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
 Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
 Version: 3.1.
-Date   : 2021-12-23
+Date   : 2022-01-04
 */
 #ifndef _RADIX_H
 #define _RADIX_H
