@@ -43,22 +43,32 @@ class CKMCFile
 		uint64_t leftToRead{};
 		uint64 prefixMask; //for kmc2 db
 		FILE* file;
+		uint64_t totalKmers; //for
+		bool isKMC1 = false;
+
 		void reload()
 		{
+			assert(leftToRead);
 			buffPosInFile += buffSize;
 			buffSize = (std::min)(buffCapacity, leftToRead);
 			auto readed = fread(buff, 1, 8 * buffSize, file);
 			assert(readed == 8 * buffSize);
+
+			if (isKMC1 && buffSize == leftToRead) //last read, in case of KMC1 guard must be added, fread will read `k` from db instead of guard, fixes #180
+				buff[buffSize - 1] = totalKmers;
+
 			leftToRead -= buffSize;
 			posInBuf = 0;
 		}
 	public:
-		CPrefixFileBufferForListingMode (FILE* file, uint64_t wholeLutSize, uint64_t lutPrefixLen)
+		CPrefixFileBufferForListingMode(FILE* file, uint64_t wholeLutSize, uint64_t lutPrefixLen, bool isKMC1, uint64_t totalKmers)
 			:
 			buff(new uint64_t[buffCapacity]),
 			leftToRead(wholeLutSize),
 			prefixMask((1ull << (2 * lutPrefixLen)) - 1),
-			file(file)
+			file(file),
+			isKMC1(isKMC1),
+			totalKmers(totalKmers)
 		{
 			my_fseek(file, 4 + 8, SEEK_SET); //	skip KMCP and LUT[0] (always = 0)
 		}

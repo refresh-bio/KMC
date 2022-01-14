@@ -249,7 +249,7 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 		}
 		else
 		{
-			prefixFileBufferForListingMode = std::make_unique<CPrefixFileBufferForListingMode>(file_pre, last_data_index, lut_prefix_length);
+			prefixFileBufferForListingMode = std::make_unique<CPrefixFileBufferForListingMode>(file_pre, last_data_index, lut_prefix_length, false, total_kmers);
 		}
 
 		sufix_size = (kmer_length - lut_prefix_length) / 4;
@@ -311,7 +311,7 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 		}
 		else
 		{
-			prefixFileBufferForListingMode = std::make_unique<CPrefixFileBufferForListingMode>(file_pre, last_data_index, lut_prefix_length);
+			prefixFileBufferForListingMode = std::make_unique<CPrefixFileBufferForListingMode>(file_pre, last_data_index, lut_prefix_length, true, total_kmers);
 		}
 
 		sufix_size = (kmer_length - lut_prefix_length) / 4;
