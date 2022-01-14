@@ -16,14 +16,16 @@ jobs:
     name: Linux test (remote)
     runs-on: ubuntu-latest
     env: 
-      EXE: ./bin/kmc      
-      KMC_SINGLE_READ: ./tests/kmc_CLI/data/single_read.fq      
-    
+      EXE: ./bin/kmc
+      EXE_DUMP: ./bin/kmc_dump
+      KMC_SINGLE_READ: ./tests/kmc_CLI/data/single_read.fq
+      DATA_DIR: ./tests/kmc_CLI/data/
     steps:
     - uses: actions/checkout@v2
     - name: make
-      run: make -j12 kmc
-    
+      run: |
+        g++ -v
+        make -j12 kmc kmc_tools kmc_dump
 
     - name: KMC single read, k=28, ci=1
       run: |
@@ -38,6 +40,11 @@ jobs:
       run: |
         $EXE -k10 -v  $KMC_SINGLE_READ 10mers .
         $EXE -k9 -v -fkmc 10mers 9mers .
+    - name: issue 180
+      run: |
+        $EXE -v -k5 -fa -ci1 -t1 $DATA_DIR/issue-180/input.fa bug-report.kmc .
+        $EXE_DUMP bug-report.kmc issue-180.kmers
+        cmp issue-180.kmers $DATA_DIR/issue-180/pattern.dump
         
   macos-remote:
     name: macOS build (remote)

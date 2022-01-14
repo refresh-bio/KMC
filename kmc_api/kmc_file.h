@@ -43,8 +43,8 @@ class CKMCFile
 		uint64_t leftToRead{};
 		uint64 prefixMask; //for kmc2 db
 		FILE* file;
-		uint64_t totalKmers; //for
 		bool isKMC1 = false;
+		uint64_t totalKmers; //for
 
 		void reload()
 		{
