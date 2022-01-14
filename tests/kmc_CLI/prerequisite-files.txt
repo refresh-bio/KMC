@@ -1,0 +1,11 @@
+F.vesca/SRR072005.fastq.gz 89c567dea115f34868a344139cc385f7
+F.vesca/SRR072006.fastq.gz 141dd19f0a1289dfc8e3e9d350654d37
+F.vesca/SRR072007.fastq.gz 5b75b521c3dffc0ba3773c0eaab12e62
+F.vesca/SRR072008.fastq.gz c42b0135d6cd255f1adc773b39199e7d
+F.vesca/SRR072009.fastq.gz d780afae41fffd302b45e56b6311fed3
+F.vesca/SRR072010.fastq.gz ce616ebd486ea7421327b3e95c64c6a7
+F.vesca/SRR072011.fastq.gz c6586e181b11e7a9758881cdd8f8e6f2
+F.vesca/SRR072012.fastq.gz eca25ff92a7d7b978b7daf3140093418
+F.vesca/SRR072013.fastq.gz 8110d6be941fc5a7d52038fb935f57d5
+F.vesca/SRR072014.fastq.gz 5f5b7b08b9df896516981009aaa2905f
+F.vesca/SRR072029.fastq.gz 4792c30f68d8f1d2970a31e6d6599379
