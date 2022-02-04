@@ -995,6 +995,13 @@ void CFastqReaderDataSrc::init_stream()
 }
 
 //----------------------------------------------------------------------------------
+bool CFastqReaderDataSrc::pop_pack(uchar*& data, uint64& size, FilePart& file_part, CompressionType& mode)
+{
+	end_reached = !binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type);
+	return !end_reached;
+}
+
+//----------------------------------------------------------------------------------
 void CFastqReaderDataSrc::SetQueue(CBinaryPackQueue* _binary_pack_queue, CMemoryPool *_pmm_binary_file_reader)
 {
 	binary_pack_queue = _binary_pack_queue;
@@ -1014,11 +1021,8 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 	first_in_file = false;
 	if (!in_progress)
 	{
-		if (!binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type))
-		{
-			end_reached = true;
+		if (!pop_pack(in_data, in_data_size, file_part, compression_type))
 			return 0;
-		}
 		in_progress = true;
 		first_in_file = true;
 		init_stream();
@@ -1036,7 +1040,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 			{
 				pmm_binary_file_reader->free(in_data);
 				in_data = nullptr;
-				if (!binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type))
+				if (!pop_pack(in_data, in_data_size, file_part, compression_type))
 					return 0;
 				stream.avail_in = (uint32)in_data_size;
 				stream.next_in = in_data;
@@ -1102,7 +1106,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 					inflateEnd(&stream);
 					in_progress = false;
 					//pull end
-					bool queue_end = !binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type);
+					bool queue_end = !pop_pack(in_data, in_data_size, file_part, compression_type);
 					if (!queue_end && file_part != FilePart::End && !garbage)
 					{
 						std::ostringstream ostr;
@@ -1118,7 +1122,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 							uchar* tmp;
 							uint64 tmpsize;
 							CompressionType tmpcomptype;
-							binary_pack_queue->pop(tmp, tmpsize, tmpfilepart, tmpcomptype);
+							pop_pack(tmp, tmpsize, tmpfilepart, tmpcomptype);
 						}
 					}
 					last_in_file = true;
@@ -1148,7 +1152,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 			{
 				pmm_binary_file_reader->free(in_data);
 				in_data = nullptr;
-				binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type);
+				pop_pack(in_data, in_data_size, file_part, compression_type);
 				_bz_stram.avail_in = (uint32)in_data_size;
 				_bz_stram.next_in = (char*)in_data;
 			}
@@ -1170,7 +1174,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 					BZ2_bzDecompressEnd(&_bz_stram);
 					in_progress = false;
 					//pull end
-					bool queue_end = !binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type);
+					bool queue_end = !pop_pack(in_data, in_data_size, file_part, compression_type);
 					if (!queue_end && file_part != FilePart::End)
 					{
 						std::ostringstream ostr;
@@ -1206,7 +1210,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 			{
 				pmm_binary_file_reader->free(in_data);
 				in_data = nullptr;
-				binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type);
+				pop_pack(in_data, in_data_size, file_part, compression_type);
 				if (file_part == FilePart::End)
 				{
 					in_progress = false;
