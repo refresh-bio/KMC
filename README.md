@@ -130,6 +130,10 @@ License
 
 In case of doubt, please consult the original documentations.
 
+Archival source codes, binaries and documentation
+= 
+Archival source codes, binaries and documentation are available at [wiki](https://github.com/refresh-bio/KMC/wiki/Archive-versions-of-sources,-binaries-and-documentations).
+
 Warranty
 =
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
