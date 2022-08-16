@@ -2,6 +2,7 @@ KMC
 =
 [![GitHub downloads](https://img.shields.io/github/downloads/refresh-bio/kmc/total.svg?style=flag&label=GitHub%20downloads)](https://github.com/refresh-bio/KMC/releases)
 [![Bioconda downloads](https://img.shields.io/conda/dn/bioconda/kmc.svg?style=flag&label=Bioconda%20downloads)](https://anaconda.org/bioconda/kmc)
+[![Biocontainer downloads](https://img.shields.io/endpoint?url=https%3A%2F%2Fmmseqs.com%2Fbiocontainer.php%3Fcontainer%3Dkmc)](https://biocontainers.pro/tools/kmc)
 [![GitHub Actions CI](../../actions/workflows/main.yml/badge.svg)](../../actions/workflows/main.yml) [![Join the chat at https://gitter.im/refresh-bio/KMC](https://badges.gitter.im/refresh-bio/KMC.svg)](https://gitter.im/refresh-bio/KMC?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 KMC is a disk-based program for counting k-mers from (possibly gzipped) FASTQ/FASTA files.
