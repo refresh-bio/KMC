@@ -73,7 +73,10 @@ using uchar = unsigned char;
 #define CUTOFF_MAX 1000000000
 #define COUNTER_MAX 255
 
+#ifndef MAX_K
 #define MAX_K		256
+#endif
+
 #define KMER_WORDS		((MAX_K + 31) / 32)
 
 
