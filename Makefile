@@ -13,7 +13,7 @@ OUT_BIN_DIR = bin
 OUT_INCLUDE_DIR = include
 
 ifeq ($(UNAME_S),Darwin)
-	CC = /usr/local/bin/g++-10
+	CC = g++-11
 
 	CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -pthread -std=c++14
 	CLINK	= -lm -static-libgcc -static-libstdc++ -O3 -pthread -std=c++14
