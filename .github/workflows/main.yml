@@ -21,7 +21,7 @@ jobs:
       KMC_SINGLE_READ: ./tests/kmc_CLI/data/single_read.fq
       DATA_DIR: ./tests/kmc_CLI/data/
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: make
       run: |
         g++ -v
@@ -51,7 +51,7 @@ jobs:
     runs-on: macOS-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: '14.1'
