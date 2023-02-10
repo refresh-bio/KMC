@@ -24,7 +24,7 @@ uint64 CFastqReader::OVERHEAD_SIZE = 1 << 16;
 // Constructor of FASTA/FASTQ reader
 // Parameters:
 //    * _mm - pointer to memory monitor (to check the memory limits)
-CFastqReader::CFastqReader(CMemoryPool *_pmm_fastq, CFilteringParams::file_type _file_type, uint32 _gzip_buffer_size, uint32 _bzip2_buffer_size, int _kmer_len)
+CFastqReader::CFastqReader(CMemoryPool *_pmm_fastq, CFilteringParams::file_type _file_type, uint32 _gzip_buffer_size, int _kmer_len)
 {
 	pmm_fastq = _pmm_fastq;
 
@@ -33,20 +33,15 @@ CFastqReader::CFastqReader(CMemoryPool *_pmm_fastq, CFilteringParams::file_type 
 	// Input file mode (default: uncompressed)
 	mode      = m_plain;
 
-	// Pointers to input files in various formats (uncompressed, gzip-compressed, bzip2-compressed)
+	// Pointers to input files in various formats (uncompressed, gzip-compressed)
 	in		  = NULL;
 	in_gzip   = NULL;
-	in_bzip2  = NULL;
-	bzerror   = BZ_OK;
 
 	// Size and pointer for the buffer
 	part_size = 1 << 23;
 	part      = NULL;
 
 	gzip_buffer_size  = _gzip_buffer_size;
-	bzip2_buffer_size = _bzip2_buffer_size;
-
-
 }
 
 //----------------------------------------------------------------------------------
@@ -63,14 +58,6 @@ CFastqReader::~CFastqReader()
 		if(in_gzip)
 			gzclose(in_gzip);
 	}
-	else if(mode == m_bzip2)
-	{
-		if(in)
-		{
-			BZ2_bzReadClose(&bzerror, in_bzip2);
-			fclose(in);
-		}
-	}
 
 	if(part)
 		pmm_fastq->free(part);
@@ -85,8 +72,6 @@ bool CFastqReader::SetNames(string _input_file_name)
 	// Set mode according to the extension of the file name
 	if(input_file_name.size() > 3 && string(input_file_name.end()-3, input_file_name.end()) == ".gz")
 		mode = m_gzip;
-	else if(input_file_name.size() > 4 && string(input_file_name.end()-4, input_file_name.end()) == ".bz2")
-		mode = m_bzip2;
 	else
 		mode = m_plain;
 
@@ -97,7 +82,7 @@ bool CFastqReader::SetNames(string _input_file_name)
 // Set part size of the buffer
 bool CFastqReader::SetPartSize(uint64 _part_size)
 {
-	if(in || in_gzip || in_bzip2)
+	if(in || in_gzip)
 		return false;
 
 	if(_part_size < (1 << 20) || _part_size > (1 << 30))
@@ -112,7 +97,7 @@ bool CFastqReader::SetPartSize(uint64 _part_size)
 // Open the file
 bool CFastqReader::OpenFiles()
 {
-	if(in || in_gzip || in_bzip2)
+	if(in || in_gzip)
 		return false;
 
 	// Uncompressed file
@@ -128,19 +113,6 @@ bool CFastqReader::OpenFiles()
 			return false;
 		gzbuffer(in_gzip, gzip_buffer_size);
 	}
-	// Bzip2-compressed file
-	else if(mode == m_bzip2)
-	{
-		in = fopen(input_file_name.c_str(), "rb");
-		if(!in)
-			return false;
-		setvbuf(in, NULL, _IOFBF, bzip2_buffer_size);
-		if((in_bzip2 = BZ2_bzReadOpen(&bzerror, in, 0, 0, NULL, 0)) == NULL)
-		{
-			fclose(in);
-			return false;
-		}
-	}
 	
 	// Reserve via PMM
 	pmm_fastq->reserve(part);
@@ -154,7 +126,7 @@ bool CFastqReader::OpenFiles()
 // Read a part of the file
 bool CFastqReader::GetPart(uchar *&_part, uint64 &_size)
 {	
-	if(!in && !in_gzip && !in_bzip2)
+	if(!in && !in_gzip)
 		return false;
 
 	if(IsEof())
@@ -166,8 +138,6 @@ bool CFastqReader::GetPart(uchar *&_part, uint64 &_size)
 		readed = fread(part+part_filled, 1, part_size - part_filled, in);
 	else if(mode == m_gzip)
 		readed = gzread(in_gzip, part+part_filled, (int) (part_size - part_filled));
-	else if(mode == m_bzip2)
-		readed = BZ2_bzRead(&bzerror, in_bzip2, part+part_filled, (int) (part_size - part_filled));
 	else
 		readed = 0;				// Never should be here
 
@@ -311,12 +281,9 @@ bool CFastqReader::IsEof()
 		return feof(in) != 0;
 	else if(mode == m_gzip)
 		return gzeof(in_gzip) != 0;
-	else if(mode == m_bzip2)
-		return bzerror == BZ_STREAM_END;
 
 	return true;
 }
-
 
 
 //************************************************************************************************************
@@ -333,7 +300,6 @@ CWFastqReader::CWFastqReader(CFilteringParams &Params, CFilteringQueues &Queues)
 	kmer_len		  = Params.kmer_len;
 
 	gzip_buffer_size  = Params.gzip_buffer_size;
-	bzip2_buffer_size = Params.bzip2_buffer_size;
 
 	fqr = nullptr;
 }
@@ -351,7 +317,7 @@ void CWFastqReader::operator()()
 	
 	while(input_files_queue->pop(file_name))
 	{
-		fqr = new CFastqReader(pmm_fastq, file_type, gzip_buffer_size, bzip2_buffer_size, kmer_len);
+		fqr = new CFastqReader(pmm_fastq, file_type, gzip_buffer_size, kmer_len);
 		fqr->SetNames(file_name);
 		fqr->SetPartSize(part_size);
 

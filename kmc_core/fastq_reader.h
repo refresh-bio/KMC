@@ -64,7 +64,6 @@ public:
 		default:
 			break;
 		}
-
 	}
 };
 

@@ -135,7 +135,6 @@ struct CFilteringParams
 
 	uint32 kmer_len;
 	uint32 gzip_buffer_size = 64 << 20;
-	uint32 bzip2_buffer_size = 64 << 20;
 
 	std::vector<std::string> input_srcs;
 	bool use_float_value = false;
