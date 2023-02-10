@@ -87,7 +87,7 @@ template <unsigned SIZE> struct IntrCopy128<SIZE, 1>
 		poly128_t* src = (poly128_t*) _src;
 
 		for (unsigned i = 0; i < SIZE; ++i)
-			_mm_stream_si128(dest + i, _mm_load_si128(src + i));
+			vstrq_p128(dest + i, vldrq_p128(src + i))l
 #else
 		__m128i *dest = (__m128i *) _dest;
 		__m128i *src = (__m128i *) _src;
