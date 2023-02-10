@@ -79,11 +79,7 @@ else
 	RADULS_OBJS =
 endif
 
-	KMC_LIBS = \
-	$(KMC_MAIN_DIR)/libs/libz.1.2.5.dylib
-
-	KMC_TOOLS_LIBS = \
-	$(KMC_TOOLS_DIR)/libs/libz.1.2.5.dylib
+	LIB_ZLIB=3rd_party/cloudflare/build/libz.a
 
 	LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.mac.a
 else
@@ -98,11 +94,7 @@ else
 	$(KMC_MAIN_DIR)/raduls_avx.o
 endif
 
-	KMC_LIBS = \
-	$(KMC_MAIN_DIR)/libs/libz.a
-
-	KMC_TOOLS_LIBS = \
-	$(KMC_TOOLS_DIR)/libs/libz.a
+	LIB_ZLIB=3rd_party/cloudflare/build/libz.a
 
 	LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.a
 endif
@@ -133,9 +125,11 @@ $(KMC_TOOLS_DIR)/fastq_writer.o \
 $(KMC_TOOLS_DIR)/percent_progress.o \
 $(KMC_TOOLS_DIR)/kff_info_reader.o
 
+$(LIB_ZLIB):
+	cd 3rd_party/cloudflare; mkdir -p build; cd build; cmake ..; make
 
 $(KMC_CLI_OBJS) $(KMC_CORE_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS) $(KFF_OBJS) $(KMC_TOOLS_OBJS): %.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -I 3rd_party/cloudflare -c $< -o $@
 
 $(KMC_MAIN_DIR)/raduls_sse2.o: $(KMC_MAIN_DIR)/raduls_sse2.cpp
 	$(CC) $(CFLAGS) -msse2 -c $< -o $@
@@ -152,17 +146,17 @@ $(LIB_KMC_CORE): $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
 	ar rcs $@ $^
 
-kmc: $(KMC_CLI_OBJS) $(LIB_KMC_CORE)
+kmc: $(KMC_CLI_OBJS) $(LIB_KMC_CORE) $(LIB_ZLIB)
 	-mkdir -p $(OUT_BIN_DIR)
-	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^ $(KMC_LIBS)
+	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^ $(LIB_ZLIB)
 
 kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
 	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^
 
-kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
+kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS) $(LIB_ZLIB)
 	-mkdir -p $(OUT_BIN_DIR)
-	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^ $(KMC_TOOLS_LIBS)
+	$(CC) $(CLINK) -I 3rd_party/cloudflare -o $(OUT_BIN_DIR)/$@ $^ $(LIB_ZLIB)
 
 $(PY_KMC_API_DIR)/%.o: $(KMC_API_DIR)/%.cpp
 	$(CC) -c -fPIC -Wall -O3 -m64 -std=c++14 $^ -o $@

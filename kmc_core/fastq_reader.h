@@ -15,7 +15,7 @@
 #include "params.h"
 #include <stdio.h>
 
-#include "libs/zlib.h"
+#include "zlib.h"
 
 using namespace std;
 
