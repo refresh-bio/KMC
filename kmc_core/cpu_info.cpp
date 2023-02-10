@@ -42,6 +42,18 @@ static struct CpuInfoImpl {
 	{
 		neon = true;
 	}
+
+	const string& GetVendor() const
+	{
+		// Not implemented yet
+		return vendor;
+	}
+
+	const string& GetBrand()
+	{
+		// Not implemented yet
+		return brand;
+	}
 #else
 	void cpuid(int *result, int function_id) const
 	{
