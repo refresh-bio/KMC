@@ -74,7 +74,7 @@ $(KMC_MAIN_DIR)/kmc_runner.o
 ifeq ($(UNAME_S),Darwin)
 ifeq ($(D_ARCH),ARM64)
 	ARM_FLAGS = -march=armv8.4-a
-	CFLAGS += ARM_FLAGS
+	CFLAGS += $(ARM_FLAGS)
 	RADULS_OBJS = \
 	$(KMC_MAIN_DIR)/raduls_neon.o
 else
@@ -87,7 +87,7 @@ endif
 else
 ifeq ($(D_ARCH),ARM64)
 	ARM_FLAGS = -march=armv8-a
-	CFLAGS += ARM_FLAGS
+	CFLAGS += $(ARM_FLAGS)
 	RADULS_OBJS = \
 	$(KMC_MAIN_DIR)/raduls_neon.o
 else
