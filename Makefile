@@ -144,7 +144,7 @@ $(KMC_MAIN_DIR)/raduls_avx.o: $(KMC_MAIN_DIR)/raduls_avx.cpp
 $(KMC_MAIN_DIR)/raduls_avx2.o: $(KMC_MAIN_DIR)/raduls_avx2.cpp
 	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
 
-$(KMC_MAIN_DIR)/raduls_neon.o: $(KMC_MAIN_DIR)/neon.cpp
+$(KMC_MAIN_DIR)/raduls_neon.o: $(KMC_MAIN_DIR)/raduls_neon.cpp
 	$(CC) $(CFLAGS) -mneon -c $< -o $@
 
 
