@@ -65,8 +65,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="libs\zconf.h" />
-    <ClInclude Include="libs\zlib.h" />
     <ClInclude Include="bam_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -202,9 +200,7 @@
     <ClInclude Include="thread_cancellation_exception.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="libs\zlibstat.lib" />
+    <ClInclude Include="..\3rd_party\cloudflare\zlib.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

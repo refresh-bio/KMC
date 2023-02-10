@@ -163,6 +163,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\3rd_party\cloudflare\zlib.h" />
     <ClInclude Include="..\kmc_api\mmer.h" />
     <ClInclude Include="bam_utils.h" />
     <ClInclude Include="binary_reader.h" />
@@ -191,8 +192,6 @@
     <ClInclude Include="kxmer_set.h" />
     <ClInclude Include="libs\bzlib.h" />
     <ClInclude Include="libs\bzlib_private.h" />
-    <ClInclude Include="libs\zconf.h" />
-    <ClInclude Include="libs\zlib.h" />
     <ClInclude Include="mem_disk_file.h" />
     <ClInclude Include="meta_oper.h" />
     <ClInclude Include="percent_progress.h" />
@@ -264,7 +263,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="libs\zlibstat.lib" />
+    <ProjectReference Include="..\3rd_party\cloudflare\build\zlib.vcxproj">
+      <Project>{ae29051e-e1d8-3f22-9ca9-64edd3e02ba3}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

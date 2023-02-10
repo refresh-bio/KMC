@@ -141,6 +141,9 @@
     <ClInclude Include="kff_kmc2_reader_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\3rd_party\cloudflare\zlib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="kmc_tools.cpp">
@@ -191,8 +194,5 @@
     <ClCompile Include="..\kmc_core\kff_writer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="libs\zlibstat.lib" />
   </ItemGroup>
 </Project>

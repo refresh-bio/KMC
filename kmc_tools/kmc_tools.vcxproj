@@ -149,6 +149,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\3rd_party\cloudflare\zlib.h" />
     <ClInclude Include="..\kmc_api\kmc_file.h" />
     <ClInclude Include="..\kmc_api\kmer_api.h" />
     <ClInclude Include="..\kmc_api\mmer.h" />
@@ -211,7 +212,9 @@
     <ClCompile Include="tokenizer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="libs\zlibstat.lib" />
+    <ProjectReference Include="..\3rd_party\cloudflare\build\zlib.vcxproj">
+      <Project>{ae29051e-e1d8-3f22-9ca9-64edd3e02ba3}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
