@@ -82,13 +82,17 @@ template <unsigned SIZE> struct IntrCopy128<SIZE, 1>
 {
 	static inline void Copy(void *_dest, void *_src)
 	{
+#if defined(__aarch64__)
+		poly128_t* dest = (poly128_t*) _dest;
+		poly128_t* src = (poly128_t*) _src;
+
+		for (unsigned i = 0; i < SIZE; ++i)
+			_mm_stream_si128(dest + i, _mm_load_si128(src + i));
+#else
 		__m128i *dest = (__m128i *) _dest;
 		__m128i *src = (__m128i *) _src;
 
 		for (unsigned i = 0; i < SIZE; ++i)
-#if defined(__aarch64__)
-			vstrq_p128(dest + i, vldrq_p128(src + i))l
-#else
 			_mm_stream_si128(dest + i, _mm_load_si128(src + i));
 #endif
 	}
