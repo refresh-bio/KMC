@@ -761,6 +761,8 @@ namespace RadulsSort
 #define RADULS_RADIX_SORT_FUNNAME RadixSortMSD_SSE41
 #elif defined(__SSE2__)
 #define RADULS_RADIX_SORT_FUNNAME RadixSortMSD_SSE2
+#elif defined(__NEON__)
+#define RADULS_RADIX_SORT_FUNNAME RadixSortMSD_NEON
 #endif
 
 

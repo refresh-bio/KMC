@@ -32,6 +32,9 @@ namespace RadulsSort
 
 	template<typename KMER_T>
 	void RadixSortMSD_AVX2(KMER_T* kmers, KMER_T* tmp, uint64 n_recs, uint32 byte, uint32 n_threads, CMemoryPool* pmm_radix_buf);
+
+	template<typename KMER_T>
+	void RadixSortMSD_NEON(KMER_T* kmers, KMER_T* tmp, uint64 n_recs, uint32 byte, uint32 n_threads, CMemoryPool* pmm_radix_buf);
 }
 
 #endif // RADULS_H

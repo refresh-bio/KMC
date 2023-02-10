@@ -1,6 +1,8 @@
 all: kmc kmc_dump kmc_tools py_kmc_api
 
 UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
+UNAME_P := $(shell uname -p)
 
 KMC_MAIN_DIR = kmc_core
 KMC_CLI_DIR = kmc_CLI
@@ -11,6 +13,25 @@ PY_KMC_API_DIR = py_kmc_api
 
 OUT_BIN_DIR = bin
 OUT_INCLUDE_DIR = include
+
+D_OS =
+D_ARCH = 
+
+ifeq ($(UNAME_S),Darwin)
+	D_OS = MACOS
+else
+	D_OS = LINUX
+endif
+
+ifeq ($(UNAME_M,arm64)
+	D_ARCH = ARM64
+endif
+ifeq ($(UNAME_M,aarch64)
+	D_ARCH = ARM64
+endif
+ifeq ($(UNAME_M,x86_64)
+	D_ARCH = X64
+endif
 
 ifeq ($(UNAME_S),Darwin)
 	CC = g++-11
@@ -51,7 +72,12 @@ $(KMC_MAIN_DIR)/kb_collector.o \
 $(KMC_MAIN_DIR)/kmc_runner.o
 
 ifeq ($(UNAME_S),Darwin)
+ifeq ($(ARCH),ARM64)
+	RADULS_OBJS = \
+	$(KMC_MAIN_DIR)/raduls_neon.o
+else
 	RADULS_OBJS =
+endif
 
 	KMC_LIBS = \
 	$(KMC_MAIN_DIR)/libs/libz.1.2.5.dylib \
@@ -63,11 +89,16 @@ ifeq ($(UNAME_S),Darwin)
 
 	LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.mac.a
 else
+ifeq ($(ARCH),ARM64)
+	RADULS_OBJS = \
+	$(KMC_MAIN_DIR)/raduls_neon.o
+else
 	RADULS_OBJS = \
 	$(KMC_MAIN_DIR)/raduls_sse2.o \
 	$(KMC_MAIN_DIR)/raduls_sse41.o \
 	$(KMC_MAIN_DIR)/raduls_avx2.o \
 	$(KMC_MAIN_DIR)/raduls_avx.o
+endif
 
 	KMC_LIBS = \
 	$(KMC_MAIN_DIR)/libs/libz.a \

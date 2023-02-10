@@ -33,8 +33,16 @@ static struct CpuInfoImpl {
 	bool sse4_2 = false;
 	bool avx = false;
 	bool avx2 = false;
+	bool neon = false;
 
 	string vendor, brand;
+
+#if defined(__aarch64__)
+	CpuInfoImpl()
+	{
+		neon = true;
+	}
+#else
 	void cpuid(int *result, int function_id) const
 	{
 #ifdef _MSC_VER
@@ -123,6 +131,7 @@ static struct CpuInfoImpl {
 		computed = true;
 		return brand;
 	}
+#endif
 } cpu_info_impl;
 
 const string& CCpuInfo::GetVendor()
@@ -143,5 +152,6 @@ bool CCpuInfo::SSE41_Enabled() { return cpu_info_impl.sse4_1; }
 bool CCpuInfo::SSE42_Enabled() { return cpu_info_impl.sse4_2; }
 bool CCpuInfo::AVX_Enabled() { return cpu_info_impl.avx; }
 bool CCpuInfo::AVX2_Enabled() { return cpu_info_impl.avx2; }
+bool CCpuInfo::NEON_Enabled() { return cpu_info_impl.neon; }
 
 // ***** EOF

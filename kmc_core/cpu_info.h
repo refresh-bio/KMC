@@ -26,6 +26,8 @@ public:
 	static bool SSE42_Enabled();
 	static bool AVX_Enabled();
 	static bool AVX2_Enabled();
+	
+	static bool NEON_Enabled();
 
 };
 
