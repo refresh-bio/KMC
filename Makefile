@@ -72,7 +72,7 @@ $(KMC_MAIN_DIR)/kb_collector.o \
 $(KMC_MAIN_DIR)/kmc_runner.o
 
 ifeq ($(UNAME_S),Darwin)
-ifeq ($(ARCH),ARM64)
+ifeq ($(D_ARCH),ARM64)
 	ARM_FLAGS = -march=armv8.4-a
 	CFLAGS += ARM_FLAGS
 	RADULS_OBJS = \
@@ -85,7 +85,7 @@ endif
 
 	LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.mac.a
 else
-ifeq ($(ARCH),ARM64)
+ifeq ($(D_ARCH),ARM64)
 	ARM_FLAGS = -march=armv8-a
 	CFLAGS += ARM_FLAGS
 	RADULS_OBJS = \
