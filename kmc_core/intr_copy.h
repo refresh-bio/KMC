@@ -15,8 +15,14 @@
 #include <intrin.h>
 #endif
 
+#if defined(__aarch64__)
+#include <arm_neon.h>
+#else
 #include <emmintrin.h>
 #include <immintrin.h>
+#endif
+
+
 #include "critical_error_handler.h"
 
 #ifndef _WIN32
@@ -32,7 +38,11 @@ inline void IntrCopy64fun(void *_dest, void *_src, uint32_t size)
 	__int64* src = (__int64 *)_src;
 
 	for (unsigned i = 0; i < size; ++i)
+#if defined(__aarch64__)
+		dest[i] = src[i];
+#else
 		_mm_stream_si64(dest + i, src[i]);
+#endif
 }
 
 
@@ -46,7 +56,11 @@ template <unsigned SIZE> struct IntrCopy64
 		__int64* src = (__int64*)_src;
 
 		for (unsigned i = 0; i < SIZE; ++i)
+#if defined(__aarch64__)
+			dest[i] = src[i];
+#else
 			_mm_stream_si64(dest + i, src[i]);
+#endif
 	}
 };
 
@@ -72,7 +86,11 @@ template <unsigned SIZE> struct IntrCopy128<SIZE, 1>
 		__m128i *src = (__m128i *) _src;
 
 		for (unsigned i = 0; i < SIZE; ++i)
+#if defined(__aarch64__)
+			vstrq_p128(dest + i, vldrq_p128(src + i))l
+#else
 			_mm_stream_si128(dest + i, _mm_load_si128(src + i));
+#endif
 	}
 };
 
