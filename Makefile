@@ -79,7 +79,7 @@ else
 	RADULS_OBJS =
 endif
 
-	LIB_ZLIB=3rd_party/cloudflare/build/libz.a
+	LIB_ZLIB=3rd_party/cloudflare/libz.a
 
 	LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.mac.a
 else
@@ -94,7 +94,7 @@ else
 	$(KMC_MAIN_DIR)/raduls_avx.o
 endif
 
-	LIB_ZLIB=3rd_party/cloudflare/build/libz.a
+	LIB_ZLIB=3rd_party/cloudflare/libz.a
 
 	LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.a
 endif
@@ -126,7 +126,7 @@ $(KMC_TOOLS_DIR)/percent_progress.o \
 $(KMC_TOOLS_DIR)/kff_info_reader.o
 
 $(LIB_ZLIB):
-	cd 3rd_party/cloudflare; mkdir -p build; cd build; cmake ..; make
+	cd 3rd_party/cloudflare; ./configure; make libz.a
 
 $(KMC_CLI_OBJS) $(KMC_CORE_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS) $(KFF_OBJS) $(KMC_TOOLS_OBJS): %.o: %.cpp
 	$(CC) $(CFLAGS) -I 3rd_party/cloudflare -c $< -o $@
@@ -178,3 +178,4 @@ clean:
 	-rm -f $(PY_KMC_API_DIR)/*.so
 	-rm -rf $(OUT_BIN_DIR)
 	-rm -rf $(OUT_INCLUDE_DIR)
+	cd 3rd_party/cloudflare; make clean;
