@@ -73,6 +73,8 @@ $(KMC_MAIN_DIR)/kmc_runner.o
 
 ifeq ($(UNAME_S),Darwin)
 ifeq ($(ARCH),ARM64)
+	ARM_FLAGS = -march=armv8.4-a
+	CFLAGS += ARM_FLAGS
 	RADULS_OBJS = \
 	$(KMC_MAIN_DIR)/raduls_neon.o
 else
@@ -84,6 +86,8 @@ endif
 	LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.mac.a
 else
 ifeq ($(ARCH),ARM64)
+	ARM_FLAGS = -march=armv8-a
+	CFLAGS += ARM_FLAGS
 	RADULS_OBJS = \
 	$(KMC_MAIN_DIR)/raduls_neon.o
 else
@@ -139,6 +143,10 @@ $(KMC_MAIN_DIR)/raduls_avx.o: $(KMC_MAIN_DIR)/raduls_avx.cpp
 	$(CC) $(CFLAGS) -mavx -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_avx2.o: $(KMC_MAIN_DIR)/raduls_avx2.cpp
 	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
+
+$(KMC_MAIN_DIR)/raduls_neon.o: $(KMC_MAIN_DIR)/neon.cpp
+	$(CC) $(CFLAGS) -mneon -c $< -o $@
+
 
 $(LIB_KMC_CORE): $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
 	-mkdir -p $(OUT_INCLUDE_DIR)
