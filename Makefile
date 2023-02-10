@@ -23,13 +23,13 @@ else
 	D_OS = LINUX
 endif
 
-ifeq ($(UNAME_M,arm64)
+ifeq ($(UNAME_M),arm64)
 	D_ARCH = ARM64
 endif
-ifeq ($(UNAME_M,aarch64)
+ifeq ($(UNAME_M),aarch64)
 	D_ARCH = ARM64
 endif
-ifeq ($(UNAME_M,x86_64)
+ifeq ($(UNAME_M),x86_64)
 	D_ARCH = X64
 endif
 
