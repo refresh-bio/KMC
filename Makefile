@@ -18,19 +18,19 @@ D_OS =
 D_ARCH = 
 
 ifeq ($(UNAME_S),Darwin)
-	D_OS = MACOS
+	D_OS=MACOS
 else
-	D_OS = LINUX
+	D_OS=LINUX
 endif
 
 ifeq ($(UNAME_M),arm64)
-	D_ARCH = ARM64
+	D_ARCH=ARM64
 endif
 ifeq ($(UNAME_M),aarch64)
-	D_ARCH = ARM64
+	D_ARCH=ARM64
 endif
 ifeq ($(UNAME_M),x86_64)
-	D_ARCH = X64
+	D_ARCH=X64
 endif
 
 ifeq ($(UNAME_S),Darwin)
