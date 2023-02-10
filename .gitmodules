@@ -1,3 +1,0 @@
-[submodule "3rd_party/cloudflare"]
-	path = 3rd_party/cloudflare
-	url = https://github.com/cloudflare/zlib
