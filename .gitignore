@@ -68,3 +68,9 @@ bin/
 /py_kmc_api/Debug
 /py_kmc_api/x64/Debug
 /x64/Debug
+/kmc_CLI/x64/Release
+/kmc_core/x64/Release
+/kmc_dump/x64/Release
+/kmc_tools/x64/Release
+/py_kmc_api/x64/Release
+/x64/Release
