@@ -547,7 +547,7 @@ namespace RadulsSort
 	void RadixSortMSD_impl(KMER_T* kmers, KMER_T* tmp, uint64 n_recs, uint32 byte, uint32 n_threads, CMemoryPool* pmm_radix_buf, bool is_first_level,
 		uint64 is_big_threshold, uint64 n_total_recs)
 	{
-		uint64_t current_small_sort_threshold = small_sort_thresholds[KMER_T::KMER_SIZE];
+		uint64_t current_small_sort_threshold = get_small_sort_threshold(KMER_T::KMER_SIZE);
 
 		if (n_recs <= current_small_sort_threshold)
 		{
