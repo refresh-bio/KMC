@@ -56,8 +56,6 @@ class CBinaryFilesReader
 	{
 		if (name.size() > 3 && string(name.end() - 3, name.end()) == ".gz")
 			return CompressionType::gzip;
-		else if (name.size() > 4 && string(name.end() - 4, name.end()) == ".bz2")
-			return CompressionType::bzip2;
 		else
 			return CompressionType::plain;
 	}
@@ -385,9 +383,6 @@ public:
 					break;
 				case CompressionType::gzip:
 					predicted_size += (uint64)(3.2 * fsize);
-					break;
-				case CompressionType::bzip2:
-					predicted_size += (uint64)(4.0 * fsize);
 					break;
 				default:
 					break;

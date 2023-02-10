@@ -194,6 +194,5 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="libs\zlibstat.lib" />
-    <Library Include="libs\libbzip2.lib" />
   </ItemGroup>
 </Project>

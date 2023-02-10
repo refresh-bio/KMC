@@ -31,7 +31,7 @@ using namespace std;
 //************************************************************************************************************
 
 enum class FilePart { Begin, Middle, End };
-enum class CompressionType { plain, gzip, bzip2 };
+enum class CompressionType { plain, gzip};
 
 
 // Reader will clasify reads as normal or long. Distinction is not strict, it depends on current configuration (mem limit and no. of threads). In case of fastq reader will assure, that

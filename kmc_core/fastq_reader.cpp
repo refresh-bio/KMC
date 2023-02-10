@@ -973,22 +973,6 @@ void CFastqReaderDataSrc::init_stream()
 		stream.avail_in = (uint32)in_data_size;
 		stream.next_in = in_data;
 		break;
-	case CompressionType::bzip2:
-		_bz_stram.bzalloc = nullptr;
-		_bz_stram.bzfree = nullptr;
-		_bz_stram.opaque = nullptr;
-		_bz_stram.avail_in = 0;
-		_bz_stram.next_in = nullptr;
-		if (BZ2_bzDecompressInit(&_bz_stram, 0, 0) != BZ_OK)
-		{
-			std::ostringstream ostr;
-			ostr << "Error while reading bz2 file";
-			ostr << " (" << __FILE__ << ": " << __LINE__ << ")";
-			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
-		}
-		_bz_stram.avail_in = (uint32)in_data_size;
-		_bz_stram.next_in = (char*)in_data;
-		break;
 	default:
 		break;
 	}
@@ -1140,66 +1124,6 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 			}
 		} while (stream.avail_out);
 		return size - stream.avail_out;
-	}
-	else if (compression_type == CompressionType::bzip2)
-	{
-		_bz_stram.next_out = (char*)buff;
-		_bz_stram.avail_out = (uint32)size;
-		int ret;
-		do
-		{
-			if (!_bz_stram.avail_in)
-			{
-				pmm_binary_file_reader->free(in_data);
-				in_data = nullptr;
-				pop_pack(in_data, in_data_size, file_part, compression_type);
-				_bz_stram.avail_in = (uint32)in_data_size;
-				_bz_stram.next_in = (char*)in_data;
-			}
-			ret = BZ2_bzDecompress(&_bz_stram);
-			if (ret == BZ_PARAM_ERROR || ret == BZ_DATA_ERROR || ret == BZ_DATA_ERROR_MAGIC || ret == BZ_MEM_ERROR)
-			{
-				std::ostringstream ostr;
-				ostr << "An internal error occurred during bz2 reading. Please contact authors. File: " << __FILE__ << ", line: " << __LINE__;
-				BZ2_bzDecompressEnd(&_bz_stram);
-				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
-			}
-			if (ret == BZ_STREAM_END)
-			{
-				bool multistream = _bz_stram.avail_in || !binary_pack_queue->is_next_last();
-				if (!multistream)
-				{
-					pmm_binary_file_reader->free(in_data);
-					in_data = nullptr;
-					BZ2_bzDecompressEnd(&_bz_stram);
-					in_progress = false;
-					//pull end
-					bool queue_end = !pop_pack(in_data, in_data_size, file_part, compression_type);
-					if (!queue_end && file_part != FilePart::End)
-					{
-						std::ostringstream ostr;
-						ostr << "An internal error occurred. Please contact authors";
-						ostr << " (" << __FILE__ << ": " << __LINE__ << ")";
-						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
-					}
-					last_in_file = true;
-					break;
-				}
-				else
-				{
-					BZ2_bzDecompressEnd(&_bz_stram);
-					if (BZ2_bzDecompressInit(&_bz_stram, 0, 0) != BZ_OK)
-					{
-						std::ostringstream ostr;
-						ostr << "Error while reading bz2 file";
-						ostr << " (" << __FILE__ << ": " << __LINE__ << ")";
-						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
-					}
-				}
-			}
-
-		} while (_bz_stram.avail_out);
-		return size - _bz_stram.avail_out;
 	}
 	else if (compression_type == CompressionType::plain)
 	{
