@@ -19,35 +19,57 @@ D_ARCH =
 
 ifeq ($(UNAME_S),Darwin)
 	D_OS=MACOS
+	ifeq ($(UNAME_M),arm64)
+		D_ARCH=ARM64
+	else
+		D_ARCH=X64
+	endif
 else
 	D_OS=LINUX
+	ifeq ($(UNAME_M),arm64)
+		D_ARCH=ARM64
+	else
+		ifeq ($(UNAME_M),aarch64)
+			D_ARCH=ARM64
+		else
+			D_ARCH=X64
+		endif
+	endif
 endif
 
-ifeq ($(UNAME_M),arm64)
-	D_ARCH=ARM64
-endif
-ifeq ($(UNAME_M),aarch64)
-	D_ARCH=ARM64
-endif
-ifeq ($(UNAME_M),x86_64)
-	D_ARCH=X64
-endif
+CPU_FLAGS =
+STATIC_CFLAGS = 
+STATIC_LFLAGS = 
+PY_FLAGS =
 
-ifeq ($(UNAME_S),Darwin)
+ifeq ($(D_OS),MACOS)
 	CC = g++-11
 
-	CFLAGS	= -Wall -O3 -m64 -static-libgcc -static-libstdc++ -pthread -std=c++14
-	CLINK	= -lm -static-libgcc -static-libstdc++ -O3 -pthread -std=c++14
-
-	PY_KMC_API_CFLAGS = -Wl,-undefined,dynamic_lookup -fPIC -Wall -shared -std=c++14 -O3
+	ifeq($(D_ARCH),ARM64)
+		CPU_FLAGS = -march=armv8.4-a
+	else
+		CPU_FLAGS = -m64
+	endif
+	STATIC_CFLAGS = -static-libgcc -static-libstdc++ -pthread
+	STATIC_LFLAGS = -static-libgcc -static-libstdc++ -pthread	
+	PY_FLAGS = -Wl,-undefined,dynamic_lookup -fPIC 
 else
 	CC 	= g++
 
-	CFLAGS	= -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
-	CLINK	= -lm -static -O3 -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
-
-	PY_KMC_API_CFLAGS = -fPIC -Wall -shared -std=c++14 -O3
+	ifeq($(D_ARCH),ARM64)
+		CPU_FLAGS = -march=armv8-a
+	else
+		CPU_FLAGS = -m64
+	endif
+	STATIC_CFLAGS = -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
+	STATIC_LFLAGS = -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
+	PY_FLAGS = -fPIC
 endif
+
+
+CFLAGS	= -Wall -O3 $(CPU_FLAGS) $(STATIC_CFLAGS) -std=c++14
+CLINK	= -lm $(STATIC_LFLAGS) -O3 -std=c++14
+PY_KMC_API_CFLAGS = $(PY_FLAGS) -Wall -shared -std=c++14 -O3
 
 KMC_CLI_OBJS = \
 $(KMC_CLI_DIR)/kmc.o
@@ -73,8 +95,6 @@ $(KMC_MAIN_DIR)/kmc_runner.o
 
 ifeq ($(UNAME_S),Darwin)
 ifeq ($(D_ARCH),ARM64)
-	ARM_FLAGS = -march=armv8.4-a
-	CFLAGS += $(ARM_FLAGS)
 	RADULS_OBJS = \
 	$(KMC_MAIN_DIR)/raduls_neon.o
 else
@@ -86,8 +106,6 @@ endif
 	LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.mac.a
 else
 ifeq ($(D_ARCH),ARM64)
-	ARM_FLAGS = -march=armv8-a
-	CFLAGS += $(ARM_FLAGS)
 	RADULS_OBJS = \
 	$(KMC_MAIN_DIR)/raduls_neon.o
 else
