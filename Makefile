@@ -56,11 +56,13 @@ else
 
 	ifeq ($(D_ARCH),ARM64)
 		CPU_FLAGS = -march=armv8-a
+		STATIC_CFLAGS =
+		STATIC_LFLAGS = -static-libgcc -static-libstdc++ -pthread	
 	else
 		CPU_FLAGS = -m64
+		STATIC_CFLAGS = -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
+		STATIC_LFLAGS = -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
 	endif
-	STATIC_CFLAGS = -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
-	STATIC_LFLAGS = -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
 	PY_FLAGS = -fPIC
 endif
 
