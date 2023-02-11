@@ -26,14 +26,12 @@ ifeq ($(UNAME_S),Darwin)
 	endif
 else
 	D_OS=LINUX
+	D_ARCH=X64
 	ifeq ($(UNAME_M),arm64)
 		D_ARCH=ARM64
-	else
-		ifeq ($(UNAME_M),aarch64)
-			D_ARCH=ARM64
-		else
-			D_ARCH=X64
-		endif
+	endif
+	ifeq ($(UNAME_M),aarch64)
+		D_ARCH=ARM64
 	endif
 endif
 
@@ -45,7 +43,7 @@ PY_FLAGS =
 ifeq ($(D_OS),MACOS)
 	CC = g++-11
 
-	ifeq($(D_ARCH),ARM64)
+	ifeq ($(D_ARCH),ARM64)
 		CPU_FLAGS = -march=armv8.4-a
 	else
 		CPU_FLAGS = -m64
@@ -56,7 +54,7 @@ ifeq ($(D_OS),MACOS)
 else
 	CC 	= g++
 
-	ifeq($(D_ARCH),ARM64)
+	ifeq ($(D_ARCH),ARM64)
 		CPU_FLAGS = -march=armv8-a
 	else
 		CPU_FLAGS = -m64
