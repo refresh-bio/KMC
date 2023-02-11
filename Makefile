@@ -67,7 +67,7 @@ else
 endif
 
 
-CFLAGS	= -Wall -O3 $(CPU_FLAGS) $(STATIC_CFLAGS) -std=c++14
+CFLAGS	= -Wall -O3 -fsigned-char $(CPU_FLAGS) $(STATIC_CFLAGS) -std=c++14
 CLINK	= -lm $(STATIC_LFLAGS) -O3 -std=c++14
 PY_KMC_API_CFLAGS = $(PY_FLAGS) -Wall -shared -std=c++14 -O3
 
