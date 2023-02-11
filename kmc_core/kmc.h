@@ -1518,10 +1518,19 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 #endif
 
 	SortFunction<CKmer<SIZE>> sort_func;
-#ifdef __APPLE__
+#if defined(__APPLE__)
+#if defined(__aarch64__)
+	sort_func = RadulsSort::RadixSortMSD_NEON<CKmer<SIZE>, SIZE>;
+	CSmallSort<SIZE>::Adjust(384);
+#else
 	sort_func = RadixSort::RadixSortMSD<CKmer<SIZE>, SIZE>;
 	CSmallSort<SIZE>::Adjust(384);
+#endif
 #else	
+#if defined(__aarch64__)
+	sort_func = RadulsSort::RadixSortMSD_NEON<CKmer<SIZE>, SIZE>;
+	CSmallSort<SIZE>::Adjust(384);
+#else
 	auto proc_name = CCpuInfo::GetBrand();
 	bool is_intel = CCpuInfo::GetVendor() == "GenuineIntel";
 	bool at_least_avx = CCpuInfo::AVX_Enabled();
@@ -1548,6 +1557,7 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 		sort_func = RadixSort::RadixSortMSD<CKmer<SIZE>, SIZE>;
 		CSmallSort<SIZE>::Adjust(384);
 	}
+#endif
 #endif
 
 	Queues.kq = std::make_unique<CKmerQueue>(Params.n_bins, Params.n_sorters);
