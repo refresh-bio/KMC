@@ -1520,7 +1520,7 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 	SortFunction<CKmer<SIZE>> sort_func;
 #ifdef __APPLE__
 #ifdef __aarch64__
-	sort_func = RadulsSort::RadixSortMSD_NEON<CKmer<SIZE>, SIZE>;
+	sort_func = RadulsSort::RadixSortMSD_NEON<CKmer<SIZE>>;
 	CSmallSort<SIZE>::Adjust(384);
 #else
 	sort_func = RadixSort::RadixSortMSD<CKmer<SIZE>, SIZE>;
@@ -1528,7 +1528,7 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 #endif
 #else	
 #ifdef __aarch64__
-	sort_func = RadulsSort::RadixSortMSD_NEON<CKmer<SIZE>, SIZE>;
+	sort_func = RadulsSort::RadixSortMSD_NEON<CKmer<SIZE>>;
 	CSmallSort<SIZE>::Adjust(384);
 #else
 	auto proc_name = CCpuInfo::GetBrand();
