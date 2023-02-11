@@ -63,6 +63,9 @@
     <ClCompile Include="..\kmc_api\mmer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="raduls_neon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bam_utils.h">

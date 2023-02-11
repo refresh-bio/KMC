@@ -240,6 +240,7 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">/arch:AVX2
 -D__AVX2__ %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <ClCompile Include="raduls_neon.cpp" />
     <ClCompile Include="raduls_sse2.cpp">
       <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotSet</EnableEnhancedInstructionSet>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/arch:sse2 -D__SSE2__ %(AdditionalOptions)</AdditionalOptions>

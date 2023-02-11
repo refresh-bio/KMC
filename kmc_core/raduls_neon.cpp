@@ -8,6 +8,8 @@
   Date   : 2022-01-04
 */
 
+#if defined(__aarch64__)
 #include "raduls_impl.h"
+#endif
 
 // ***** EOF
