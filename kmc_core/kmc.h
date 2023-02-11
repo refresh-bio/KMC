@@ -1518,8 +1518,8 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 #endif
 
 	SortFunction<CKmer<SIZE>> sort_func;
-#if defined(__APPLE__)
-#if defined(__aarch64__)
+#ifdef __APPLE__
+#ifdef __aarch64__
 	sort_func = RadulsSort::RadixSortMSD_NEON<CKmer<SIZE>, SIZE>;
 	CSmallSort<SIZE>::Adjust(384);
 #else
@@ -1527,7 +1527,7 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 	CSmallSort<SIZE>::Adjust(384);
 #endif
 #else	
-#if defined(__aarch64__)
+#ifdef __aarch64__
 	sort_func = RadulsSort::RadixSortMSD_NEON<CKmer<SIZE>, SIZE>;
 	CSmallSort<SIZE>::Adjust(384);
 #else
