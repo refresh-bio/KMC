@@ -4,6 +4,7 @@
 #include <mutex>
 #include "thread_cancellation_exception.h" //TODO: moze ten wyjatek zdefiniowac tutaj?
 #include <condition_variable>
+#include <iostream>
 
 class CThrowingOnCancelConditionVariable
 {
