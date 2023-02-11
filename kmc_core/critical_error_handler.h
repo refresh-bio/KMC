@@ -71,8 +71,8 @@ public:
 
 	void HandleCriticalError(const std::string& msg)
 	{
-		//std::cerr << msg << "\n";
-		//exit(1);
+		std::cerr << msg << "\n";
+		exit(1);
 		cancelAllThreads();
 		throw std::runtime_error(msg);
 	}

@@ -42,7 +42,7 @@
 #define MAX_N_BINS 2000
 
 #ifndef MAX_K
-#define MAX_K		256
+#define MAX_K		64
 #endif
 
 #define MIN_K		1
