@@ -35,7 +35,7 @@ def get_hardware():
     elif os.name == 'posix':
         if os.uname()[4] == 'x86_64':
             return 'x64'
-        elif os.uanme()[4] == 'aarch64' or os.uanme()[4] == 'arm64':
+        elif os.uname()[4] == 'aarch64' or os.uname()[4] == 'arm64':
             return 'arm64'
         else:
             print("Error: unknown hardware", os.uname()[4])
