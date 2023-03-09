@@ -33,7 +33,7 @@ public:
 			counter = 1;
 			return;
 		}
-		memcpy(&counter, buffer, sizeof(counter));
+		memcpy(&counter, buffer, counter_bytes);
 		if (!little_endian)
 			counter = _bswap_uint32(counter);
 		counter &= counter_mask;
