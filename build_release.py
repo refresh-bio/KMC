@@ -60,7 +60,9 @@ ver = get_ver()
 
 print(f"building\n\tVersion: {ver}\n\tOperating system: {system}\n\tHardware: {hardware}")
 
+run_cmd("git submodule init")
+run_cmd("git submodule update")
 run_cmd("make clean")
-run_cmd("make -j32")
+run_cmd("make -j32 kmc kmc_dump kmc_tools")
 
 run_cmd(f"tar -c bin/kmc bin/kmc_tools bin/kmc_dump bin/libkmc_core.a include/kmc_runner.h | pigz > KMC{ver}.{system}.{hardware}.tar.gz")
