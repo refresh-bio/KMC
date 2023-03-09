@@ -9,7 +9,10 @@ on:
 jobs:
   check-prerequisites:
     name: Check prerequisites
-    runs-on: [self-hosted, kmc]
+    strategy:
+      matrix:
+        machine: [Linux, maxOS]
+    runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
     env:
       DATA_DIR: ../../../../data
       SCRIPT: tests/kmc_CLI/check-prerequisites.py
@@ -21,7 +24,10 @@ jobs:
 
   prepare-small-fastq-tests:
     name: Prepare small fastq tests
-    runs-on: [self-hosted, kmc]
+    strategy:
+      matrix:
+        machine: [Linux, maxOS]
+    runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
     env:      
       TRIVIAL_COUNTER: tests/kmc_CLI/trivial-k-mer-counter/bin/counter
       DATA_DIR: ../../../../data
@@ -38,7 +44,10 @@ jobs:
 
   make-tests:
     name: Make tests
-    runs-on: [self-hosted, kmc]
+    strategy:
+      matrix:
+        machine: [Linux, maxOS]
+    runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
     needs: check-prerequisites
     env: 
       KMC_EXE: ./bin/kmc
@@ -54,7 +63,10 @@ jobs:
 
   small-fastq-tests:
     name: Small fastq tests
-    runs-on: [self-hosted, kmc]
+    strategy:
+      matrix:
+        machine: [Linux, maxOS]
+    runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
     needs: [make-tests, prepare-small-fastq-tests]
     env:      
       DATA_DIR: ../../../../data
