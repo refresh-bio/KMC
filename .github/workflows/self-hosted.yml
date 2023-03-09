@@ -19,6 +19,7 @@ jobs:
     steps:
     - name: Check prerequisites
       run: |
+        pwd
         chmod +x $SCRIPT
         /usr/bin/time -v $SCRIPT $DATA_DIR
 
