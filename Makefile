@@ -100,10 +100,6 @@ ifeq ($(D_ARCH),ARM64)
 else
 	RADULS_OBJS =
 endif
-
-	LIB_ZLIB=3rd_party/cloudflare/libz.a
-
-	LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.mac.a
 else
 ifeq ($(D_ARCH),ARM64)
 	RADULS_OBJS = \
@@ -115,11 +111,10 @@ else
 	$(KMC_MAIN_DIR)/raduls_avx2.o \
 	$(KMC_MAIN_DIR)/raduls_avx.o
 endif
-
-	LIB_ZLIB=3rd_party/cloudflare/libz.a
-
-	LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.a
 endif
+
+LIB_ZLIB=3rd_party/cloudflare/libz.a
+LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.a
 
 
 KMC_DUMP_OBJS = \
