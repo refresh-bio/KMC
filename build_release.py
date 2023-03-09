@@ -20,7 +20,7 @@ def get_os():
         if os.uname()[0] == 'Linux':
             return 'linux'
         elif os.uname()[0] == 'Darwin':
-            return 'macos'
+            return 'mac'
         else:
             print("Error: unknown os", os.uname()[0])
             sys.exit(1)
