@@ -11,7 +11,7 @@ jobs:
     name: Check prerequisites
     strategy:
       matrix:
-        machine: [Linux, macOS]
+        machine: [Linux]
     runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
     env:
       DATA_DIR: ../../../../data
