@@ -11,7 +11,7 @@ jobs:
     name: Check prerequisites
     strategy:
       matrix:
-        machine: [Linux, maxOS]
+        machine: [Linux, macOS]
     runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
     env:
       DATA_DIR: ../../../../data
@@ -26,7 +26,7 @@ jobs:
     name: Prepare small fastq tests
     strategy:
       matrix:
-        machine: [Linux, maxOS]
+        machine: [Linux, macOS]
     runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
     env:      
       TRIVIAL_COUNTER: tests/kmc_CLI/trivial-k-mer-counter/bin/counter
@@ -46,7 +46,7 @@ jobs:
     name: Make tests
     strategy:
       matrix:
-        machine: [Linux, maxOS]
+        machine: [Linux, macOS]
     runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
     needs: check-prerequisites
     env: 
@@ -65,7 +65,7 @@ jobs:
     name: Small fastq tests
     strategy:
       matrix:
-        machine: [Linux, maxOS]
+        machine: [Linux, macOS]
     runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
     needs: [make-tests, prepare-small-fastq-tests]
     env:      
