@@ -21,7 +21,9 @@ Date   : 2023-03-09
 #include <thread>
 #include <tuple>
 
-
+//I'm going to read a little after buffer, this will be always correctly ignored, but reading itself is illegal
+//using 16 because 8 of Ckmer, and possibly 8 for counter
+#define SUFFIX_BUFF_EXTRA_BYTES 16
 
 class CSuffBufQueue
 {
@@ -43,7 +45,7 @@ public:
 		data.resize(n_recs);
 		for (auto& e : data)
 		{
-			std::get<0>(e) = new uchar[buff_size];
+			std::get<0>(e) = new uchar[buff_size + SUFFIX_BUFF_EXTRA_BYTES];
 			std::get<1>(e) = 0;
 		}
 	}
@@ -129,7 +131,7 @@ public:
 		suffix_file(suffix_file),
 		suffix_file_name(suffix_file_name)
 	{
-		suff_buff = new uchar[suffix_buf_size];
+		suff_buff = new uchar[suffix_buf_size + SUFFIX_BUFF_EXTRA_BYTES];
 	}
 
 	~CSuffBuffReader()
@@ -298,7 +300,7 @@ private:
 
 	void allocate_buffers()
 	{
-		suffix_buff = new uchar[suffix_buff_size];
+		suffix_buff = new uchar[suffix_buff_size + SUFFIX_BUFF_EXTRA_BYTES];
 		prefix_buff = new uint64[prefix_buff_size];
 	}
 
