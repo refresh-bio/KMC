@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 3.2.1
-  Date   : 2022-01-04
+  Version: 3.2.2
+  Date   : 2023-03-09
 */
 
 #ifndef _PARAMS_H
