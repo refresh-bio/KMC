@@ -46,6 +46,8 @@ jobs:
       KMC_TOOLS: ./bin/kmc_tools
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - name: make (default)
       run: |
         /usr/bin/time -v make -j32
