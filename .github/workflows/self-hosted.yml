@@ -9,26 +9,18 @@ on:
 jobs:
   check-prerequisites:
     name: Check prerequisites
-    strategy:
-      matrix:
-        machine: [Linux]
-    runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
+    runs-on: [self-hosted, kmc]
     env:
       DATA_DIR: ../../../../data
       SCRIPT: tests/kmc_CLI/check-prerequisites.py
     steps:
     - name: Check prerequisites
       run: |
-        pwd
         chmod +x $SCRIPT
         /usr/bin/time -v $SCRIPT $DATA_DIR
-
   prepare-small-fastq-tests:
     name: Prepare small fastq tests
-    strategy:
-      matrix:
-        machine: [Linux, macOS]
-    runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
+    runs-on: [self-hosted, kmc]
     env:      
       TRIVIAL_COUNTER: tests/kmc_CLI/trivial-k-mer-counter/bin/counter
       DATA_DIR: ../../../../data
@@ -42,13 +34,9 @@ jobs:
       run: |
         chmod +x $SCRIPT
         /usr/bin/time -v $SCRIPT $DATA_DIR $TRIVIAL_COUNTER $FILE_TO_GET_PART_FROM 400000
-
   make-tests:
     name: Make tests
-    strategy:
-      matrix:
-        machine: [Linux, macOS]
-    runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
+    runs-on: [self-hosted, kmc]
     needs: check-prerequisites
     env: 
       KMC_EXE: ./bin/kmc
@@ -61,13 +49,9 @@ jobs:
     - name: make (default)
       run: |
         /usr/bin/time -v make -j32
-
   small-fastq-tests:
     name: Small fastq tests
-    strategy:
-      matrix:
-        machine: [Linux, macOS]
-    runs-on: [self-hosted, kmc, '${{ matrix.machine }}']
+    runs-on: [self-hosted, kmc]
     needs: [make-tests, prepare-small-fastq-tests]
     env:      
       DATA_DIR: ../../../../data
@@ -81,11 +65,3 @@ jobs:
       run: |
         chmod +x $SCRIPT
         /usr/bin/time -v $SCRIPT $DATA_DIR $KMC_EXE $KMC_TOOLS $KMC_DUMP_EXE
-   
-
-
-
-
-
-
-  
