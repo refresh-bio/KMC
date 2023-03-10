@@ -5,7 +5,7 @@ import argparse
 import textwrap
 
 VER = "3.2.2"
-DATE = "2023-03-09"
+DATE = "2023-03-10"
 
 def GeneralHelp():
     print('KMC dump ver. {} ({})'.format(VER, DATE))

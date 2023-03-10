@@ -5,7 +5,7 @@ The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
 Authors: Marek Kokot
 
 Version: 3.2.2
-Date   : 2023-03-09
+Date   : 2023-03-10
 */
 
 #include "fastq_filter.h"

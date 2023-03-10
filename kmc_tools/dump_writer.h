@@ -5,7 +5,7 @@
   Authors: Marek Kokot
   
   Version: 3.2.2
-  Date   : 2023-03-09
+  Date   : 2023-03-10
 */
 
 #ifndef _DUMP_WRITER_H
