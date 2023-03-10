@@ -36,7 +36,6 @@ Installation details
 =
 The following libraries come with KMC in a binary (64-bit compiled for x86 platform) form.
 If your system needs other binary formats, you should put the following libraries in kmc_core/libs:
-* libbzip2 - for support for bzip2-compressed input FASTQ/FASTA files (http://www.bzip.org/)
 * zlib - for support for gzip-compressed input FASTQ/FASTA files (http://www.zlib.net/)
 
 The following libraries come with KMC in a source coude form.
@@ -47,7 +46,7 @@ If needed, you can also redefine maximal length of k-mer, which is 256 in the cu
 Note: KMC is highly optimized and spends only as many bytes for k-mer (rounded up to 8) as
 necessary, so using large values of MAX_K does not affect the KMC performance for short k-mers.
 
-Some parts of KMC use C++14 features, so you need a compatible C++ compiler, e.g., gcc 4.9+ or clang 3.4+
+Some parts of KMC use C++17 features, so you need a compatible C++ compiler
 
 After that, you can run make to compile kmc and kmc_dump applications.
 
@@ -122,8 +121,6 @@ After compilation you will obtain two binaries:
 License
 =
 * KMC software distributed under GNU GPL 3 licence.
-
-* libbzip2 is open-source (BSD-style license)
 
 * gzip is free, open-source
 
