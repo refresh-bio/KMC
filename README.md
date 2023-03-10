@@ -35,7 +35,8 @@ Having the k-mers counted it is possible to dump KMC binary database to textual 
 Installation details
 ##### Compile from sources
 ```
-git clone --recurse-submodules https://github.com/refresh-bio/KMC.git
+git clone --recurse-submodules https://github.com/refresh-bio/kmc.git
+cd kmc
 make -j32
 ```
 =
