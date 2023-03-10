@@ -33,10 +33,15 @@ Having the k-mers counted it is possible to dump KMC binary database to textual 
 ```
 
 Installation details
+##### Compile from sources
+```
+git clone --recurse-submodules https://github.com/refresh-bio/KMC.git
+make -j32
+```
 =
 The following libraries come with KMC in a binary (64-bit compiled for x86 platform) form.
 If your system needs other binary formats, you should put the following libraries in kmc_core/libs:
-* zlib - for support for gzip-compressed input FASTQ/FASTA files (http://www.zlib.net/)
+* zlib - for support for gzip-compressed input FASTQ/FASTA files
 
 The following libraries come with KMC in a source coude form.
  * pybind11 - used to create python wrapper of KMC API (https://github.com/pybind/pybind11)
