@@ -5,6 +5,7 @@ import tarfile
 import os
 import sys
 
+#from https://stackoverflow.com/questions/14697629/running-a-bat-file-though-python-in-current-process
 def init_vsvars():
     vswhere_path = r"%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe"
     vswhere_path = os.path.expandvars(vswhere_path)
