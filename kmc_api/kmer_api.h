@@ -14,6 +14,7 @@ Date   : 2023-03-10
 
 #include "kmer_defs.h"
 #include <string>
+#include <cstring>
 #include <iostream>
 #include <vector>
 #include "mmer.h"
