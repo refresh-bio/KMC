@@ -1228,7 +1228,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKmers()
 		{
 			n_cutoff_min++;
 		}
-		else if (count >= cutoff_max)
+		else if (count > cutoff_max)
 		{
 			n_cutoff_max++;
 		}
