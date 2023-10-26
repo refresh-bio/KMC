@@ -35,6 +35,9 @@ Icon
 .Spotlight-V100
 .Trashes
 
+# Compilation database
+compile_commands.json
+
 # Directories potentially created on remote AFP share
 .AppleDB
 .AppleDesktop
