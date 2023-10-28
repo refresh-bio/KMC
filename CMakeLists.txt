@@ -7,9 +7,6 @@ project(KMC
         VERSION 3.2.2
         LANGUAGES C CXX)
 
-# FIXME:
-# set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
-
 # Sanity check our source directory to make sure that we are not trying to
 # generate an in-tree build
 if ((CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR) OR
@@ -24,7 +21,8 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# FIXME: Add option to build pybindings
+# Options
+option(KMC_BUILD_PYTHON_API "Turn on / off building python API" ON)
 
 # External dependencies
 add_subdirectory(3rd_party)
@@ -68,3 +66,6 @@ add_subdirectory(kmc_core)
 add_subdirectory(kmc_CLI)
 add_subdirectory(kmc_dump)
 add_subdirectory(kmc_tools)
+if (KMC_BUILD_PYTHON_API)
+  add_subdirectory(py_kmc_api)
+endif()
