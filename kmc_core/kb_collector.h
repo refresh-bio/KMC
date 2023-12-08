@@ -4,8 +4,8 @@
   
   Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
   
-  Version: 3.2.2
-  Date   : 2023-03-10
+  Version: 3.2.3
+  Date   : 2023-12-08
 */
 
 #ifndef _KB_COLLECTOR_H

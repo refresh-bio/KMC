@@ -5,7 +5,7 @@ The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
 Authors: Sebastian Deorowicz, Agnieszka Debudaj-Grabysz, Marek Kokot
 
 Version: 3.0.0
-Date   : 2023-03-10
+Date   : 2023-12-08
 */
 
 #ifndef _PERCENT_PROGRESS_H
