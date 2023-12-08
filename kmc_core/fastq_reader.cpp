@@ -1059,7 +1059,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 			case Z_DATA_ERROR:
 			{
 				std::ostringstream ostr;
-				ostr << "Some error while reading gzip file";
+				ostr << "Some error while reading gzip file in (" << __FILE__ << ": " << __LINE__ << ")";
 				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			case Z_MEM_ERROR:
@@ -1073,14 +1073,19 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 			{
 				uchar* tmp_data = nullptr;
 				uint64 tmp_size = 0;
-				bool multistream = stream.avail_in || binary_pack_queue->peek_next_pack(tmp_data, tmp_size);
+				bool multistream = stream.avail_in;
+
+				if (stream.avail_in < 2) {
+					bool peek_res = binary_pack_queue->peek_next_pack(tmp_data, tmp_size);
+					multistream = stream.avail_in || peek_res;
+				}
 				bool garbage = false;
 				if (multistream)
 				{
 					if (stream.avail_in + tmp_size < 2)
 					{
 						std::ostringstream ostr;
-						ostr << "Some error while reading gzip file";
+						ostr << "Some error while reading gzip file in (" << __FILE__ << ": " << __LINE__ << ")";
 						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 					}
 					uchar b1, b2;
@@ -1107,7 +1112,11 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 				{
 					pmm_binary_file_reader->free(in_data);
 					in_data = nullptr;
-					inflateEnd(&stream);
+					if (inflateEnd(&stream) != Z_OK) {
+						std::ostringstream ostr;
+						ostr << "Some error while reading gzip file (inflateEnd) in (" << __FILE__ << ": " << __LINE__ << ")";
+						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+					}
 					in_progress = false;
 					//pull end
 					bool queue_end = !pop_pack(in_data, in_data_size, file_part, compression_type, last_in_file);
