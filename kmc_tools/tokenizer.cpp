@@ -4,7 +4,7 @@
   
   Authors: Marek Kokot
   
-  Version: 3.2.2
+  Version: 3.2.3
   Date   : 2017-01-28
 */
 
