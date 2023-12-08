@@ -1163,8 +1163,9 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 			{
 				pmm_binary_file_reader->free(in_data);
 				in_data = nullptr;
-				pop_pack(in_data, in_data_size, file_part, compression_type, last_in_file);
-				if (file_part == FilePart::End)
+				//may be false even if file_part != FilePart::End in stats mode
+				auto pop_res = pop_pack(in_data, in_data_size, file_part, compression_type, last_in_file);
+				if (!pop_res || file_part == FilePart::End)
 				{
 					in_progress = false;
 					last_in_file = true;
