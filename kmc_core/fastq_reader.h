@@ -36,7 +36,7 @@ class CFastqReaderDataSrc
 	uint64 in_data_size;
 	uint64 in_data_pos; //for plain
 	void init_stream();
-	bool pop_pack(uchar*& data, uint64& size, FilePart& file_part, CompressionType& mode);
+	bool pop_pack(uchar*& data, uint64& size, FilePart& file_part, CompressionType& mode, bool& last_in_file);
 public:
 	inline void SetQueue(CBinaryPackQueue* _binary_pack_queue, CMemoryPool *_pmm_binary_file_reader);
 	inline bool Finished();
@@ -48,7 +48,8 @@ public:
 			pmm_binary_file_reader->free(in_data);
 		in_data = nullptr;
 		//clean queue
-		while (pop_pack(in_data, in_data_size, file_part, compression_type))
+		bool last_in_file_tmp = false;
+		while (pop_pack(in_data, in_data_size, file_part, compression_type, last_in_file_tmp))
 		{
 			if(in_data_size)
 				pmm_binary_file_reader->free(in_data);
