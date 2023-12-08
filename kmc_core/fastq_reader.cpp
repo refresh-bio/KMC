@@ -979,9 +979,15 @@ void CFastqReaderDataSrc::init_stream()
 }
 
 //----------------------------------------------------------------------------------
-bool CFastqReaderDataSrc::pop_pack(uchar*& data, uint64& size, FilePart& file_part, CompressionType& mode)
+bool CFastqReaderDataSrc::pop_pack(uchar*& data, uint64& size, FilePart& file_part, CompressionType& mode, bool& last_in_file)
 {
-	end_reached = !binary_pack_queue->pop(in_data, in_data_size, file_part, compression_type);
+	end_reached = !binary_pack_queue->pop(data, size, file_part, mode);
+	if (file_part == FilePart::End)
+	{
+		last_in_file = true;
+		in_progress = false;
+		return false;
+	}
 	return !end_reached;
 }
 
@@ -1005,7 +1011,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 	first_in_file = false;
 	if (!in_progress)
 	{
-		if (!pop_pack(in_data, in_data_size, file_part, compression_type))
+		if (!pop_pack(in_data, in_data_size, file_part, compression_type, last_in_file))
 			return 0;
 		in_progress = true;
 		first_in_file = true;
@@ -1017,15 +1023,32 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 	{
 		stream.next_out = buff;
 		stream.avail_out = (uint32)size;
-		int ret;
+		int ret = Z_OK;
 		do
 		{
 			if (!stream.avail_in)
 			{
 				pmm_binary_file_reader->free(in_data);
 				in_data = nullptr;
-				if (!pop_pack(in_data, in_data_size, file_part, compression_type))
-					return 0;
+				if (!pop_pack(in_data, in_data_size, file_part, compression_type, last_in_file)) {
+					auto ret_val = size - stream.avail_out;
+
+					if (inflateEnd(&stream) != Z_OK) {
+						std::ostringstream ostr;
+						ostr << "Some error while reading gzip file (inflateEnd) in (" << __FILE__ << ": " << __LINE__ << ")";
+						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+					}
+
+					assert(last_in_file);
+
+					if (ret != Z_STREAM_END) {
+						std::ostringstream ostr;
+						ostr << "Unexpected end of gzip file";
+						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+					}
+
+					return ret_val;
+				}
 				stream.avail_in = (uint32)in_data_size;
 				stream.next_in = in_data;
 			}
@@ -1090,7 +1113,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 					inflateEnd(&stream);
 					in_progress = false;
 					//pull end
-					bool queue_end = !pop_pack(in_data, in_data_size, file_part, compression_type);
+					bool queue_end = !pop_pack(in_data, in_data_size, file_part, compression_type, last_in_file);
 					if (!queue_end && file_part != FilePart::End && !garbage)
 					{
 						std::ostringstream ostr;
@@ -1106,7 +1129,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 							uchar* tmp;
 							uint64 tmpsize;
 							CompressionType tmpcomptype;
-							pop_pack(tmp, tmpsize, tmpfilepart, tmpcomptype);
+							pop_pack(tmp, tmpsize, tmpfilepart, tmpcomptype, last_in_file);
 						}
 					}
 					last_in_file = true;
@@ -1134,7 +1157,7 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 			{
 				pmm_binary_file_reader->free(in_data);
 				in_data = nullptr;
-				pop_pack(in_data, in_data_size, file_part, compression_type);
+				pop_pack(in_data, in_data_size, file_part, compression_type, last_in_file);
 				if (file_part == FilePart::End)
 				{
 					in_progress = false;
