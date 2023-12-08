@@ -7,7 +7,6 @@
   Version: 3.2.2
   Date   : 2023-03-10
 */
-
 #include <algorithm>
 #include "defs.h"
 #include "fastq_reader.h"
@@ -1038,8 +1037,6 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 						ostr << "Some error while reading gzip file (inflateEnd) in (" << __FILE__ << ": " << __LINE__ << ")";
 						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 					}
-
-					assert(last_in_file);
 
 					if (ret != Z_STREAM_END) {
 						std::ostringstream ostr;
