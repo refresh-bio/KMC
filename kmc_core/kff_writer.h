@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
 template<typename T>
 void StoreBigEndian(uint8_t* buff, const T& data)
