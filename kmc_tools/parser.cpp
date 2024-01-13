@@ -28,7 +28,7 @@ CParser::CParser(const std::string& src):
 		exit(1);
 	}
 	//input_line_pattern = "\\s*(\\w*)\\s*=\\s*(.*)$";
-	input_line_pattern = "^\\s*([\\w-+]*)\\s*=\\s*(.*)$";
+	input_line_pattern = "^\\s*([\\w+-]*)\\s*=\\s*(.*)$";
 	output_line_pattern = "^\\s*(.*)\\s*=\\s*(.*)$"; //TODO: consider valid file name	
 	empty_line_pattern = "^\\s*$";
 }
