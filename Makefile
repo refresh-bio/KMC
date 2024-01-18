@@ -1,5 +1,7 @@
 all: kmc kmc_dump kmc_tools py_kmc_api
 
+dummy := $(shell git submodule update --init --recursive)
+
 UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)
 UNAME_P := $(shell uname -p)
