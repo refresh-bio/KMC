@@ -153,12 +153,24 @@ public:
 
 	static void Adjust(uint32 max_small_size = 256)
 	{
+		static bool is_adjusted = false;
+		if (is_adjusted)
+			return;
+
+		static std::mutex mtx;
+		std::lock_guard<std::mutex> lck(mtx);
+		if (is_adjusted)
+			return;
+
 		PrepareArray();
 		EvaluateAlgorithms(max_small_size);
 		SmoothTimes();
 		SelectBestSorters();
 		ReleaseArray();
+
+		is_adjusted = true;
 	}
+
 
 	static void Sort(CKmer<SIZE> *ptr, uint32 size)
 	{

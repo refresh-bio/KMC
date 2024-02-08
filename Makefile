@@ -1,5 +1,7 @@
 all: kmc kmc_dump kmc_tools py_kmc_api
 
+dummy := $(shell git submodule update --init --recursive)
+
 UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)
 UNAME_P := $(shell uname -p)
@@ -169,7 +171,7 @@ $(LIB_KMC_CORE): $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
 
 kmc: $(KMC_CLI_OBJS) $(LIB_KMC_CORE) $(LIB_ZLIB)
 	-mkdir -p $(OUT_BIN_DIR)
-	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^ $(LIB_ZLIB)
+	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^
 
 kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
@@ -177,7 +179,7 @@ kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
 
 kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS) $(LIB_ZLIB)
 	-mkdir -p $(OUT_BIN_DIR)
-	$(CC) $(CLINK) -I 3rd_party/cloudflare -o $(OUT_BIN_DIR)/$@ $^ $(LIB_ZLIB)
+	$(CC) $(CLINK) -I 3rd_party/cloudflare -o $(OUT_BIN_DIR)/$@ $^
 
 $(PY_KMC_API_DIR)/%.o: $(KMC_API_DIR)/%.cpp
 	$(CC) -c -fPIC -Wall -O3 $(CPU_FLAGS) -std=c++14 $^ -o $@

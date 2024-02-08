@@ -6,6 +6,7 @@
 //#include <iostream>
 #include <algorithm>
 #include <cstring>
+#include <cstdint>
 
 std::string CKFFInfoReader::ReadVarName()
 {

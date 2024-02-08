@@ -1802,14 +1802,26 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 
 template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1()
 {
-	auto res = ProcessStage1_impl();
+	KMC::Stage1Results res;
+	//run on separate exception aware thread for proper exception handling
+	CExceptionAwareThread th([&res, this] {
+		res = this->ProcessStage1_impl();
+	});
+	th.join();
+
 	CThreadExceptionCollector::Inst().RethrowIfAnyException();
 	return res;
 }
 
 template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2()
 {
-	auto res = ProcessStage2_impl();
+	KMC::Stage2Results res;
+	//run on separate exception aware thread for proper exception handling if exception thrown in main thread
+	CExceptionAwareThread th([&res, this] {
+		res = this->ProcessStage2_impl();
+		});
+	th.join();
+
 	CThreadExceptionCollector::Inst().RethrowIfAnyException();
 	return res;
 }
