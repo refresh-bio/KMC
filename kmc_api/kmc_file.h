@@ -274,7 +274,7 @@ class CKMCFile
 				throw std::runtime_error(oss.str());
 			}
 
-			assert(stbm.GetMapping()[signature_map_size - 1] == n_bins - 1);
+			assert((uint32_t)stbm.GetMapping()[signature_map_size - 1] == n_bins - 1);
 
 			for (uint32_t x = 0; x < signature_map_size; ++x)
 			{
@@ -292,20 +292,27 @@ class CKMCFile
 			calc_bin_ranges();
 		}
 
-		bool read(CKmerAPI& kmer, uint64& count, uint32_t off, uint32_t suffix_size, uint32_t counter_size, uint32_t min_count, uint32_t max_count)
+		//go to the next bin if exists (even if empty)
+		bool next_bin()
+		{
+			if (cur_bin_id == n_bins)
+				return false;
+			++cur_bin_id;
+			if (cur_bin_id == n_bins)
+				return false;
+
+			start_bin(cur_bin_id);
+
+			return true;
+		}
+
+		bool read_from_cur_bin(CKmerAPI& kmer, uint64& count, uint32_t off, uint32_t suffix_size, uint32_t counter_size, uint32_t min_count, uint32_t max_count)
 		{
 			while (true)
 			{
-				if (cur_bin_id == n_bins)
+				if (!next_in_current_bin(cur_bin_id))
 					return false;
-				while (!next_in_current_bin(cur_bin_id))
-				{
-					++cur_bin_id;
-					if (cur_bin_id == n_bins)
-						return false;
-					start_bin(cur_bin_id);
-				}
-
+				
 				--bin_sizes[bin_map[cur_bin_id]];
 				--left_in_current_prefix;
 				auto suf_rec = scan_suffix.read_many(suf_rec_size_bytes);
@@ -453,7 +460,11 @@ public:
 	
 	bool ReadNextKmer(CKmerAPI &kmer, uint32 &count);
 
-	bool ReadNextKmerInBinOrder(CKmerAPI& kmer, uint64& count);
+	//only when oppened in listing with bin order
+	bool StartBin();
+
+	//only when oppened in listing with bin order
+	bool ReadNextKmerFromBin(CKmerAPI& kmer, uint64& count);
 
 	// Release memory and close files in case they were opened 
 	bool Close();

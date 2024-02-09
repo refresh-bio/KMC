@@ -147,13 +147,16 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			while (kmer_data_base.ReadNextKmerInBinOrder(kmer_object, counter))
+			while (kmer_data_base.StartBin())
 			{
-				kmer_object.to_string(str);
-				str[_kmer_length] = '\t';
-				counter_len = CNumericConversions::Int2PChar(counter, (uchar*)str + _kmer_length + 1);
-				str[_kmer_length + 1 + counter_len] = '\n';
-				fwrite(str, 1, _kmer_length + counter_len + 2, out_file);
+				while (kmer_data_base.ReadNextKmerFromBin(kmer_object, counter))
+				{
+					kmer_object.to_string(str);
+					str[_kmer_length] = '\t';
+					counter_len = CNumericConversions::Int2PChar(counter, (uchar*)str + _kmer_length + 1);
+					str[_kmer_length + 1 + counter_len] = '\n';
+					fwrite(str, 1, _kmer_length + counter_len + 2, out_file);
+				}
 			}
 		}
 	

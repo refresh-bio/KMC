@@ -378,13 +378,21 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 }
 
 //-----------------------------------------------------------------------------------------------
-bool CKMCFile::ReadNextKmerInBinOrder(CKmerAPI& kmer, uint64& count)
+bool CKMCFile::StartBin()
+{
+	if (is_opened != opened_for_listing_with_bin_order)
+		return false;
+	return ordered_bin_reading->next_bin();
+}
+
+//-----------------------------------------------------------------------------------------------
+bool CKMCFile::ReadNextKmerFromBin(CKmerAPI& kmer, uint64& count)
 {
 	if (is_opened != opened_for_listing_with_bin_order)
 		return false;
 
 	uint32 off = (sizeof(prefix_index) * 8) - (lut_prefix_length * 2) - kmer.byte_alignment * 2;
-	return ordered_bin_reading->read(kmer, count, off, sufix_size, counter_size, min_count, max_count);
+	return ordered_bin_reading->read_from_cur_bin(kmer, count, off, sufix_size, counter_size, min_count, max_count);
 }
 
 //------------------------------------------------------------------------------------------
