@@ -387,7 +387,7 @@ bool CFastqReader::GetPartFromMultilneFasta(uchar *&_part, uint64 &_size)
 
 	int64 total_filled = part_filled + readed;
 
-	if (last_in_file)	
+	if (readed && last_in_file) //mkokot_TODO: because all EOLs was removed for prev part, the reading module really needs to be refactored
 		FixEOLIfNeeded(part, total_filled);
 	
 	if(first_in_file && total_filled)
