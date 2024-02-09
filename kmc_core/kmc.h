@@ -46,6 +46,7 @@
 #include "kmc_runner.h"
 #include "critical_error_handler.h"
 #include "exception_aware_thread.h"
+#include "../kmc_api/sig_to_bin_map.h"
 
 using namespace std;
 
@@ -153,6 +154,8 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 #ifdef DEVELOP_MODE
 	Params.verbose_log = stage1Params.GetDevelopVerbose();
 #endif
+
+	Params.sig_to_bin_mapping = stage1Params.GetSigToBinMappingPath();
 
 	Params.both_strands = stage1Params.GetCanonicalKmers();
 	Params.homopolymer_compressed = stage1Params.GetHomopolymerCompressed();
@@ -982,7 +985,28 @@ template <unsigned SIZE> void CKMC<SIZE>::buildSignatureMapping()
 #endif
 		);
 
-	if (Params.file_type != InputType::KMC)
+	if (Params.sig_to_bin_mapping != "")
+	{
+		Params.verboseLogger->Log("\nInfo: Reading signature to bin mapping from file " + Params.sig_to_bin_mapping + "\n");
+		CSigToBinMap stbm(Params.sig_to_bin_mapping);
+		if (stbm.GetSigLen() != Params.signature_len) {
+			std::ostringstream oss;
+			oss << "Signature mapping file is used, but it is defined for signature len " << std::to_string(stbm.GetSigLen()) << ", while KMC is running for signature len " << Params.signature_len;
+			throw std::runtime_error(oss.str());
+		}
+		if (stbm.GetNBins() != Params.n_bins) {
+			std::ostringstream oss;
+			oss << "Signature mapping file is used, but it is defined for " << std::to_string(stbm.GetNBins()) << " bins, while KMC is running for " << Params.n_bins << " bins";
+			throw std::runtime_error(oss.str());
+		}
+
+		Queues.s_mapper->SetPredefined(stbm.GetMapping());
+	}
+	else if (Params.file_type == InputType::KMC)
+	{
+		Queues.s_mapper->InitKMC(Params.input_file_names.front());
+	}
+	else
 	{
 		if (Params.file_type != InputType::BAM)
 		{
@@ -1066,10 +1090,6 @@ template <unsigned SIZE> void CKMC<SIZE>::buildSignatureMapping()
 		Queues.pmm_stats->free(stats);
 		Queues.pmm_stats->release();
 		Queues.pmm_stats.reset();
-	}
-	else
-	{
-		Queues.s_mapper->InitKMC(Params.input_file_names.front());
 	}
 	timer_stage0.stopTimer();
 }

@@ -79,6 +79,8 @@ struct CKMCParams {
 	bool verbose_log;
 #endif
 
+	std::string sig_to_bin_mapping;
+
 	int kmer_len;			// kmer length
 	int signature_len;
 	int cutoff_min;			// exclude k-mers occurring less than times

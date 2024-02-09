@@ -129,7 +129,9 @@ namespace KMC
 #ifdef DEVELOP_MODE
 		bool developVerbose = false;
 #endif
-	public:		
+
+		std::string sigToBinMappingPath;
+	public:
 		Stage1Params& SetInputFiles(const std::vector<std::string>& inputFiles);
 		Stage1Params& SetTmpPath(const std::string& tmpPath);
 		Stage1Params& SetKmerLen(uint32_t kmerLen);
@@ -152,6 +154,8 @@ namespace KMC
 		Stage1Params& SetDevelopVerbose(bool developVerbose);
 #endif
 
+		Stage1Params& SetSigToBinMappingPath(const std::string& sigToBinMappingPath);
+
 		const std::vector<std::string>& GetInputFiles() const noexcept { return inputFiles; }
 		const std::string& GetTmpPath() const noexcept { return tmpPath; }
 		uint32_t  GetKmerLen() const noexcept { return kmerLen; }
@@ -173,6 +177,8 @@ namespace KMC
 #ifdef DEVELOP_MODE
 		bool GetDevelopVerbose() const noexcept { return developVerbose; }
 #endif
+
+		const std::string& GetSigToBinMappingPath() const noexcept { return sigToBinMappingPath; }
 	};
 
 

@@ -224,6 +224,10 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			if (stage1Params.GetEstimateHistogramCfg() != KMC::EstimateHistogramCfg::ONLY_ESTIMATE) //ONLY_ESTIMATE has priority over estimate and count
 				stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS);
 		}
+		else if (strncmp(argv[i], "--sig-to-bin-mapping", strlen("--sig-to-bin-mapping")) == 0)
+		{
+			stage1Params.SetSigToBinMappingPath(&argv[i][strlen("--sig-to-bin-mapping")]);
+		}
 		else if (strncmp(argv[i], "-w", 2) == 0)
 			stage2Params.SetWithoutOutput(true);			
 

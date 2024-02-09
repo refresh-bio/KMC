@@ -45,6 +45,7 @@ int main(int argc, char* argv[])
 	int32 i;
 	uint32 min_count_to_set = 0;
 	uint32 max_count_to_set = 0;
+	std::string sig_to_bin_mapping;
 	std::string input_file_name;
 	std::string output_file_name;
 
@@ -66,6 +67,8 @@ int main(int argc, char* argv[])
 				min_count_to_set = atoi(&argv[i][3]);
 			else if(strncmp(argv[i], "-cx", 3) == 0)
 					max_count_to_set = atoi(&argv[i][3]);
+			else if (strncmp(argv[i], "--sig-to-bin-mapping", strlen("--sig-to-bin-mapping")) == 0)
+				sig_to_bin_mapping = &argv[i][strlen("--sig-to-bin-mapping")];
 		}
 		else
 			break;
@@ -92,7 +95,13 @@ int main(int argc, char* argv[])
 	// Open kmer database for listing and print kmers within min_count and max_count
 	//------------------------------------------------------------------------------
 
-	if (!kmer_data_base.OpenForListing(input_file_name))
+	bool open_status = false;
+	if (sig_to_bin_mapping != "")
+		open_status = kmer_data_base.OpenForListingWithBinOrder(input_file_name, sig_to_bin_mapping);
+	else
+		open_status = kmer_data_base.OpenForListing(input_file_name);
+
+	if (!open_status)
 	{
 		print_info();
 		return EXIT_FAILURE ;
@@ -125,13 +134,27 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;	
 
 		uint64 counter;
-		while (kmer_data_base.ReadNextKmer(kmer_object, counter))
+		if (sig_to_bin_mapping == "")
 		{
-			kmer_object.to_string(str);
-			str[_kmer_length] = '\t';
-			counter_len = CNumericConversions::Int2PChar(counter, (uchar*)str + _kmer_length + 1);
-			str[_kmer_length + 1 + counter_len] = '\n';
-			fwrite(str, 1, _kmer_length + counter_len + 2, out_file);
+			while (kmer_data_base.ReadNextKmer(kmer_object, counter))
+			{
+				kmer_object.to_string(str);
+				str[_kmer_length] = '\t';
+				counter_len = CNumericConversions::Int2PChar(counter, (uchar*)str + _kmer_length + 1);
+				str[_kmer_length + 1 + counter_len] = '\n';
+				fwrite(str, 1, _kmer_length + counter_len + 2, out_file);
+			}
+		}
+		else
+		{
+			while (kmer_data_base.ReadNextKmerInBinOrder(kmer_object, counter))
+			{
+				kmer_object.to_string(str);
+				str[_kmer_length] = '\t';
+				counter_len = CNumericConversions::Int2PChar(counter, (uchar*)str + _kmer_length + 1);
+				str[_kmer_length + 1 + counter_len] = '\n';
+				fwrite(str, 1, _kmer_length + counter_len + 2, out_file);
+			}
 		}
 	
 		fclose(out_file);

@@ -310,6 +310,12 @@ namespace KMC
 		return *this;
 	}
 
+	Stage1Params& Stage1Params::SetSigToBinMappingPath(const std::string& sigToBinMappingPath)
+	{
+		this->sigToBinMappingPath = sigToBinMappingPath;
+		return *this;
+	}
+
 	Stage2Params& Stage2Params::SetMaxRamGB(uint32_t maxRamGB)
 	{
 		if (maxRamGB < MIN_MEM)
