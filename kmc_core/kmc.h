@@ -156,6 +156,8 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 #endif
 
 	Params.sig_to_bin_mapping = stage1Params.GetSigToBinMappingPath();
+	Params.sig_to_bin_map_stats_percentage = stage1Params.GetSigToBinMapStatsPercentage();
+	Params.only_generate_sig_to_bin_mapping = stage1Params.GetOnlyGenerateSigToBinMapping();
 
 	Params.both_strands = stage1Params.GetCanonicalKmers();
 	Params.homopolymer_compressed = stage1Params.GetHomopolymerCompressed();
@@ -824,7 +826,7 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 		}
 	}
 
-	std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues);
+	std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false, Params.sig_to_bin_map_stats_percentage);
 	CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader.get()));
 
 	for (auto& t : fastqs_threads)
@@ -1271,6 +1273,12 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 	// ***** Stage 0 *****
 
 	buildSignatureMapping();
+	if (Params.only_generate_sig_to_bin_mapping != "")
+	{
+		CSigToBinMap stbm(Params.signature_len, Params.n_bins, Queues.s_mapper->GetMap());
+		stbm.Serialize(Params.only_generate_sig_to_bin_mapping);
+		return results;
+	}
 
 	//ignore missing eols from stats stage
 	Queues.missingEOL_at_EOF_counter = std::make_unique<CMissingEOL_at_EOF_counter>();
@@ -1436,6 +1444,11 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 {
 	KMC::Stage2Results results;
+	results.tmpSizeStrictMemory = 0;
+
+	if (Params.only_generate_sig_to_bin_mapping != "")
+		return results;
+
 	if (is_only_estimating_histogram)
 		return results;
 	if (was_small_k_opt)
@@ -1784,11 +1797,6 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 	Queues.tmp_files_owner.reset();
 	Queues.bd.reset();
 	Queues.epd.reset();
-
-	results.tmpSizeStrictMemory = 0;
-
-	if (Params.only_generate_sig_to_bin_mapping != "")
-		return results;
 
 	if (!Params.use_strict_mem)
 	{
