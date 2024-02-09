@@ -274,11 +274,13 @@ class CKMCFile
 				throw std::runtime_error(oss.str());
 			}
 
+			assert(stbm.GetMapping()[signature_map_size - 1] == n_bins - 1);
+
 			for (uint32_t x = 0; x < signature_map_size; ++x)
 			{
-				if (!CMmer::is_allowed(x, signature_len))
-					bin_map.back() = signature_map[x];
-				else if (bin_map[stbm.GetMapping()[x]] == guard)
+				if (stbm.GetMapping()[x] == -1) //disabled signature
+					continue;
+				if (bin_map[stbm.GetMapping()[x]] == guard)
 					bin_map[stbm.GetMapping()[x]] = signature_map[x];
 				else if (bin_map[stbm.GetMapping()[x]] != signature_map[x])
 				{
@@ -287,7 +289,6 @@ class CKMCFile
 					throw std::runtime_error(oss.str());
 				}
 			}
-
 			calc_bin_ranges();
 		}
 
