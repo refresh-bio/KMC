@@ -4,8 +4,8 @@
   
   Authors: Marek Kokot
   
-  Version: 3.2.3
-  Date   : 2023-12-08
+  Version: 3.2.4
+  Date   : 2024-02-09
 */
 
 #include <iostream>
