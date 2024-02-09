@@ -112,7 +112,6 @@ class CKMCFile
 
 			bool reload()
 			{
-				std::cerr << "reload()\n";
 				assert(file_byte_end_pos >= file_byte_pos);
 
 				auto left_in_file = file_byte_end_pos - file_byte_pos;
@@ -277,9 +276,9 @@ class CKMCFile
 
 			for (uint32_t x = 0; x < signature_map_size; ++x)
 			{
-				if (!CMmer::is_allowed(x, signature_len)) //mkokot_TODO: consider if this is needed
-					continue;
-				if (bin_map[stbm.GetMapping()[x]] == guard)
+				if (!CMmer::is_allowed(x, signature_len))
+					bin_map.back() = signature_map[x];
+				else if (bin_map[stbm.GetMapping()[x]] == guard)
 					bin_map[stbm.GetMapping()[x]] = signature_map[x];
 				else if (bin_map[stbm.GetMapping()[x]] != signature_map[x])
 				{
