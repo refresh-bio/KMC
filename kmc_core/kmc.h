@@ -1271,6 +1271,10 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 	// ***** Stage 0 *****
 
 	buildSignatureMapping();
+
+	//ignore missing eols from stats stage
+	Queues.missingEOL_at_EOF_counter = std::make_unique<CMissingEOL_at_EOF_counter>();
+
 	if (Params.only_generate_sig_to_bin_mapping != "")
 	{
 		CSigToBinMap stbm(Params.signature_len, Params.n_bins, Queues.s_mapper->GetMap());
