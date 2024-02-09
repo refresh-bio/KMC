@@ -40,8 +40,8 @@ class CFastqReaderDataSrc
 public:
 	inline void SetQueue(CBinaryPackQueue* _binary_pack_queue, CMemoryPool *_pmm_binary_file_reader);
 	inline bool Finished();
-	uint64 read(uchar* buff, uint64 size, bool& last_in_file);
-	uint64 read(uchar* buff, uint64 size, bool& last_in_file, bool&first_in_file);
+	uint64 read(uchar* buff, uint64 size, bool allow_unexpected_end_of_gzip_stream, bool& last_in_file);
+	uint64 read(uchar* buff, uint64 size, bool allow_unexpected_end_of_gzip_stream, bool& last_in_file, bool&first_in_file);
 };
 
 
@@ -83,11 +83,11 @@ class CFastqReader
 	void ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uint32 file_no);
 	void PreparePartForSplitter(uchar* data, uint64 size, uint32 id, uint32 file_no);
 
-	bool GetNextSymbOfLongReadRecord(uchar& res, int64& p, int64& size);
+	bool GetNextSymbOfLongReadRecord(bool allow_unexpected_end_of_gzip_stream, uchar& res, int64& p, int64& size);
 
-	void CleanUpAfterLongFastqRead(uint32 number_of_lines_to_skip);
+	void CleanUpAfterLongFastqRead(bool allow_unexpected_end_of_gzip_stream, uint32 number_of_lines_to_skip);
 
-	void CleanUpAfterLongFastaRead();
+	void CleanUpAfterLongFastaRead(bool allow_unexpected_end_of_gzip_stream);
 	void FixEOLIfNeeded(uchar* part, int64& size);	
 public:
 	CFastqReader(CMemoryPoolWithBamSupport *_pmm_fastq, InputType _file_type, int _kmer_len,
@@ -101,13 +101,13 @@ public:
 	bool SetPartSize(uint64 _part_size);
 	bool OpenFiles();
 
-	bool GetPartFromMultilneFasta(uchar *&_part, uint64 &_size);
+	bool GetPartFromMultilneFasta(bool allow_unexpected_end_of_gzip_stream, uchar *&_part, uint64 &_size);
 	
 	void ProcessBam();	
 
 	bool GetPart(uchar *&_part, uint64 &_size);
 
-	bool GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type);
+	bool GetPartNew(bool allow_unexpected_end_of_gzip_stream, uchar *&_part, uint64 &_size, ReadType& read_type);
 	void Init()
 	{
 		pmm_fastq->reserve(part);

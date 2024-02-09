@@ -87,6 +87,9 @@ class CBinaryFilesReader
 			left_to_read = fsize * percent_of_data_to_read / 100.0;
 			if (left_to_read < 10000) //lets read at least 10k bytes
 				left_to_read = MIN(10000, fsize);
+
+			if (left_to_read > fsize) //but at most whole file...
+				left_to_read = fsize;
 		}
 	}
 

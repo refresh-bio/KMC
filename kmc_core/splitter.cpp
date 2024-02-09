@@ -306,7 +306,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 			++n_reads;
 			for (; part_pos < part_size && part[part_pos] != '\n' && part[part_pos] != '\r'; ++part_pos);//find EOF
 			++part_pos;
-			if (part[part_pos] == '\n' || part[part_pos] == '\r')
+			if (part_pos < part_size && (part[part_pos] == '\n' || part[part_pos] == '\r'))
 				++part_pos;
 		}
 		for (; part_pos < part_size && pos < mem_part_pmm_reads && part[part_pos] != '>';)
