@@ -136,6 +136,9 @@ class CKMCFile
 		public:
 			void reset(FILE* file, size_t buff_size_bytes, size_t file_byte_pos, size_t file_byte_end_pos)
 			{
+				if (file_byte_end_pos - file_byte_pos < buff_size_bytes)
+					buff_size_bytes = file_byte_end_pos - file_byte_pos;
+
 				this->file = file;
 				my_fseek(file, file_byte_pos, SEEK_SET);
 				this->buffer.resize(buff_size_bytes / sizeof(T));
