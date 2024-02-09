@@ -4,8 +4,8 @@ The homepage of the KMC project is http://sun.aei.polsl.pl/kmc
 
 Authors: Marek Kokot
 
-Version: 3.2.3
-Date   : 2023-12-08
+Version: 3.2.4
+Date   : 2024-02-09
 */
 
 #ifndef _KMC1_DB_READER_H
