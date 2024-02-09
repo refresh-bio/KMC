@@ -687,6 +687,7 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 			}
 			if (last_in_file)
 			{
+				part_filled = 0;
 				_size = 0;
 				return true;
 			}
@@ -831,6 +832,7 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 			}
 			if (last_in_file)
 			{
+				part_filled = 0;
 				_size = 0;
 				return true;
 			}

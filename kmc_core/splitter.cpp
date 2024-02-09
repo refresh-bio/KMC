@@ -450,6 +450,7 @@ void CSplitter::CalcStats(uchar* _part, uint64 _part_size, ReadType read_type, u
 	uint32 i;
 	uint32 len;//length of extended kmer
 
+	curr_read_len = 0;
 	while (GetSeq(seq, seq_size, read_type))
 	{
 		if (homopolymer_compressed)
