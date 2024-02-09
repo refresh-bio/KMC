@@ -1021,8 +1021,7 @@ template <unsigned SIZE> void CKMC<SIZE>::buildSignatureMapping()
 			Queues.bam_task_manager = std::make_unique<CBamTaskManager>();
 		}
 
-		//mkokot_TODO: make this percentage a parameter
-		std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false, 1.0);
+		std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false, Params.sig_to_bin_map_stats_percentage);
 
 		Queues.stats_part_queue = std::make_unique<CPartQueue>(Params.n_readers);
 
@@ -1272,7 +1271,12 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 	// ***** Stage 0 *****
 
 	buildSignatureMapping();
-
+	if (Params.only_generate_sig_to_bin_mapping != "")
+	{
+		CSigToBinMap stbm(Params.signature_len, Params.n_bins, Queues.s_mapper->GetMap());
+		stbm.Serialize(Params.only_generate_sig_to_bin_mapping);
+		return results;
+	}
 	// ***** Stage 1 *****
 
 	if (Params.file_type != InputType::BAM)
@@ -1778,6 +1782,10 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 	Queues.epd.reset();
 
 	results.tmpSizeStrictMemory = 0;
+
+	if (Params.only_generate_sig_to_bin_mapping != "")
+		return results;
+
 	if (!Params.use_strict_mem)
 	{
 		release_thr_st2_1.join();

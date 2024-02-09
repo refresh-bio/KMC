@@ -242,11 +242,12 @@ public:
 	{
 		return map_size;
 	}
+#endif
 	int32* GetMap()
 	{
 		return signature_map;
 	}
-#endif
+
 	CSignatureMapper(CMemoryPool* _pmm_stats, uint32 _signature_len, uint32 _n_bins
 #ifdef DEVELOP_MODE
 		,  bool _verbose_log

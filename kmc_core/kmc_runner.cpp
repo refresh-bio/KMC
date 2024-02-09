@@ -315,7 +315,22 @@ namespace KMC
 		this->sigToBinMappingPath = sigToBinMappingPath;
 		return *this;
 	}
-
+	Stage1Params& Stage1Params::SetSigToBinMapStatsPercentage(double sigToBinMapStatsPercentage)
+	{
+		if (sigToBinMapStatsPercentage <= 0.0 || sigToBinMapStatsPercentage > 100.0)
+		{
+			std::ostringstream err_msg;
+			err_msg << "Wrong parameret: signature to bin map stats percentage must be in range (0, 100]\n";
+			throw std::runtime_error(err_msg.str());
+		}
+		this->sigToBinMapStatsPercentage = sigToBinMapStatsPercentage;
+		return *this;
+	}
+	Stage1Params& Stage1Params::SetOnlyGenerateSigToBinMapping(const std::string& onlyGenerateSigToBinMapping)
+	{
+		this->onlyGenerateSigToBinMapping = onlyGenerateSigToBinMapping;
+		return *this;
+	}
 	Stage2Params& Stage2Params::SetMaxRamGB(uint32_t maxRamGB)
 	{
 		if (maxRamGB < MIN_MEM)

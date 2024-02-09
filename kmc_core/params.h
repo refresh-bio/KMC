@@ -80,6 +80,8 @@ struct CKMCParams {
 #endif
 
 	std::string sig_to_bin_mapping;
+	double sig_to_bin_map_stats_percentage;
+	std::string only_generate_sig_to_bin_mapping;
 
 	int kmer_len;			// kmer length
 	int signature_len;

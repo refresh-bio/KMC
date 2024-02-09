@@ -129,8 +129,9 @@ namespace KMC
 #ifdef DEVELOP_MODE
 		bool developVerbose = false;
 #endif
-
 		std::string sigToBinMappingPath;
+		double sigToBinMapStatsPercentage = 1.0; //what percentage of the input data should be used to build signature to bin mapping
+		std::string onlyGenerateSigToBinMapping; // if != "" only generate signature to bin mapping and store in file
 	public:
 		Stage1Params& SetInputFiles(const std::vector<std::string>& inputFiles);
 		Stage1Params& SetTmpPath(const std::string& tmpPath);
@@ -153,8 +154,9 @@ namespace KMC
 #ifdef DEVELOP_MODE
 		Stage1Params& SetDevelopVerbose(bool developVerbose);
 #endif
-
 		Stage1Params& SetSigToBinMappingPath(const std::string& sigToBinMappingPath);
+		Stage1Params& SetSigToBinMapStatsPercentage(double sigToBinMapStatsPercentage);
+		Stage1Params& SetOnlyGenerateSigToBinMapping(const std::string& onlyGenerateSigToBinMapping);
 
 		const std::vector<std::string>& GetInputFiles() const noexcept { return inputFiles; }
 		const std::string& GetTmpPath() const noexcept { return tmpPath; }
@@ -179,6 +181,8 @@ namespace KMC
 #endif
 
 		const std::string& GetSigToBinMappingPath() const noexcept { return sigToBinMappingPath; }
+		double GetSigToBinMapStatsPercentage() const noexcept { return sigToBinMapStatsPercentage; }
+		const std::string& GetOnlyGenerateSigToBinMapping() const noexcept { return onlyGenerateSigToBinMapping; }
 	};
 
 
