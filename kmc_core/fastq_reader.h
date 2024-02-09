@@ -42,7 +42,7 @@ public:
 	inline bool Finished();
 	uint64 read(uchar* buff, uint64 size, bool& last_in_file);
 	uint64 read(uchar* buff, uint64 size, bool& last_in_file, bool&first_in_file);
-	void IgnoreRest()
+	void IgnoreRest() //mkokot_TODO: remove??
 	{
 		if (in_data)
 			pmm_binary_file_reader->free(in_data);
@@ -83,7 +83,7 @@ class CFastqReader
 
 	CMemoryPool *pmm_binary_file_reader;
 	CPartQueue *part_queue;
-	CStatsPartQueue *stats_part_queue;
+	CPartQueue *stats_part_queue;
 
 	string input_file_name;
 	InputType file_type;
@@ -116,7 +116,7 @@ class CFastqReader
 public:
 	CFastqReader(CMemoryPoolWithBamSupport *_pmm_fastq, InputType _file_type, int _kmer_len,
 		CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader, CBamTaskManager* _bam_task_manager, 
-		CPartQueue* _part_queue, CStatsPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter);
+		CPartQueue* _part_queue, CPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter);
 	~CFastqReader();
 
 	static uint64 OVERHEAD_SIZE;
@@ -138,6 +138,7 @@ public:
 		part_filled = 0;
 	}
 
+	//mkokot_TODO: remove?
 	void IgnoreRest()
 	{
 		data_src.IgnoreRest();
@@ -156,7 +157,7 @@ class CWFastqReader {
 	CBinaryPackQueue* binary_pack_queue;
 	CBamTaskManager* bam_task_manager = nullptr; //only for bam input
 	CPartQueue *part_queue;
-	CStatsPartQueue *stats_part_queue;
+	CPartQueue *stats_part_queue;
 
 	InputType file_type;
 	int kmer_len;
@@ -181,7 +182,7 @@ class CWStatsFastqReader
 	CMemoryPool *pmm_binary_file_reader;
 	uint64 part_size;
 	CBamTaskManager* bam_task_manager = nullptr; //only for bam input
-	CStatsPartQueue *stats_part_queue;
+	CPartQueue*stats_part_queue;
 	InputType file_type;
 	int kmer_len;
 	CBinaryPackQueue* binary_pack_queue;

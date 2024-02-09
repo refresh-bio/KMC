@@ -116,7 +116,7 @@ public:
 
 //----------------------------------------------------------------------------------
 class CWStatsSplitter {
-	CStatsPartQueue *spq;
+	CPartQueue* spq;
 	CMemoryPool *pmm_fastq, *pmm_stats;
 	uint32 *stats;
 	std::unique_ptr<CSplitter> spl;

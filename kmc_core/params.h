@@ -141,7 +141,7 @@ struct CKMCQueues
 	// Queues
 	std::unique_ptr<CInputFilesQueue> input_files_queue;
 	std::unique_ptr<CPartQueue> part_queue;
-	std::unique_ptr<CStatsPartQueue> stats_part_queue;
+	std::unique_ptr<CPartQueue> stats_part_queue;
 
 	std::unique_ptr<CBinPartQueue> bpq;
 	std::unique_ptr<CBinDesc> bd;

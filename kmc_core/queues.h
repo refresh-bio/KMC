@@ -43,21 +43,17 @@ class CBinaryPackQueue
 {
 	std::queue<tuple<uchar*, uint64, FilePart, CompressionType>> q;
 	std::mutex mtx;
-	CThrowingOnCancelConditionVariable cv_pop, cv_push;
+	CThrowingOnCancelConditionVariable cv_pop;
 	bool completed = false;
-	bool stop = false;
 
 public:
 
-	bool push(uchar* data, uint64 size, FilePart file_part, CompressionType mode)
+	void push(uchar* data, uint64 size, FilePart file_part, CompressionType mode)
 	{
 		std::lock_guard<std::mutex> lck(mtx);
-		if (stop)
-			return false;
 		q.emplace(data, size, file_part, mode);
 		if (q.size() == 1) //was empty
 			cv_pop.notify_all();
-		return true;
 	}
 
 	void mark_completed()
@@ -101,13 +97,6 @@ public:
 		if (q.empty())
 			return true;
 		return get<2>(q.front()) == FilePart::End;
-	}
-
-	void ignore_rest()
-	{
-		lock_guard<mutex> lck(mtx);
-		stop = true;
-		cv_push.notify_all();
 	}
 };
 
@@ -194,7 +183,6 @@ class CPartQueue
 	typedef queue<elem_t, list<elem_t>> queue_t;
 
 	queue_t q;
-	bool is_completed;
 	int n_readers;
 
 	mutable mutex mtx;								// The mutex to synchronise on
@@ -204,14 +192,8 @@ public:
 	CPartQueue(int _n_readers)
 	{
 		unique_lock<mutex> lck(mtx);
-		is_completed    = false;
 		n_readers       = _n_readers;
 	};
-
-	bool empty() {
-		lock_guard<mutex> lck(mtx);
-		return q.empty();
-	}
 
 	bool completed() {
 		lock_guard<mutex> lck(mtx);
@@ -241,68 +223,6 @@ public:
 
 		if (q.empty())
 			return false;
-		std::tie(part, size, read_type) = q.front();
-		q.pop();
-
-		return true;
-	}
-};
-
-//************************************************************************************************************
-class CStatsPartQueue
-{
-	typedef tuple<uchar *, uint64, ReadType> elem_t;
-	typedef queue<elem_t, list<elem_t>> queue_t;
-
-	queue_t q;
-
-	mutable mutex mtx;
-	CThrowingOnCancelConditionVariable cv_pop;
-	int n_readers;
-	int64 bytes_to_read;
-
-public:
-	CStatsPartQueue(int _n_readers, int64 _bytes_to_read)
-	{
-		unique_lock<mutex> lck(mtx);
-		n_readers = _n_readers;
-		bytes_to_read = _bytes_to_read;
-	}
-
-	void mark_completed() {
-		lock_guard<mutex> lck(mtx);
-		n_readers--;
-		if (!n_readers)
-			cv_pop.notify_all();
-	}
-
-	bool completed() {
-		lock_guard<mutex> lck(mtx);
-		return q.empty() && !n_readers;
-	}
-
-	bool push(uchar *part, uint64 size, ReadType read_type) {
-		unique_lock<mutex> lck(mtx);
-
-		if (bytes_to_read <= 0)
-			return false;
-
-		bool was_empty = q.empty();
-		q.push(make_tuple(part, size, read_type));
-		bytes_to_read -= size;
-		if (was_empty)
-			cv_pop.notify_one();
-
-		return true;
-	}
-
-	bool pop(uchar *&part, uint64 &size, ReadType& read_type) {
-		unique_lock<mutex> lck(mtx);
-		cv_pop.wait(lck, [this]{return !this->q.empty() || !this->n_readers; });
-
-		if (q.empty())
-			return false;
-
 		std::tie(part, size, read_type) = q.front();
 		q.pop();
 
@@ -2141,7 +2061,7 @@ class CBamTaskManager
 	mutex mtx;
 	CThrowingOnCancelConditionVariable cv;
 	bool binary_reader_completed = false;
-	bool ignore_rest = false;
+	bool ignore_rest = false; //mkokot_TODO: remove, bam statistics part should also be handled in binary_readed
 	
 	queue<tuple<uchar*, uint64, uint32, uint32>> bam_binary_part_queue; //data, size, id (of pack), file no
 
@@ -2202,6 +2122,7 @@ class CBamTaskManager
 			}
 		}
 
+		//mkokot_TODO: remove?
 		void IgnoreRest(CMemoryPool* pmm_fastq)
 		{
 			for (auto& e : _m)

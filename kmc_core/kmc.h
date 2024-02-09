@@ -1021,9 +1021,10 @@ template <unsigned SIZE> void CKMC<SIZE>::buildSignatureMapping()
 			Queues.bam_task_manager = std::make_unique<CBamTaskManager>();
 		}
 
-		std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false);
+		//mkokot_TODO: make this percentage a parameter
+		std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false, 1.0);
 
-		Queues.stats_part_queue = std::make_unique<CStatsPartQueue>(Params.n_readers, MAX(STATS_FASTQ_SIZE, w_bin_file_reader->GetPredictedSize() / 100));
+		Queues.stats_part_queue = std::make_unique<CPartQueue>(Params.n_readers);
 
 		vector<CExceptionAwareThread> stats_fastqs_threads;
 		vector<CExceptionAwareThread> stats_splitters_threads;

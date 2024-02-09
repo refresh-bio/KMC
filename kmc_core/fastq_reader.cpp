@@ -25,7 +25,7 @@ uint64 CFastqReader::OVERHEAD_SIZE = 1 << 16;
 //    * _mm - pointer to memory monitor (to check the memory limits)
 CFastqReader::CFastqReader(CMemoryPoolWithBamSupport *_pmm_fastq, InputType _file_type, int _kmer_len,
 	CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader, CBamTaskManager* _bam_task_manager, 
-	CPartQueue* _part_queue, CStatsPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter)
+	CPartQueue* _part_queue, CPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter)
 {
 	binary_pack_queue = _binary_pack_queue;
 	missingEOL_at_EOF_counter = _missingEOL_at_EOF_counter;
@@ -254,15 +254,18 @@ void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 /*id*
 		}
 		else if (stats_part_queue)
 		{
-			if (!stats_part_queue->push(state.prev_part_data, state.prev_part_size, ReadType::na))
-			{
-				pmm_fastq->free(state.prev_part_data);
-				pmm_fastq->free(data);
-				state.prev_part_data = nullptr;
-				state.prev_part_size = 0;
-				bam_task_manager->IgnoreRest(pmm_fastq, pmm_binary_file_reader);
-				return;
-			}
+			stats_part_queue->push(state.prev_part_data, state.prev_part_size, ReadType::na);
+
+			//mkokot_TODO: remove, but first check if this work
+			//if (!stats_part_queue->push(state.prev_part_data, state.prev_part_size, ReadType::na))
+			//{
+			//	pmm_fastq->free(state.prev_part_data);
+			//	pmm_fastq->free(data);
+			//	state.prev_part_data = nullptr;
+			//	state.prev_part_size = 0;
+			//	bam_task_manager->IgnoreRest(pmm_fastq, pmm_binary_file_reader);
+			//	return;
+			//}
 		}
 		else
 		{
@@ -293,12 +296,15 @@ void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 /*id*
 			}
 			else if (stats_part_queue)
 			{
-				if (!stats_part_queue->push(data, size, ReadType::na))
-				{
-					pmm_fastq->free(data);
-					bam_task_manager->IgnoreRest(pmm_fastq, pmm_binary_file_reader);
-					return;
-				}
+				stats_part_queue->push(data, size, ReadType::na);
+
+				//mkokot_TODO: remove, but first check if this work
+				//if (!stats_part_queue->push(data, size, ReadType::na))
+				//{
+				//	pmm_fastq->free(data);
+				//	bam_task_manager->IgnoreRest(pmm_fastq, pmm_binary_file_reader);
+				//	return;
+				//}
 			}
 			else
 			{
@@ -338,15 +344,18 @@ void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 /*id*
 			}
 			else if (stats_part_queue)
 			{
-				if (!stats_part_queue->push(data, bpos, ReadType::na))
-				{
-					pmm_fastq->free(data);
-					pmm_fastq->free(state.prev_part_data);
-					state.prev_part_data = nullptr;
-					state.prev_part_size = 0;
-					bam_task_manager->IgnoreRest(pmm_fastq, pmm_binary_file_reader);
-					return;
-				}
+				stats_part_queue->push(data, bpos, ReadType::na);
+
+				//mkokot_TODO: remove, but first check if this work
+				//if (!stats_part_queue->push(data, bpos, ReadType::na))
+				//{
+				//	pmm_fastq->free(data);
+				//	pmm_fastq->free(state.prev_part_data);
+				//	state.prev_part_data = nullptr;
+				//	state.prev_part_size = 0;
+				//	bam_task_manager->IgnoreRest(pmm_fastq, pmm_binary_file_reader);
+				//	return;
+				//}
 			}
 			else
 			{
@@ -1286,18 +1295,20 @@ void CWStatsFastqReader::operator()()
 	else
 	{
 		fqr.Init();
-		bool finished = false;
 		ReadType read_type;
-		while (fqr.GetPartNew(part, part_filled, read_type) && !finished)
+		while (fqr.GetPartNew(part, part_filled, read_type))
 		{
-			if (!stats_part_queue->push(part, part_filled, read_type))
-			{
-				finished = true;
-				pmm_fastq->free(part);
-				binary_pack_queue->ignore_rest();
-				fqr.IgnoreRest();
-				break;
-			}
+			stats_part_queue->push(part, part_filled, read_type);
+
+			//mkokot_TODO: remove, but first check if this work
+			//if (!stats_part_queue->push(part, part_filled, read_type))
+			//{
+			//	finished = true;
+			//	pmm_fastq->free(part);
+			//	binary_pack_queue->ignore_rest();
+			//	fqr.IgnoreRest();
+			//	break;
+			//}
 		}
 	}
 	stats_part_queue->mark_completed();
