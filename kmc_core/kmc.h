@@ -46,6 +46,7 @@
 #include "kmc_runner.h"
 #include "critical_error_handler.h"
 #include "exception_aware_thread.h"
+#include "../kmc_api/sig_to_bin_map.h"
 
 using namespace std;
 
@@ -153,6 +154,10 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 #ifdef DEVELOP_MODE
 	Params.verbose_log = stage1Params.GetDevelopVerbose();
 #endif
+
+	Params.sig_to_bin_mapping = stage1Params.GetSigToBinMappingPath();
+	Params.sig_to_bin_map_stats_percentage = stage1Params.GetSigToBinMapStatsPercentage();
+	Params.only_generate_sig_to_bin_mapping = stage1Params.GetOnlyGenerateSigToBinMapping();
 
 	Params.both_strands = stage1Params.GetCanonicalKmers();
 	Params.homopolymer_compressed = stage1Params.GetHomopolymerCompressed();
@@ -821,7 +826,7 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 		}
 	}
 
-	std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues);
+	std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false, Params.sig_to_bin_map_stats_percentage);
 	CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader.get()));
 
 	for (auto& t : fastqs_threads)
@@ -982,7 +987,28 @@ template <unsigned SIZE> void CKMC<SIZE>::buildSignatureMapping()
 #endif
 		);
 
-	if (Params.file_type != InputType::KMC)
+	if (Params.sig_to_bin_mapping != "")
+	{
+		Params.verboseLogger->Log("\nInfo: Reading signature to bin mapping from file " + Params.sig_to_bin_mapping + "\n");
+		CSigToBinMap stbm(Params.sig_to_bin_mapping);
+		if (stbm.GetSigLen() != Params.signature_len) {
+			std::ostringstream oss;
+			oss << "Signature mapping file is used, but it is defined for signature len " << std::to_string(stbm.GetSigLen()) << ", while KMC is running for signature len " << Params.signature_len;
+			throw std::runtime_error(oss.str());
+		}
+		if (stbm.GetNBins() != Params.n_bins) {
+			std::ostringstream oss;
+			oss << "Signature mapping file is used, but it is defined for " << std::to_string(stbm.GetNBins()) << " bins, while KMC is running for " << Params.n_bins << " bins";
+			throw std::runtime_error(oss.str());
+		}
+
+		Queues.s_mapper->SetPredefined(stbm.GetMapping());
+	}
+	else if (Params.file_type == InputType::KMC)
+	{
+		Queues.s_mapper->InitKMC(Params.input_file_names.front());
+	}
+	else
 	{
 		if (Params.file_type != InputType::BAM)
 		{
@@ -997,9 +1023,9 @@ template <unsigned SIZE> void CKMC<SIZE>::buildSignatureMapping()
 			Queues.bam_task_manager = std::make_unique<CBamTaskManager>();
 		}
 
-		std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false);
+		std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false, Params.sig_to_bin_map_stats_percentage);
 
-		Queues.stats_part_queue = std::make_unique<CStatsPartQueue>(Params.n_readers, MAX(STATS_FASTQ_SIZE, w_bin_file_reader->GetPredictedSize() / 100));
+		Queues.stats_part_queue = std::make_unique<CPartQueue>(Params.n_readers);
 
 		vector<CExceptionAwareThread> stats_fastqs_threads;
 		vector<CExceptionAwareThread> stats_splitters_threads;
@@ -1066,10 +1092,6 @@ template <unsigned SIZE> void CKMC<SIZE>::buildSignatureMapping()
 		Queues.pmm_stats->free(stats);
 		Queues.pmm_stats->release();
 		Queues.pmm_stats.reset();
-	}
-	else
-	{
-		Queues.s_mapper->InitKMC(Params.input_file_names.front());
 	}
 	timer_stage0.stopTimer();
 }
@@ -1251,7 +1273,22 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 	// ***** Stage 0 *****
 
 	buildSignatureMapping();
+	if (Params.only_generate_sig_to_bin_mapping != "")
+	{
+		CSigToBinMap stbm(Params.signature_len, Params.n_bins, Queues.s_mapper->GetMap());
+		stbm.Serialize(Params.only_generate_sig_to_bin_mapping);
+		return results;
+	}
 
+	//ignore missing eols from stats stage
+	Queues.missingEOL_at_EOF_counter = std::make_unique<CMissingEOL_at_EOF_counter>();
+
+	if (Params.only_generate_sig_to_bin_mapping != "")
+	{
+		CSigToBinMap stbm(Params.signature_len, Params.n_bins, Queues.s_mapper->GetMap());
+		stbm.Serialize(Params.only_generate_sig_to_bin_mapping);
+		return results;
+	}
 	// ***** Stage 1 *****
 
 	if (Params.file_type != InputType::BAM)
@@ -1407,6 +1444,11 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 {
 	KMC::Stage2Results results;
+	results.tmpSizeStrictMemory = 0;
+
+	if (Params.only_generate_sig_to_bin_mapping != "")
+		return results;
+
 	if (is_only_estimating_histogram)
 		return results;
 	if (was_small_k_opt)
@@ -1756,7 +1798,6 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 	Queues.bd.reset();
 	Queues.epd.reset();
 
-	results.tmpSizeStrictMemory = 0;
 	if (!Params.use_strict_mem)
 	{
 		release_thr_st2_1.join();

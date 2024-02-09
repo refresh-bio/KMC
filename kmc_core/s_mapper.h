@@ -43,7 +43,11 @@ class CSignatureMapper
 		}
 	};
 	
-public:	
+public:
+	void SetPredefined(const int32_t* m)
+	{
+		std::copy_n(m, map_size, signature_map);
+	}
 	void InitKMC(const std::string& path)
 	{
 		std::string pre_file_name = path + ".kmc_pre";
@@ -238,11 +242,12 @@ public:
 	{
 		return map_size;
 	}
+#endif
 	int32* GetMap()
 	{
 		return signature_map;
 	}
-#endif
+
 	CSignatureMapper(CMemoryPool* _pmm_stats, uint32 _signature_len, uint32 _n_bins
 #ifdef DEVELOP_MODE
 		,  bool _verbose_log

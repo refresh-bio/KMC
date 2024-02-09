@@ -40,32 +40,8 @@ class CFastqReaderDataSrc
 public:
 	inline void SetQueue(CBinaryPackQueue* _binary_pack_queue, CMemoryPool *_pmm_binary_file_reader);
 	inline bool Finished();
-	uint64 read(uchar* buff, uint64 size, bool& last_in_file);
-	uint64 read(uchar* buff, uint64 size, bool& last_in_file, bool&first_in_file);
-	void IgnoreRest()
-	{
-		if (in_data)
-			pmm_binary_file_reader->free(in_data);
-		in_data = nullptr;
-		//clean queue
-		bool last_in_file_tmp = false;
-		while (pop_pack(in_data, in_data_size, file_part, compression_type, last_in_file_tmp))
-		{
-			if(in_data_size)
-				pmm_binary_file_reader->free(in_data);
-			in_data = nullptr;
-		}
-		switch (compression_type)
-		{
-		case CompressionType::plain:
-			break;
-		case CompressionType::gzip:
-			inflateEnd(&stream);
-			break;
-		default:
-			break;
-		}
-	}
+	uint64 read(uchar* buff, uint64 size, bool allow_unexpected_end_of_gzip_stream, bool& last_in_file);
+	uint64 read(uchar* buff, uint64 size, bool allow_unexpected_end_of_gzip_stream, bool& last_in_file, bool&first_in_file);
 };
 
 
@@ -83,7 +59,7 @@ class CFastqReader
 
 	CMemoryPool *pmm_binary_file_reader;
 	CPartQueue *part_queue;
-	CStatsPartQueue *stats_part_queue;
+	CPartQueue *stats_part_queue;
 
 	string input_file_name;
 	InputType file_type;
@@ -107,16 +83,16 @@ class CFastqReader
 	void ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uint32 file_no);
 	void PreparePartForSplitter(uchar* data, uint64 size, uint32 id, uint32 file_no);
 
-	bool GetNextSymbOfLongReadRecord(uchar& res, int64& p, int64& size);
+	bool GetNextSymbOfLongReadRecord(bool allow_unexpected_end_of_gzip_stream, uchar& res, int64& p, int64& size);
 
-	void CleanUpAfterLongFastqRead(uint32 number_of_lines_to_skip);
+	void CleanUpAfterLongFastqRead(bool allow_unexpected_end_of_gzip_stream, uint32 number_of_lines_to_skip);
 
-	void CleanUpAfterLongFastaRead();
+	void CleanUpAfterLongFastaRead(bool allow_unexpected_end_of_gzip_stream);
 	void FixEOLIfNeeded(uchar* part, int64& size);	
 public:
 	CFastqReader(CMemoryPoolWithBamSupport *_pmm_fastq, InputType _file_type, int _kmer_len,
 		CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader, CBamTaskManager* _bam_task_manager, 
-		CPartQueue* _part_queue, CStatsPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter);
+		CPartQueue* _part_queue, CPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter);
 	~CFastqReader();
 
 	static uint64 OVERHEAD_SIZE;
@@ -125,24 +101,18 @@ public:
 	bool SetPartSize(uint64 _part_size);
 	bool OpenFiles();
 
-	bool GetPartFromMultilneFasta(uchar *&_part, uint64 &_size);
+	bool GetPartFromMultilneFasta(bool allow_unexpected_end_of_gzip_stream, uchar *&_part, uint64 &_size);
 	
 	void ProcessBam();	
 
 	bool GetPart(uchar *&_part, uint64 &_size);
 
-	bool GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type);
+	bool GetPartNew(bool allow_unexpected_end_of_gzip_stream, uchar *&_part, uint64 &_size, ReadType& read_type);
 	void Init()
 	{
 		pmm_fastq->reserve(part);
 		part_filled = 0;
 	}
-
-	void IgnoreRest()
-	{
-		data_src.IgnoreRest();
-	}
-
 };
 
 //************************************************************************************************************
@@ -156,7 +126,7 @@ class CWFastqReader {
 	CBinaryPackQueue* binary_pack_queue;
 	CBamTaskManager* bam_task_manager = nullptr; //only for bam input
 	CPartQueue *part_queue;
-	CStatsPartQueue *stats_part_queue;
+	CPartQueue *stats_part_queue;
 
 	InputType file_type;
 	int kmer_len;
@@ -181,7 +151,7 @@ class CWStatsFastqReader
 	CMemoryPool *pmm_binary_file_reader;
 	uint64 part_size;
 	CBamTaskManager* bam_task_manager = nullptr; //only for bam input
-	CStatsPartQueue *stats_part_queue;
+	CPartQueue*stats_part_queue;
 	InputType file_type;
 	int kmer_len;
 	CBinaryPackQueue* binary_pack_queue;

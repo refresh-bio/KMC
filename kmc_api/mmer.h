@@ -37,31 +37,6 @@ class CMmer
 	static uint32_t norm10[1 << 20];
 	static uint32_t norm11[1 << 22];
 
-	static bool is_allowed(uint32_t mmer, uint32_t len)
-	{
-		if ((mmer & 0x3f) == 0x3f)            // TTT suffix
-			return false;
-		if ((mmer & 0x3f) == 0x3b)            // TGT suffix
-			return false;
-		if ((mmer & 0x3c) == 0x3c)            // TG* suffix !!!! consider issue #152
-			return false;
-
-		for (uint32_t j = 0; j < len - 3; ++j)
-			if ((mmer & 0xf) == 0)                // AA inside
-				return false;
-			else
-				mmer >>= 2;
-
-		if (mmer == 0)            // AAA prefix
-			return false;
-		if (mmer == 0x04)        // ACA prefix
-			return false;
-		if ((mmer & 0xf) == 0)    // *AA prefix
-			return false;
-	
-		return true;
-	}
-
 	friend class CSignatureMapper;
 	struct _si
 	{			
@@ -103,6 +78,30 @@ class CMmer
 
 	}static _init;
 public:
+	static bool is_allowed(uint32_t mmer, uint32_t len)
+	{
+		if ((mmer & 0x3f) == 0x3f)            // TTT suffix
+			return false;
+		if ((mmer & 0x3f) == 0x3b)            // TGT suffix
+			return false;
+		if ((mmer & 0x3c) == 0x3c)            // TG* suffix !!!! consider issue #152
+			return false;
+
+		for (uint32_t j = 0; j < len - 3; ++j)
+			if ((mmer & 0xf) == 0)                // AA inside
+				return false;
+			else
+				mmer >>= 2;
+
+		if (mmer == 0)            // AAA prefix
+			return false;
+		if (mmer == 0x04)        // ACA prefix
+			return false;
+		if ((mmer & 0xf) == 0)    // *AA prefix
+			return false;
+
+		return true;
+	}
 	CMmer(uint32_t _len);
 	inline void insert(uchar symb);
 	inline uint32_t get() const;

@@ -53,6 +53,9 @@ void usage()
 		<< "  -hp - hide percentage progress (default: false)\n"
 		<< "  -e - only estimate histogram of k-mers occurrences instead of exact k-mer counting\n"
 		<< "  --opt-out-size - optimize output database size (may increase running time)\n"
+		<< "  --sig-to-bin-map-stats<value> - how many percent of the input data should be used to build signature to bin mapping (default: 1.0)\n"
+		<< "  --sig-to-bin-mapping<path> - instead of building signature to bin mapping basing on part of the input data use predefined mapping define in path\n"
+		<< "  --only-generate-sig-to-bin-mapping<path> - do not perform k-mer counting, just generate signature to bin mapping and store it at path\n"
 		<< "Example:\n"
 		<< "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
 		<< "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
@@ -223,6 +226,18 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			was_opt_out_size = true;
 			if (stage1Params.GetEstimateHistogramCfg() != KMC::EstimateHistogramCfg::ONLY_ESTIMATE) //ONLY_ESTIMATE has priority over estimate and count
 				stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS);
+		}
+		else if (strncmp(argv[i], "--sig-to-bin-map-stats", strlen("--sig-to-bin-map-stats")) == 0)
+		{
+			stage1Params.SetSigToBinMapStatsPercentage(atof(&argv[i][strlen("--sig-to-bin-map-stats")]));
+		}
+		else if (strncmp(argv[i], "--sig-to-bin-mapping", strlen("--sig-to-bin-mapping")) == 0)
+		{
+			stage1Params.SetSigToBinMappingPath(&argv[i][strlen("--sig-to-bin-mapping")]);
+		}
+		else if (strncmp(argv[i], "--only-generate-sig-to-bin-mapping", strlen("--only-generate-sig-to-bin-mapping")) == 0)
+		{
+			stage1Params.SetOnlyGenerateSigToBinMapping(&argv[i][strlen("--only-generate-sig-to-bin-mapping")]);
 		}
 		else if (strncmp(argv[i], "-w", 2) == 0)
 			stage2Params.SetWithoutOutput(true);			

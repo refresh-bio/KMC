@@ -13,6 +13,8 @@
 #include "bam_utils.h"
 #include "critical_error_handler.h"
 #include <sstream>
+
+#include "bkb_sorter.h"
 //************************************************************************************************************
 // CFastqReader	- reader class
 //************************************************************************************************************
@@ -25,7 +27,7 @@ uint64 CFastqReader::OVERHEAD_SIZE = 1 << 16;
 //    * _mm - pointer to memory monitor (to check the memory limits)
 CFastqReader::CFastqReader(CMemoryPoolWithBamSupport *_pmm_fastq, InputType _file_type, int _kmer_len,
 	CBinaryPackQueue* _binary_pack_queue, CMemoryPool* _pmm_binary_file_reader, CBamTaskManager* _bam_task_manager, 
-	CPartQueue* _part_queue, CStatsPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter)
+	CPartQueue* _part_queue, CPartQueue* _stats_part_queue, CMissingEOL_at_EOF_counter* _missingEOL_at_EOF_counter)
 {
 	binary_pack_queue = _binary_pack_queue;
 	missingEOL_at_EOF_counter = _missingEOL_at_EOF_counter;
@@ -91,12 +93,7 @@ void CFastqReader::ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uin
 
 		if (part_filled + ISIZE > part_size)
 		{
-			if (!bam_task_manager->PushGunzippedPart(part, part_filled, id, file_no))
-			{
-				pmm_fastq->free(part);
-				part = nullptr;
-				return;
-			}
+			bam_task_manager->PushGunzippedPart(part, part_filled, id, file_no);
 
 			uchar* prepare_for_splitter_data;
 			uint64 prepare_for_splitter_size;
@@ -149,7 +146,11 @@ void CFastqReader::ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uin
 		}
 		}
 		if (ret == Z_STREAM_END)
-			inflateEnd(&stream);
+			if (inflateEnd(&stream) != Z_OK) {
+				std::ostringstream ostr;
+				ostr << "Some error while reading gzip file (inflateEnd) in (" << __FILE__ << ": " << __LINE__ << ")";
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+			}
 		else
 		{
 			std::ostringstream ostr;
@@ -183,8 +184,7 @@ void CFastqReader::ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uin
 		}
 
 	}
-	if (!bam_task_manager->PushGunzippedPart(part, part_filled, id, file_no))
-		pmm_fastq->free(part);
+	bam_task_manager->PushGunzippedPart(part, part_filled, id, file_no);
 	part = nullptr;
 }
 
@@ -254,15 +254,7 @@ void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 /*id*
 		}
 		else if (stats_part_queue)
 		{
-			if (!stats_part_queue->push(state.prev_part_data, state.prev_part_size, ReadType::na))
-			{
-				pmm_fastq->free(state.prev_part_data);
-				pmm_fastq->free(data);
-				state.prev_part_data = nullptr;
-				state.prev_part_size = 0;
-				bam_task_manager->IgnoreRest(pmm_fastq, pmm_binary_file_reader);
-				return;
-			}
+			stats_part_queue->push(state.prev_part_data, state.prev_part_size, ReadType::na);
 		}
 		else
 		{
@@ -293,12 +285,7 @@ void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 /*id*
 			}
 			else if (stats_part_queue)
 			{
-				if (!stats_part_queue->push(data, size, ReadType::na))
-				{
-					pmm_fastq->free(data);
-					bam_task_manager->IgnoreRest(pmm_fastq, pmm_binary_file_reader);
-					return;
-				}
+				stats_part_queue->push(data, size, ReadType::na);
 			}
 			else
 			{
@@ -338,15 +325,7 @@ void CFastqReader::PreparePartForSplitter(uchar* data, uint64 size, uint32 /*id*
 			}
 			else if (stats_part_queue)
 			{
-				if (!stats_part_queue->push(data, bpos, ReadType::na))
-				{
-					pmm_fastq->free(data);
-					pmm_fastq->free(state.prev_part_data);
-					state.prev_part_data = nullptr;
-					state.prev_part_size = 0;
-					bam_task_manager->IgnoreRest(pmm_fastq, pmm_binary_file_reader);
-					return;
-				}
+				stats_part_queue->push(data, bpos, ReadType::na);
 			}
 			else
 			{
@@ -396,7 +375,7 @@ void CFastqReader::ProcessBam()
 
 //----------------------------------------------------------------------------------
 // Read a part of the file in multi line fasta format
-bool CFastqReader::GetPartFromMultilneFasta(uchar *&_part, uint64 &_size)
+bool CFastqReader::GetPartFromMultilneFasta(bool allow_unexpected_end_of_gzip_stream, uchar *&_part, uint64 &_size)
 {
 	uint64 readed = 0;
 
@@ -408,11 +387,11 @@ bool CFastqReader::GetPartFromMultilneFasta(uchar *&_part, uint64 &_size)
 
 	bool last_in_file;
 	bool first_in_file;
-	readed = data_src.read(part + part_filled, (part_size - 1) - part_filled, last_in_file, first_in_file); //part_size - 1 to eventually append EOL if not present at EOF
+	readed = data_src.read(part + part_filled, (part_size - 1) - part_filled, allow_unexpected_end_of_gzip_stream, last_in_file, first_in_file); //part_size - 1 to eventually append EOL if not present at EOF
 
 	int64 total_filled = part_filled + readed;
 
-	if (last_in_file)	
+	if (readed && last_in_file) //mkokot_TODO: because all EOLs was removed for prev part, the reading module really needs to be refactored
 		FixEOLIfNeeded(part, total_filled);
 	
 	if(first_in_file && total_filled)
@@ -440,7 +419,7 @@ bool CFastqReader::GetPartFromMultilneFasta(uchar *&_part, uint64 &_size)
 			if (!next_line)
 				break;
 		}
-		if (part[i] != '\n' && part[i] != '\r')
+		if (i < total_filled && part[i] != '\n' && part[i] != '\r')
 		{
 			part[pos++] = part[i];
 		}
@@ -482,12 +461,12 @@ FORCE_INLINE void CFastqReader::FixEOLIfNeeded(uchar* part, int64& size)
 	}
 }
 
-FORCE_INLINE bool CFastqReader::GetNextSymbOfLongReadRecord(uchar& res, int64& p, int64& size)
+FORCE_INLINE bool CFastqReader::GetNextSymbOfLongReadRecord(bool allow_unexpected_end_of_gzip_stream, uchar& res, int64& p, int64& size)
 {
 	if (p == size)
 	{
 		bool last_in_file;
-		size = data_src.read(part, part_size - 1, last_in_file);//part_size - 1 to eventually append EOL if not present at EOF
+		size = data_src.read(part, part_size - 1, allow_unexpected_end_of_gzip_stream, last_in_file);//part_size - 1 to eventually append EOL if not present at EOF
 		if(last_in_file)
 			FixEOLIfNeeded(part, size);
 		p = 0;
@@ -498,14 +477,14 @@ FORCE_INLINE bool CFastqReader::GetNextSymbOfLongReadRecord(uchar& res, int64& p
 	return true;
 }
 
-void CFastqReader::CleanUpAfterLongFastaRead()
+void CFastqReader::CleanUpAfterLongFastaRead(bool allow_unexpected_end_of_gzip_stream)
 {
 	pmm_fastq->reserve(part);
 
 	uchar symb;
 	int64 in_part = 0;
 	int64 skip_pos = 0;	
-	while (GetNextSymbOfLongReadRecord(symb, skip_pos, in_part))
+	while (GetNextSymbOfLongReadRecord(allow_unexpected_end_of_gzip_stream, symb, skip_pos, in_part))
 	{
 		if (symb == '\n' || symb == '\r')
 			;
@@ -527,7 +506,7 @@ void CFastqReader::CleanUpAfterLongFastaRead()
 	//the file has ended
 	part_filled = 0;
 }
-void CFastqReader::CleanUpAfterLongFastqRead(uint32 number_of_lines_to_skip)
+void CFastqReader::CleanUpAfterLongFastqRead(bool allow_unexpected_end_of_gzip_stream, uint32 number_of_lines_to_skip)
 {
 	pmm_fastq->reserve(part);
 
@@ -535,7 +514,7 @@ void CFastqReader::CleanUpAfterLongFastqRead(uint32 number_of_lines_to_skip)
 	int64 in_part = 0;
 	int64 skip_pos = 0;
 	uint32 state = 0; // 0 - skipping remaining EOLs, 1 - skipping line
-	while (GetNextSymbOfLongReadRecord(symb, skip_pos, in_part))
+	while (GetNextSymbOfLongReadRecord(allow_unexpected_end_of_gzip_stream, symb, skip_pos, in_part))
 	{
 		if (state == 0)
 		{
@@ -574,12 +553,12 @@ void CFastqReader::CleanUpAfterLongFastqRead(uint32 number_of_lines_to_skip)
 	part_filled = 0;
 }
 
-bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
+bool CFastqReader::GetPartNew(bool allow_unexpected_end_of_gzip_stream, uchar *&_part, uint64 &_size, ReadType& read_type)
 {
 	if (file_type == InputType::MULTILINE_FASTA)
 	{
 		read_type = ReadType::na;
-		return GetPartFromMultilneFasta(_part, _size);
+		return GetPartFromMultilneFasta(allow_unexpected_end_of_gzip_stream, _part, _size);
 	}
 
 	if (data_src.Finished())
@@ -588,7 +567,7 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 
 	// Read data
 	bool last_in_file;
-	readed = data_src.read(part + part_filled, (part_size - 1) - part_filled, last_in_file);//part_size - 1 to eventually append EOL if not present at EOF
+	readed = data_src.read(part + part_filled, (part_size - 1) - part_filled, allow_unexpected_end_of_gzip_stream, last_in_file);//part_size - 1 to eventually append EOL if not present at EOF
 	
 	//std::cerr.write((char*)part + part_filled, readed);
 
@@ -636,7 +615,7 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 
 				//all from this part was readed, maybe there is another EOL character in the file
 				if(pos == total_filled)
-					CleanUpAfterLongFastaRead();
+					CleanUpAfterLongFastaRead(allow_unexpected_end_of_gzip_stream);
 				else //there is still some important data in the part!!
 				{
 					//skip possible eol
@@ -710,7 +689,12 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 				ostr << " (" << __FILE__ << ": " << __LINE__ << ")";
 				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
-
+			if (last_in_file)
+			{
+				part_filled = 0;
+				_size = 0;
+				return true;
+			}
 			if (readed_lines == 1)
 			{
 				long_read_in_progress = true;				
@@ -780,7 +764,7 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 						}
 					}
 				}
-				CleanUpAfterLongFastqRead(no_lines);
+				CleanUpAfterLongFastqRead(allow_unexpected_end_of_gzip_stream, no_lines);
 			}
 			else
 			{
@@ -850,6 +834,12 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 				ostr << " (" << __FILE__ << ": " << __LINE__ << ")";
 				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
+			if (last_in_file)
+			{
+				part_filled = 0;
+				_size = 0;
+				return true;
+			}
 			if (readed_lines == 1)
 			{
 				long_read_in_progress = true;
@@ -893,7 +883,7 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 				}
 
-				CleanUpAfterLongFastqRead(number_of_lines_to_skip);
+				CleanUpAfterLongFastqRead(allow_unexpected_end_of_gzip_stream, number_of_lines_to_skip);
 				return true;
 
 			}
@@ -978,6 +968,9 @@ void CFastqReaderDataSrc::init_stream()
 }
 
 //----------------------------------------------------------------------------------
+//returns false if there is
+// a) end of a single file (or if binary reader interrupted reading (in stats mode)), or
+// b) there is nothing more and will never be anything more
 bool CFastqReaderDataSrc::pop_pack(uchar*& data, uint64& size, FilePart& file_part, CompressionType& mode, bool& last_in_file)
 {
 	end_reached = !binary_pack_queue->pop(data, size, file_part, mode);
@@ -1004,7 +997,7 @@ bool CFastqReaderDataSrc::Finished()
 }
 
 //----------------------------------------------------------------------------------
-uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, bool& first_in_file)
+uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool allow_unexpected_end_of_gzip_stream, bool& last_in_file, bool& first_in_file)
 {
 	last_in_file = false;
 	first_in_file = false;
@@ -1037,14 +1030,15 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 						ostr << "Some error while reading gzip file (inflateEnd) in (" << __FILE__ << ": " << __LINE__ << ")";
 						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 					}
+					assert(last_in_file);
 
-					if (ret != Z_STREAM_END) {
+					//there is no more data but we don't have Z_STREAM_END
+					if (!allow_unexpected_end_of_gzip_stream && ret != Z_STREAM_END) {
 						std::ostringstream ostr;
 						ostr << "Unexpected end of gzip file";
 						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 					}
-
-					return ret_val;
+					return ret_val; //mkokot_TODO: is this correct now?
 				}
 				stream.avail_in = (uint32)in_data_size;
 				stream.next_in = in_data;
@@ -1191,10 +1185,10 @@ uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file, b
 	assert(false); //should never be here
 }
 //----------------------------------------------------------------------------------
-uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool& last_in_file)
+uint64 CFastqReaderDataSrc::read(uchar* buff, uint64 size, bool allow_unexpected_end_of_gzip_stream, bool& last_in_file)
 {
 	bool ignore;
-	return read(buff, size, last_in_file, ignore);
+	return read(buff, size, allow_unexpected_end_of_gzip_stream, last_in_file, ignore);
 }
 
 
@@ -1238,7 +1232,7 @@ void CWFastqReader::operator()()
 	{
 		fqr.Init();
 		ReadType read_type;
-		while (fqr.GetPartNew(part, part_filled, read_type))
+		while (fqr.GetPartNew(false, part, part_filled, read_type))
 			part_queue->push(part, part_filled, read_type);
 	}
 	part_queue->mark_completed();
@@ -1286,18 +1280,13 @@ void CWStatsFastqReader::operator()()
 	else
 	{
 		fqr.Init();
-		bool finished = false;
 		ReadType read_type;
-		while (fqr.GetPartNew(part, part_filled, read_type) && !finished)
+		while (fqr.GetPartNew(true, part, part_filled, read_type))
 		{
-			if (!stats_part_queue->push(part, part_filled, read_type))
-			{
-				finished = true;
+			if (part_filled) //if part_filled == 0 we are probably in stats computing mode
+				stats_part_queue->push(part, part_filled, read_type);
+			else
 				pmm_fastq->free(part);
-				binary_pack_queue->ignore_rest();
-				fqr.IgnoreRest();
-				break;
-			}
 		}
 	}
 	stats_part_queue->mark_completed();

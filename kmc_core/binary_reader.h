@@ -45,6 +45,7 @@ class CBinaryFilesReader
 	uint64 total_size;
 	uint64 predicted_size;	
 	CPercentProgress percent_progress;
+	double percent_of_data_to_read;
 
 	InputType input_type; //for bam input behaviour of this class is quite different, for example only one file is readed at once
 						  //also for KMC, where this class does almost nothing, just sends kmc file path to reader
@@ -60,7 +61,7 @@ class CBinaryFilesReader
 			return CompressionType::plain;
 	}
 
-	void OpenFile(const string& file_name, FILE* &f, CompressionType& mode)
+	void OpenFile(const string& file_name, FILE* &f, CompressionType& mode, size_t& left_to_read)
 	{
 		f = fopen(file_name.c_str(), "rb");
 		if (!f)
@@ -74,6 +75,22 @@ class CBinaryFilesReader
 
 		// Set mode according to the extension of the file name
 		mode = get_compression_type(file_name);
+
+		my_fseek(f, 0, SEEK_END);
+
+		size_t fsize = my_ftell(f);
+		my_fseek(f, 0, SEEK_SET);
+
+		left_to_read = fsize;
+		if (percent_of_data_to_read < 99.5) //if its greater lets just read the whole file (line above)
+		{
+			left_to_read = fsize * percent_of_data_to_read / 100.0;
+			if (left_to_read < 10000) //lets read at least 10k bytes
+				left_to_read = MIN(10000, fsize);
+
+			if (left_to_read > fsize) //but at most whole file...
+				left_to_read = fsize;
+		}
 	}
 
 	uint64_t skipSingleBGZFBlock(uchar* buff)
@@ -145,7 +162,7 @@ class CBinaryFilesReader
 		return pos;
 	}
 
-	void ProcessSingleBamFile(const string& fname, uint32 file_no, uint32& id, bool& forced_to_finish)
+	void ProcessSingleBamFile(const string& fname, uint32 file_no, uint32& id)
 	{
 		FILE* file = fopen(fname.c_str(), "rb");
 		if (!file)
@@ -181,7 +198,7 @@ class CBinaryFilesReader
 		
 		uint64 readed;
 		
-		while (!forced_to_finish && (readed = fread(data + size, 1, part_size - size, file)))
+		while (readed = fread(data + size, 1, part_size - size, file))
 		{
 			notify_readed(readed);
 			size += readed;
@@ -192,25 +209,15 @@ class CBinaryFilesReader
 			uint64_t tail = size - lastBGFBlockEnd;
 			memcpy(newData, data + lastBGFBlockEnd, tail);
 			size = lastBGFBlockEnd;
-			
-			if (!bam_task_manager->PushBinaryPack(data, size, id, file_no))
-			{
-				pmm_binary_file_reader->free(data);
-				forced_to_finish = true;
-			}
-			else
-				id++;
+
+			bam_task_manager->PushBinaryPack(data, size, id, file_no);
+			id++;
 			
 			data = newData;
 			size = tail;
 		}
-		if (!bam_task_manager->PushBinaryPack(data, size, id, file_no)) //last, possibly empty
-		{
-			pmm_binary_file_reader->free(data);			
-			forced_to_finish = true;
-		}
-		else
-			id++;
+		bam_task_manager->PushBinaryPack(data, size, id, file_no); //last, possibly empty
+		id++;
 		fclose(file);
 	}
 
@@ -219,11 +226,10 @@ class CBinaryFilesReader
 		uint32 file_no = 0;
 		uint32 id = 0;
 		string fname;
-		bool forced_to_finish = false;
 		
-		while (!forced_to_finish && input_files_queue->pop(fname))
+		while (input_files_queue->pop(fname))
 		{
-			ProcessSingleBamFile(fname, file_no, id, forced_to_finish);
+			ProcessSingleBamFile(fname, file_no, id);
 			++file_no;
 		}
 		bam_task_manager->NotifyBinaryReaderCompleted(id-1);		
@@ -257,7 +263,7 @@ class CBinaryFilesReader
 			FilePart file_part = FilePart::Begin;
 			uint32 c;
 			uchar* ptr = part;
-			bool forced_to_finish = false;
+
 			while (kmc_file.ReadNextKmer(kmer, c))
 			{
 				*ptr++ = '>';
@@ -269,12 +275,7 @@ class CBinaryFilesReader
 				if (id == kmers_in_part)
 				{
 					notify_readed(id);
-					if (!binary_pack_queues[0]->push(part, id * rec_size, file_part, CompressionType::plain))
-					{
-						forced_to_finish = true;
-						pmm_binary_file_reader->free(part);
-						break;
-					}
+					binary_pack_queues[0]->push(part, id * rec_size, file_part, CompressionType::plain);
 					id = 0;
 					file_part = FilePart::Middle;
 					pmm_binary_file_reader->reserve(part);
@@ -282,13 +283,10 @@ class CBinaryFilesReader
 				}
 			}
 
-			if (id && !forced_to_finish)
+			if (id)
 			{
 				notify_readed(id);
-				if (!binary_pack_queues[0]->push(part, id * rec_size, file_part, CompressionType::plain))
-				{
-					pmm_binary_file_reader->free(part);
-				}
+				binary_pack_queues[0]->push(part, id * rec_size, file_part, CompressionType::plain);
 				//id = 0;
 				//file_part = FilePart::Middle;
 				//pmm_binary_file_reader->reserve(part);
@@ -305,10 +303,17 @@ class CBinaryFilesReader
 
 
 public:
-	CBinaryFilesReader(CKMCParams &Params, CKMCQueues &Queues, bool _show_progress)
+	CBinaryFilesReader(CKMCParams &Params, CKMCQueues &Queues, bool _show_progress, double percent_of_data_to_read)
 		:
-		percent_progress("Stage 1: ", _show_progress, Params.percentProgressObserver)
+		percent_progress("Stage 1: ", _show_progress, Params.percentProgressObserver),
+		percent_of_data_to_read(percent_of_data_to_read)
 	{
+		//just in case...
+		if (this->percent_of_data_to_read > 100)
+			this->percent_of_data_to_read = 100;
+		if (this->percent_of_data_to_read < 0.005)
+			this->percent_of_data_to_read = 0.005;
+
 		part_size = (uint32)Params.mem_part_pmm_binary_file_reader;
 		input_files_queue = Queues.input_files_queue.get();
 		pmm_binary_file_reader = Queues.pmm_binary_file_reader.get();
@@ -392,10 +397,6 @@ public:
 		}
 		percent_progress.SetMaxVal(total_size);
 	}
-	uint64 GetTotalSize()
-	{
-		return total_size;
-	}
 	uint64 GetPredictedSize()
 	{
 		return predicted_size;
@@ -413,93 +414,123 @@ public:
 			ProcessKMC();
 			return;
 		}
-		std::string file_name;
-		vector<tuple<FILE*, CBinaryPackQueue*, CompressionType>> files;
+		
+		struct FileData {
+			FILE* file;
+			CBinaryPackQueue* queue;
+			CompressionType compression_type;
+			size_t left_to_read;
+		public:
+			FileData(FILE* file,
+				CBinaryPackQueue* queue,
+				CompressionType compression_type,
+				size_t left_to_read) :
+				file(file),
+				queue(queue),
+				compression_type(compression_type),
+				left_to_read(left_to_read) {}
+		};
+		std::vector<FileData> files;
 		files.reserve(binary_pack_queues.size());
 		uchar* part = nullptr;
 
 		uint32 completed = 0;
 		notify_readed(0);
 
+		std::string file_name;
 		for (uint32 i = 0; i < binary_pack_queues.size() && input_files_queue->pop(file_name); ++i)
 		{
 			CBinaryPackQueue* q = binary_pack_queues[i];
 			CompressionType mode;
 			FILE* f = nullptr;
-			OpenFile(file_name, f, mode);
-			files.push_back(make_tuple(f, q, mode));
+			size_t left_to_read;
+			OpenFile(file_name, f, mode, left_to_read);
+			files.emplace_back(f, q, mode, left_to_read);
 			pmm_binary_file_reader->reserve(part);
-			uint64 readed = fread(part, 1, part_size, f);
+
+			auto to_read = part_size;
+			if (files.back().left_to_read < part_size)
+				to_read = files.back().left_to_read;
+
+			uint64 readed = fread(part, 1, to_read, f);
+
+			files.back().left_to_read -= readed;
+
 			notify_readed(readed);
-			if (!q->push(part, readed, FilePart::Begin, mode))
+			if (readed == 0)
 			{
 				pmm_binary_file_reader->free(part);
 				fclose(f);
-				get<0>(files.back()) = nullptr;
+				files.back().file = nullptr;
 				++completed;
+			}
+			else
+			{
+				q->push(part, readed, FilePart::Begin, mode);
 			}
 		}
 
-		bool forced_to_finish = false;
-
-		while (completed < files.size() && !forced_to_finish)
+		while (completed < files.size())
 		{
 			for (auto& f : files)
 			{
-				if (!get<0>(f))
+				if (!f.file)
 					continue;
 
-				pmm_binary_file_reader->reserve(part);				
-				uint64 readed = fread(part, 1, part_size, get<0>(f));				
+				pmm_binary_file_reader->reserve(part);
+				auto to_read = part_size;
+				if (f.left_to_read < part_size)
+					to_read = f.left_to_read;
+
+				uint64 readed = fread(part, 1, to_read, f.file);
+
+				f.left_to_read -= readed;
+
 				notify_readed(readed);
-				if (readed == 0) //end of file, need to open next one if exists
+				if (readed == 0) //end of file or no more data is needed, need to open next one if exists
 				{
 					pmm_binary_file_reader->free(part);
-					if (!get<1>(f)->push(nullptr, 0, FilePart::End, get<2>(f)))
-					{
-						forced_to_finish = true;
-						break;
-					}
-					fclose(get<0>(f));
+					f.queue->push(nullptr, 0, FilePart::End, f.compression_type);
+
+					fclose(f.file);
 
 					if (input_files_queue->pop(file_name))
 					{
-						OpenFile(file_name, get<0>(f), get<2>(f));
+						OpenFile(file_name, f.file, f.compression_type, f.left_to_read);
 						pmm_binary_file_reader->reserve(part);
-						readed = fread(part, 1, part_size, get<0>(f));
+
+						auto to_read = part_size;
+						if (f.left_to_read < part_size)
+							to_read = f.left_to_read;
+
+						readed = fread(part, 1, to_read, f.file);
+
+						f.left_to_read -= readed;
+
 						notify_readed(readed);
-						if (!get<1>(f)->push(part, readed, FilePart::Begin, get<2>(f)))
-						{
-							pmm_binary_file_reader->free(part);
-							forced_to_finish = true;
-							break;
-						}
+
+						f.queue->push(part, readed, FilePart::Begin, f.compression_type);
 					}
 					else
 					{						
 						++completed;
-						get<0>(f) = nullptr;
-						get<1>(f)->mark_completed();
+						f.file = nullptr;
+						f.queue->mark_completed();
 					}
 				}
 				else
 				{
-					if (!get<1>(f)->push(part, readed, FilePart::Middle, get<2>(f)))
-					{
-						pmm_binary_file_reader->free(part);
-						forced_to_finish = true;
-						break;
-					}
+					f.queue->push(part, readed, FilePart::Middle, f.compression_type);
 				}
 			}
 		}
 
 		for (auto& f : files)
 		{
-			if (get<0>(f))
+			if (f.file)
 			{
-				fclose(get<0>(f));
-				get<0>(f) = nullptr;
+				fclose(f.file);
+				f.file = nullptr;
 			}
 		}
 
@@ -514,18 +545,14 @@ class CWBinaryFilesReader
 {
 	std::unique_ptr<CBinaryFilesReader> reader;
 public:
-	CWBinaryFilesReader(CKMCParams &Params, CKMCQueues &Queues, bool show_progress = true)
+	CWBinaryFilesReader(CKMCParams &Params, CKMCQueues &Queues, bool show_progress = true, double percent_of_data_to_read = 100.0)
 	{
-		reader = std::make_unique<CBinaryFilesReader>(Params, Queues, show_progress);
+		reader = std::make_unique<CBinaryFilesReader>(Params, Queues, show_progress, percent_of_data_to_read);
 	}
 
 	uint64 GetPredictedSize()
 	{
 		return reader->GetPredictedSize();
-	}
-	uint64 GetTotalSize()
-	{
-		return reader->GetTotalSize();
 	}
 
 	void operator()()

@@ -11,7 +11,7 @@
 #include "mmer.h"
 #include "kmc_file.h"
 #include <tuple>
-
+#include <string>
 
 uint64 CKMCFile::part_size = 1 << 25;
 
@@ -99,6 +99,39 @@ bool CKMCFile::OpenForListing(const std::string &file_name)
 	return true;
 }
 //----------------------------------------------------------------------------------
+// Open files *kmc_pre & *.kmc_suf
+// Following k-mers will be read in bins which order is defined by the second file
+// IN	: file_name - the name of kmer_counter's output
+// RET	: true		- if successful
+//----------------------------------------------------------------------------------
+bool CKMCFile::OpenForListingWithBinOrder(const std::string& file_name, const std::string& bin_order_file_name)
+{
+	uint64 size_pre_file;
+	uint64 size_suf_file;
+
+	if (is_opened)
+		return false;
+
+	if (file_pre || file_suf)
+		return false;
+
+	if (!OpenASingleFile(file_name + ".kmc_pre", file_pre, size_pre_file, (char*)"KMCP"))
+		return false;
+
+	end_of_file = total_kmers == 0;
+
+	if (!OpenASingleFile(file_name + ".kmc_suf", file_suf, size_suf_file, (char*)"KMCS"))
+		return false;
+
+	sufix_file_buf = new uchar[part_size];
+
+	ReadParamsFrom_prefix_file_buf(size_pre_file, open_mode::opened_for_listing_with_bin_order, bin_order_file_name);
+
+	is_opened = opened_for_listing_with_bin_order;
+
+	return true;
+}
+//----------------------------------------------------------------------------------
 CKMCFile::CKMCFile()
 {
 	file_pre = NULL;	
@@ -175,7 +208,7 @@ bool CKMCFile::OpenASingleFile(const std::string &file_name, FILE *&file_handler
 // IN	: the size of the file *.kmc_pre, without initial and terminal markers 
 // RET	: true - if succesfull
 //----------------------------------------------------------------------------------
-bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode)
+bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode, const std::string& bin_order_file_name)
 {
 	size_t prev_pos = my_ftell(file_pre);
 	my_fseek(file_pre, -12, SEEK_END);
@@ -221,12 +254,18 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 		single_LUT_size = 1 << (2 * lut_prefix_length);
 		uint64 last_data_index = lut_area_size_in_bytes / sizeof(uint64);
 
+		n_bins = last_data_index / single_LUT_size;
+
 		signature_map = new uint32[signature_map_size];
 
 		fseek(file_pre, 4 + lut_area_size_in_bytes + 8, SEEK_SET);
 		result = fread(signature_map, 1, signature_map_size * sizeof(uint32), file_pre);
 		if (result == 0)
 			return false;
+
+		sufix_size = (kmer_length - lut_prefix_length) / 4;
+
+		sufix_rec_size = sufix_size + counter_size;
 
 		if(_open_mode == opened_for_RA)
 		{
@@ -247,19 +286,33 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 			fclose(file_pre);
 			file_pre = nullptr;
 		}
-		else
+		else if (_open_mode == opened_for_listing)
 		{
 			prefixFileBufferForListingMode = std::make_unique<CPrefixFileBufferForListingMode>(file_pre, last_data_index, lut_prefix_length, false, total_kmers);
 		}
-
-		sufix_size = (kmer_length - lut_prefix_length) / 4;
-	
-		sufix_rec_size = sufix_size + counter_size;	
+		else if (_open_mode == opened_for_listing_with_bin_order)
+		{
+			ordered_bin_reading = std::make_unique<OrderedBinReading>(
+				file_pre, 4,
+				file_suf, 4,
+				bin_order_file_name,
+				n_bins,
+				signature_len,
+				signature_map,
+				signature_map_size,
+				single_LUT_size,
+				sufix_rec_size);
+		}
+		else
+			throw std::runtime_error("unknown _open_mode");
 
 		return true;
 	}
 	else if (kmc_version == 0)
 	{
+		if (_open_mode == opened_for_listing_with_bin_order)
+			throw std::runtime_error("opened_for_listing_with_bin_order open mode may be used only for KMC database in KMC2 format");
+
 		my_fseek(file_pre, -8, SEEK_END);
 
 		uint64 header_offset;
@@ -322,6 +375,24 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 
 	}
 	return false;
+}
+
+//-----------------------------------------------------------------------------------------------
+bool CKMCFile::StartBin()
+{
+	if (is_opened != opened_for_listing_with_bin_order)
+		return false;
+	return ordered_bin_reading->next_bin();
+}
+
+//-----------------------------------------------------------------------------------------------
+bool CKMCFile::ReadNextKmerFromBin(CKmerAPI& kmer, uint64& count)
+{
+	if (is_opened != opened_for_listing_with_bin_order)
+		return false;
+
+	uint32 off = (sizeof(prefix_index) * 8) - (lut_prefix_length * 2) - kmer.byte_alignment * 2;
+	return ordered_bin_reading->read_from_cur_bin(kmer, count, off, sufix_size, counter_size, min_count, max_count);
 }
 
 //------------------------------------------------------------------------------------------

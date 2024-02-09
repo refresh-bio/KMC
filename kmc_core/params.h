@@ -79,6 +79,10 @@ struct CKMCParams {
 	bool verbose_log;
 #endif
 
+	std::string sig_to_bin_mapping;
+	double sig_to_bin_map_stats_percentage;
+	std::string only_generate_sig_to_bin_mapping;
+
 	int kmer_len;			// kmer length
 	int signature_len;
 	int cutoff_min;			// exclude k-mers occurring less than times
@@ -139,7 +143,7 @@ struct CKMCQueues
 	// Queues
 	std::unique_ptr<CInputFilesQueue> input_files_queue;
 	std::unique_ptr<CPartQueue> part_queue;
-	std::unique_ptr<CStatsPartQueue> stats_part_queue;
+	std::unique_ptr<CPartQueue> stats_part_queue;
 
 	std::unique_ptr<CBinPartQueue> bpq;
 	std::unique_ptr<CBinDesc> bd;
