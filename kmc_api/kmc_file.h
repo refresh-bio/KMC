@@ -214,10 +214,7 @@ class CKMCFile
 
 		void start_bin(size_t bin_id)
 		{
-			//std::cerr << "starting bin " << bin_id << "\n"; //mkokot_TODO: remove
-
 			bin_id = bin_map[bin_id];
-			//std::cerr << "whitch is " << bin_id << "\n"; //mkokot_TODO: remove
 
 			current_prefix = (uint64_t)-1;// std::numeric_limits<uint64_t>::max(); //will be incremented
 			left_in_current_prefix = 0;
