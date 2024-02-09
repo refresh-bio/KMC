@@ -13,6 +13,8 @@
 #include "bam_utils.h"
 #include "critical_error_handler.h"
 #include <sstream>
+
+#include "bkb_sorter.h"
 //************************************************************************************************************
 // CFastqReader	- reader class
 //************************************************************************************************************
@@ -719,7 +721,11 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 				ostr << " (" << __FILE__ << ": " << __LINE__ << ")";
 				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
-
+			if (last_in_file)
+			{
+				_size = 0;
+				return true;
+			}
 			if (readed_lines == 1)
 			{
 				long_read_in_progress = true;				
@@ -858,6 +864,11 @@ bool CFastqReader::GetPartNew(uchar *&_part, uint64 &_size, ReadType& read_type)
 				ostr << "Wrong input file";
 				ostr << " (" << __FILE__ << ": " << __LINE__ << ")";
 				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+			}
+			if (last_in_file)
+			{
+				_size = 0;
+				return true;
 			}
 			if (readed_lines == 1)
 			{
@@ -1298,7 +1309,8 @@ void CWStatsFastqReader::operator()()
 		ReadType read_type;
 		while (fqr.GetPartNew(part, part_filled, read_type))
 		{
-			stats_part_queue->push(part, part_filled, read_type);
+			if (part_filled) //if part_filled == 0 we are probably in stats computing mode
+				stats_part_queue->push(part, part_filled, read_type);
 
 			//mkokot_TODO: remove, but first check if this work
 			//if (!stats_part_queue->push(part, part_filled, read_type))
