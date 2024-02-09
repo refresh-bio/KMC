@@ -159,7 +159,7 @@ class CBinaryFilesReader
 		return pos;
 	}
 
-	void ProcessSingleBamFile(const string& fname, uint32 file_no, uint32& id, bool& forced_to_finish)
+	void ProcessSingleBamFile(const string& fname, uint32 file_no, uint32& id)
 	{
 		FILE* file = fopen(fname.c_str(), "rb");
 		if (!file)
@@ -195,7 +195,7 @@ class CBinaryFilesReader
 		
 		uint64 readed;
 		
-		while (!forced_to_finish && (readed = fread(data + size, 1, part_size - size, file)))
+		while (readed = fread(data + size, 1, part_size - size, file))
 		{
 			notify_readed(readed);
 			size += readed;
@@ -206,25 +206,15 @@ class CBinaryFilesReader
 			uint64_t tail = size - lastBGFBlockEnd;
 			memcpy(newData, data + lastBGFBlockEnd, tail);
 			size = lastBGFBlockEnd;
-			
-			if (!bam_task_manager->PushBinaryPack(data, size, id, file_no))
-			{
-				pmm_binary_file_reader->free(data);
-				forced_to_finish = true;
-			}
-			else
-				id++;
+
+			bam_task_manager->PushBinaryPack(data, size, id, file_no);
+			id++;
 			
 			data = newData;
 			size = tail;
 		}
-		if (!bam_task_manager->PushBinaryPack(data, size, id, file_no)) //last, possibly empty
-		{
-			pmm_binary_file_reader->free(data);			
-			forced_to_finish = true;
-		}
-		else
-			id++;
+		bam_task_manager->PushBinaryPack(data, size, id, file_no); //last, possibly empty
+		id++;
 		fclose(file);
 	}
 
@@ -233,11 +223,10 @@ class CBinaryFilesReader
 		uint32 file_no = 0;
 		uint32 id = 0;
 		string fname;
-		bool forced_to_finish = false;
 		
-		while (!forced_to_finish && input_files_queue->pop(fname))
+		while (input_files_queue->pop(fname))
 		{
-			ProcessSingleBamFile(fname, file_no, id, forced_to_finish);
+			ProcessSingleBamFile(fname, file_no, id);
 			++file_no;
 		}
 		bam_task_manager->NotifyBinaryReaderCompleted(id-1);		

@@ -42,30 +42,6 @@ public:
 	inline bool Finished();
 	uint64 read(uchar* buff, uint64 size, bool& last_in_file);
 	uint64 read(uchar* buff, uint64 size, bool& last_in_file, bool&first_in_file);
-	void IgnoreRest() //mkokot_TODO: remove??
-	{
-		if (in_data)
-			pmm_binary_file_reader->free(in_data);
-		in_data = nullptr;
-		//clean queue
-		bool last_in_file_tmp = false;
-		while (pop_pack(in_data, in_data_size, file_part, compression_type, last_in_file_tmp))
-		{
-			if(in_data_size)
-				pmm_binary_file_reader->free(in_data);
-			in_data = nullptr;
-		}
-		switch (compression_type)
-		{
-		case CompressionType::plain:
-			break;
-		case CompressionType::gzip:
-			inflateEnd(&stream);
-			break;
-		default:
-			break;
-		}
-	}
 };
 
 
@@ -137,13 +113,6 @@ public:
 		pmm_fastq->reserve(part);
 		part_filled = 0;
 	}
-
-	//mkokot_TODO: remove?
-	void IgnoreRest()
-	{
-		data_src.IgnoreRest();
-	}
-
 };
 
 //************************************************************************************************************
