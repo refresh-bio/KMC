@@ -378,11 +378,28 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 }
 
 //-----------------------------------------------------------------------------------------------
+uint32_t CKMCFile::GetNBins() const
+{
+	if (is_opened != opened_for_listing_with_bin_order)
+		return 0;
+	return ordered_bin_reading->get_n_bins();
+}
+
+//-----------------------------------------------------------------------------------------------
 bool CKMCFile::StartBin()
 {
 	if (is_opened != opened_for_listing_with_bin_order)
 		return false;
 	return ordered_bin_reading->next_bin();
+}
+
+//-----------------------------------------------------------------------------------------------
+bool CKMCFile::StartBin(uint32_t bin_id)
+{
+	if (is_opened != opened_for_listing_with_bin_order)
+		return false;
+	ordered_bin_reading->start_bin(bin_id);
+	return true;
 }
 
 //-----------------------------------------------------------------------------------------------

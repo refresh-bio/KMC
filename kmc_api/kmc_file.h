@@ -214,18 +214,7 @@ class CKMCFile
 		buffered_scanning<uint64_t> scan_prefix;
 		buffered_scanning<unsigned char> scan_suffix;
 
-		void start_bin(size_t bin_id)
-		{
-			bin_id = bin_map[bin_id];
-
-			current_prefix = (uint64_t)-1;// std::numeric_limits<uint64_t>::max(); //will be incremented
-			left_in_current_prefix = 0;
-			scan_prefix.reset(pre_file, 1ull << 25, bins_starts_in_pre[bin_id], bins_starts_in_pre[bin_id + 1] + sizeof(uint64_t));
-			scan_suffix.reset(suf_file, 1ull << 25, bins_starts_in_suf[bin_id], bins_starts_in_suf[bin_id + 1]);
-
-			bool have_elem = scan_prefix.next_elem(last_val_from_prefix_file);
-			assert(have_elem);
-		}
+		
 
 		bool next_in_current_bin(uint32_t bin_id)
 		{
@@ -293,6 +282,23 @@ class CKMCFile
 				}
 			}
 			calc_bin_ranges();
+		}
+		uint32_t get_n_bins() const
+		{
+			return n_bins;
+		}
+		void start_bin(size_t bin_id)
+		{
+			cur_bin_id = bin_id;
+			bin_id = bin_map[bin_id];
+
+			current_prefix = (uint64_t)-1;// std::numeric_limits<uint64_t>::max(); //will be incremented
+			left_in_current_prefix = 0;
+			scan_prefix.reset(pre_file, 1ull << 25, bins_starts_in_pre[bin_id], bins_starts_in_pre[bin_id + 1] + sizeof(uint64_t));
+			scan_suffix.reset(suf_file, 1ull << 25, bins_starts_in_suf[bin_id], bins_starts_in_suf[bin_id + 1]);
+
+			bool have_elem = scan_prefix.next_elem(last_val_from_prefix_file);
+			assert(have_elem);
 		}
 
 		//go to the next bin if exists (even if empty)
@@ -464,7 +470,13 @@ public:
 	bool ReadNextKmer(CKmerAPI &kmer, uint32 &count);
 
 	//only when oppened in listing with bin order
+	uint32_t GetNBins() const;
+
+	//only when oppened in listing with bin order
 	bool StartBin();
+
+	//only when oppened in listing with bin order
+	bool StartBin(uint32_t bin_id);
 
 	//only when oppened in listing with bin order
 	bool ReadNextKmerFromBin(CKmerAPI& kmer, uint64& count);
