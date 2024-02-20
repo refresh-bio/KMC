@@ -11,6 +11,7 @@
 #pragma once
 
 #include "cast.h"
+#include <cstdint>
 
 NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
 
