@@ -31,7 +31,7 @@ void usage()
 		<< "  @input_file_names - file name with list of input files in specified (-f switch) format (gziped or not)\n"
 		<< "Options:\n"
 		<< "  -v - verbose mode (shows all parameter settings); default: false\n"
-		<< "  -k<len> - k-mer length (k from " << KMC::CfgConsts::min_k<< " to " << KMC::CfgConsts::max_k << "; default: 25)\n"
+		<< "  -k<len> - k-mer length (k from " << KMC::CfgConsts::min_k << " to " << KMC::CfgConsts::max_k << "; default: 25)\n"
 		<< "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 12\n"
 		<< "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n"
 		<< "  -hc - count homopolymer compressed k-mers (approximate and experimental)\n"
@@ -56,6 +56,7 @@ void usage()
 		<< "  --sig-to-bin-map-stats<value> - how many percent of the input data should be used to build signature to bin mapping (default: 1.0)\n"
 		<< "  --sig-to-bin-mapping<path> - instead of building signature to bin mapping basing on part of the input data use predefined mapping define in path\n"
 		<< "  --only-generate-sig-to-bin-mapping<path> - do not perform k-mer counting, just generate signature to bin mapping and store it at path\n"
+		<< "  --reopen-tmp - instead of keeping all temp files opened reopen at each read/write operation\n"
 		<< "Example:\n"
 		<< "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
 		<< "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
@@ -226,6 +227,11 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			was_opt_out_size = true;
 			if (stage1Params.GetEstimateHistogramCfg() != KMC::EstimateHistogramCfg::ONLY_ESTIMATE) //ONLY_ESTIMATE has priority over estimate and count
 				stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS);
+		}
+		//mkokot_TODO: consider this parameter name and what is the default
+		else if (strncmp(argv[i], "--reopen-tmp", strlen("--reopen-tmp")) == 0)
+		{
+			stage1Params.SetReopenTmeEachTime(true);
 		}
 		else if (strncmp(argv[i], "--sig-to-bin-map-stats", strlen("--sig-to-bin-map-stats")) == 0)
 		{

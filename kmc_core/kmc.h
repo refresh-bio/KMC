@@ -162,6 +162,7 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 	Params.both_strands = stage1Params.GetCanonicalKmers();
 	Params.homopolymer_compressed = stage1Params.GetHomopolymerCompressed();
 	Params.mem_mode = stage1Params.GetRamOnlyMode();
+	Params.reopen_tmp_each_time = stage1Params.GetReopenTmeEachTime();
 
 	if (stage1Params.GetNReaders() && stage1Params.GetNSplitters())
 	{
@@ -557,6 +558,7 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage1()
 	ostr << "Signature length             : " << Params.signature_len << "\n";
 	ostr << "Both strands                 : " << (Params.both_strands ? "true\n" : "false\n");
 	ostr << "RAM only mode                : " << (Params.mem_mode ? "true\n" : "false\n");
+	ostr << "Reopen tmp                   : " << (Params.reopen_tmp_each_time ? "true\n" : "false\n");
 
 	ostr << "\n******* Stage 1 configuration: *******\n";
 	ostr << "\n";
@@ -1318,7 +1320,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 			Queues.ntHashEstimator = std::make_unique<CntHashEstimator>(Params.kmer_len, 11);
 	}
 
-	Queues.tmp_files_owner = std::make_unique<CTmpFilesOwner>(Params.n_bins, Params.mem_mode);
+	Queues.tmp_files_owner = std::make_unique<CTmpFilesOwner>(Params.n_bins, Params.mem_mode, Params.reopen_tmp_each_time);
 
 	std::vector<CExceptionAwareThread> fastqs_threads;
 	std::vector<CExceptionAwareThread> splitters_threads;

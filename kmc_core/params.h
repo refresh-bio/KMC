@@ -92,6 +92,7 @@ struct CKMCParams {
 	bool homopolymer_compressed; //count homopolymer compressed k-mers
 	bool both_strands;		// find canonical representation of each k-mer
 	bool mem_mode;			// use RAM instead of disk
+	bool reopen_tmp_each_time;  // instead of keeping dump files opened reopen at each read/write operation
 
 	int n_bins;				// number of bins;
 	int bin_part_size;		// size of a bin part; fixed: 2^15

@@ -245,6 +245,12 @@ namespace KMC
 		this->ramOnlyMode = ramOnlyMode;
 		return *this;
 	}
+	Stage1Params& Stage1Params::SetReopenTmeEachTime(bool reopenTmeEachTime)
+	{
+		this->reopenTmeEachTime = reopenTmeEachTime;
+		return *this;
+	}
+
 	Stage1Params& Stage1Params::SetNBins(uint32_t nBins)
 	{
 		if (nBins < MIN_N_BINS || nBins > MAX_N_BINS)

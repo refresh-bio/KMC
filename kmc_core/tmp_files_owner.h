@@ -18,17 +18,19 @@ class CTmpFilesOwner
 {
 	std::vector<std::unique_ptr<CMemDiskFile>> files;
 	bool memory_mode;
+	bool reopen_each_time;
 public:
-	CTmpFilesOwner(uint32_t n_bins, bool memory_mode) :
+	CTmpFilesOwner(uint32_t n_bins, bool memory_mode, bool reopen_each_time) :
 		files(n_bins),
-		memory_mode(memory_mode)
+		memory_mode(memory_mode),
+		reopen_each_time(reopen_each_time)
 	{
 
 	}
 	void CreateInstances()
 	{
 		for(auto& uptr : files)
-			uptr = std::make_unique<CMemDiskFile>(memory_mode);
+			uptr = std::make_unique<CMemDiskFile>(memory_mode, reopen_each_time);
 	}
 	
 	CMemDiskFile* Get(uint32_t index)

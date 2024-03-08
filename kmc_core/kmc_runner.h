@@ -118,6 +118,7 @@ namespace KMC
 		InputFileType inputFileType = InputFileType::FASTQ;
 		bool canonicalKmers = true;
 		bool ramOnlyMode = false;
+		bool reopenTmeEachTime = false;
 		uint32_t nBins = 512;
 		uint32_t nReaders = 0;
 		uint32_t nSplitters = 0;
@@ -143,6 +144,7 @@ namespace KMC
 		Stage1Params& SetInputFileType(InputFileType inputFileType);
 		Stage1Params& SetCanonicalKmers(bool canonicalKmers);
 		Stage1Params& SetRamOnlyMode(bool ramOnlyMode);
+		Stage1Params& SetReopenTmeEachTime(bool reopenTmeEachTime);
 		Stage1Params& SetNBins(uint32_t nBins);
 		Stage1Params& SetNReaders(uint32_t nReaders);
 		Stage1Params& SetNSplitters(uint32_t nSplitters);
@@ -168,6 +170,7 @@ namespace KMC
 		InputFileType GetInputFileType() const noexcept { return inputFileType; }
 		bool GetCanonicalKmers() const noexcept { return canonicalKmers; }
 		bool GetRamOnlyMode() const noexcept { return ramOnlyMode; }
+		bool GetReopenTmeEachTime() const noexcept { return reopenTmeEachTime; }
 		uint32_t GetNBins() const noexcept { return nBins; }
 		uint32_t GetNReaders() const noexcept { return nReaders; }
 		uint32_t GetNSplitters() const noexcept { return nSplitters; }
