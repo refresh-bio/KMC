@@ -109,9 +109,13 @@ using uint64 = uint64_t;
 #include <string.h>
 
 #include <stdio.h>
+
+#if defined(__clang__)
+#include <algorithm>
+#elif defined(__GNUC__)
 #include <ext/algorithm>
 using __gnu_cxx::copy_n;
-
+#endif
 #endif
 
 
