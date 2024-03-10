@@ -11,6 +11,8 @@
 #ifndef _MMER_H
 #define _MMER_H
 #include <cinttypes>
+
+#include "murmur64_hash.h"
 #ifndef MIN
 #define MIN(x,y)	((x) < (y) ? (x) : (y))
 #endif
@@ -20,7 +22,6 @@ using uchar = unsigned char;
 
 // *************************************************************************
 // *************************************************************************
-
 
 class CMmer
 {
@@ -196,5 +197,58 @@ inline void CMmer::insert(const char* seq)
 	current_val = norm[str];
 }
 
+class CMmerMinHash
+{
+	uint32_t len;
+	uint32_t str;
+	uint32_t rev;
+	uint32_t mask;
+	uint32_t current_hash;
+public:
+	explicit CMmerMinHash(uint32_t len) :
+		len(len),
+		mask((1ull << len * 2) - 1)
+	{
+		clear();
+	}
+
+	inline void insert(uchar symb)
+	{
+		str <<= 2;
+		str += symb;
+		str &= mask;
+		rev >>= 2;
+		rev += (3 - (uint64_t)symb) << (len * 2 - 2);
+
+		current_hash = MurMur64Hash{}(MIN(str, rev)) & mask; //mkokot_TODO: should I "& mask" ?
+	}
+	inline uint32_t get() const {
+		return current_hash;
+	}
+	inline bool operator==(const CMmerMinHash& x) const {
+		return current_hash < x.current_hash;
+	}
+	inline bool operator<(const CMmerMinHash& x) const {
+		return current_hash < x.current_hash;
+	}
+	inline void clear() {
+		str = rev = 0;
+		current_hash = 0;
+	}
+	inline bool operator<=(const CMmerMinHash& x) const {
+		return current_hash <= x.current_hash;
+	}
+	inline void set(const CMmerMinHash& x) {
+		str = x.str;
+		rev = x.rev;
+		current_hash = x.current_hash;
+	}
+
+	inline void insert(const char* seq) {
+		//mkokot_TODO: rewrite more efficiently...
+		for (uint32_t i = 0; i < len; ++i)
+			insert(seq[i]);
+	}
+};
 
 #endif

@@ -40,7 +40,6 @@ class CKmerBinStorer
 	uint64 max_mem_buffer;
 	uint64 max_mem_single_package;
 
-	CSignatureMapper *s_mapper;
 	CDiskLogger *disk_logger;
 	std::unique_ptr<uchar[]> tmp_buff;
 

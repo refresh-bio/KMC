@@ -55,7 +55,7 @@
 
 // Range of number of signature length
 #define MIN_SL		5
-#define MAX_SL		11
+#define MAX_SL		11 // mkokot_TODO: allow longer for min hash minimizers
 
 // Range of number of splitting threads
 #define MIN_SP		1

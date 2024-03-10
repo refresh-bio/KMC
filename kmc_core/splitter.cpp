@@ -34,7 +34,7 @@ CSplitter::CSplitter(CKMCParams &Params, CKMCQueues &Queues)
 
 	mem_part_pmm_reads = Params.mem_part_pmm_reads; 
 
-	s_mapper = Queues.s_mapper.get();
+	//s_mapper = Queues.s_mapper.get();
 
 	part = nullptr;
 
@@ -553,7 +553,8 @@ bool CSplitter::ProcessReadsOnlyEstimate(uchar* _part, uint64 _part_size, ReadTy
 
 //----------------------------------------------------------------------------------
 // Process the reads from the given FASTQ file part
-bool CSplitter::ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type)
+template<typename SIG_MAPPER_T>
+bool CSplitter::ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type, SIG_MAPPER_T* s_mapper)
 {
 	part = _part;
 	part_size = _part_size;
@@ -564,7 +565,8 @@ bool CSplitter::ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type
 	pmm_reads->reserve(seq);
 
 	uint32 signature_start_pos;
-	CMmer current_signature(signature_len), end_mmer(signature_len);
+	using mmer_t = typename SIG_MAPPER_T::mmer_t;
+	mmer_t current_signature(signature_len), end_mmer(signature_len);
 	uint32 bin_no;
 
 	uint32 i;
@@ -828,7 +830,8 @@ CWSplitter::CWSplitter(CKMCParams &Params, CKMCQueues &Queues)
 
 //----------------------------------------------------------------------------------
 // Execution
-void CWSplitter::operator()()
+template<typename SIG_MAPPER_T>
+void CWSplitter::operator()(SIG_MAPPER_T* s_mapper)
 {
 	// Splitting parts
 	while (!pq->completed())
@@ -838,7 +841,7 @@ void CWSplitter::operator()()
 		ReadType read_type;
 		if (pq->pop(part, size, read_type))
 		{			
-			spl->ProcessReads(part, size, read_type);
+			spl->ProcessReads(part, size, read_type, s_mapper);
 			pmm_fastq->free(part);
 		}
 	}
@@ -1043,5 +1046,8 @@ template bool CSplitter::ProcessReadsSmallK(uchar *_part, uint64 _part_size, Rea
 template bool CSplitter::ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType read_type, CSmallKBuf<uint64>& small_k_buf);
 template class CWSmallKSplitter<uint32>;
 template class CWSmallKSplitter<uint64>;
+
+template void CWSplitter::operator() <CSignatureMapper> (CSignatureMapper* s_mapper);
+template void CWSplitter::operator() <CSignatureMapperMinHash> (CSignatureMapperMinHash* s_mapper);
 
 // ***** EOF

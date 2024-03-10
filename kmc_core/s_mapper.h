@@ -44,6 +44,7 @@ class CSignatureMapper
 	};
 	
 public:
+	using mmer_t = CMmer;
 	void SetPredefined(const int32_t* m)
 	{
 		std::copy_n(m, map_size, signature_map);
@@ -64,7 +65,7 @@ public:
 		my_fseek(file, -12, SEEK_END);
 		uint32_t kmc_version;
 		fread(&kmc_version, sizeof(uint32), 1, file);
-		if (kmc_version != 0x200)
+		if (kmc_version != 0x201)
 		{
 			std::ostringstream ostr;
 			ostr << "currently only KMC databases in version 2 can be readed. If needed to read other version please post an GitHub issue.";
@@ -281,6 +282,78 @@ public:
 	}
 
 };
+
+
+class CSignatureMapperMinHash
+{
+	uint32 n_bins;
+
+#ifdef DEVELOP_MODE
+	bool verbose_log = false;
+#endif
+
+public:
+
+	using mmer_t = CMmerMinHash;
+
+	/*void SetPredefined(const int32_t* m)
+	{
+		std::ostringstream ostr;
+		ostr << "CSignatureMapper::SetPredefined doesn't make sense, please contact authors";
+		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+	}
+	void InitKMC(const std::string& path)
+	{
+		std::ostringstream ostr;
+		ostr << "CSignatureMapper::InitKMC doesn't make sense, please contact authors";
+		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+	}
+	void Init(uint32* stats)
+	{
+		std::ostringstream ostr;
+		ostr << "CSignatureMapper::Init doesn't make sense, please contact authors";
+		
+	}
+#ifdef DEVELOP_MODE
+	uint32 GetMapSize()
+	{
+		std::ostringstream ostr;
+		ostr << "CSignatureMapper::GetMapSize doesn't make sense, please contact authors";
+		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+	}
+#endif
+	int32* GetMap()
+	{
+		std::ostringstream ostr;
+		ostr << "CSignatureMapper::GetMap doesn't make sense, please contact authors";
+		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+	}*/
+
+	CSignatureMapperMinHash(uint32_t _n_bins):
+		n_bins(_n_bins)
+	{
+		
+	}
+
+	inline int32 get_bin_id(uint32 min_hash)
+	{
+		return min_hash % n_bins; //mkokot_TODO: i n_bins is power of 2 we can do this better
+	}
+
+	//inline int32 get_max_bin_no()
+	//{
+	//	return signature_map[special_signature];
+	//}
+
+	//~CSignatureMapperMinHash()
+	//{
+	//	delete[] signature_map;
+	//}
+
+};
+
+
+
 
 #endif 
 

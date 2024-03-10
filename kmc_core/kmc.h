@@ -163,6 +163,7 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 	Params.homopolymer_compressed = stage1Params.GetHomopolymerCompressed();
 	Params.mem_mode = stage1Params.GetRamOnlyMode();
 	Params.reopen_tmp_each_time = stage1Params.GetReopenTmeEachTime();
+	Params.signature_selection_scheme = stage1Params.GetSignatureSelectionScheme();
 
 	if (stage1Params.GetNReaders() && stage1Params.GetNSplitters())
 	{
@@ -559,6 +560,7 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage1()
 	ostr << "Both strands                 : " << (Params.both_strands ? "true\n" : "false\n");
 	ostr << "RAM only mode                : " << (Params.mem_mode ? "true\n" : "false\n");
 	ostr << "Reopen tmp                   : " << (Params.reopen_tmp_each_time ? "true\n" : "false\n");
+	ostr << "Signature selection scheme   : " << KMC::to_string(Params.signature_selection_scheme) << "\n";
 
 	ostr << "\n******* Stage 1 configuration: *******\n";
 	ostr << "\n";
@@ -983,6 +985,13 @@ template <unsigned SIZE> void CKMC<SIZE>::buildSignatureMapping()
 	CStopWatch timer_stage0;
 	timer_stage0.startTimer();
 
+	if (Params.signature_selection_scheme == KMC::SignatureSelectionScheme::min_hash)
+	{
+		Queues.s_mapper_min_hash = std::make_unique<CSignatureMapperMinHash>(Params.n_bins);
+		return;
+	}
+
+	assert(Params.signature_selection_scheme == KMC::SignatureSelectionScheme::KMC);
 	Queues.s_mapper = std::make_unique<CSignatureMapper>(Queues.pmm_stats.get(), Params.signature_len, Params.n_bins
 #ifdef DEVELOP_MODE
 		, Params.verbose_log
@@ -1277,6 +1286,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 	buildSignatureMapping();
 	if (Params.only_generate_sig_to_bin_mapping != "")
 	{
+		assert(Params.signature_selection_scheme == KMC::SignatureSelectionScheme::KMC);
 		CSigToBinMap stbm(Params.signature_len, Params.n_bins, Queues.s_mapper->GetMap());
 		stbm.Serialize(Params.only_generate_sig_to_bin_mapping);
 		return results;
@@ -1285,12 +1295,6 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 	//ignore missing eols from stats stage
 	Queues.missingEOL_at_EOF_counter = std::make_unique<CMissingEOL_at_EOF_counter>();
 
-	if (Params.only_generate_sig_to_bin_mapping != "")
-	{
-		CSigToBinMap stbm(Params.signature_len, Params.n_bins, Queues.s_mapper->GetMap());
-		stbm.Serialize(Params.only_generate_sig_to_bin_mapping);
-		return results;
-	}
 	// ***** Stage 1 *****
 
 	if (Params.file_type != InputType::BAM)
@@ -1328,7 +1332,25 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 	for (int i = 0; i < Params.n_splitters; ++i)
 	{
 		w_splitters[i] = std::make_unique<CWSplitter>(Params, Queues);
-		splitters_threads.emplace_back(std::ref(*w_splitters[i].get()));
+		//splitters_threads.emplace_back(std::ref(*w_splitters[i].get()));
+		splitters_threads.emplace_back([spl = w_splitters[i].get(), this]()
+		{
+			switch (Params.signature_selection_scheme)
+			{
+			case KMC::SignatureSelectionScheme::KMC:
+				(*spl)(Queues.s_mapper.get());
+				//(*spl)(Queues.s_mapper);
+				break;
+			case KMC::SignatureSelectionScheme::min_hash:
+				(*spl)(Queues.s_mapper_min_hash.get());
+				break;
+			default:
+				std::ostringstream ostr;
+				ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+			}
+					
+		});
 	}
 
 	std::unique_ptr<CWKmerBinStorer> w_storer = std::make_unique<CWKmerBinStorer>(Params, Queues);
@@ -1825,7 +1847,6 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 	}
 	release_thr_st2_2.join();
 
-	Queues.s_mapper.reset();
 	results.maxDiskUsage = Queues.disk_logger->get_max();
 
 	Queues.disk_logger.reset();

@@ -12,6 +12,7 @@
 #include "kmc_file.h"
 #include <tuple>
 #include <string>
+#include <algorithm>
 
 uint64 CKMCFile::part_size = 1 << 25;
 
@@ -215,11 +216,15 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 	size_t result;
 
 	result = fread(&kmc_version, sizeof(uint32), 1, file_pre);
-	if (kmc_version != 0 && kmc_version != 0x200) //only this versions are supported, 0 = kmc1, 0x200 = kmc2
+	//only this database versions are supported:
+	//0 = kmc1
+	//0x200 = kmc2 - not supported in this version, for simplicity
+	//0x201 = kmc2.1 <-- adds signature selection scheme and some other info type info
+	if (kmc_version != 0 && kmc_version != 0x201)
 		return false;
 	my_fseek(file_pre, prev_pos, SEEK_SET);
 
-	if (kmc_version == 0x200)
+	if (kmc_version == 0x201)
 	{
 		my_fseek(file_pre, -8, SEEK_END);
 		
@@ -233,7 +238,7 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 		result = fread(&mode, 1, sizeof(uint32), file_pre);
 		if (mode != 0)
 		{
-			std::cerr << "Error: Quake quake compatible counters are not supported anymore\n";
+			std::cerr << "Error: Quake compatible counters are not supported anymore\n";
 			return false;
 		}
 		result = fread(&counter_size, 1, sizeof(uint32), file_pre);
@@ -249,19 +254,53 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 		result = fread(&both_strands, 1, 1, file_pre);
 		both_strands = !both_strands;
 
-		signature_map_size = ((1 << (2 * signature_len)) + 1);
-		uint64 lut_area_size_in_bytes = size - (signature_map_size * sizeof(uint32)+header_offset + 8);
-		single_LUT_size = 1 << (2 * lut_prefix_length);
-		uint64 last_data_index = lut_area_size_in_bytes / sizeof(uint64);
+		uint8_t sss{};
+		result = fread(&sss, 1, 1, file_pre);
+		signature_selection_scheme = KMC::signature_selection_scheme_from_uint8_t(sss);
 
-		n_bins = last_data_index / single_LUT_size;
+		result = fread(&n_bins, 1, sizeof(uint32_t), file_pre);
 
-		signature_map = new uint32[signature_map_size];
+		uint32 single_lut_size = (1ull << (2 * lut_prefix_length)) * sizeof(uint64);
 
-		fseek(file_pre, 4 + lut_area_size_in_bytes + 8, SEEK_SET);
-		result = fread(signature_map, 1, signature_map_size * sizeof(uint32), file_pre);
+		//                              KMCP + LUTS                         + n_recs
+		uint64_t bins_order_start_pos = 4 + single_lut_size * n_bins + 8;
+
+		my_fseek(file_pre, bins_order_start_pos, SEEK_SET);
+
+		bins_order.resize(n_bins);
+
+		result = fread(bins_order.data(), sizeof(bins_order[0]), n_bins, file_pre);
 		if (result == 0)
 			return false;
+
+		std::vector<std::pair<uint32_t, uint32_t>> tmp;
+		tmp.reserve(n_bins);
+		for (uint32_t bin_id = 0; bin_id < n_bins; ++bin_id)
+			tmp.emplace_back(bins_order[bin_id], bin_id);
+		std::sort(tmp.begin(), tmp.end());
+
+		bin_id_to_pos.reserve(n_bins);
+		for (auto& x : tmp)
+			bin_id_to_pos.push_back(x.second);
+
+		uint64 lut_area_size_in_bytes = single_lut_size * n_bins;
+		if (signature_selection_scheme == KMC::SignatureSelectionScheme::KMC)
+		{
+			signature_map_size = ((1 << (2 * signature_len)) + 1);
+			single_LUT_size = 1 << (2 * lut_prefix_length);
+			
+			signature_map = new uint32[signature_map_size];
+
+			auto bins_order_area_size_in_bytes = sizeof(uint32_t) * n_bins;
+
+			//                  MKCP                        guard
+			fseek(file_pre, 4 + lut_area_size_in_bytes + 8 + bins_order_area_size_in_bytes, SEEK_SET);
+			result = fread(signature_map, 1, signature_map_size * sizeof(uint32), file_pre);
+			if (result == 0)
+				return false;
+		}
+		 
+		uint64 last_data_index = lut_area_size_in_bytes / sizeof(uint64);
 
 		sufix_size = (kmer_length - lut_prefix_length) / 4;
 
@@ -435,9 +474,9 @@ bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint32 &count)
 	if (pattern_prefix_value >= prefix_file_buf_size)
 		return false;
 
-	if (kmc_version == 0x200)
+	if (kmc_version == 0x201)
 	{
-		uint32 signature = kmer.get_signature(signature_len);
+		uint32 signature = kmer.get_signature(signature_len, signature_selection_scheme);
 		uint32 bin_start_pos = signature_map[signature];
 		bin_start_pos *= single_LUT_size;				
 		//look into the array with data
@@ -479,9 +518,9 @@ bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint64 &count)
 	if (pattern_prefix_value >= prefix_file_buf_size)
 		return false;
 
-	if (kmc_version == 0x200)
+	if (kmc_version == 0x201)
 	{
-		uint32 signature = kmer.get_signature(signature_len);
+		uint32 signature = kmer.get_signature(signature_len, signature_selection_scheme);
 		uint32 bin_start_pos = signature_map[signature];
 		bin_start_pos *= single_LUT_size;
 		//look into the array with data
@@ -917,7 +956,7 @@ bool CKMCFile::Info(uint32 &_kmer_length, uint32 &_mode, uint32 &_counter_size, 
 		_mode = mode;
 		_counter_size = counter_size;
 		_lut_prefix_length = lut_prefix_length;
-		if (kmc_version == 0x200)
+		if (kmc_version == 0x201)
 			_signature_len = signature_len;
 		else
 			_signature_len = 0; //for kmc1 there is no signature_len
@@ -938,8 +977,12 @@ bool CKMCFile::Info(CKMCFileInfo& info)
 		info.mode = mode;
 		info.counter_size = counter_size;
 		info.lut_prefix_length = lut_prefix_length;
-		if (kmc_version == 0x200)
+		info.n_bins = n_bins;
+		if (kmc_version == 0x201)
+		{
 			info.signature_len = signature_len;
+			info.signature_selection_scheme = signature_selection_scheme;
+		}
 		else
 			info.signature_len = 0; //for kmc1 there is no signature_len
 		info.min_count = min_count;
@@ -969,7 +1012,7 @@ bool CKMCFile::GetCountersForRead(const std::string& read, std::vector<uint32>& 
 		return false;
 	}
 
-	if (kmc_version == 0x200)
+	if (kmc_version == 0x201)
 	{		
 		if (both_strands)
 			return GetCountersForRead_kmc2_both_strands(read, counters);
@@ -1181,12 +1224,13 @@ bool CKMCFile::GetCountersForRead_kmc1(const std::string& read, std::vector<uint
 //---------------------------------------------------------------------------------
 // Auxiliary function.
 //---------------------------------------------------------------------------------
+template<typename mmer_t>
 void CKMCFile::GetSuperKmers(const std::string& transformed_read, super_kmers_t& super_kmers)
 {
 	uint32 i = 0;
 	uint32 len = 0; //length of super k-mer
 	uint32 signature_start_pos;
-	CMmer current_signature(signature_len), end_mmer(signature_len);
+	mmer_t current_signature(signature_len), end_mmer(signature_len);
 
 	while (i + kmer_length - 1 < transformed_read.length())
 	{
@@ -1278,7 +1322,19 @@ bool CKMCFile::GetCountersForRead_kmc2_both_strands(const std::string& read, std
 		c = CKmerAPI::num_codes[(uchar)c];
 
 	super_kmers_t super_kmers;
-	GetSuperKmers(transformed_read, super_kmers);
+	switch (signature_selection_scheme)
+	{
+		case KMC::SignatureSelectionScheme::KMC:
+			GetSuperKmers<CMmer>(transformed_read, super_kmers);
+			break;
+		case KMC::SignatureSelectionScheme::min_hash:
+			GetSuperKmers<CMmerMinHash>(transformed_read, super_kmers);
+			break;
+		default:
+			std::cerr << "Error: unsupported signature selection scheme at " << __FILE__ << ":" << __LINE__ << "\n";
+			exit(1);
+	}
+	
 
 	uint32 counters_pos = 0;
 	if (super_kmers.empty())
@@ -1350,8 +1406,19 @@ bool CKMCFile::GetCountersForRead_kmc2(const std::string& read, std::vector<uint
 		c = CKmerAPI::num_codes[(uchar)c];
 	
 	super_kmers_t super_kmers;
-	GetSuperKmers(transformed_read, super_kmers);
-	
+	switch (signature_selection_scheme)
+	{
+	case KMC::SignatureSelectionScheme::KMC:
+		GetSuperKmers<CMmer>(transformed_read, super_kmers);
+		break;
+	case KMC::SignatureSelectionScheme::min_hash:
+		GetSuperKmers<CMmerMinHash>(transformed_read, super_kmers);
+		break;
+	default:
+		std::cerr << "Error: unsupported signature selection scheme at " << __FILE__ << ":" << __LINE__ << "\n";
+		exit(1);
+	}
+
 	uint32 counters_pos = 0;
 	if (super_kmers.empty())
 	{

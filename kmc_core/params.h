@@ -94,6 +94,7 @@ struct CKMCParams {
 	bool mem_mode;			// use RAM instead of disk
 	bool reopen_tmp_each_time;  // instead of keeping dump files opened reopen at each read/write operation
 
+	KMC::SignatureSelectionScheme signature_selection_scheme = KMC::SignatureSelectionScheme::KMC;
 	int n_bins;				// number of bins;
 	int bin_part_size;		// size of a bin part; fixed: 2^15
 	int fastq_buffer_size;	// size of FASTQ file buffer; fixed: 2^23
@@ -136,6 +137,7 @@ struct CKMCQueues
 {
 	//Signature mapper
 	std::unique_ptr<CSignatureMapper> s_mapper;
+	std::unique_ptr<CSignatureMapperMinHash> s_mapper_min_hash;
 
 	std::vector<std::unique_ptr<CBinaryPackQueue>> binary_pack_queues;
 

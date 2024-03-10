@@ -165,6 +165,7 @@
   <ItemGroup>
     <ClInclude Include="..\3rd_party\cloudflare\zlib.h" />
     <ClInclude Include="..\kmc_api\mmer.h" />
+    <ClInclude Include="..\kmc_api\murmur64_hash.h" />
     <ClInclude Include="bam_utils.h" />
     <ClInclude Include="binary_reader.h" />
     <ClInclude Include="bkb_merger.h" />

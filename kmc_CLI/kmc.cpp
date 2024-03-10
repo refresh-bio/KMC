@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <iomanip>
+
 using namespace std;
 
 struct CLIParams
@@ -53,10 +54,17 @@ void usage()
 		<< "  -hp - hide percentage progress (default: false)\n"
 		<< "  -e - only estimate histogram of k-mers occurrences instead of exact k-mer counting\n"
 		<< "  --opt-out-size - optimize output database size (may increase running time)\n"
-		<< "  --sig-to-bin-map-stats<value> - how many percent of the input data should be used to build signature to bin mapping (default: 1.0)\n"
-		<< "  --sig-to-bin-mapping<path> - instead of building signature to bin mapping basing on part of the input data use predefined mapping define in path\n"
-		<< "  --only-generate-sig-to-bin-mapping<path> - do not perform k-mer counting, just generate signature to bin mapping and store it at path\n"
 		<< "  --reopen-tmp - instead of keeping all temp files opened reopen at each read/write operation\n"
+
+		<< "  -sss<scheme>  - signature selection scheme, must be one of <kmc|min_hash>\n"
+		<< "       kmc      - original kmc signature selection scheme\n"
+		<< "       min_hash - hash m-mers and select minimal value\n"
+	
+		<< "  --sig-to-bin-map-stats<value> - how many percent of the input data should be used to build signature to bin mapping (default: 1.0), only for -ssskmc\n"
+		<< "  --sig-to-bin-mapping<path> - instead of building signature to bin mapping basing on part of the input data use predefined mapping define in path, only for -ssskmc\n"
+		<< "  --only-generate-sig-to-bin-mapping<path> - do not perform k-mer counting, just generate signature to bin mapping and store it at path, only for -ssskmc\n";
+	
+	cout
 		<< "Example:\n"
 		<< "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
 		<< "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
@@ -232,6 +240,19 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		else if (strncmp(argv[i], "--reopen-tmp", strlen("--reopen-tmp")) == 0)
 		{
 			stage1Params.SetReopenTmeEachTime(true);
+		}
+		if (strncmp(argv[i], "-sss", 4) == 0)
+		{
+			std::string scheme = argv[i] + 4;
+			if (scheme == "kmc")
+				stage1Params.SetSignatureSelectionScheme(KMC::SignatureSelectionScheme::KMC);
+			else if (scheme == "min_hash")
+				stage1Params.SetSignatureSelectionScheme(KMC::SignatureSelectionScheme::min_hash);
+			else
+			{
+				std::cerr << "Error: signature selection scheme (-sss) must be one of: kmc|min_hash\n";
+				exit(1);
+			}
 		}
 		else if (strncmp(argv[i], "--sig-to-bin-map-stats", strlen("--sig-to-bin-map-stats")) == 0)
 		{

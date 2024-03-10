@@ -31,13 +31,14 @@ class CKmerBinCompleter
 	CKmerQueue *kq;
 	CBinDesc *bd;
 	CSignatureMapper *s_mapper;
-	uint32 *sig_map;
+	std::vector<uint32_t> bins_order;
+	uint32 *sig_map{};
 	uint64 _n_unique, _n_cutoff_min, _n_cutoff_max, _n_total;
 	uint64 n_recs;
 
 	FILE *out_kmer, *out_lut;
 	uint32 lut_pos;
-	uint32 sig_map_size;
+	uint32 sig_map_size{};
 	uint64 counter_size;
 
 	CMemoryBins *memory_bins;
@@ -53,12 +54,19 @@ class CKmerBinCompleter
 	uint32 cutoff_min, cutoff_max;
 	uint32 counter_max;
 	int32 kmer_len;
-	int32 signature_len;	
+	int32 signature_len;
 	bool both_strands;
+	KMC::SignatureSelectionScheme signature_selection_scheme;
+	uint32_t n_bins;
 	bool without_output;
 	bool store_uint(FILE *out, uint64 x, uint32 size);
 	std::unique_ptr<CKFFWriter> kff_writer;
 	OutputType output_type;
+
+	bool need_to_store_sig_to_bin_mapping() const
+	{
+		return signature_selection_scheme == KMC::SignatureSelectionScheme::KMC;
+	}
 
 public:
 	CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues);

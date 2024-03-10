@@ -12,6 +12,7 @@
 #define _KMER_FILE_HEADER_H
 #include "defs.h"
 #include "kff_info_reader.h"
+#include "../kmc_core/kmc_runner.h"
 #include <string>
 #include <iostream>
 
@@ -45,14 +46,18 @@ public:
 	uint64 max_count = 0;
 	uint64 total_kmers = 0;
 	bool both_strands = true;
+	KMC::SignatureSelectionScheme signature_selection_scheme;
 	uint32 db_version = 0;
 	uint32 header_offset = 0;
 	
 	uint32 no_of_bins = 0; //only for kmc2
+	std::vector<uint32_t> bins_order; //order of bins id in this file
+	std::vector<uint32_t> bin_id_to_pos; //reverse relation to bin_order, bin_id_to_pos[i] is a position of bin $i$ in the kmc database
+
 	KmerFileType kmer_file_type;
 	//bool IsKMC2() const
 	//{
-	//	return db_version == 0x200;
+	//	return db_version == 0x201;
 	//}
 
 	KmerFileType GetType() const

@@ -102,39 +102,76 @@ class CKmerCheck
 		}
 		else if (header.kmer_file_type == KmerFileType::KMC2)
 		{
-			uint32 sig_len = header.signature_len;
-			CMmer cur_mmr(sig_len);
-
-
-			uint32 pos = header.kmer_len * 2 - 2;
-			for (uint32 i = 0; i < sig_len; ++i)
+			if (header.signature_selection_scheme == KMC::SignatureSelectionScheme::KMC)
 			{
-				cur_mmr.insert(kmer.get_2bits(pos));
-				pos -= 2;
+				uint32 sig_len = header.signature_len;
+				CMmer cur_mmr(sig_len);
+
+
+				uint32 pos = header.kmer_len * 2 - 2;
+				for (uint32 i = 0; i < sig_len; ++i)
+				{
+					cur_mmr.insert(kmer.get_2bits(pos));
+					pos -= 2;
+				}
+				CMmer min_mmr(cur_mmr);
+				for (uint32 i = sig_len; i < header.kmer_len; ++i)
+				{
+					cur_mmr.insert(kmer.get_2bits(pos));
+					pos -= 2;
+
+					if (cur_mmr < min_mmr)
+						min_mmr = cur_mmr;
+				}
+				uint32 signature = min_mmr.get();
+
+				uint64 map_size = ((1 << 2 * header.signature_len) + 1) * sizeof(uint32);
+				my_fseek(prefix_file, 0ULL - (8 + header.header_offset + map_size) + signature * sizeof(uint32), SEEK_END);
+
+				uint32 prefix_array = 0;
+				uint32 prefix_arry_size = (1 << 2 * header.lut_prefix_len) * (uint32)sizeof(uint64);
+				fread(&prefix_array, sizeof(uint32), 1, prefix_file);
+
+				uint64 prefix_pos = 4 + prefix_arry_size * prefix_array + sizeof(uint64) * prefix;
+				my_fseek(prefix_file, prefix_pos, SEEK_SET);
+
+				fread(&lower, sizeof(uint64), 1, prefix_file);
+				fread(&upper, sizeof(uint64), 1, prefix_file);
 			}
-			CMmer min_mmr(cur_mmr);
-			for (uint32 i = sig_len; i < header.kmer_len; ++i)
+			else
 			{
-				cur_mmr.insert(kmer.get_2bits(pos));
-				pos -= 2;
+				uint32 sig_len = header.signature_len;
+				CMmerMinHash cur_mmr(sig_len);
 
-				if (cur_mmr < min_mmr)
-					min_mmr = cur_mmr;
+
+				uint32 pos = header.kmer_len * 2 - 2;
+				for (uint32 i = 0; i < sig_len; ++i)
+				{
+					cur_mmr.insert(kmer.get_2bits(pos));
+					pos -= 2;
+				}
+				CMmerMinHash min_mmr(cur_mmr);
+				for (uint32 i = sig_len; i < header.kmer_len; ++i)
+				{
+					cur_mmr.insert(kmer.get_2bits(pos));
+					pos -= 2;
+
+					if (cur_mmr < min_mmr)
+						min_mmr = cur_mmr;
+				}
+
+				uint32 signature = min_mmr.get();
+				//mkokot_TODO: this is to be checked if works!!!!
+				uint32 prefix_array = header.bin_id_to_pos[signature % header.no_of_bins];
+
+				uint32 prefix_arry_size = (1 << 2 * header.lut_prefix_len) * (uint32)sizeof(uint64);
+				
+				uint64 prefix_pos = 4 + prefix_arry_size * prefix_array + sizeof(uint64) * prefix;
+				my_fseek(prefix_file, prefix_pos, SEEK_SET);
+
+				fread(&lower, sizeof(uint64), 1, prefix_file);
+				fread(&upper, sizeof(uint64), 1, prefix_file);
 			}
-			uint32 signature = min_mmr.get();
-
-			uint64 map_size = ((1 << 2 * header.signature_len) + 1) * sizeof(uint32);
-			my_fseek(prefix_file, 0ULL - (8 + header.header_offset + map_size) + signature * sizeof(uint32), SEEK_END);
-
-			uint32 prefix_array = 0;
-			uint32 prefix_arry_size = (1 << 2 * header.lut_prefix_len)*(uint32)sizeof(uint64);
-			fread(&prefix_array, sizeof(uint32), 1, prefix_file);
-
-			uint64 prefix_pos = 4 + prefix_arry_size*prefix_array + sizeof(uint64)*prefix;
-			my_fseek(prefix_file, prefix_pos, SEEK_SET);
-
-			fread(&lower, sizeof(uint64), 1, prefix_file);
-			fread(&upper, sizeof(uint64), 1, prefix_file);
 		}
 		else
 		{

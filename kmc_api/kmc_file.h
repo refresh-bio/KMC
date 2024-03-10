@@ -14,6 +14,7 @@
 #include "kmer_defs.h"
 #include "kmer_api.h"
 #include "../kmc_api/sig_to_bin_map.h"
+#include "../kmc_core/kmc_runner.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -28,7 +29,9 @@ struct CKMCFileInfo
 	uint32 mode;
 	uint32 counter_size;
 	uint32 lut_prefix_length;
-	uint32 signature_len;	
+	uint32 signature_len;
+	KMC::SignatureSelectionScheme signature_selection_scheme;
+	uint32_t n_bins;
 	uint32 min_count;
 	uint64 max_count;
 	bool both_strands;
@@ -394,11 +397,13 @@ protected:
 	std::unique_ptr<CPrefixFileBufferForListingMode> prefixFileBufferForListingMode;
 
 	uint64 prefix_index;			// The current prefix's index in an array "prefix_file_buf", readed from *.kmc_pre
-	uint32 single_LUT_size;			// The size of a single LUT (in no. of elements)
+	uint32 single_LUT_size{};			// The size of a single LUT (in no. of elements)
 
 	uint32* signature_map;
 	uint32_t n_bins{};				//only for KMC2
-	uint32 signature_map_size;
+	std::vector<uint32_t> bins_order; //order of bins id in this file
+	std::vector<uint32_t> bin_id_to_pos; //reverse relation to bin_order, bin_id_to_pos[i] is a position of bin $i$ in the kmc database
+	uint32 signature_map_size{};
 	
 	uchar* sufix_file_buf;
 	uint64 sufix_number;			// The sufix's number to be listed
@@ -413,6 +418,7 @@ protected:
 	uint64 max_count;
 	uint64 total_kmers;
 	bool both_strands;
+	KMC::SignatureSelectionScheme signature_selection_scheme;
 
 	uint32 kmc_version;
 	uint32 sufix_size;		// sufix's size in bytes 
@@ -441,6 +447,8 @@ protected:
 	bool GetCountersForRead_kmc1(const std::string& read, std::vector<uint32>& counters);		
 
 	using super_kmers_t = std::vector<std::tuple<uint32, uint32, uint32>>;//start_pos, len, bin_no
+
+	template<typename mmer_t>
 	void GetSuperKmers(const std::string& transformed_read, super_kmers_t& super_kmers);
 
 	// Implementation of GetCountersForRead for kmc2 database format for both strands
@@ -461,8 +469,9 @@ public:
 
 	bool OpenForListingWithBinOrder(const std::string& file_name, const std::string& bin_order_file_name);
 
+	//mkokot_TODO: I will use 0x201 for new format that I support different kind of minimizers
 	// Return true if kmc is in KMC2 compatiblie format
-	bool IsKMC2() const noexcept { return kmc_version == 0x200; }
+	bool IsKMC2() const noexcept { return kmc_version == 0x201; }
 
 	// Return next kmer in CKmerAPI &kmer. Return its counter in uint64 &count. Return true if not EOF
 	bool ReadNextKmer(CKmerAPI &kmer, uint64 &count); //for small k-values when counter may be longer than 4bytes
