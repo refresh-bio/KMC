@@ -284,10 +284,10 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 			bin_id_to_pos.push_back(x.second);
 
 		uint64 lut_area_size_in_bytes = single_lut_size * n_bins;
+		single_LUT_size = 1 << (2 * lut_prefix_length);
 		if (signature_selection_scheme == KMC::SignatureSelectionScheme::KMC)
 		{
 			signature_map_size = ((1 << (2 * signature_len)) + 1);
-			single_LUT_size = 1 << (2 * lut_prefix_length);
 			
 			signature_map = new uint32[signature_map_size];
 
@@ -331,16 +331,39 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 		}
 		else if (_open_mode == opened_for_listing_with_bin_order)
 		{
-			ordered_bin_reading = std::make_unique<OrderedBinReading>(
-				file_pre, 4,
-				file_suf, 4,
-				bin_order_file_name,
-				n_bins,
-				signature_len,
-				signature_map,
-				signature_map_size,
-				single_LUT_size,
-				sufix_rec_size);
+			switch (signature_selection_scheme)
+			{
+			case KMC::SignatureSelectionScheme::KMC:
+				if (bin_order_file_name == "") {
+					std::cerr << "Error: this kmc database was build using kmc signature selection scheme, to open in listing with bin order mapping file must be provided! " << __FILE__ << ":" << __LINE__ << "\n";
+					exit(1);
+				}
+				ordered_bin_reading = std::make_unique<OrderedBinReading>(
+					file_pre, 4,
+					file_suf, 4,
+					bin_order_file_name,
+					n_bins,
+					signature_len,
+					signature_map,
+					signature_map_size,
+					single_LUT_size,
+					sufix_rec_size);
+				break;
+			case KMC::SignatureSelectionScheme::min_hash:
+			if (bin_order_file_name != "") {
+					std::cerr << "Warning: this kmc database was build using min_hash signature selection scheme, mapping file will be ignored\n";
+				}
+				ordered_bin_reading = std::make_unique<OrderedBinReading>(
+					file_pre, 4,
+					file_suf, 4,
+					n_bins,
+					single_LUT_size,
+					sufix_rec_size, bin_id_to_pos);
+				break;
+			default:
+				std::cerr << "Error: unsupported signature selection scheme at " << __FILE__ << ":" << __LINE__ << "\n";
+				exit(1);
+			}
 		}
 		else
 			throw std::runtime_error("unknown _open_mode");
@@ -425,19 +448,28 @@ uint32_t CKMCFile::GetNBins() const
 }
 
 //-----------------------------------------------------------------------------------------------
-bool CKMCFile::StartBin()
+bool CKMCFile::StartBin(size_t prefix_file_buff_size_bytes, size_t suffix_file_buff_size_bytes)
 {
 	if (is_opened != opened_for_listing_with_bin_order)
 		return false;
-	return ordered_bin_reading->next_bin();
+	return ordered_bin_reading->next_bin(prefix_file_buff_size_bytes, suffix_file_buff_size_bytes);
 }
 
 //-----------------------------------------------------------------------------------------------
-bool CKMCFile::StartBin(uint32_t bin_id)
+bool CKMCFile::StartBin(uint32_t bin_id, size_t prefix_file_buff_size_bytes, size_t suffix_file_buff_size_bytes)
 {
 	if (is_opened != opened_for_listing_with_bin_order)
 		return false;
-	ordered_bin_reading->start_bin(bin_id);
+	ordered_bin_reading->start_bin(bin_id, prefix_file_buff_size_bytes, suffix_file_buff_size_bytes);
+	return true;
+}
+
+//-----------------------------------------------------------------------------------------------
+bool CKMCFile::GetNKmers(uint32_t bin_id, uint64_t& n_kmers)
+{
+	if (is_opened != opened_for_listing_with_bin_order)
+		return false;
+	n_kmers = ordered_bin_reading->get_n_kmers(bin_id);
 	return true;
 }
 

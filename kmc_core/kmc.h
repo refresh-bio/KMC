@@ -188,6 +188,13 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 	if (Params.estimateHistogramCfg != KMC::EstimateHistogramCfg::DONT_ESTIMATE && !Params.both_strands)
 		throw std::runtime_error("k-mer histogram estimation possible only for canonical k-mers");
 
+	if (Params.signature_selection_scheme == KMC::SignatureSelectionScheme::KMC && (Params.signature_len < MIN_SL || Params.signature_len > MAX_SL))
+	{
+		std::ostringstream err_msg;
+		err_msg << "signature len for kmc signature selection scheme must be from range <" << MIN_SL << "," << MAX_SL << ">";
+		throw std::runtime_error(err_msg.str());
+	}
+
 	initialized = true;
 }
 

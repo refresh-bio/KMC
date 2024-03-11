@@ -39,7 +39,7 @@
 #define EXPAND_BUFFER_RECS (1 << 16)
 
 #define MIN_N_BINS 64
-#define MAX_N_BINS 2000
+#define MAX_N_BINS 20000
 
 #ifndef MAX_K
 #define MAX_K		256

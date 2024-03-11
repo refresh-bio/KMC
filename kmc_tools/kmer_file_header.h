@@ -52,7 +52,7 @@ public:
 	
 	uint32 no_of_bins = 0; //only for kmc2
 	std::vector<uint32_t> bins_order; //order of bins id in this file
-	std::vector<uint32_t> bin_id_to_pos; //reverse relation to bin_order, bin_id_to_pos[i] is a position of bin $i$ in the kmc database
+	std::vector<uint32_t> bin_id_to_pos; //reverse relation to bins_order, bin_id_to_pos[i] is a position of bin $i$ in the kmc database
 
 	KmerFileType kmer_file_type;
 	//bool IsKMC2() const

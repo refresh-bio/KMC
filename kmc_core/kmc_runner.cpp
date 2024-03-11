@@ -215,12 +215,13 @@ namespace KMC
 	}
 	Stage1Params& Stage1Params::SetSignatureLen(uint32_t signatureLen)
 	{
-		if (signatureLen < MIN_SL || signatureLen > MAX_SL)
-		{
-			std::ostringstream err_msg;
-			err_msg << "Wrong parameter: p must be from range <" << MIN_SL << "," << MAX_SL << ">";
-			throw std::runtime_error(err_msg.str());
-		}
+		//range will be checked inside kmc because it is different depending on signature selection scheme
+		//if (signatureLen < MIN_SL || signatureLen > MAX_SL)
+		//{
+		//	std::ostringstream err_msg;
+		//	err_msg << "Wrong parameter: p must be from range <" << MIN_SL << "," << MAX_SL << ">";
+		//	throw std::runtime_error(err_msg.str());
+		//}
 		this->signatureLen = signatureLen;
 		return *this;
 	}
