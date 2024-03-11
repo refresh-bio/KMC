@@ -15,6 +15,7 @@
 #include "kmer_api.h"
 #include "../kmc_api/sig_to_bin_map.h"
 #include "../kmc_core/kmc_runner.h"
+#include "../kmc_core/kmer.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -341,6 +342,54 @@ class CKMCFile
 			return true;
 		}
 
+		template<unsigned SIZE>
+		bool read_from_cur_bin(CKmer<SIZE>& kmer, uint64& count, uint32_t lut_prefix_length, uint32_t suffix_size, uint32_t counter_size, uint32_t min_count, uint32_t max_count)
+		{
+			while (true)
+			{
+				if (!next_in_current_bin(cur_bin_id))
+					return false;
+
+				//--bin_sizes[bin_map[cur_bin_id]];
+				--kmers_left_in_cur_bin;
+				--left_in_current_prefix;
+				auto suf_rec = scan_suffix.read_many(suf_rec_size_bytes);
+
+				kmer.clear();
+
+				uint32 a = 0;
+				uint32_t kmer_byte_pos = suffix_size - 1;
+				for (; a < suffix_size; ++a, --kmer_byte_pos)
+					kmer.set_byte(kmer_byte_pos, suf_rec[a]);
+
+				auto lut_prefix_len_bits = 2 * lut_prefix_length;
+				auto prefix_bit_pos = suffix_size * 8;
+				kmer.set_bits(prefix_bit_pos, lut_prefix_len_bits, current_prefix);
+
+				//read counter:
+				if (counter_size == 0) {
+					count = 1;
+					return true;
+				}
+				else
+				{
+					count = suf_rec[a++];
+					for (uint32 b = 1; b < counter_size; b++)
+					{
+						uint64 aux = 0x000000ff & suf_rec[a++];
+						aux = aux << 8 * (b);
+						count = aux | count;
+					}
+				}
+
+				if (counter_size == 0)
+					return true;
+				if (count >= min_count && count <= max_count)
+					return true;
+			}
+			return false;
+		}
+
 		bool read_from_cur_bin(CKmerAPI& kmer, uint64& count, uint32_t off, uint32_t suffix_size, uint32_t counter_size, uint32_t min_count, uint32_t max_count)
 		{
 			while (true)
@@ -523,6 +572,10 @@ public:
 	//only when oppened in listing with bin order
 	bool ReadNextKmerFromBin(CKmerAPI& kmer, uint64& count);
 
+	//only when oppened in listing with bin order
+	template<unsigned SIZE>
+	bool ReadNextKmerFromBin(CKmer<SIZE>& kmer, uint64& count);
+
 	// Release memory and close files in case they were opened 
 	bool Close();
 
@@ -572,10 +625,67 @@ public:
 
 	// Get counters for all k-mers in read
 	bool GetCountersForRead(const std::string& read, std::vector<uint32>& counters);
-	private:
-		uint32 count_for_kmer_kmc1(CKmerAPI& kmer);
-		uint32 count_for_kmer_kmc2(CKmerAPI& kmer, uint32 bin_start_pos);
+	template<typename Runner>
+	void DispatchKmerSize(Runner& runner);
+private:
+	uint32 count_for_kmer_kmc1(CKmerAPI& kmer);
+	uint32 count_for_kmer_kmc2(CKmerAPI& kmer, uint32 bin_start_pos);
 };
+
+//-----------------------------------------------------------------------------------------------
+template<unsigned SIZE>
+bool CKMCFile::ReadNextKmerFromBin(CKmer<SIZE>& kmer, uint64& count)
+{
+	if (is_opened != opened_for_listing_with_bin_order)
+		return false;
+
+	return ordered_bin_reading->read_from_cur_bin(kmer, count, lut_prefix_length, sufix_size, counter_size, min_count, max_count);
+}
+
+
+template<unsigned SIZE, typename Runner>
+struct KmerSizeDispatcher
+{
+	static void Dispatch(uint32_t kmer_len, Runner& runner)
+	{
+		auto min_k = 32 * (SIZE - 1);
+		auto max_k = min_k + 32;
+		if (kmer_len >= min_k && kmer_len < max_k)
+			runner.template Run<SIZE>();
+		else
+			KmerSizeDispatcher<SIZE - 1, Runner>::Dispatch(kmer_len, runner);
+	}
+};
+
+template<typename Runner>
+struct KmerSizeDispatcher<0, Runner>
+{
+	static void Dispatch(uint32_t kmer_len, Runner& runner)
+	{
+		std::cerr << "Error: k-mer size dispatcher failed!\n";
+		exit(1);
+	}
+};
+
+template<typename Runner>
+void DispatchKmerSize(uint32_t kmer_length, Runner& runner)
+{
+	constexpr auto max_no_of_uint64_t_for_kmer = (MAX_K + 31) / 32;
+
+	if (kmer_length > MAX_K)
+	{
+		std::cerr << "Error: k too large, extend compilation constant MAX_K\n";
+		exit(1);
+	}
+	KmerSizeDispatcher<max_no_of_uint64_t_for_kmer, Runner>::Dispatch(kmer_length, runner);
+}
+
+template<typename Runner>
+void CKMCFile::DispatchKmerSize(Runner& runner)
+{
+	DispatchKmerSize<>(kmer_length, runner);
+}
+
 
 #endif
 
