@@ -1587,7 +1587,21 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 
 #ifdef DEVELOP_MODE
 	if (Params.verbose_log)
-		save_bins_stats(Queues, Params, sizeof(CKmer<SIZE>), n_reads, Params.signature_len, Queues.s_mapper->GetMapSize(), Queues.s_mapper->GetMap());
+	{
+		switch (Params.signature_selection_scheme)
+			{
+			case KMC::SignatureSelectionScheme::KMC:
+				save_bins_stats_kmc_sss(Queues, Params, sizeof(CKmer<SIZE>), n_reads, Params.signature_len, Queues.s_mapper->GetMapSize(), Queues.s_mapper->GetMap());
+				break;
+			case KMC::SignatureSelectionScheme::min_hash:
+				save_bins_stats_min_hash_sss(Queues, Params, sizeof(CKmer<SIZE>), n_reads, Params.signature_len);
+				break;
+			default:
+				std::ostringstream ostr;
+				ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+			}
+	}
 #endif
 
 	SortFunction<CKmer<SIZE>> sort_func;
