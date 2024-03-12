@@ -220,7 +220,8 @@ public:
 		rev >>= 2;
 		rev += (3 - (uint64_t)symb) << (len * 2 - 2);
 
-		current_hash = MurMur64Hash{}(MIN(str, rev)) & mask; //mkokot_TODO: should I "& mask" ?
+		//current_hash = MurMur64Hash{}(MIN(str, rev)) & mask; //mkokot_TODO: should I "& mask" ?
+		current_hash = MurMur64Hash{}(MIN(str, rev)); //mkokot_TODO: should I "& mask" ?
 	}
 	inline uint32_t get() const {
 		return current_hash;
