@@ -18,7 +18,6 @@
 #include "kmer.h"
 #include "raduls.h"
 #include "radix.h"
-#include "s_mapper.h"
 #include <string>
 #include <algorithm>
 #include <numeric>
@@ -75,8 +74,6 @@ private:
 
 	bool both_strands;	
 	bool without_output;
-
-	CSignatureMapper* s_mapper;
 
 	uint64 n_unique, n_cutoff_min, n_cutoff_max, n_total;
 	uint32 cutoff_min, cutoff_max;
@@ -175,8 +172,6 @@ template <unsigned SIZE> CKmerBinSorter<SIZE>::CKmerBinSorter(CKMCParams &Params
 	kq = Queues.kq.get();
 	
 	sorters_manager = Queues.sorters_manager.get();
-
-	s_mapper = Queues.s_mapper.get();
 
 	pmm_radix_buf = Queues.pmm_radix_buf.get();
 	

@@ -14,7 +14,6 @@
 #include "defs.h"
 #include "params.h"
 #include "kmer.h"
-#include "s_mapper.h"
 #include "radix.h"
 #include "percent_progress.h"
 #include <string>
@@ -30,8 +29,6 @@
 //************************************************************************************************************
 template <unsigned SIZE> class CKmerBinReader
 {
-	CSignatureMapper* s_mapper;
-
 	CBinDesc *bd;
 	CBinQueue *bq;
 	CSortersManager* sorters_manager;
@@ -83,7 +80,6 @@ template <unsigned SIZE> CKmerBinReader<SIZE>::CKmerBinReader(CKMCParams &Params
 	counter_max    = (uint32)Params.counter_max;
 	both_strands   = Params.both_strands;
 	max_x = Params.max_x;
-	s_mapper	   = Queues.s_mapper.get();
 	lut_prefix_len = Params.lut_prefix_len;
 
 #ifdef DEVELOP_MODE

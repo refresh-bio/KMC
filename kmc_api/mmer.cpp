@@ -10,7 +10,7 @@
 
 #include "../kmc_api/mmer.h"
 
-
+uint32_t CMmer::norm4[];
 uint32_t CMmer::norm5[];
 uint32_t CMmer::norm6[];
 uint32_t CMmer::norm7[];
@@ -27,6 +27,9 @@ CMmer::CMmer(uint32_t _len)
 {
 	switch (_len)
 	{
+	case 4:
+		norm = norm4;
+		break;
 	case 5:
 		norm = norm5;
 		break;

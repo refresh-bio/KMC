@@ -50,8 +50,8 @@ class CSplitter
 	uint32 n_bins;	
 	uint64 n_reads;//for multifasta its a sequences counter	
 
-	CSignatureMapper* s_mapper;
-
+	//CSignatureMapper* s_mapper;
+	
 	bool homopolymer_compressed;
 
 	CntHashEstimator* ntHashEstimator;
@@ -69,7 +69,8 @@ public:
 	void InitBins(CKMCParams &Params, CKMCQueues &Queues);	
 	void CalcStats(uchar* _part, uint64 _part_size, ReadType read_type, uint32* _stats);
 	bool ProcessReadsOnlyEstimate(uchar* _part, uint64 _part_size, ReadType read_type);
-	bool ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type);
+	template<typename SIG_MAPPER_T>
+	bool ProcessReads(uchar *_part, uint64 _part_size, ReadType read_type, SIG_MAPPER_T* s_mapper);
 	template<typename COUNTER_TYPE> bool ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType read_type, CSmallKBuf<COUNTER_TYPE>& small_k_buf);
 	void Complete();
 	inline void GetTotal(uint64 &_n_reads);
@@ -105,7 +106,8 @@ class CWSplitter {
 
 public:
 	CWSplitter(CKMCParams &Params, CKMCQueues &Queues);	
-	void operator()();
+	template<typename SIG_MAPPER_T>
+	void operator()(SIG_MAPPER_T* s_mapper);
 	void GetTotal(uint64 &_n_reads);
 	~CWSplitter();
 };

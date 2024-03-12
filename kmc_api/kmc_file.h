@@ -14,6 +14,8 @@
 #include "kmer_defs.h"
 #include "kmer_api.h"
 #include "../kmc_api/sig_to_bin_map.h"
+#include "../kmc_core/kmc_runner.h"
+#include "../kmc_core/kmer.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -28,7 +30,9 @@ struct CKMCFileInfo
 	uint32 mode;
 	uint32 counter_size;
 	uint32 lut_prefix_length;
-	uint32 signature_len;	
+	uint32 signature_len;
+	KMC::SignatureSelectionScheme signature_selection_scheme;
+	uint32_t n_bins;
 	uint32 min_count;
 	uint64 max_count;
 	bool both_strands;
@@ -180,6 +184,7 @@ class CKMCFile
 		std::vector<uint32_t> bin_map; //maps bin ids from kmc run to bin ids in kmc database
 
 		std::vector<uint64_t> bin_sizes; //indexed with bin ids in kmc database, i.e. having bin_id from kmc run one should use bin_sizes[bin[map[id]], how many k-mers are in each bin
+		uint64_t kmers_left_in_cur_bin{};
 
 		//starting positions in file byte pos, guard at the end
 		std::vector<size_t> bins_starts_in_pre;
@@ -214,8 +219,6 @@ class CKMCFile
 		buffered_scanning<uint64_t> scan_prefix;
 		buffered_scanning<unsigned char> scan_suffix;
 
-		
-
 		bool next_in_current_bin(uint32_t bin_id)
 		{
 			if (bin_id == guard)
@@ -223,7 +226,8 @@ class CKMCFile
 
 			bin_id = bin_map[bin_id];
 
-			if (!bin_sizes[bin_id])
+			//if (!bin_sizes[bin_id])
+			if (!kmers_left_in_cur_bin)
 				return false;
 
 			while (!left_in_current_prefix) {
@@ -238,6 +242,7 @@ class CKMCFile
 			return true;
 		}
 	public:
+		//for kmc signature selection scheme
 		OrderedBinReading(FILE* pre_file, size_t pre_file_data_start_pos, FILE* suf_file, size_t suf_file_data_start_pos, const std::string& file_name, uint32_t n_bins, uint32 signature_len, uint32* signature_map, uint32 signature_map_size, uint32_t single_LUT_size, uint32_t suf_rec_size_bytes) :
 			pre_file(pre_file),
 			pre_file_data_start_pos(pre_file_data_start_pos),
@@ -283,26 +288,48 @@ class CKMCFile
 			}
 			calc_bin_ranges();
 		}
+
+		//min_hash signature selection scheme
+		OrderedBinReading(FILE* pre_file, size_t pre_file_data_start_pos, FILE* suf_file, size_t suf_file_data_start_pos, uint32_t n_bins, uint32_t single_LUT_size, uint32_t suf_rec_size_bytes, const std::vector<uint32_t>& bin_map) :
+			pre_file(pre_file),
+			pre_file_data_start_pos(pre_file_data_start_pos),
+			suf_file(suf_file),
+			suf_file_data_start_pos(suf_file_data_start_pos),
+			guard((uint32_t)-1/* std::numeric_limits<uint32_t>::max()*/), //VS have problems with numeric_limits::max(), probably defines max somewhere...
+			cur_bin_id(guard),
+			n_bins(n_bins),
+			single_LUT_size(single_LUT_size),
+			suf_rec_size_bytes(suf_rec_size_bytes),
+			bin_map(bin_map),
+			bin_sizes(n_bins),
+			bins_starts_in_pre(n_bins + 1),
+			bins_starts_in_suf(n_bins + 1)
+		{
+			calc_bin_ranges();
+		}
+
+
 		uint32_t get_n_bins() const
 		{
 			return n_bins;
 		}
-		void start_bin(size_t bin_id)
+		void start_bin(size_t bin_id, size_t prefix_file_buff_size_bytes, size_t suffix_file_buff_size_bytes)
 		{
 			cur_bin_id = bin_id;
 			bin_id = bin_map[bin_id];
 
 			current_prefix = (uint64_t)-1;// std::numeric_limits<uint64_t>::max(); //will be incremented
 			left_in_current_prefix = 0;
-			scan_prefix.reset(pre_file, 1ull << 25, bins_starts_in_pre[bin_id], bins_starts_in_pre[bin_id + 1] + sizeof(uint64_t));
-			scan_suffix.reset(suf_file, 1ull << 25, bins_starts_in_suf[bin_id], bins_starts_in_suf[bin_id + 1]);
+			kmers_left_in_cur_bin = bin_sizes[bin_id];
+			scan_prefix.reset(pre_file, prefix_file_buff_size_bytes, bins_starts_in_pre[bin_id], bins_starts_in_pre[bin_id + 1] + sizeof(uint64_t));
+			scan_suffix.reset(suf_file, suffix_file_buff_size_bytes, bins_starts_in_suf[bin_id], bins_starts_in_suf[bin_id + 1]);
 
 			bool have_elem = scan_prefix.next_elem(last_val_from_prefix_file);
 			assert(have_elem);
 		}
 
 		//go to the next bin if exists (even if empty)
-		bool next_bin()
+		bool next_bin(size_t prefix_file_buff_size_bytes, size_t suffix_file_buff_size_bytes)
 		{
 			if (cur_bin_id == n_bins)
 				return false;
@@ -310,9 +337,57 @@ class CKMCFile
 			if (cur_bin_id == n_bins)
 				return false;
 
-			start_bin(cur_bin_id);
+			start_bin(cur_bin_id, prefix_file_buff_size_bytes, suffix_file_buff_size_bytes);
 
 			return true;
+		}
+
+		template<unsigned SIZE>
+		bool read_from_cur_bin(CKmer<SIZE>& kmer, uint64& count, uint32_t lut_prefix_length, uint32_t suffix_size, uint32_t counter_size, uint32_t min_count, uint32_t max_count)
+		{
+			while (true)
+			{
+				if (!next_in_current_bin(cur_bin_id))
+					return false;
+
+				//--bin_sizes[bin_map[cur_bin_id]];
+				--kmers_left_in_cur_bin;
+				--left_in_current_prefix;
+				auto suf_rec = scan_suffix.read_many(suf_rec_size_bytes);
+
+				kmer.clear();
+
+				uint32 a = 0;
+				uint32_t kmer_byte_pos = suffix_size - 1;
+				for (; a < suffix_size; ++a, --kmer_byte_pos)
+					kmer.set_byte(kmer_byte_pos, suf_rec[a]);
+
+				auto lut_prefix_len_bits = 2 * lut_prefix_length;
+				auto prefix_bit_pos = suffix_size * 8;
+				kmer.set_bits(prefix_bit_pos, lut_prefix_len_bits, current_prefix);
+
+				//read counter:
+				if (counter_size == 0) {
+					count = 1;
+					return true;
+				}
+				else
+				{
+					count = suf_rec[a++];
+					for (uint32 b = 1; b < counter_size; b++)
+					{
+						uint64 aux = 0x000000ff & suf_rec[a++];
+						aux = aux << 8 * (b);
+						count = aux | count;
+					}
+				}
+
+				if (counter_size == 0)
+					return true;
+				if (count >= min_count && count <= max_count)
+					return true;
+			}
+			return false;
 		}
 
 		bool read_from_cur_bin(CKmerAPI& kmer, uint64& count, uint32_t off, uint32_t suffix_size, uint32_t counter_size, uint32_t min_count, uint32_t max_count)
@@ -322,7 +397,8 @@ class CKMCFile
 				if (!next_in_current_bin(cur_bin_id))
 					return false;
 				
-				--bin_sizes[bin_map[cur_bin_id]];
+				//--bin_sizes[bin_map[cur_bin_id]];
+				--kmers_left_in_cur_bin;
 				--left_in_current_prefix;
 				auto suf_rec = scan_suffix.read_many(suf_rec_size_bytes);
 
@@ -377,6 +453,11 @@ class CKMCFile
 			}
 			return false;
 		}
+
+		uint64_t get_n_kmers(size_t bin_id) const
+		{
+			return bin_sizes[bin_map[bin_id]];
+		}
 	};
 	std::unique_ptr<OrderedBinReading> ordered_bin_reading;
 protected:
@@ -394,11 +475,13 @@ protected:
 	std::unique_ptr<CPrefixFileBufferForListingMode> prefixFileBufferForListingMode;
 
 	uint64 prefix_index;			// The current prefix's index in an array "prefix_file_buf", readed from *.kmc_pre
-	uint32 single_LUT_size;			// The size of a single LUT (in no. of elements)
+	uint32 single_LUT_size{};			// The size of a single LUT (in no. of elements)
 
 	uint32* signature_map;
 	uint32_t n_bins{};				//only for KMC2
-	uint32 signature_map_size;
+	std::vector<uint32_t> bins_order; //order of bins id in this file
+	std::vector<uint32_t> bin_id_to_pos; //reverse relation to bin_order, bin_id_to_pos[i] is a position of bin $i$ in the kmc database
+	uint32 signature_map_size{};
 	
 	uchar* sufix_file_buf;
 	uint64 sufix_number;			// The sufix's number to be listed
@@ -413,6 +496,7 @@ protected:
 	uint64 max_count;
 	uint64 total_kmers;
 	bool both_strands;
+	KMC::SignatureSelectionScheme signature_selection_scheme;
 
 	uint32 kmc_version;
 	uint32 sufix_size;		// sufix's size in bytes 
@@ -441,6 +525,8 @@ protected:
 	bool GetCountersForRead_kmc1(const std::string& read, std::vector<uint32>& counters);		
 
 	using super_kmers_t = std::vector<std::tuple<uint32, uint32, uint32>>;//start_pos, len, bin_no
+
+	template<typename mmer_t>
 	void GetSuperKmers(const std::string& transformed_read, super_kmers_t& super_kmers);
 
 	// Implementation of GetCountersForRead for kmc2 database format for both strands
@@ -459,10 +545,12 @@ public:
 	// Open files *kmc_pre & *.kmc_suf, read *.kmc_pre to RAM, *.kmc_suf is buffered
 	bool OpenForListing(const std::string& file_name);
 
-	bool OpenForListingWithBinOrder(const std::string& file_name, const std::string& bin_order_file_name);
+	//bin_order_file_name may be empty for min_hash signature selection scheme
+	bool OpenForListingWithBinOrder(const std::string& file_name, const std::string& bin_order_file_name = "");
 
+	//mkokot_TODO: I will use 0x201 for new format that I support different kind of minimizers
 	// Return true if kmc is in KMC2 compatiblie format
-	bool IsKMC2() const noexcept { return kmc_version == 0x200; }
+	bool IsKMC2() const noexcept { return kmc_version == 0x201; }
 
 	// Return next kmer in CKmerAPI &kmer. Return its counter in uint64 &count. Return true if not EOF
 	bool ReadNextKmer(CKmerAPI &kmer, uint64 &count); //for small k-values when counter may be longer than 4bytes
@@ -473,13 +561,20 @@ public:
 	uint32_t GetNBins() const;
 
 	//only when oppened in listing with bin order
-	bool StartBin();
+	bool StartBin(size_t prefix_file_buff_size_bytes = 1ull << 25 , size_t suffix_file_buff_size_bytes = 1ull << 25);
 
 	//only when oppened in listing with bin order
-	bool StartBin(uint32_t bin_id);
+	bool StartBin(uint32_t bin_id, size_t prefix_file_buff_size_bytes = 1ull << 25, size_t suffix_file_buff_size_bytes = 1ull << 25);
+
+	//only when oppened in listing with bin order
+	bool GetNKmers(uint32_t bin_id, uint64_t& n_kmers);
 
 	//only when oppened in listing with bin order
 	bool ReadNextKmerFromBin(CKmerAPI& kmer, uint64& count);
+
+	//only when oppened in listing with bin order
+	template<unsigned SIZE>
+	bool ReadNextKmerFromBin(CKmer<SIZE>& kmer, uint64& count);
 
 	// Release memory and close files in case they were opened 
 	bool Close();
@@ -530,10 +625,67 @@ public:
 
 	// Get counters for all k-mers in read
 	bool GetCountersForRead(const std::string& read, std::vector<uint32>& counters);
-	private:
-		uint32 count_for_kmer_kmc1(CKmerAPI& kmer);
-		uint32 count_for_kmer_kmc2(CKmerAPI& kmer, uint32 bin_start_pos);
+	template<typename Runner>
+	void DispatchKmerSize(Runner& runner);
+private:
+	uint32 count_for_kmer_kmc1(CKmerAPI& kmer);
+	uint32 count_for_kmer_kmc2(CKmerAPI& kmer, uint32 bin_start_pos);
 };
+
+//-----------------------------------------------------------------------------------------------
+template<unsigned SIZE>
+bool CKMCFile::ReadNextKmerFromBin(CKmer<SIZE>& kmer, uint64& count)
+{
+	if (is_opened != opened_for_listing_with_bin_order)
+		return false;
+
+	return ordered_bin_reading->read_from_cur_bin(kmer, count, lut_prefix_length, sufix_size, counter_size, min_count, max_count);
+}
+
+
+template<unsigned SIZE, typename Runner>
+struct KmerSizeDispatcher
+{
+	static void Dispatch(uint32_t kmer_len, Runner& runner)
+	{
+		auto min_k = 32 * (SIZE - 1);
+		auto max_k = min_k + 32;
+		if (kmer_len >= min_k && kmer_len < max_k)
+			runner.template Run<SIZE>();
+		else
+			KmerSizeDispatcher<SIZE - 1, Runner>::Dispatch(kmer_len, runner);
+	}
+};
+
+template<typename Runner>
+struct KmerSizeDispatcher<0, Runner>
+{
+	static void Dispatch(uint32_t kmer_len, Runner& runner)
+	{
+		std::cerr << "Error: k-mer size dispatcher failed!\n";
+		exit(1);
+	}
+};
+
+template<typename Runner>
+void DispatchKmerSize(uint32_t kmer_length, Runner& runner)
+{
+	constexpr auto max_no_of_uint64_t_for_kmer = (MAX_K + 31) / 32;
+
+	if (kmer_length > MAX_K)
+	{
+		std::cerr << "Error: k too large, extend compilation constant MAX_K\n";
+		exit(1);
+	}
+	KmerSizeDispatcher<max_no_of_uint64_t_for_kmer, Runner>::Dispatch(kmer_length, runner);
+}
+
+template<typename Runner>
+void CKMCFile::DispatchKmerSize(Runner& runner)
+{
+	DispatchKmerSize<>(kmer_length, runner);
+}
+
 
 #endif
 

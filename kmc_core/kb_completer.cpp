@@ -46,6 +46,8 @@ CKmerBinCompleter::CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues)
 	counter_max    = (uint32)Params.counter_max;
 	lut_prefix_len = Params.lut_prefix_len;
 	both_strands   = Params.both_strands;
+	signature_selection_scheme = Params.signature_selection_scheme;
+	n_bins         = Params.n_bins;
 	without_output = Params.without_output;
 
 	kmer_t_size    = Params.KMER_T_size;
@@ -65,7 +67,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 	uchar *lut = nullptr;
 	uint64 lut_size = 0;
 	counter_size = 0;
-	if (output_type == OutputType::KMC)
+	if (output_type == OutputType::KMC && need_to_store_sig_to_bin_mapping())
 	{
 		sig_map_size = (1 << (signature_len * 2)) + 1;
 		sig_map = new uint32[sig_map_size];
@@ -207,8 +209,9 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		n_cutoff_min += _n_cutoff_min;
 		n_cutoff_max += _n_cutoff_max;
 		n_total      += _n_total;
-		
-		if (output_type == OutputType::KMC)
+
+		bins_order.push_back(bin_id);
+		if (output_type == OutputType::KMC && need_to_store_sig_to_bin_mapping())
 		{
 			for (uint32 i = 0; i < sig_map_size; ++i)
 			{
@@ -264,11 +267,16 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 				n_cutoff_min += _n_cutoff_min;
 				n_cutoff_max += _n_cutoff_max;
 				n_total += _n_total;
-				for (uint32 i = 0; i < sig_map_size; ++i)
+
+				bins_order.push_back(bin_id);
+				if (need_to_store_sig_to_bin_mapping())
 				{
-					if (s_mapper->get_bin_id(i) == bin_id)
+					for (uint32 i = 0; i < sig_map_size; ++i)
 					{
-						sig_map[i] = lut_pos;
+						if (s_mapper->get_bin_id(i) == bin_id)
+						{
+							sig_map[i] = lut_pos;
+						}
 					}
 				}
 				++lut_pos;
@@ -286,8 +294,13 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 
 			fwrite(&n_recs, 1, sizeof(uint64), out_lut);
 
-			//store signature mapping 
-			fwrite(sig_map, sizeof(uint32), sig_map_size, out_lut);
+			assert(bins_order.size() == n_bins);
+
+			fwrite(bins_order.data(), sizeof(uint32_t), bins_order.size(), out_lut);
+
+			//store signature mapping
+			if (need_to_store_sig_to_bin_mapping())
+				fwrite(sig_map, sizeof(uint32), sig_map_size, out_lut);
 
 			// Store header
 			uint32 offset = 0;
@@ -303,6 +316,10 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 
 			store_uint(out_lut, both_strands ? 0 : 1, 1);			offset++;
 
+			store_uint(out_lut, to_uint8_t(signature_selection_scheme), 1); offset++;
+
+			store_uint(out_lut, n_bins, 4); offset += 4;
+
 			// Space for future use
 			for (int32 i = 0; i < 27; ++i)
 			{
@@ -310,7 +327,7 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 				offset++;
 			}
 
-			store_uint(out_lut, 0x200, 4);
+			store_uint(out_lut, 0x201, 4);
 			offset += 4;
 
 			store_uint(out_lut, offset, 4);
@@ -321,7 +338,7 @@ void CKmerBinCompleter::ProcessBinsSecondStage()
 		}
 	}
 
-	if (output_type == OutputType::KMC)	
+	if (output_type == OutputType::KMC && need_to_store_sig_to_bin_mapping())	
 		delete[] sig_map;
 }
 

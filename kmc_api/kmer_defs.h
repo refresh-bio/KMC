@@ -21,6 +21,10 @@
 #define MIN(x,y)	((x) < (y) ? (x) : (y))
 #endif
 
+#ifndef MAX_K
+#define MAX_K 256
+#endif
+
 #ifndef _WIN32
 	#include <stdint.h>
 	#include <stdio.h>

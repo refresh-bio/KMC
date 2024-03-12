@@ -9,6 +9,9 @@
 */
 
 #include "kmer_file_header.h"
+
+#include <algorithm>
+
 #include "kff_info_reader.h"
 #include <cstring>
 #include <set>
@@ -69,7 +72,7 @@ CKmerFileHeader::CKmerFileHeader(std::string file_name)
 	my_fseek(file, -12, SEEK_END);
 	load_uint(file, db_version);
 
-	kmer_file_type = db_version == 0x200 ? KmerFileType::KMC2 : KmerFileType::KMC1;
+	kmer_file_type = db_version == 0x201 ? KmerFileType::KMC2 : KmerFileType::KMC1;
 
 	my_fseek(file, 0LL - (header_offset + 8), SEEK_END);
 	load_uint(file, kmer_len);
@@ -87,18 +90,46 @@ CKmerFileHeader::CKmerFileHeader(std::string file_name)
 	both_strands = both_s_tmp == 1;
 	both_strands = !both_strands;
 
+	if (kmer_file_type == KmerFileType::KMC2)
+	{
+		uint8_t sss;
+		load_uint(file, sss);
+		signature_selection_scheme = KMC::signature_selection_scheme_from_uint8_t(sss);
+		load_uint(file, no_of_bins);
+	}
+
 	fseek(file, 3, SEEK_CUR);
 	uint32_t max_count_hi;
 	load_uint(file, max_count_hi);
 	max_count = (((uint64_t)max_count_hi) << 32) + max_count_lo;
-	fclose(file);
+	
 
 	if (kmer_file_type == KmerFileType::KMC2)
 	{
 		uint32 single_lut_size = (1ull << (2 * lut_prefix_len)) * sizeof(uint64);
-		uint32 map_size = ((1 << 2 * signature_len) + 1) * sizeof(uint32);
-		no_of_bins = (uint32)((file_size - sizeof(uint64) - 12 - header_offset - map_size) / single_lut_size);
+
+		//                              KMCP + LUTS                         + n_recs
+		uint64_t bins_order_start_pos = 4    + single_lut_size * no_of_bins + 8;
+
+		my_fseek(file, bins_order_start_pos, SEEK_SET);
+
+		bins_order.resize(no_of_bins);
+		
+		auto r = fread(bins_order.data(), sizeof(bins_order[0]), no_of_bins, file);
+
+		std::vector<std::pair<uint32_t, uint32_t>> tmp;
+		tmp.reserve(no_of_bins);
+		for (uint32_t bin_id = 0; bin_id < no_of_bins; ++bin_id)
+			tmp.emplace_back(bins_order[bin_id], bin_id);
+		std::sort(tmp.begin(), tmp.end());
+
+		bin_id_to_pos.reserve(no_of_bins);
+		for (auto& x : tmp)
+			bin_id_to_pos.push_back(x.second);
+
+		//uint32 map_size = ((1 << 2 * signature_len) + 1) * sizeof(uint32);
 	}
+	fclose(file);
 }
 
 bool CKmerFileHeader::is_kff_file(std::string& fname)

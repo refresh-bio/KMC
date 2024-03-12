@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <iomanip>
+
 using namespace std;
 
 struct CLIParams
@@ -31,7 +32,7 @@ void usage()
 		<< "  @input_file_names - file name with list of input files in specified (-f switch) format (gziped or not)\n"
 		<< "Options:\n"
 		<< "  -v - verbose mode (shows all parameter settings); default: false\n"
-		<< "  -k<len> - k-mer length (k from " << KMC::CfgConsts::min_k<< " to " << KMC::CfgConsts::max_k << "; default: 25)\n"
+		<< "  -k<len> - k-mer length (k from " << KMC::CfgConsts::min_k << " to " << KMC::CfgConsts::max_k << "; default: 25)\n"
 		<< "  -m<size> - max amount of RAM in GB (from 1 to 1024); default: 12\n"
 		<< "  -sm - use strict memory mode (memory limit from -m<n> switch will not be exceeded)\n"
 		<< "  -hc - count homopolymer compressed k-mers (approximate and experimental)\n"
@@ -53,9 +54,17 @@ void usage()
 		<< "  -hp - hide percentage progress (default: false)\n"
 		<< "  -e - only estimate histogram of k-mers occurrences instead of exact k-mer counting\n"
 		<< "  --opt-out-size - optimize output database size (may increase running time)\n"
-		<< "  --sig-to-bin-map-stats<value> - how many percent of the input data should be used to build signature to bin mapping (default: 1.0)\n"
-		<< "  --sig-to-bin-mapping<path> - instead of building signature to bin mapping basing on part of the input data use predefined mapping define in path\n"
-		<< "  --only-generate-sig-to-bin-mapping<path> - do not perform k-mer counting, just generate signature to bin mapping and store it at path\n"
+		<< "  --reopen-tmp - instead of keeping all temp files opened reopen at each read/write operation\n"
+		<< "  --disable-small-k-opt - perform signature-based k-mer counting even for small k\n"
+		<< "  -sss<scheme>  - signature selection scheme, must be one of <kmc|min_hash>\n"
+		<< "       kmc      - original kmc signature selection scheme\n"
+		<< "       min_hash - hash m-mers and select minimal value\n"
+	
+		<< "  --sig-to-bin-map-stats<value> - how many percent of the input data should be used to build signature to bin mapping (default: 1.0), only for -ssskmc\n"
+		<< "  --sig-to-bin-mapping<path> - instead of building signature to bin mapping basing on part of the input data use predefined mapping define in path, only for -ssskmc\n"
+		<< "  --only-generate-sig-to-bin-mapping<path> - do not perform k-mer counting, just generate signature to bin mapping and store it at path, only for -ssskmc\n";
+	
+	cout
 		<< "Example:\n"
 		<< "kmc -k27 -m24 NA19238.fastq NA.res /data/kmc_tmp_dir/\n"
 		<< "kmc -k27 -m24 @files.lst NA.res /data/kmc_tmp_dir/\n";
@@ -226,6 +235,28 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			was_opt_out_size = true;
 			if (stage1Params.GetEstimateHistogramCfg() != KMC::EstimateHistogramCfg::ONLY_ESTIMATE) //ONLY_ESTIMATE has priority over estimate and count
 				stage1Params.SetEstimateHistogramCfg(KMC::EstimateHistogramCfg::ESTIMATE_AND_COUNT_KMERS);
+		}
+		//mkokot_TODO: consider this parameter name and what is the default
+		else if (strncmp(argv[i], "--reopen-tmp", strlen("--reopen-tmp")) == 0)
+		{
+			stage1Params.SetReopenTmeEachTime(true);
+		}
+		else if (strncmp(argv[i], "--disable-small-k-opt", strlen("--disable-small-k-opt")) == 0)
+		{
+			stage1Params.SetDisableSmallKOpt(true);
+		}
+		if (strncmp(argv[i], "-sss", 4) == 0)
+		{
+			std::string scheme = argv[i] + 4;
+			if (scheme == "kmc")
+				stage1Params.SetSignatureSelectionScheme(KMC::SignatureSelectionScheme::KMC);
+			else if (scheme == "min_hash")
+				stage1Params.SetSignatureSelectionScheme(KMC::SignatureSelectionScheme::min_hash);
+			else
+			{
+				std::cerr << "Error: signature selection scheme (-sss) must be one of: kmc|min_hash\n";
+				exit(1);
+			}
 		}
 		else if (strncmp(argv[i], "--sig-to-bin-map-stats", strlen("--sig-to-bin-map-stats")) == 0)
 		{

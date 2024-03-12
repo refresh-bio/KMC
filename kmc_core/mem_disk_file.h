@@ -24,14 +24,19 @@ using namespace std;
 class CMemDiskFile
 {
 	bool memory_mode;
-	FILE* file;
+	bool reopen_each_time;
+
+	using read_pos_t = decltype(my_ftell(nullptr));
+
+	read_pos_t read_pos{}; // if we reopen file at each operation, for reading we need to know where last read ended
+	FILE* file{};
 	typedef pair<uchar*, uint64> elem_t;//buf,size
 	typedef vector<elem_t> container_t;
 
 	container_t container;
 	string name;
 public:
-	CMemDiskFile(bool _memory_mode);
+	CMemDiskFile(bool _memory_mode, bool _reopen_each_time);
 	void Open(const string& f_name);
 	void Rewind();
 	int Close();

@@ -15,7 +15,8 @@
 #include <string>
 #include <memory>
 #include <thread>
-
+#include <cassert>
+#include <iostream>
 
 #define DEVELOP_MODE
 
@@ -97,6 +98,31 @@ namespace KMC
 	
 	enum class EstimateHistogramCfg { DONT_ESTIMATE, ESTIMATE_AND_COUNT_KMERS, ONLY_ESTIMATE };
 
+	enum class SignatureSelectionScheme { KMC, min_hash };
+
+	inline std::string to_string(SignatureSelectionScheme sss)
+	{
+		switch (sss)
+		{
+		case SignatureSelectionScheme::KMC:
+			return "kmc";
+		case SignatureSelectionScheme::min_hash:
+			return "min_hash";
+		default:
+			assert(false);
+		}
+	}
+
+	inline uint8_t to_uint8_t(SignatureSelectionScheme sss)
+	{
+		return static_cast<uint8_t>(sss);
+	}
+
+	inline SignatureSelectionScheme signature_selection_scheme_from_uint8_t(uint8_t sss)
+	{
+		return static_cast<SignatureSelectionScheme>(sss);
+	}
+
 	class Stage1Params
 	{
 		struct 
@@ -118,6 +144,9 @@ namespace KMC
 		InputFileType inputFileType = InputFileType::FASTQ;
 		bool canonicalKmers = true;
 		bool ramOnlyMode = false;
+		bool reopenTmeEachTime = false;
+		SignatureSelectionScheme signatureSelectionScheme = SignatureSelectionScheme::KMC;
+		bool disableSmallKOpt = false;
 		uint32_t nBins = 512;
 		uint32_t nReaders = 0;
 		uint32_t nSplitters = 0;
@@ -143,6 +172,9 @@ namespace KMC
 		Stage1Params& SetInputFileType(InputFileType inputFileType);
 		Stage1Params& SetCanonicalKmers(bool canonicalKmers);
 		Stage1Params& SetRamOnlyMode(bool ramOnlyMode);
+		Stage1Params& SetReopenTmeEachTime(bool reopenTmeEachTime);
+		Stage1Params& SetSignatureSelectionScheme(SignatureSelectionScheme signatureSelectionScheme);
+		Stage1Params& SetDisableSmallKOpt(bool disableSmallKOpt);
 		Stage1Params& SetNBins(uint32_t nBins);
 		Stage1Params& SetNReaders(uint32_t nReaders);
 		Stage1Params& SetNSplitters(uint32_t nSplitters);
@@ -168,6 +200,9 @@ namespace KMC
 		InputFileType GetInputFileType() const noexcept { return inputFileType; }
 		bool GetCanonicalKmers() const noexcept { return canonicalKmers; }
 		bool GetRamOnlyMode() const noexcept { return ramOnlyMode; }
+		bool GetReopenTmeEachTime() const noexcept { return reopenTmeEachTime; }
+		SignatureSelectionScheme GetSignatureSelectionScheme() const noexcept { return signatureSelectionScheme; }
+		bool GetDisableSmallKOpt() const noexcept { return disableSmallKOpt; }
 		uint32_t GetNBins() const noexcept { return nBins; }
 		uint32_t GetNReaders() const noexcept { return nReaders; }
 		uint32_t GetNSplitters() const noexcept { return nSplitters; }

@@ -13,6 +13,7 @@ Date   : 2024-02-09
 
 
 #include "kmer_defs.h"
+#include "../kmc_core/kmc_runner.h"
 #include <string>
 #include <cstring>
 #include <iostream>
@@ -646,31 +647,46 @@ public:
 		return true;
 	}
 
+	template<typename mmer_t>
+	uint32 get_signature_impl(uint32 sig_len)
+	{
+		uchar symb;
+		mmer_t cur_mmr(sig_len);
+
+		for (uint32 i = 0; i < sig_len; ++i)
+		{
+			symb = get_num_symbol(i);
+			cur_mmr.insert(symb);
+		}
+		mmer_t min_mmr(cur_mmr);
+		for (uint32 i = sig_len; i < kmer_length; ++i)
+		{
+			symb = get_num_symbol(i);
+			cur_mmr.insert(symb);
+
+			if (cur_mmr < min_mmr)
+				min_mmr = cur_mmr;
+		}
+		return min_mmr.get();
+	}
+
 //-----------------------------------------------------------------------
 // Counts a signature of an existing kmer
 // IN	: sig_len	- the length of a signature
 // RET	: signature value
 //-----------------------------------------------------------------------
-	 uint32 get_signature(uint32 sig_len)
+	 uint32 get_signature(uint32 sig_len, KMC::SignatureSelectionScheme signature_selection_scheme)
 	 {
-		 uchar symb;
-		 CMmer cur_mmr(sig_len);
-		 
-		 for(uint32 i = 0; i < sig_len; ++i)
+		 switch (signature_selection_scheme)
 		 {
-			 symb = get_num_symbol(i);
-			 cur_mmr.insert(symb);
+			case KMC::SignatureSelectionScheme::KMC:
+				return get_signature_impl<CMmer>(sig_len);
+			case KMC::SignatureSelectionScheme::min_hash:
+				return get_signature_impl<CMmerMinHash>(sig_len);
+			default:
+				std::cerr << "Error: unsupported signature selection scheme at " << __FILE__ << ":" << __LINE__ << "\n";
+				exit(1);
 		 }
-		 CMmer min_mmr(cur_mmr);
-		 for (uint32 i = sig_len; i < kmer_length; ++i)
-		 {
-			 symb = get_num_symbol(i);
-			 cur_mmr.insert(symb);
-			 
-			 if (cur_mmr < min_mmr)
-				 min_mmr = cur_mmr;
-		 }
-		 return min_mmr.get();
 	 }	
 };
 

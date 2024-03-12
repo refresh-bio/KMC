@@ -32,7 +32,6 @@ CKmerBinStorer::CKmerBinStorer(CKMCParams &Params, CKMCQueues &Queues)
 
 	tmp_files_owner		= Queues.tmp_files_owner.get();
 
-	s_mapper			= Queues.s_mapper.get();
 	disk_logger			= Queues.disk_logger.get();
 	buffer_size_bytes      = 0;
 	max_buf_size		   = 0;

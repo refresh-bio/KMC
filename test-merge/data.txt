@@ -1,0 +1,12 @@
+data/ERR024163_1.part.fastq.gz
+data/ERR024163_2.part.fastq.gz
+data/ERR024164_1.part.fastq.gz
+data/ERR024164_2.part.fastq.gz
+data/ERR024165_1.part.fastq.gz
+data/ERR024165_2.part.fastq.gz
+data/ERR024166_1.part.fastq.gz
+data/ERR024166_2.part.fastq.gz
+data/ERR024167_1.part.fastq.gz
+data/ERR024167_2.part.fastq.gz
+data/ERR024168_1.part.fastq.gz
+data/ERR024168_2.part.fastq.gz
