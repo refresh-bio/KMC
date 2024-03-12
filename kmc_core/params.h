@@ -95,6 +95,7 @@ struct CKMCParams {
 	bool reopen_tmp_each_time;  // instead of keeping dump files opened reopen at each read/write operation
 
 	KMC::SignatureSelectionScheme signature_selection_scheme = KMC::SignatureSelectionScheme::KMC;
+	bool disable_small_k_opt = false;
 	int n_bins;				// number of bins;
 	int bin_part_size;		// size of a bin part; fixed: 2^15
 	int fastq_buffer_size;	// size of FASTQ file buffer; fixed: 2^23

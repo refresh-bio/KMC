@@ -146,6 +146,7 @@ namespace KMC
 		bool ramOnlyMode = false;
 		bool reopenTmeEachTime = false;
 		SignatureSelectionScheme signatureSelectionScheme = SignatureSelectionScheme::KMC;
+		bool disableSmallKOpt = false;
 		uint32_t nBins = 512;
 		uint32_t nReaders = 0;
 		uint32_t nSplitters = 0;
@@ -173,6 +174,7 @@ namespace KMC
 		Stage1Params& SetRamOnlyMode(bool ramOnlyMode);
 		Stage1Params& SetReopenTmeEachTime(bool reopenTmeEachTime);
 		Stage1Params& SetSignatureSelectionScheme(SignatureSelectionScheme signatureSelectionScheme);
+		Stage1Params& SetDisableSmallKOpt(bool disableSmallKOpt);
 		Stage1Params& SetNBins(uint32_t nBins);
 		Stage1Params& SetNReaders(uint32_t nReaders);
 		Stage1Params& SetNSplitters(uint32_t nSplitters);
@@ -200,6 +202,7 @@ namespace KMC
 		bool GetRamOnlyMode() const noexcept { return ramOnlyMode; }
 		bool GetReopenTmeEachTime() const noexcept { return reopenTmeEachTime; }
 		SignatureSelectionScheme GetSignatureSelectionScheme() const noexcept { return signatureSelectionScheme; }
+		bool GetDisableSmallKOpt() const noexcept { return disableSmallKOpt; }
 		uint32_t GetNBins() const noexcept { return nBins; }
 		uint32_t GetNReaders() const noexcept { return nReaders; }
 		uint32_t GetNSplitters() const noexcept { return nSplitters; }

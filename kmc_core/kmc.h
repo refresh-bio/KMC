@@ -82,6 +82,8 @@ template <unsigned SIZE> class CKMC {
 
 	//small k
 	bool AdjustMemoryLimitsSmallK();
+
+	bool AdjustMemoryLimitsSmallK_strict(); //for k <= 10 this must success, in the opposite case it will fail
 	vector<std::unique_ptr<CWSmallKSplitter<uint64_t>>> w_small_k_splitters;
 	KMC::Stage1Results ProcessSmallKOptimization_Stage1();
 	KMC::Stage2Results ProcessSmallKOptimization_Stage2();
@@ -149,6 +151,24 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 
 	// Technical parameters related to temporary files
 	Params.signature_len = stage1Params.GetSignatureLen();
+
+
+	if (Params.signature_len > Params.kmer_len) {
+		//just some choice, not sure how good
+		Params.signature_len = (Params.kmer_len * 3 + 1) / 4;
+		if (Params.signature_len < MIN_SL)
+			Params.signature_len = MIN_SL;
+		if (Params.signature_len > Params.kmer_len)
+		{
+			std::ostringstream err_msg;
+			err_msg << "its impossible to adjust signature len for this k";
+			throw std::runtime_error(err_msg.str());
+		}
+		std::ostringstream ostr;
+		ostr << "signature len cannot be larger than k-mer len, reducing signature len to " << Params.signature_len;
+		Params.warningsLogger->Log(ostr.str());	
+	}
+
 	Params.bin_part_size = 1 << 16;
 
 #ifdef DEVELOP_MODE
@@ -164,6 +184,7 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 	Params.mem_mode = stage1Params.GetRamOnlyMode();
 	Params.reopen_tmp_each_time = stage1Params.GetReopenTmeEachTime();
 	Params.signature_selection_scheme = stage1Params.GetSignatureSelectionScheme();
+	Params.disable_small_k_opt = stage1Params.GetDisableSmallKOpt();
 
 	if (stage1Params.GetNReaders() && stage1Params.GetNSplitters())
 	{
@@ -192,6 +213,13 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 	{
 		std::ostringstream err_msg;
 		err_msg << "signature len for kmc signature selection scheme must be from range <" << MIN_SL << "," << MAX_SL << ">";
+		throw std::runtime_error(err_msg.str());
+	}
+
+	if (Params.disable_small_k_opt && Params.kmer_len < 4)
+	{
+		std::ostringstream err_msg;
+		err_msg << "small k optimization cannot be disabled if k < 4";
 		throw std::runtime_error(err_msg.str());
 	}
 
@@ -567,6 +595,7 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage1()
 	ostr << "Both strands                 : " << (Params.both_strands ? "true\n" : "false\n");
 	ostr << "RAM only mode                : " << (Params.mem_mode ? "true\n" : "false\n");
 	ostr << "Reopen tmp                   : " << (Params.reopen_tmp_each_time ? "true\n" : "false\n");
+	ostr << "Disable small k opt          : " << (Params.disable_small_k_opt ? "true\n" : "false\n");
 	ostr << "Signature selection scheme   : " << KMC::to_string(Params.signature_selection_scheme) << "\n";
 
 	ostr << "\n******* Stage 1 configuration: *******\n";
@@ -692,7 +721,9 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsSmallKOpt()
 //----------------------------------------------------------------------------------
 template <unsigned SIZE> bool CKMC<SIZE>::AdjustMemoryLimitsSmallK() 
 {
-	if (Params.kmer_len > 13) 
+	if (Params.disable_small_k_opt)
+		return false;
+	if (Params.kmer_len > 13)
 		return false;
 
 	bool small_k_opt_required = Params.kmer_len < Params.signature_len;	

@@ -55,7 +55,7 @@ void usage()
 		<< "  -e - only estimate histogram of k-mers occurrences instead of exact k-mer counting\n"
 		<< "  --opt-out-size - optimize output database size (may increase running time)\n"
 		<< "  --reopen-tmp - instead of keeping all temp files opened reopen at each read/write operation\n"
-
+		<< "  --disable-small-k-opt - perform signature-based k-mer counting even for small k\n"
 		<< "  -sss<scheme>  - signature selection scheme, must be one of <kmc|min_hash>\n"
 		<< "       kmc      - original kmc signature selection scheme\n"
 		<< "       min_hash - hash m-mers and select minimal value\n"
@@ -240,6 +240,10 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		else if (strncmp(argv[i], "--reopen-tmp", strlen("--reopen-tmp")) == 0)
 		{
 			stage1Params.SetReopenTmeEachTime(true);
+		}
+		else if (strncmp(argv[i], "--disable-small-k-opt", strlen("--disable-small-k-opt")) == 0)
+		{
+			stage1Params.SetDisableSmallKOpt(true);
 		}
 		if (strncmp(argv[i], "-sss", 4) == 0)
 		{

@@ -30,6 +30,7 @@ class CMmer
 	uint32_t current_val;
 	uint32_t* norm;
 	uint32_t len;
+	static uint32_t norm4[1 << 8];
 	static uint32_t norm5[1 << 10];
 	static uint32_t norm6[1 << 12];
 	static uint32_t norm7[1 << 14];
@@ -40,7 +41,7 @@ class CMmer
 
 	friend class CSignatureMapper;
 	struct _si
-	{			
+	{
 		static uint32_t get_rev(uint32_t mmer, uint32_t len)
 		{
 			uint32_t rev = 0;
@@ -68,6 +69,7 @@ class CMmer
 
 		_si()
 		{
+			init_norm(norm4, 4);
 			init_norm(norm5, 5);
 			init_norm(norm6, 6);
 			init_norm(norm7, 7);
@@ -169,6 +171,9 @@ inline void CMmer::insert(const char* seq)
 {
 	switch (len)
 	{
+	case 4:
+		str = (seq[0] << 6) + (seq[1] << 4) + (seq[2] << 2) + seq[3];
+		break;
 	case 5: 
 		str = (seq[0] << 8) + (seq[1] << 6) + (seq[2] << 4) + (seq[3] << 2) + (seq[4]);
 		break;
