@@ -162,6 +162,7 @@ class CKMCFile
 			//caller responsible to call only when there is data
 			//and to make how_many such that it will at some point land in buffer.size()
 			T* read_many(size_t how_many) {
+				assert(this->buf_pos <= this->buffer.size());
 				if (this->buf_pos == this->buffer.size())
 					if (!this->reload())
 						assert(false);
@@ -322,6 +323,12 @@ class CKMCFile
 			left_in_current_prefix = 0;
 			kmers_left_in_cur_bin = bin_sizes[bin_id];
 			scan_prefix.reset(pre_file, prefix_file_buff_size_bytes, bins_starts_in_pre[bin_id], bins_starts_in_pre[bin_id + 1] + sizeof(uint64_t));
+
+			//we need to adjust suffix_file_buff_size_bytes such that it is divisible by suf_rec_size_bytes
+			suffix_file_buff_size_bytes = suffix_file_buff_size_bytes / suf_rec_size_bytes * suf_rec_size_bytes;
+			if (suffix_file_buff_size_bytes == 0)
+				suffix_file_buff_size_bytes = suf_rec_size_bytes;
+
 			scan_suffix.reset(suf_file, suffix_file_buff_size_bytes, bins_starts_in_suf[bin_id], bins_starts_in_suf[bin_id + 1]);
 
 			bool have_elem = scan_prefix.next_elem(last_val_from_prefix_file);
