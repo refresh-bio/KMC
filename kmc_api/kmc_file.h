@@ -41,6 +41,159 @@ struct CKMCFileInfo
 
 class CKMCFile
 {
+	//a FILE* opened for read binary wrapper that may be configured to reopen for
+	//each operation and then close
+	class FILEWrapper
+	{
+		bool reopen_each_time;
+		std::string path;
+		using read_pos_t = decltype(my_ftell(nullptr));
+		size_t file_size{};
+		read_pos_t read_pos{}; // if we reopen file at each operation, for reading we need to know where last read ended
+		FILE* file{};
+		bool is_opened = false; //not necesarly opened, because if we are reopening, its not opened per se, but it means the Open was called and the Close was not
+
+		void close_internal()
+		{
+			if(file)
+			{
+				fclose(file);
+				file = nullptr;
+			}
+		}
+		bool Open()
+		{
+			assert(!file);
+			file = fopen(path.c_str(), "rb");
+			if (!file)
+				return false;
+			setvbuf(file, nullptr, _IONBF, 0);
+//			std::cerr << "File " << path << " opened and move to pos " << read_pos << "\n";
+			my_fseek(file, read_pos, SEEK_SET);
+			return true;
+		}
+	public:
+		bool Open(const std::string& path)
+		{
+			this->path = path;
+			read_pos = 0;
+
+			if (!Open())
+				return false;
+
+			my_fseek(file, 0, SEEK_END);
+			file_size = my_ftell(file);
+			my_fseek(file, 0, SEEK_SET);
+
+			if (reopen_each_time)
+				close_internal();
+
+			is_opened = true;
+
+			return true;
+		}
+
+		//offset from start
+		void Seek(long long offset)
+		{
+			if (reopen_each_time)
+			{
+				assert(!file);
+				read_pos = offset;
+			}
+			else
+			{
+				assert(file);
+				my_fseek(file, offset, SEEK_SET);
+			}
+		}
+
+		size_t Size() const
+		{
+			return file_size;
+		}
+
+		int Getc()
+		{
+			if (reopen_each_time)
+			{
+				Open();
+				auto res = fgetc(file);
+				close_internal();
+				return res;
+			}
+			else
+				return fgetc(file);
+		}
+
+		void Rewind()
+		{
+			if (reopen_each_time)
+			{
+				read_pos = 0;
+			}
+			else
+			{
+				assert(file);
+				rewind(file);
+			}
+		}
+
+		bool IsOpened() const
+		{
+			return is_opened;
+		}
+
+		size_t Read(void* ptr, size_t size, size_t count)
+		{
+			if (reopen_each_time)
+			{
+				//it should not fail, but who know, maybe someone deleted the file? ro changed permissions
+				if (!Open())
+				{
+					std::cerr << "Error: Cannot open file " << path << "\n";
+					exit(1);
+				}
+				auto res = fread(ptr, size, count, file);
+				read_pos = my_ftell(file);
+				close_internal();
+				return res;
+			}
+			else
+				return fread(ptr, size, count, file);
+		}
+
+		void Close()
+		{
+			close_internal();
+			path = "";
+			read_pos = 0;
+			is_opened = false;
+		}
+
+		FILEWrapper(bool reopen_each_time):reopen_each_time(reopen_each_time)
+		{
+
+		}
+
+		FILEWrapper(const FILEWrapper& rhs) = delete;
+		FILEWrapper& operator=(const FILEWrapper& rhs) = delete;
+
+		FILEWrapper(FILEWrapper&& rhs) noexcept:
+			reopen_each_time(rhs.reopen_each_time),
+			path(std::move(rhs.path)),
+			read_pos(rhs.read_pos),
+			file(rhs.file)
+		{
+			rhs.file = nullptr;
+		}
+
+		~FILEWrapper()
+		{
+			close_internal();
+		}
+	};
+
 	class CPrefixFileBufferForListingMode
 	{
 		const uint64_t buffCapacity = 1 << 22;
@@ -50,7 +203,7 @@ class CKMCFile
 		uint64_t posInBuf{};
 		uint64_t leftToRead{};
 		uint64 prefixMask; //for kmc2 db
-		FILE* file;
+		FILEWrapper& file;
 		bool isKMC1 = false;
 		uint64_t totalKmers; //for
 
@@ -59,7 +212,7 @@ class CKMCFile
 			assert(leftToRead);
 			buffPosInFile += buffSize;
 			buffSize = (std::min)(buffCapacity, leftToRead);
-			auto readed = fread(buff, 1, 8 * buffSize, file);
+			auto readed = file.Read(buff, 1, 8 * buffSize);
 			assert(readed == 8 * buffSize);
 
 			if (isKMC1 && buffSize == leftToRead) //last read, in case of KMC1 guard must be added, fread will read `k` from db instead of guard, fixes #180
@@ -69,7 +222,7 @@ class CKMCFile
 			posInBuf = 0;
 		}
 	public:
-		CPrefixFileBufferForListingMode(FILE* file, uint64_t wholeLutSize, uint64_t lutPrefixLen, bool isKMC1, uint64_t totalKmers)
+		CPrefixFileBufferForListingMode(FILEWrapper& file, uint64_t wholeLutSize, uint64_t lutPrefixLen, bool isKMC1, uint64_t totalKmers)
 			:
 			buff(new uint64_t[buffCapacity]),
 			leftToRead(wholeLutSize),
@@ -78,7 +231,7 @@ class CKMCFile
 			isKMC1(isKMC1),
 			totalKmers(totalKmers)
 		{
-			my_fseek(file, 4 + 8, SEEK_SET); //	skip KMCP and LUT[0] (always = 0)
+			file.Seek(4 + 8); //	skip KMCP and LUT[0] (always = 0)
 		}
 
 		//no control if next prefix exists here, responsibility to the caller
@@ -108,7 +261,7 @@ class CKMCFile
 		template<typename T>
 		class buffered_scanning
 		{
-			FILE* file;
+			FILEWrapper* file;
 			std::vector<T> buffer;
 			size_t buf_pos;
 			size_t file_byte_pos;
@@ -132,19 +285,19 @@ class CKMCFile
 					buffer.resize(bytes_to_read / sizeof(T));
 				}
 
-				fread(buffer.data(), sizeof(T), buffer.size(), file);
+				file->Read(buffer.data(), sizeof(T), buffer.size());
 				file_byte_pos += bytes_to_read;
 				buf_pos = 0;
 				return true;
 			}
 		public:
-			void reset(FILE* file, size_t buff_size_bytes, size_t file_byte_pos, size_t file_byte_end_pos)
+			void reset(FILEWrapper* file, size_t buff_size_bytes, size_t file_byte_pos, size_t file_byte_end_pos)
 			{
 				if (file_byte_end_pos - file_byte_pos < buff_size_bytes)
 					buff_size_bytes = file_byte_end_pos - file_byte_pos;
 
 				this->file = file;
-				my_fseek(file, file_byte_pos, SEEK_SET);
+				file->Seek(file_byte_pos);
 				this->buffer.resize(buff_size_bytes / sizeof(T));
 				this->buf_pos = buffer.size();
 				this->file_byte_pos = file_byte_pos;
@@ -172,9 +325,9 @@ class CKMCFile
 			}
 		};
 
-		FILE* pre_file;
+		FILEWrapper& pre_file;
 		size_t pre_file_data_start_pos;
-		FILE* suf_file;
+		FILEWrapper& suf_file;
 		size_t suf_file_data_start_pos;
 
 		uint32_t guard;
@@ -196,8 +349,8 @@ class CKMCFile
 			bins_starts_in_pre[0] = pre_file_data_start_pos;
 
 			uint64_t x;
-			my_fseek(pre_file, bins_starts_in_pre[0], SEEK_SET);
-			fread(&x, sizeof(uint64), 1, pre_file);
+			pre_file.Seek(bins_starts_in_pre[0]);
+			pre_file.Read(&x, sizeof(uint64), 1);
 
 			bins_starts_in_suf[0] = suf_file_data_start_pos + suf_rec_size_bytes * x;
 
@@ -205,8 +358,8 @@ class CKMCFile
 			{
 				bins_starts_in_pre[bin_id] = bins_starts_in_pre[bin_id - 1] + (single_LUT_size * sizeof(uint64_t));
 
-				my_fseek(pre_file, bins_starts_in_pre[bin_id], SEEK_SET);
-				fread(&x, sizeof(uint64), 1, pre_file);
+				pre_file.Seek(bins_starts_in_pre[bin_id]);
+				pre_file.Read(&x, sizeof(uint64), 1);
 
 				bins_starts_in_suf[bin_id] = suf_file_data_start_pos + suf_rec_size_bytes * x;
 
@@ -244,7 +397,7 @@ class CKMCFile
 		}
 	public:
 		//for kmc signature selection scheme
-		OrderedBinReading(FILE* pre_file, size_t pre_file_data_start_pos, FILE* suf_file, size_t suf_file_data_start_pos, const std::string& file_name, uint32_t n_bins, uint32 signature_len, uint32* signature_map, uint32 signature_map_size, uint32_t single_LUT_size, uint32_t suf_rec_size_bytes) :
+		OrderedBinReading(FILEWrapper& pre_file, size_t pre_file_data_start_pos, FILEWrapper& suf_file, size_t suf_file_data_start_pos, const std::string& file_name, uint32_t n_bins, uint32 signature_len, uint32* signature_map, uint32 signature_map_size, uint32_t single_LUT_size, uint32_t suf_rec_size_bytes) :
 			pre_file(pre_file),
 			pre_file_data_start_pos(pre_file_data_start_pos),
 			suf_file(suf_file),
@@ -291,7 +444,7 @@ class CKMCFile
 		}
 
 		//min_hash signature selection scheme
-		OrderedBinReading(FILE* pre_file, size_t pre_file_data_start_pos, FILE* suf_file, size_t suf_file_data_start_pos, uint32_t n_bins, uint32_t single_LUT_size, uint32_t suf_rec_size_bytes, const std::vector<uint32_t>& bin_map) :
+		OrderedBinReading(FILEWrapper& pre_file, size_t pre_file_data_start_pos, FILEWrapper& suf_file, size_t suf_file_data_start_pos, uint32_t n_bins, uint32_t single_LUT_size, uint32_t suf_rec_size_bytes, const std::vector<uint32_t>& bin_map) :
 			pre_file(pre_file),
 			pre_file_data_start_pos(pre_file_data_start_pos),
 			suf_file(suf_file),
@@ -322,14 +475,14 @@ class CKMCFile
 			current_prefix = (uint64_t)-1;// std::numeric_limits<uint64_t>::max(); //will be incremented
 			left_in_current_prefix = 0;
 			kmers_left_in_cur_bin = bin_sizes[bin_id];
-			scan_prefix.reset(pre_file, prefix_file_buff_size_bytes, bins_starts_in_pre[bin_id], bins_starts_in_pre[bin_id + 1] + sizeof(uint64_t));
+			scan_prefix.reset(&pre_file, prefix_file_buff_size_bytes, bins_starts_in_pre[bin_id], bins_starts_in_pre[bin_id + 1] + sizeof(uint64_t));
 
 			//we need to adjust suffix_file_buff_size_bytes such that it is divisible by suf_rec_size_bytes
 			suffix_file_buff_size_bytes = suffix_file_buff_size_bytes / suf_rec_size_bytes * suf_rec_size_bytes;
 			if (suffix_file_buff_size_bytes == 0)
 				suffix_file_buff_size_bytes = suf_rec_size_bytes;
 
-			scan_suffix.reset(suf_file, suffix_file_buff_size_bytes, bins_starts_in_suf[bin_id], bins_starts_in_suf[bin_id + 1]);
+			scan_suffix.reset(&suf_file, suffix_file_buff_size_bytes, bins_starts_in_suf[bin_id], bins_starts_in_suf[bin_id + 1]);
 
 			bool have_elem = scan_prefix.next_elem(last_val_from_prefix_file);
 			assert(have_elem);
@@ -474,8 +627,8 @@ protected:
 	uint64 suffix_file_total_to_read = 0; // number of bytes that constitutes records in kmc_suf file
 	bool end_of_file;
 
-	FILE *file_pre;
-	FILE *file_suf;
+	FILEWrapper file_pre;
+	FILEWrapper file_suf;
 
 	uint64* prefix_file_buf; //only for random access mode
 	uint64 prefix_file_buf_size; //only for random access mode
@@ -517,7 +670,7 @@ protected:
 	bool BinarySearch(int64 index_start, int64 index_stop, const CKmerAPI& kmer, uint64& counter, uint32 pattern_offset);
 
 	// Open a file, recognize its size and check its marker. Auxiliary function.
-	bool OpenASingleFile(const std::string &file_name, FILE *&file_handler, uint64 &size, char marker[]);	
+	bool OpenASingleFile(const std::string &file_name, FILEWrapper &file_handler, uint64 &size, char marker[]);
 
 	// Recognize current parameters. Auxiliary function.
 	bool ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode, const std::string& bin_order_file_name = "");
@@ -543,7 +696,7 @@ protected:
 	bool GetCountersForRead_kmc2(const std::string& read, std::vector<uint32>& counters);
 public:
 		
-	CKMCFile();
+	CKMCFile(bool reopen_each_time = false);
 	~CKMCFile();
 
 	// Open files *.kmc_pre & *.kmc_suf, read them to RAM, close files. *.kmc_suf is opened for random access

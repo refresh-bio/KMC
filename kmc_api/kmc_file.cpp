@@ -28,7 +28,7 @@ bool CKMCFile::OpenForRA(const std::string &file_name)
 	uint64 size;
 	size_t result;
 
-	if (file_pre || file_suf)
+	if (file_pre.IsOpened() || file_suf.IsOpened())
 		return false;
 
 	if (!OpenASingleFile(file_name + ".kmc_pre", file_pre, size, (char *)"KMCP"))
@@ -40,12 +40,11 @@ bool CKMCFile::OpenForRA(const std::string &file_name)
 		return false;
 
 	sufix_file_buf = new uchar[size];
-	result = fread(sufix_file_buf, 1, size, file_suf);
+	result = file_suf.Read(sufix_file_buf, 1, size);
 	if (result != size)
 		return false;
 
-	fclose(file_suf);
-	file_suf = NULL;
+	file_suf.Close();
 
 	is_opened = opened_for_RA;
 	prefix_index = 0;
@@ -66,7 +65,7 @@ bool CKMCFile::OpenForListing(const std::string &file_name)
 	if (is_opened)
 		return false;
 	
-	if (file_pre || file_suf)
+	if (file_pre.IsOpened() || file_suf.IsOpened())
 		return false;
 
 	if (!OpenASingleFile(file_name + ".kmc_pre", file_pre, size, (char *)"KMCP"))
@@ -84,7 +83,7 @@ bool CKMCFile::OpenForListing(const std::string &file_name)
 	suffix_file_total_to_read = size;
 	suf_file_left_to_read = suffix_file_total_to_read;
 	auto to_read = MIN(suf_file_left_to_read, part_size);
-	auto readed = fread(sufix_file_buf, 1, to_read, file_suf);
+	auto readed = file_suf.Read(sufix_file_buf, 1, to_read);
 	if (readed != to_read)
 	{
 		std::cerr << "Error: some error while reading suffix file\n";
@@ -113,7 +112,7 @@ bool CKMCFile::OpenForListingWithBinOrder(const std::string& file_name, const st
 	if (is_opened)
 		return false;
 
-	if (file_pre || file_suf)
+	if (file_pre.IsOpened() || file_suf.IsOpened())
 		return false;
 
 	if (!OpenASingleFile(file_name + ".kmc_pre", file_pre, size_pre_file, (char*)"KMCP"))
@@ -133,11 +132,10 @@ bool CKMCFile::OpenForListingWithBinOrder(const std::string& file_name, const st
 	return true;
 }
 //----------------------------------------------------------------------------------
-CKMCFile::CKMCFile()
+CKMCFile::CKMCFile(bool reopen_each_time):
+	file_pre(reopen_each_time),
+	file_suf(reopen_each_time)
 {
-	file_pre = NULL;	
-	file_suf = NULL;
-
 	prefix_file_buf = NULL;
 	sufix_file_buf = NULL;
 	signature_map = NULL;
@@ -148,10 +146,6 @@ CKMCFile::CKMCFile()
 //----------------------------------------------------------------------------------	
 CKMCFile::~CKMCFile()
 {
-	if (file_pre)
-		fclose(file_pre);
-	if (file_suf)
-		fclose(file_suf);
 	if (prefix_file_buf)
 		delete[] prefix_file_buf;
 	if (sufix_file_buf)
@@ -164,32 +158,30 @@ CKMCFile::~CKMCFile()
 // IN	: file_name - the name of a file to open
 // RET	: true		- if successful
 //----------------------------------------------------------------------------------
-bool CKMCFile::OpenASingleFile(const std::string &file_name, FILE *&file_handler, uint64 &size, char marker[])
+bool CKMCFile::OpenASingleFile(const std::string& file_name, FILEWrapper& file_handler, uint64& size, char marker[])
 {
 	char _marker[4];
 	size_t result;
 
-	if ((file_handler = my_fopen(file_name.c_str(), "rb")) == NULL)
+	if (!file_handler.Open(file_name))
 		return false;
 
-	my_fseek(file_handler, 0, SEEK_END);
-	size = my_ftell(file_handler);					//the size of a whole file
+	size = file_handler.Size();
 
-	my_fseek(file_handler, -4, SEEK_CUR);
-	result = fread(_marker, 1, 4, file_handler);
+	file_handler.Seek(file_handler.Size() - 4);
+	result = file_handler.Read(_marker, 1, 4);
 	if (result == 0)
 		return false;
 
 	size = size - 4;							//the size of the file without the terminal marker
 	if (strncmp(marker, _marker, 4) != 0)
 	{
-		fclose(file_handler);
-		file_handler = NULL;
+		file_handler.Close();
 		return false;
 	}
 
-	rewind(file_handler);
-	result = fread(_marker, 1, 4, file_handler);
+	file_handler.Rewind();
+	result = file_handler.Read(_marker, 1, 4);
 	if (result == 0)
 		return false;
 
@@ -197,8 +189,7 @@ bool CKMCFile::OpenASingleFile(const std::string &file_name, FILE *&file_handler
 
 	if (strncmp(marker, _marker, 4) != 0)
 	{
-		fclose(file_handler);
-		file_handler = NULL;
+		file_handler.Close();
 		return false;
 	}
 
@@ -211,65 +202,63 @@ bool CKMCFile::OpenASingleFile(const std::string &file_name, FILE *&file_handler
 //----------------------------------------------------------------------------------
 bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode, const std::string& bin_order_file_name)
 {
-	size_t prev_pos = my_ftell(file_pre);
-	my_fseek(file_pre, -12, SEEK_END);
+	file_pre.Seek(file_pre.Size() - 12);
 	size_t result;
 
-	result = fread(&kmc_version, sizeof(uint32), 1, file_pre);
+	result = file_pre.Read(&kmc_version, sizeof(uint32), 1);
 	//only this database versions are supported:
 	//0 = kmc1
 	//0x200 = kmc2 - not supported in this version, for simplicity
 	//0x201 = kmc2.1 <-- adds signature selection scheme and some other info type info
 	if (kmc_version != 0 && kmc_version != 0x201)
 		return false;
-	my_fseek(file_pre, prev_pos, SEEK_SET);
 
 	if (kmc_version == 0x201)
 	{
-		my_fseek(file_pre, -8, SEEK_END);
+		file_pre.Seek(file_pre.Size() - 8);
 		
 		int64 header_offset;
-		header_offset = fgetc(file_pre);
+		header_offset = file_pre.Getc();
 		
 		size = size - 4;	//file size without the size of header_offset (and without 2 markers)
-
-		my_fseek(file_pre, (0LL - (header_offset + 8)), SEEK_END);
-		result = fread(&kmer_length, 1, sizeof(uint32), file_pre);
-		result = fread(&mode, 1, sizeof(uint32), file_pre);
+		assert(file_pre.Size() > header_offset + 8);
+		file_pre.Seek(file_pre.Size() - (header_offset + 8));
+		result = file_pre.Read(&kmer_length, 1, sizeof(uint32));
+		result = file_pre.Read(&mode, 1, sizeof(uint32));
 		if (mode != 0)
 		{
 			std::cerr << "Error: Quake compatible counters are not supported anymore\n";
 			return false;
 		}
-		result = fread(&counter_size, 1, sizeof(uint32), file_pre);
-		result = fread(&lut_prefix_length, 1, sizeof(uint32), file_pre);
-		result = fread(&signature_len, 1, sizeof(uint32), file_pre);
-		result = fread(&min_count, 1, sizeof(uint32), file_pre);
+		result = file_pre.Read(&counter_size, 1, sizeof(uint32));
+		result = file_pre.Read(&lut_prefix_length, 1, sizeof(uint32));
+		result = file_pre.Read(&signature_len, 1, sizeof(uint32));
+		result = file_pre.Read(&min_count, 1, sizeof(uint32));
 		original_min_count = min_count;
 		uint32 max_count_uint32;
-		result = fread(&max_count_uint32, 1, sizeof(uint32), file_pre);
+		result = file_pre.Read(&max_count_uint32, 1, sizeof(uint32));
 		max_count = max_count_uint32;
 		original_max_count = max_count;
-		result = fread(&total_kmers, 1, sizeof(uint64), file_pre);
-		result = fread(&both_strands, 1, 1, file_pre);
+		result = file_pre.Read(&total_kmers, 1, sizeof(uint64));
+		result = file_pre.Read(&both_strands, 1, 1);
 		both_strands = !both_strands;
 
 		uint8_t sss{};
-		result = fread(&sss, 1, 1, file_pre);
+		result = file_pre.Read(&sss, 1, 1);
 		signature_selection_scheme = KMC::signature_selection_scheme_from_uint8_t(sss);
 
-		result = fread(&n_bins, 1, sizeof(uint32_t), file_pre);
+		result = file_pre.Read(&n_bins, 1, sizeof(uint32_t));
 
 		uint32 single_lut_size = (1ull << (2 * lut_prefix_length)) * sizeof(uint64);
 
 		//                              KMCP + LUTS                         + n_recs
 		uint64_t bins_order_start_pos = 4 + single_lut_size * n_bins + 8;
 
-		my_fseek(file_pre, bins_order_start_pos, SEEK_SET);
+		file_pre.Seek(bins_order_start_pos);
 
 		bins_order.resize(n_bins);
 
-		result = fread(bins_order.data(), sizeof(bins_order[0]), n_bins, file_pre);
+		result = file_pre.Read(bins_order.data(), sizeof(bins_order[0]), n_bins);
 		if (result == 0)
 			return false;
 
@@ -294,8 +283,8 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 			auto bins_order_area_size_in_bytes = sizeof(uint32_t) * n_bins;
 
 			//                  MKCP                        guard
-			fseek(file_pre, 4 + lut_area_size_in_bytes + 8 + bins_order_area_size_in_bytes, SEEK_SET);
-			result = fread(signature_map, 1, signature_map_size * sizeof(uint32), file_pre);
+			file_pre.Seek(4 + lut_area_size_in_bytes + 8 + bins_order_area_size_in_bytes);
+			result = file_pre.Read(signature_map, 1, signature_map_size * sizeof(uint32));
 			if (result == 0)
 				return false;
 		}
@@ -308,22 +297,22 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 
 		if(_open_mode == opened_for_RA)
 		{
-			rewind(file_pre);
-			my_fseek(file_pre, +4, SEEK_CUR);
+			file_pre.Rewind();
+			file_pre.Seek(4);
+
 			prefix_file_buf_size = (lut_area_size_in_bytes + 8) / sizeof(uint64);		//reads without 4 bytes of a header_offset (and without markers)
 			prefix_file_buf = new uint64[prefix_file_buf_size];
-			result = fread(prefix_file_buf, 1, (size_t)(lut_area_size_in_bytes + 8), file_pre);
+			result = file_pre.Read(prefix_file_buf, 1, (size_t)(lut_area_size_in_bytes + 8));
 			if (result == 0)
 				return false;
 
 			prefix_file_buf[last_data_index] = total_kmers + 1; //I think + 1 if wrong, but due to the implementation of binary search it does not matter, it was here in kmc 0.3 and I leave it this way just in case...
 
-			result = fread(signature_map, 1, signature_map_size * sizeof(uint32), file_pre);
+			result = file_pre.Read(signature_map, 1, signature_map_size * sizeof(uint32));
 			if (result == 0)
 				return false;
 
-			fclose(file_pre);
-			file_pre = nullptr;
+			file_pre.Close();
 		}
 		else if (_open_mode == opened_for_listing)
 		{
@@ -375,36 +364,36 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 		if (_open_mode == opened_for_listing_with_bin_order)
 			throw std::runtime_error("opened_for_listing_with_bin_order open mode may be used only for KMC database in KMC2 format");
 
-		my_fseek(file_pre, -8, SEEK_END);
+		file_pre.Seek(file_pre.Size() - 8);
 
 		uint64 header_offset;
-		header_offset = fgetc(file_pre);
+		header_offset = file_pre.Getc();
 
 		size = size - 4;
 
-		my_fseek(file_pre, (0LL - (header_offset + 8)), SEEK_END);
-		result = fread(&kmer_length, 1, sizeof(uint32), file_pre);
-		result = fread(&mode, 1, sizeof(uint32), file_pre);
+		file_pre.Seek(file_pre.Size() - (header_offset + 8));
+		result = file_pre.Read(&kmer_length, 1, sizeof(uint32));
+		result = file_pre.Read(&mode, 1, sizeof(uint32));
 		if (mode != 0)
 		{
 			std::cerr << "Error: Quake quake compatible counters are not supported anymore\n";
 			return false;
 		}
-		result = fread(&counter_size, 1, sizeof(uint32), file_pre);
-		result = fread(&lut_prefix_length, 1, sizeof(uint32), file_pre);
-		result = fread(&min_count, 1, sizeof(uint32), file_pre);
+		result = file_pre.Read(&counter_size, 1, sizeof(uint32));
+		result = file_pre.Read(&lut_prefix_length, 1, sizeof(uint32));
+		result = file_pre.Read(&min_count, 1, sizeof(uint32));
 		original_min_count = min_count;
 
 		uint32 max_count_lo;
-		result = fread(&max_count_lo, 1, sizeof(uint32), file_pre);
+		result = file_pre.Read(&max_count_lo, 1, sizeof(uint32));
 		max_count = max_count_lo;
 		original_max_count = max_count;
-		result = fread(&total_kmers, 1, sizeof(uint64), file_pre);
-		result = fread(&both_strands, 1, 1, file_pre);
+		result = file_pre.Read(&total_kmers, 1, sizeof(uint64));
+		result = file_pre.Read(&both_strands, 1, 1);
 		both_strands = !both_strands;
 
 		uint32 max_count_hi;
-		result = fread(&max_count_hi, 1, sizeof(uint32), file_pre);
+		result = file_pre.Read(&max_count_hi, 1, sizeof(uint32));
 		max_count += (uint64)max_count_hi << 32;
 		original_max_count = max_count;
 
@@ -414,15 +403,14 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 		if (_open_mode == opened_for_RA)
 		{
 			prefix_file_buf = new uint64[prefix_file_buf_size];
-			fseek(file_pre, 4, SEEK_SET);
-			result = fread(prefix_file_buf, 1, (size_t)(prefix_file_buf_size * sizeof(uint64)), file_pre);
+			file_pre.Seek(4);
+			result = file_pre.Read(prefix_file_buf, 1, (size_t)(prefix_file_buf_size * sizeof(uint64)));
 			if (result == 0)
 				return false;
 
 			prefix_file_buf[last_data_index] = total_kmers + 1; //I think + 1 if wrong, but due to the implementation of binary search it does not matter, it was here in kmc 0.3 and I leave it this way just in case...
 
-			fclose(file_pre);
-			file_pre = nullptr;
+			file_pre.Close();
 		}
 		else
 		{
@@ -742,7 +730,7 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint64 &count)
 void CKMCFile::Reload_sufix_file_buf()
 {
 	auto to_read = MIN(suf_file_left_to_read, part_size);
-	auto readed = fread(sufix_file_buf, 1, (size_t)to_read, file_suf);
+	auto readed = file_suf.Read(sufix_file_buf, 1, (size_t)to_read);
 	suf_file_left_to_read -= readed;
 	if (readed != to_read)
 	{
@@ -760,17 +748,9 @@ bool CKMCFile::Close()
 {
 	if(is_opened)
 	{
-		if(file_pre)
-		{
-			fclose(file_pre);	
-			file_pre = NULL;
-		}
-		if(file_suf)
-		{
-			fclose(file_suf);
-			file_suf = NULL;
-		}
-	
+		file_pre.Close();
+		file_suf.Close();
+
 		is_opened = closed;
 		end_of_file = false;
 		delete [] prefix_file_buf;
@@ -793,10 +773,10 @@ bool CKMCFile::RestartListing(void)
 {
 	if(is_opened == opened_for_listing)
 	{
-		my_fseek(file_suf , 4 , SEEK_SET);
+		file_suf.Seek(4);
 		suf_file_left_to_read = suffix_file_total_to_read;
 		auto to_read = MIN(suf_file_left_to_read, part_size);
-		auto readed = fread(sufix_file_buf, 1, to_read, file_suf);
+		auto readed = file_suf.Read(sufix_file_buf, 1, to_read);
 		if (readed != to_read)
 		{
 			std::cerr << "Error: some error while reading suffix file\n";

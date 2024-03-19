@@ -26,9 +26,10 @@ int main(int argc, char** argv)
 
     std::vector<std::unique_ptr<CKMCFile>> kmc_dbs(inputs.size());
 
+    bool reopen_files = true;
     for (int i = 0; i < inputs.size(); ++i)
     {
-        kmc_dbs[i] = std::make_unique<CKMCFile>();
+        kmc_dbs[i] = std::make_unique<CKMCFile>(reopen_files);
         if (!kmc_dbs[i]->OpenForListingWithBinOrder(inputs[i], mapping))
         {
             std::cerr << "Error: cannot open kmc database " << inputs[i] << "\n";
