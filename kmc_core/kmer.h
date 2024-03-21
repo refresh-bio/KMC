@@ -35,7 +35,7 @@ template<unsigned SIZE> struct CKmer {
 	inline void mask(const CKmer<SIZE> &x);
 	inline uint32 end_mask(const uint32 mask);
 	inline void set_2bits(const uint64 x, const uint32 p);
-	inline uchar get_2bits(const uint32 p);
+	inline uchar get_2bits(const uint32 p) const;
 	inline uchar get_byte(const uint32 p);
 	inline void set_byte(const uint32 p, uchar x);
 	inline void set_bits(const uint32 p, const uint32 n, uint64 x);
@@ -54,7 +54,7 @@ template<unsigned SIZE> struct CKmer {
 	inline void store(uchar *buffer, int32 p, int32 n);
 	inline void load(uchar *&buffer, int32 n);
 
-	inline bool operator==(const CKmer<SIZE> &x);
+	inline bool operator==(const CKmer<SIZE> &x) const;
 	inline bool operator<(const CKmer<SIZE> &x) const;
 
 	inline void clear(void);
@@ -64,6 +64,8 @@ template<unsigned SIZE> struct CKmer {
 	inline void fill_T();
 
 	inline void random_init(uint32 pos, uint64 value);
+
+	inline void to_string(uint32_t kmer_len, char* out) const;
 };
 
 template <unsigned SIZE> uint32 CKmer<SIZE>::KMER_SIZE = SIZE;
@@ -157,7 +159,7 @@ template<unsigned SIZE> inline void CKmer<SIZE>::set_2bits(const uint64 x, const
 	data[p >> 6] += x << (p & 63);
 }
 
-template<unsigned SIZE> inline uchar CKmer<SIZE>::get_2bits(const uint32 p)
+template<unsigned SIZE> inline uchar CKmer<SIZE>::get_2bits(const uint32 p) const
 {
 	return (data[p >> 6] >> (p & 63)) & 3;
 }
@@ -259,7 +261,7 @@ template<unsigned SIZE> inline void CKmer<SIZE>::set_bits(const uint32 p, const 
 }
 
 // *********************************************************************
-template<unsigned SIZE> inline bool CKmer<SIZE>::operator==(const CKmer<SIZE> &x) {
+template<unsigned SIZE> inline bool CKmer<SIZE>::operator==(const CKmer<SIZE> &x) const {
 	for(uint32 i = 0; i < SIZE; ++i)
 		if(data[i] != x.data[i])
 			return false;
@@ -376,6 +378,13 @@ template<unsigned SIZE> inline void CKmer<SIZE>::random_init(uint32 pos, uint64 
 	data[pos] = value;
 }
 
+// *********************************************************************
+template<unsigned SIZE> inline void CKmer<SIZE>::to_string(uint32_t kmer_len, char* out) const
+{
+	auto pos = 2 * kmer_len - 2;
+	for (uint32_t i = 0; i < kmer_len; ++i, pos -= 2)
+		out[i] = "ACGT"[get_2bits(pos)];
+}
 
 // *********************************************************************
 // *********************************************************************
@@ -398,7 +407,7 @@ template<> struct CKmer<1> {
 	void mask(const CKmer<1> &x);
 	uint32 end_mask(const uint32 mask);
 	void set_2bits(const uint64 x, const uint32 p);
-	uchar get_2bits(const uint32 p);
+	uchar get_2bits(const uint32 p) const;
 	uchar get_byte(const uint32 p);
 	void set_byte(const uint32 p, uchar x);
 	void set_bits(const uint32 p, const uint32 n, uint64 x);
@@ -417,7 +426,7 @@ template<> struct CKmer<1> {
 	void store(uchar *buffer, int32 p, int32 n);
 	void load(uchar *&buffer, int32 n);
 
-	bool operator==(const CKmer<1> &x);
+	bool operator==(const CKmer<1> &x) const;
 	bool operator<(const CKmer<1> &x)const;
 
 	void clear(void);
@@ -427,6 +436,8 @@ template<> struct CKmer<1> {
 	inline void fill_T();
 
 	inline void random_init(uint32 pos, uint64 value);
+
+	inline void to_string(uint32_t kmer_len, char* out) const;
 };
 
 
@@ -475,7 +486,7 @@ inline void CKmer<1>::set_2bits(const uint64 x, const uint32 p)
 	data += x << p;
 }
 
-inline uchar CKmer<1>::get_2bits(const uint32 p)
+inline uchar CKmer<1>::get_2bits(const uint32 p) const
 {
 	return (data >> p) & 3; 
 }
@@ -522,7 +533,7 @@ inline void CKmer<1>::set_bits(const uint32 p, const uint32 /*n*/, uint64 x)
 }
 
 // *********************************************************************
-inline bool CKmer<1>::operator==(const CKmer<1> &x) {
+inline bool CKmer<1>::operator==(const CKmer<1> &x) const {
 	return data == x.data;
 }
 
@@ -605,13 +616,20 @@ inline void CKmer<1>::fill_T()
 	data = ~0ull;
 }
 
+
 // *********************************************************************
 inline void CKmer<1>::random_init(uint32 /*pos*/, uint64 value)
 {
 	data = value;
 }
 
-
+// *********************************************************************
+inline void CKmer<1>::to_string(uint32_t kmer_len, char* out) const
+{
+	auto pos = 2 * kmer_len - 2;
+	for (uint32_t i = 0; i < kmer_len; ++i, pos -= 2)
+		out[i] = "ACGT"[get_2bits(pos)];
+}
 
 #endif
 
