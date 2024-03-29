@@ -12,28 +12,6 @@ KMC_TOOLS_DIR = kmc_tools
 
 OUT_BIN_DIR = bin
 OUT_INCLUDE_DIR = include
-
-D_OS =
-D_ARCH = 
-
-ifeq ($(UNAME_S),Darwin)
-	D_OS=MACOS
-	ifeq ($(UNAME_M),arm64)
-		D_ARCH=ARM64
-	else
-		D_ARCH=X64
-	endif
-else
-	D_OS=LINUX
-	D_ARCH=X64
-	ifeq ($(UNAME_M),arm64)
-		D_ARCH=ARM64
-	endif
-	ifeq ($(UNAME_M),aarch64)
-		D_ARCH=ARM64
-	endif
-endif
-
 CPU_FLAGS =
 STATIC_CFLAGS = 
 STATIC_LFLAGS = 
@@ -41,19 +19,14 @@ STATIC_LFLAGS =
 CC 	= gcc
 CXX = g++
 
-ifeq ($(D_ARCH),ARM64)
-	CPU_FLAGS = -march=armv8-a
-	STATIC_CFLAGS =
-	STATIC_LFLAGS = -pthread	
+ifeq ($(UNAME_M),aarch64)
+	ARCH_LFLAGS = -pthread	
 else
-	CPU_FLAGS = -m64
-	STATIC_CFLAGS = -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
-	STATIC_LFLAGS = -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
+	ARCH_LFLAGS = -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
 endif
 
-
 CXXFLAGS	= -fPIC -Wall -O3 -fsigned-char -m64 -std=c++14
-LDFLAGS		= -lz -lm -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
+LDFLAGS		= -lz -lm $(ARCH_LFLAGS) -std=c++14
 
 KMC_CLI_OBJS = \
 $(KMC_CLI_DIR)/kmc.o
@@ -77,28 +50,17 @@ $(KMC_MAIN_DIR)/splitter.o \
 $(KMC_MAIN_DIR)/kb_collector.o \
 $(KMC_MAIN_DIR)/kmc_runner.o
 
-ifeq ($(UNAME_S),Darwin)
-ifeq ($(D_ARCH),ARM64)
-	RADULS_OBJS = \
-	$(KMC_MAIN_DIR)/raduls_neon.o
-else
-	RADULS_OBJS =
-endif
-else
-ifeq ($(D_ARCH),ARM64)
+ifeq ($(UNAME_M),aarch64)
 	RADULS_OBJS = \
 	$(KMC_MAIN_DIR)/raduls_neon.o
 else
 	RADULS_OBJS = \
-	$(KMC_MAIN_DIR)/raduls_sse2.o \
 	$(KMC_MAIN_DIR)/raduls_sse41.o \
 	$(KMC_MAIN_DIR)/raduls_avx2.o \
 	$(KMC_MAIN_DIR)/raduls_avx.o
 endif
-endif
 
 LIB_KMC_CORE = $(OUT_BIN_DIR)/libkmc_core.a
-
 
 KMC_DUMP_OBJS = \
 $(KMC_DUMP_DIR)/nc_utils.o \
@@ -124,8 +86,6 @@ $(KMC_TOOLS_DIR)/fastq_writer.o \
 $(KMC_TOOLS_DIR)/percent_progress.o \
 $(KMC_TOOLS_DIR)/kff_info_reader.o
 
-$(KMC_MAIN_DIR)/raduls_sse2.o: $(KMC_MAIN_DIR)/raduls_sse2.cpp
-	$(CXX) $(CXXFLAGS) -msse2 -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_sse41.o: $(KMC_MAIN_DIR)/raduls_sse41.cpp
 	$(CXX) $(CXXFLAGS) -msse4.1 -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_avx.o: $(KMC_MAIN_DIR)/raduls_avx.cpp
@@ -141,7 +101,7 @@ libkmc_core.a: $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
 	mkdir -p $(OUT_INCLUDE_DIR)
 	cp $(KMC_MAIN_DIR)/kmc_runner.h $(OUT_INCLUDE_DIR)/kmc_runner.h
 	mkdir -p $(OUT_BIN_DIR)
-	ar rcs $@ $^
+	ar rcs $(OUT_BIN_DIR)/$@ $^
 
 kmc: $(KMC_CLI_OBJS) $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
