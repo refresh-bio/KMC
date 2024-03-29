@@ -15,7 +15,7 @@
 #include "params.h"
 #include <stdio.h>
 
-#include "../3rd_party/cloudflare/zlib.h"
+#include <zlib.h>
 
 using namespace std;
 

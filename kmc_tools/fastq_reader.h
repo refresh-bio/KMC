@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <iostream>
 
-#include "../3rd_party/cloudflare/zlib.h"
+#include <zlib.h>
 
 using namespace std;
 

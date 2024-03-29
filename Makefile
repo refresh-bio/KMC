@@ -1,6 +1,4 @@
-all: kmc kmc_dump kmc_tools py_kmc_api
-
-dummy := $(shell git submodule update --init --recursive)
+all: kmc kmc_dump kmc_tools
 
 UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)
@@ -11,7 +9,6 @@ KMC_CLI_DIR = kmc_CLI
 KMC_API_DIR = kmc_api
 KMC_DUMP_DIR = kmc_dump
 KMC_TOOLS_DIR = kmc_tools
-PY_KMC_API_DIR = py_kmc_api
 
 OUT_BIN_DIR = bin
 OUT_INCLUDE_DIR = include
@@ -40,38 +37,23 @@ endif
 CPU_FLAGS =
 STATIC_CFLAGS = 
 STATIC_LFLAGS = 
-PY_FLAGS =
 
-ifeq ($(D_OS),MACOS)
-	CC = g++-11
+CC 	= gcc
+CXX = g++
 
-	ifeq ($(D_ARCH),ARM64)
-		CPU_FLAGS = -march=armv8.4-a
-	else
-		CPU_FLAGS = -m64
-	endif
-	STATIC_CFLAGS = -static-libgcc -static-libstdc++ -pthread
-	STATIC_LFLAGS = -static-libgcc -static-libstdc++ -pthread	
-	PY_FLAGS = -Wl,-undefined,dynamic_lookup -fPIC 
+ifeq ($(D_ARCH),ARM64)
+	CPU_FLAGS = -march=armv8-a
+	STATIC_CFLAGS =
+	STATIC_LFLAGS = -pthread	
 else
-	CC 	= g++
-
-	ifeq ($(D_ARCH),ARM64)
-		CPU_FLAGS = -march=armv8-a
-		STATIC_CFLAGS =
-		STATIC_LFLAGS = -static-libgcc -static-libstdc++ -pthread	
-	else
-		CPU_FLAGS = -m64
-		STATIC_CFLAGS = -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
-		STATIC_LFLAGS = -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
-	endif
-	PY_FLAGS = -fPIC
+	CPU_FLAGS = -m64
+	STATIC_CFLAGS = -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
+	STATIC_LFLAGS = -Wl,--whole-archive -lpthread -Wl,--no-whole-archive
 endif
 
 
-CFLAGS	= -Wall -O3 -fsigned-char $(CPU_FLAGS) $(STATIC_CFLAGS) -std=c++14
-CLINK	= -lm -ldeflate $(STATIC_LFLAGS) -O3 -std=c++14
-PY_KMC_API_CFLAGS = $(PY_FLAGS) -Wall -shared -std=c++14 -O3
+CXXFLAGS	= -fPIC -Wall -O3 -fsigned-char -m64 -std=c++14
+LDFLAGS		= -lz -lm -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++14
 
 KMC_CLI_OBJS = \
 $(KMC_CLI_DIR)/kmc.o
@@ -128,7 +110,6 @@ $(KMC_API_DIR)/kmc_file.o \
 $(KMC_API_DIR)/kmer_api.o
 
 KMC_API_SRC_FILES = $(wildcard $(KMC_API_DIR)/*.cpp)
-PY_KMC_API_OBJS = $(patsubst $(KMC_API_DIR)/%.cpp,$(PY_KMC_API_DIR)/%.o,$(KMC_API_SRC_FILES))
 
 KMC_TOOLS_OBJS = \
 $(KMC_TOOLS_DIR)/kmer_file_header.o \
@@ -144,46 +125,35 @@ $(KMC_TOOLS_DIR)/percent_progress.o \
 $(KMC_TOOLS_DIR)/kff_info_reader.o
 
 $(KMC_MAIN_DIR)/raduls_sse2.o: $(KMC_MAIN_DIR)/raduls_sse2.cpp
-	$(CC) $(CFLAGS) -msse2 -c $< -o $@
+	$(CXX) $(CXXFLAGS) -msse2 -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_sse41.o: $(KMC_MAIN_DIR)/raduls_sse41.cpp
-	$(CC) $(CFLAGS) -msse4.1 -c $< -o $@
+	$(CXX) $(CXXFLAGS) -msse4.1 -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_avx.o: $(KMC_MAIN_DIR)/raduls_avx.cpp
-	$(CC) $(CFLAGS) -mavx -c $< -o $@
+	$(CXX) $(CXXFLAGS) -mavx -c $< -o $@
 $(KMC_MAIN_DIR)/raduls_avx2.o: $(KMC_MAIN_DIR)/raduls_avx2.cpp
-	$(CC) $(CFLAGS) -mavx2 -c $< -o $@
+	$(CXX) $(CXXFLAGS) -mavx2 -c $< -o $@
 
 $(KMC_MAIN_DIR)/raduls_neon.o: $(KMC_MAIN_DIR)/raduls_neon.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 
-$(LIB_KMC_CORE): $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
-	-mkdir -p $(OUT_INCLUDE_DIR)
+libkmc_core.a: $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
+	mkdir -p $(OUT_INCLUDE_DIR)
 	cp $(KMC_MAIN_DIR)/kmc_runner.h $(OUT_INCLUDE_DIR)/kmc_runner.h
-	-mkdir -p $(OUT_BIN_DIR)
+	mkdir -p $(OUT_BIN_DIR)
 	ar rcs $@ $^
 
-kmc: $(KMC_CLI_OBJS) $(LIB_KMC_CORE)
+kmc: $(KMC_CLI_OBJS) $(KMC_CORE_OBJS) $(RADULS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
-	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^
+	$(CXX) $(CXXFLAGS) -o $(OUT_BIN_DIR)/$@ $^ $(LDFLAGS)
 
 kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
-	$(CC) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^
+	$(CXX) $(CXXFLAGS) -o $(OUT_BIN_DIR)/$@ $^ $(LDFLAGS)
 
 kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
-	$(CC) $(CLINK) -I 3rd_party/cloudflare -o $(OUT_BIN_DIR)/$@ $^
-
-$(PY_KMC_API_DIR)/%.o: $(KMC_API_DIR)/%.cpp
-	$(CC) -c -fPIC -Wall -O3 $(CPU_FLAGS) -std=c++14 $^ -o $@
-
-py_kmc_api: $(PY_KMC_API_OBJS) $(PY_KMC_API_OBJS)
-	-mkdir -p $(OUT_BIN_DIR)
-	$(CC) $(PY_KMC_API_CFLAGS) $(PY_KMC_API_DIR)/py_kmc_api.cpp $(PY_KMC_API_OBJS) \
-	-I $(KMC_API_DIR) \
-	-I $(PY_KMC_API_DIR)/libs/pybind11/include \
-	-I `python3 -c "import sysconfig;print(sysconfig.get_paths()['include'])"` \
-	-o $(OUT_BIN_DIR)/$@`python3-config --extension-suffix`
+	$(CXX) $(CXXFLAGS) -o $(OUT_BIN_DIR)/$@ $^ $(LDFLAGS)
 
 clean:
 	-rm -f $(KMC_MAIN_DIR)/*.o
@@ -191,7 +161,5 @@ clean:
 	-rm -f $(KMC_API_DIR)/*.o
 	-rm -f $(KMC_DUMP_DIR)/*.o
 	-rm -f $(KMC_TOOLS_DIR)/*.o
-	-rm -f $(PY_KMC_API_DIR)/*.o
-	-rm -f $(PY_KMC_API_DIR)/*.so
 	-rm -rf $(OUT_BIN_DIR)
 	-rm -rf $(OUT_INCLUDE_DIR)
