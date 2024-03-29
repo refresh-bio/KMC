@@ -31,7 +31,6 @@
 #include "kb_storer.h"
 #include "s_mapper.h"
 #include "splitter.h"
-#include "cpu_info.h"
 #include "small_sort.h"
 
 #ifdef DEVELOP_MODE
@@ -1531,31 +1530,19 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 	sort_func = RadulsSort::RadixSortMSD_NEON<CKmer<SIZE>>;
 	CSmallSort<SIZE>::Adjust(384);
 #else
-	auto proc_name = CCpuInfo::GetBrand();
-	bool is_intel = CCpuInfo::GetVendor() == "GenuineIntel";
-	bool at_least_avx = CCpuInfo::AVX_Enabled();
-	std::transform(proc_name.begin(), proc_name.end(), proc_name.begin(), ::tolower);
-	bool is_xeon = proc_name.find("xeon") != string::npos;
-	if (is_xeon || (is_intel && at_least_avx))
-	{
-		if (CCpuInfo::AVX2_Enabled())
-			sort_func = RadulsSort::RadixSortMSD_AVX2<CKmer<SIZE>>;
-		else if (CCpuInfo::AVX_Enabled())
+    if (__builtin_cpu_supports("avx2"))
+    {
+            sort_func = RadulsSort::RadixSortMSD_AVX2<CKmer<SIZE>>;
+    } else if (__builtin_cpu_supports("avx"))
+    {
 			sort_func = RadulsSort::RadixSortMSD_AVX<CKmer<SIZE>>;
-		else if (CCpuInfo::SSE41_Enabled())
-			sort_func = RadulsSort::RadixSortMSD_SSE41<CKmer<SIZE>>;
-		else if (CCpuInfo::SSE2_Enabled())
-			sort_func = RadulsSort::RadixSortMSD_SSE2<CKmer<SIZE>>;
-		else
-		{
+    } else if (__builtin_cpu_supports("sse4.1"))
+    {
+            sort_func = RadulsSort::RadixSortMSD_SSE41<CKmer<SIZE>>;
+    } else
+    {
 			//probably never because x64 always supports sse2 as far as I know
 			std::cerr << "Error: At least SSE2 must be supported\n";
-		}
-	}
-	else
-	{
-		sort_func = RadixSort::RadixSortMSD<CKmer<SIZE>, SIZE>;
-		CSmallSort<SIZE>::Adjust(384);
 	}
 #endif
 #endif
