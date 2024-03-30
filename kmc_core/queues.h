@@ -25,6 +25,7 @@
 #include <cassert>
 #include <thread>
 #include <mutex>
+#include <random>
 #include <algorithm>
 
 using namespace std;
@@ -589,8 +590,9 @@ public:
 
 		for (uint32 i = no_sort_end; i < bin_sizes.size(); ++i)
 			random_bins.push_back(bin_sizes[i].first);
-
-		random_shuffle(random_bins.begin(), random_bins.end());
+        std::random_device rand;
+        std::mt19937 g(rand());
+		shuffle(random_bins.begin(), random_bins.end(), g);
 
 		for (uint32 i = no_sort_start; i < no_sort_end; ++i)
 			random_bins.push_back(bin_sizes[i].first);

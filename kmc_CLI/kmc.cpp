@@ -246,7 +246,6 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	else
 		stage2Params.SetOutputFileName(argv[i++]);
 	stage1Params.SetTmpPath(argv[i++]);
-
 	std::vector<std::string> input_file_names;	
 	if (input_file_name[0] != '@')
 		input_file_names.push_back(input_file_name);
@@ -265,8 +264,9 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 				input_file_names.push_back(s);
 
 		in.close();
-		std::mt19937 gen;
-		std::shuffle(input_file_names.begin(), input_file_names.end(), gen);
+        std::random_device rand;
+		std::mt19937 g(rand());
+		std::shuffle(input_file_names.begin(), input_file_names.end(), g);
 	}
 	stage1Params.SetInputFiles(input_file_names);
 
