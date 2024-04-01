@@ -74,3 +74,6 @@ bin/
 /kmc_tools/x64/Release
 /py_kmc_api/x64/Release
 /x64/Release
+m4/*
+*.ac
+*.in
