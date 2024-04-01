@@ -21,19 +21,15 @@ AC_PROG_AWK
 [
 if test "x`${CXX} --version | $SED -n -e 's/.*\Apple \(LLVM\) version.*clang.*/\1/p'`" = "xLLVM" ;
 then
-    is_clang="applellvm"
     gcc_version=`${CC} --version | $SED -n -e 's/.*LLVM version \([0-9.]*\).*$/\1/p'`
 elif test "x`${CXX} --version | $SED -n -e 's/.*\(clang\) version.*/\1/p'`" = "xclang" ;
 then
-    is_clang="clang"
     # Don't use -dumpversion with clang: it will always produce "4.2.1".
     gcc_version=`${CXX} --version | $SED -n -e 's/.*clang version \([0-9.]*\).*$/\1/p'`
 elif test "x`${CXX} --version | $SED -n -e 's/icc.*\(ICC\).*/\1/p'`" = "xICC" ; 
 then
-    is_clang="icc"
     gcc_version=`${CXX} -dumpversion 2>/dev/null`
 else
-    is_clang="notclang"
     gcc_version=`${CXX} -dumpversion 2>/dev/null`
     if test "x$gcc_version" = x; then
 	gcc_version=`${CXX} --version | $SED -n -e 's/[^ ]*gcc[^ ]* ([^)]*) \([0-9.]*\).*$/\1/p'`
@@ -63,6 +59,13 @@ AX_CXX_COMPILE_STDCXX([14], [ext], [mandatory])
 have_avx2=false
 have_avx=false
 have_sse41=false
+have_neon=false
+
+if test target_cpu = "aarch64";
+then
+have_neon=true
+KMC_CXXFLAGS="-march=armv8-a+simd"
+else
 AX_GCC_X86_CPU_SUPPORTS([avx2], 
 			[have_avx2=true
 			 KMC_CXXFLAGS="-mavx2"],
@@ -72,7 +75,9 @@ AX_GCC_X86_CPU_SUPPORTS([avx2],
 						 [AX_GCC_X86_CPU_SUPPORTS([sse4.1],
 									  [have_sse41=true
 									   KMC_CXXFLAGS="-msse4.1"],
-									  [AC_MSG_ERROR([*** Either AVX2, AVX, or SSE4.1 support required])])])])
+									  [AC_MSG_ERROR([*** Requires AVX2, AVX, or SSE4.1 instructions available on x86_64])])])])
+fi
+AM_CONDITIONAL([HAVE_NEON], [$have_neon])
 AM_CONDITIONAL([HAVE_AVX2], [$have_avx2])
 AM_CONDITIONAL([HAVE_AVX], [$have_avx])
 AM_CONDITIONAL([HAVE_SSE41], [$have_sse41])
