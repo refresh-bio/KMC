@@ -6758,7 +6758,7 @@ have_avx=false
 have_sse41=false
 have_neon=false
 
-if test x$target_cpu = "aarch64";
+if test ${target_cpu} = "aarch64";
 then
 have_neon=true
 KMC_CXXFLAGS="-march=armv8-a+simd"
