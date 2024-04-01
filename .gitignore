@@ -77,3 +77,11 @@ bin/
 m4/*
 *.ac
 *.in
+Makefile
+kmc
+kmc_tools
+kmc_dump
+libkmc_core.a
+include/*
+lib/*
+bin/*
