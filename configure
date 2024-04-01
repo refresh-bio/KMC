@@ -662,6 +662,8 @@ HAVE_AVX_FALSE
 HAVE_AVX_TRUE
 HAVE_AVX2_FALSE
 HAVE_AVX2_TRUE
+HAVE_NEON_FALSE
+HAVE_NEON_TRUE
 HAVE_CXX14
 KMC_HAS_CLANG
 KMC_HAS_GCC
@@ -4776,19 +4778,15 @@ done
 
 if test "x`${CXX} --version | $SED -n -e 's/.*\Apple \(LLVM\) version.*clang.*/\1/p'`" = "xLLVM" ;
 then
-    is_clang="applellvm"
     gcc_version=`${CC} --version | $SED -n -e 's/.*LLVM version \([0-9.]*\).*$/\1/p'`
 elif test "x`${CXX} --version | $SED -n -e 's/.*\(clang\) version.*/\1/p'`" = "xclang" ;
 then
-    is_clang="clang"
     # Don't use -dumpversion with clang: it will always produce "4.2.1".
     gcc_version=`${CXX} --version | $SED -n -e 's/.*clang version \([0-9.]*\).*$/\1/p'`
 elif test "x`${CXX} --version | $SED -n -e 's/icc.*\(ICC\).*/\1/p'`" = "xICC" ;
 then
-    is_clang="icc"
     gcc_version=`${CXX} -dumpversion 2>/dev/null`
 else
-    is_clang="notclang"
     gcc_version=`${CXX} -dumpversion 2>/dev/null`
     if test "x$gcc_version" = x; then
 	gcc_version=`${CXX} --version | $SED -n -e 's/[^ ]*gcc[^ ]* ([^)]*) \([0-9.]*\).*$/\1/p'`
@@ -6758,6 +6756,13 @@ printf "%s\n" "#define HAVE_CXX14 1" >>confdefs.h
 have_avx2=false
 have_avx=false
 have_sse41=false
+have_neon=false
+
+if test target_cpu = "aarch64";
+then
+have_neon=true
+KMC_CXXFLAGS="-march=armv8-a+simd"
+else
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -7011,7 +7016,7 @@ printf "%s\n" "#define HAVE_SSE4_1_INSTRUCTIONS 1" >>confdefs.h
           have_sse41=true
 									   KMC_CXXFLAGS="-msse4.1"
 else $as_nop
-  as_fn_error $? "*** Either AVX2, AVX, or SSE4.1 support required" "$LINENO" 5
+  as_fn_error $? "*** Requires AVX2, AVX, or SSE4.1 instructions available on x86_64" "$LINENO" 5
 
 fi
 
@@ -7023,6 +7028,15 @@ fi
 
 fi
 
+
+fi
+ if $have_neon; then
+  HAVE_NEON_TRUE=
+  HAVE_NEON_FALSE='#'
+else
+  HAVE_NEON_TRUE='#'
+  HAVE_NEON_FALSE=
+fi
 
  if $have_avx2; then
   HAVE_AVX2_TRUE=
@@ -7571,6 +7585,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_NEON_TRUE}" && test -z "${HAVE_NEON_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_NEON\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_AVX2_TRUE}" && test -z "${HAVE_AVX2_FALSE}"; then

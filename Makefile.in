@@ -15,6 +15,7 @@
 @SET_MAKE@
 
 
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -104,14 +105,15 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_zlib.m4 \
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
-	$(am__configure_deps) $(am__DIST_COMMON)
+	$(am__configure_deps) $(include_HEADERS) $(am__DIST_COMMON)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libdir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libdir)" \
+	"$(DESTDIR)$(includedir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -150,22 +152,41 @@ am__v_AR_1 =
 libkmc_core_a_AR = $(AR) $(ARFLAGS)
 libkmc_core_a_LIBADD =
 am__libkmc_core_a_SOURCES_DIST = src/kmc_core/raduls_impl.h \
-	src/kmc_core/kmer.h src/kmc_core/defs.h src/kmc_core/timer.h \
 	src/kmc_core/intr_copy.h src/kmc_core/raduls.h \
+	src/kmc_core/radix.h src/kmc_core/small_sort.h \
+	src/kmc_core/small_k_buf.h src/kmc_core/raduls_avx2.cpp \
+	src/kmc_core/raduls_avx.cpp src/kmc_core/raduls_sse41.cpp \
+	src/kmc_core/mem_disk_file.cpp src/kmc_core/mem_disk_file.h \
+	src/kmc_core/rev_byte.cpp src/kmc_core/rev_byte.h \
+	src/kmc_core/bkb_writer.cpp src/kmc_core/bkb_writer.h \
+	src/kmc_core/bkb_reader.cpp src/kmc_core/bkb_reader.h \
+	src/kmc_core/fastq_reader.cpp src/kmc_core/fastq_reader.h \
+	src/kmc_core/timer.cpp src/kmc_core/timer.h \
+	src/kmc_core/develop.cpp src/kmc_core/develop.h \
+	src/kmc_core/kb_completer.cpp src/kmc_core/kb_completer.h \
+	src/kmc_core/kb_storer.cpp src/kmc_core/kb_storer.h \
+	src/kmc_core/kmer.cpp src/kmc_core/kmer.h \
+	src/kmc_core/splitter.cpp src/kmc_core/splitter.h \
+	src/kmc_core/kb_collector.cpp src/kmc_core/kb_collector.h \
+	src/kmc_core/kmc_runner.cpp src/kmc_core/kmc_runner.h \
 	src/kmc_core/first_dispatch.h src/kmc_core/meta_oper.h \
-	src/kmc_core/queues.h src/kmc_core/mem_disk_file.h \
-	src/kmc_core/critical_error_handler.h \
+	src/kmc_core/queues.h src/kmc_core/critical_error_handler.h \
 	src/kmc_core/thread_cancellation_exception.h \
-	src/kmc_core/raduls_avx2.cpp src/kmc_core/raduls_avx.cpp \
-	src/kmc_core/raduls_sse41.cpp src/kmc_core/mem_disk_file.cpp \
-	src/kmc_core/rev_byte.cpp src/kmc_core/bkb_writer.cpp \
-	src/kmc_core/bkb_reader.cpp src/kmc_core/fastq_reader.cpp \
-	src/kmc_core/timer.cpp src/kmc_core/develop.cpp \
-	src/kmc_core/kb_completer.cpp src/kmc_core/kb_storer.cpp \
-	src/kmc_core/kmer.cpp src/kmc_core/splitter.cpp \
-	src/kmc_core/kb_collector.cpp src/kmc_core/kmc_runner.cpp \
-	src/kmc_api/mmer.cpp src/kmc_api/kmc_file.cpp \
-	src/kmc_api/kmer_api.cpp src/kmc_core/kff_writer.cpp
+	src/kmc_core/params.h src/kmc_core/binary_reader.h \
+	src/kmc_core/bkb_uncompactor.h src/kmc_core/bkb_merger.h \
+	src/kmc_core/bam_utils.h src/kmc_core/bkb_sorter.h \
+	src/kmc_core/bkb_subbin.h src/kmc_core/defs.h \
+	src/kmc_core/exception_aware_thread.h src/kmc_core/kb_sorter.h \
+	src/kmc_core/kb_reader.h src/kmc_core/s_mapper.h \
+	src/kmc_core/libs/ntHash/ntHashWrapper.h \
+	src/kmc_core/libs/ntHash/ntHash.hpp \
+	src/kmc_core/tmp_files_owner.h src/kmc_core/kmc.h \
+	src/kmc_core/percent_progress.h src/kmc_core/kxmer_set.h \
+	src/kmc_api/mmer.cpp src/kmc_api/mmer.h \
+	src/kmc_api/kmc_file.cpp src/kmc_api/kmc_file.h \
+	src/kmc_api/kmer_api.cpp src/kmc_api/kmer_api.h \
+	src/kmc_api/kmer_defs.h src/kmc_core/kff_writer.cpp \
+	src/kmc_core/kff_writer.h
 am__dirstamp = $(am__leading_dot)dirstamp
 @HAVE_AVX2_TRUE@am__objects_1 = src/kmc_core/raduls_avx2.$(OBJEXT)
 @HAVE_AVX_TRUE@am__objects_2 = src/kmc_core/raduls_avx.$(OBJEXT)
@@ -188,24 +209,42 @@ am__objects_7 = src/kmc_core/kff_writer.$(OBJEXT)
 am_libkmc_core_a_OBJECTS = $(am__objects_4) $(am__objects_5) \
 	$(am__objects_6) $(am__objects_7)
 libkmc_core_a_OBJECTS = $(am_libkmc_core_a_OBJECTS)
-am__kmc_SOURCES_DIST = src/kmc_core/raduls_impl.h src/kmc_core/kmer.h \
-	src/kmc_core/defs.h src/kmc_core/timer.h \
+am__kmc_SOURCES_DIST = src/kmc_core/raduls_impl.h \
 	src/kmc_core/intr_copy.h src/kmc_core/raduls.h \
+	src/kmc_core/radix.h src/kmc_core/small_sort.h \
+	src/kmc_core/small_k_buf.h src/kmc_core/raduls_avx2.cpp \
+	src/kmc_core/raduls_avx.cpp src/kmc_core/raduls_sse41.cpp \
+	src/kmc_core/mem_disk_file.cpp src/kmc_core/mem_disk_file.h \
+	src/kmc_core/rev_byte.cpp src/kmc_core/rev_byte.h \
+	src/kmc_core/bkb_writer.cpp src/kmc_core/bkb_writer.h \
+	src/kmc_core/bkb_reader.cpp src/kmc_core/bkb_reader.h \
+	src/kmc_core/fastq_reader.cpp src/kmc_core/fastq_reader.h \
+	src/kmc_core/timer.cpp src/kmc_core/timer.h \
+	src/kmc_core/develop.cpp src/kmc_core/develop.h \
+	src/kmc_core/kb_completer.cpp src/kmc_core/kb_completer.h \
+	src/kmc_core/kb_storer.cpp src/kmc_core/kb_storer.h \
+	src/kmc_core/kmer.cpp src/kmc_core/kmer.h \
+	src/kmc_core/splitter.cpp src/kmc_core/splitter.h \
+	src/kmc_core/kb_collector.cpp src/kmc_core/kb_collector.h \
+	src/kmc_core/kmc_runner.cpp src/kmc_core/kmc_runner.h \
 	src/kmc_core/first_dispatch.h src/kmc_core/meta_oper.h \
-	src/kmc_core/queues.h src/kmc_core/mem_disk_file.h \
-	src/kmc_core/critical_error_handler.h \
+	src/kmc_core/queues.h src/kmc_core/critical_error_handler.h \
 	src/kmc_core/thread_cancellation_exception.h \
-	src/kmc_core/raduls_avx2.cpp src/kmc_core/raduls_avx.cpp \
-	src/kmc_core/raduls_sse41.cpp src/kmc_core/mem_disk_file.cpp \
-	src/kmc_core/rev_byte.cpp src/kmc_core/bkb_writer.cpp \
-	src/kmc_core/bkb_reader.cpp src/kmc_core/fastq_reader.cpp \
-	src/kmc_core/timer.cpp src/kmc_core/develop.cpp \
-	src/kmc_core/kb_completer.cpp src/kmc_core/kb_storer.cpp \
-	src/kmc_core/kmer.cpp src/kmc_core/splitter.cpp \
-	src/kmc_core/kb_collector.cpp src/kmc_core/kmc_runner.cpp \
-	src/kmc_api/mmer.cpp src/kmc_api/kmc_file.cpp \
-	src/kmc_api/kmer_api.cpp src/kmc_core/kff_writer.cpp \
-	src/kmc_cli/kmc.cpp
+	src/kmc_core/params.h src/kmc_core/binary_reader.h \
+	src/kmc_core/bkb_uncompactor.h src/kmc_core/bkb_merger.h \
+	src/kmc_core/bam_utils.h src/kmc_core/bkb_sorter.h \
+	src/kmc_core/bkb_subbin.h src/kmc_core/defs.h \
+	src/kmc_core/exception_aware_thread.h src/kmc_core/kb_sorter.h \
+	src/kmc_core/kb_reader.h src/kmc_core/s_mapper.h \
+	src/kmc_core/libs/ntHash/ntHashWrapper.h \
+	src/kmc_core/libs/ntHash/ntHash.hpp \
+	src/kmc_core/tmp_files_owner.h src/kmc_core/kmc.h \
+	src/kmc_core/percent_progress.h src/kmc_core/kxmer_set.h \
+	src/kmc_api/mmer.cpp src/kmc_api/mmer.h \
+	src/kmc_api/kmc_file.cpp src/kmc_api/kmc_file.h \
+	src/kmc_api/kmer_api.cpp src/kmc_api/kmer_api.h \
+	src/kmc_api/kmer_defs.h src/kmc_core/kff_writer.cpp \
+	src/kmc_core/kff_writer.h src/kmc_cli/kmc.cpp
 @HAVE_AVX2_TRUE@am__objects_8 =  \
 @HAVE_AVX2_TRUE@	src/kmc_core/kmc-raduls_avx2.$(OBJEXT)
 @HAVE_AVX_TRUE@am__objects_9 = src/kmc_core/kmc-raduls_avx.$(OBJEXT)
@@ -380,6 +419,7 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
+HEADERS = $(include_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP) \
 	config.h.in
 # Read a list of newline-separated strings from the standard input,
@@ -408,7 +448,7 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/build-aux/missing AUTHORS COPYING ChangeLog \
 	INSTALL NEWS README.md build-aux/compile \
 	build-aux/config.guess build-aux/config.sub build-aux/depcomp \
-	build-aux/install-sh build-aux/missing config.guess config.sub
+	build-aux/install-sh build-aux/missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -540,28 +580,126 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-RADULS = src/kmc_core/raduls_impl.h src/kmc_core/kmer.h \
-	src/kmc_core/defs.h src/kmc_core/timer.h \
-	src/kmc_core/intr_copy.h src/kmc_core/raduls.h \
-	src/kmc_core/first_dispatch.h src/kmc_core/meta_oper.h \
-	src/kmc_core/queues.h src/kmc_core/mem_disk_file.h \
-	src/kmc_core/critical_error_handler.h \
-	src/kmc_core/thread_cancellation_exception.h $(am__append_1) \
-	$(am__append_2) $(am__append_3)
+RADULS = src/kmc_core/raduls_impl.h src/kmc_core/intr_copy.h \
+	src/kmc_core/raduls.h src/kmc_core/radix.h \
+	src/kmc_core/small_sort.h src/kmc_core/small_k_buf.h \
+	$(am__append_1) $(am__append_2) $(am__append_3)
 kmc_CXXFLAGS = $(AM_CXXFLAGS) $(KMC_CXXFLAGS)
 kmc_dump_CXXFLAGS = $(AM_CXXFLAGS) $(KMC_CXXFLAGS)
 kmc_tools_CXXFLAGS = $(AM_CXXFLAGS) $(KMC_CXXFLAGS)
 kmc_LDFLAGS = $(AM_LDFLAGS) $(KMC_LDFLAGS)
 kmc_dump_LDFLAGS = $(AM_LDFLAGS) $(KMC_LDFLAGS)
 kmc_tools_LDFLAGS = $(AM_LDFLAGS) $(KMC_LDFLAGS)
-KMC_CORE_SRC = src/kmc_core/mem_disk_file.cpp src/kmc_core/rev_byte.cpp src/kmc_core/bkb_writer.cpp src/kmc_core/bkb_reader.cpp src/kmc_core/fastq_reader.cpp src/kmc_core/timer.cpp src/kmc_core/develop.cpp src/kmc_core/kb_completer.cpp src/kmc_core/kb_storer.cpp src/kmc_core/kmer.cpp src/kmc_core/splitter.cpp src/kmc_core/kb_collector.cpp src/kmc_core/kmc_runner.cpp
-KMC_TOOLS_SRC = src/kmc_tools/kmer_file_header.cpp src/kmc_tools/nc_utils.cpp src/kmc_tools/parameters_parser.cpp src/kmc_tools/parser.cpp src/kmc_tools/tokenizer.cpp src/kmc_tools/fastq_filter.cpp src/kmc_tools/fastq_reader.cpp src/kmc_tools/fastq_writer.cpp src/kmc_tools/percent_progress.cpp src/kmc_tools/kff_info_reader.cpp
-KMC_API_SRC = src/kmc_api/mmer.cpp src/kmc_api/kmc_file.cpp src/kmc_api/kmer_api.cpp
-KFF_SRC = src/kmc_core/kff_writer.cpp
+KMC_CORE_SRC = src/kmc_core/mem_disk_file.cpp \
+			 src/kmc_core/mem_disk_file.h \
+			 src/kmc_core/rev_byte.cpp \
+			 src/kmc_core/rev_byte.h \
+			 src/kmc_core/bkb_writer.cpp \
+			 src/kmc_core/bkb_writer.h \
+			 src/kmc_core/bkb_reader.cpp \
+			 src/kmc_core/bkb_reader.h \
+			 src/kmc_core/fastq_reader.cpp \
+			 src/kmc_core/fastq_reader.h \
+			 src/kmc_core/timer.cpp \
+			 src/kmc_core/timer.h \
+			 src/kmc_core/develop.cpp \
+			 src/kmc_core/develop.h \
+			 src/kmc_core/kb_completer.cpp \
+			 src/kmc_core/kb_completer.h \
+			 src/kmc_core/kb_storer.cpp \
+			 src/kmc_core/kb_storer.h \
+			 src/kmc_core/kmer.cpp \
+			 src/kmc_core/kmer.h \
+			 src/kmc_core/splitter.cpp \
+			 src/kmc_core/splitter.h \
+			 src/kmc_core/kb_collector.cpp \
+			 src/kmc_core/kb_collector.h \
+			 src/kmc_core/kmc_runner.cpp \
+			 src/kmc_core/kmc_runner.h \
+			 src/kmc_core/first_dispatch.h \
+	   		 src/kmc_core/meta_oper.h \
+	   		 src/kmc_core/queues.h \
+	   		 src/kmc_core/critical_error_handler.h \
+	   		 src/kmc_core/thread_cancellation_exception.h \
+			 src/kmc_core/params.h \
+			 src/kmc_core/binary_reader.h \
+			 src/kmc_core/bkb_uncompactor.h \
+			 src/kmc_core/bkb_merger.h \
+			 src/kmc_core/bam_utils.h \
+			 src/kmc_core/bkb_sorter.h \
+			 src/kmc_core/bkb_subbin.h \
+			 src/kmc_core/defs.h \
+			 src/kmc_core/exception_aware_thread.h \
+			 src/kmc_core/kb_sorter.h \
+			 src/kmc_core/kb_reader.h \
+			 src/kmc_core/s_mapper.h \
+			 src/kmc_core/libs/ntHash/ntHashWrapper.h \
+			 src/kmc_core/libs/ntHash/ntHash.hpp \
+			 src/kmc_core/tmp_files_owner.h \
+			 src/kmc_core/kmc.h \
+			 src/kmc_core/percent_progress.h \
+			 src/kmc_core/kxmer_set.h
+
+KMC_TOOLS_SRC = src/kmc_tools/kmer_file_header.cpp \
+			  src/kmc_tools/kmer_file_header.h \
+			  src/kmc_tools/nc_utils.cpp \
+			  src/kmc_tools/nc_utils.h \
+			  src/kmc_tools/parameters_parser.cpp \
+			  src/kmc_tools/parameters_parser.h \
+			  src/kmc_tools/parser.cpp \
+			  src/kmc_tools/parser.h \
+			  src/kmc_tools/tokenizer.cpp \
+			  src/kmc_tools/tokenizer.h \
+			  src/kmc_tools/fastq_filter.cpp \
+			  src/kmc_tools/fastq_filter.h \
+			  src/kmc_tools/fastq_reader.cpp \
+			  src/kmc_tools/fastq_reader.h \
+			  src/kmc_tools/fastq_writer.cpp \
+			  src/kmc_tools/fastq_writer.h \
+			  src/kmc_tools/percent_progress.cpp \
+			  src/kmc_tools/percent_progress.h \
+			  src/kmc_tools/kff_info_reader.cpp \
+			  src/kmc_tools/kff_info_reader.h \
+			  src/kmc_tools/check_kmer.h \
+			  src/kmc_tools/kmer.h \
+			  src/kmc_tools/defs.h \
+			  src/kmc_tools/meta_oper.h \
+			  src/kmc_tools/expression_node.h \
+			  src/kmc_tools/operations.h \
+			  src/kmc_tools/bundle.h \
+			  src/kmc_tools/db_reader_factory.h \
+			  src/kmc_tools/db_writer.h \
+			  src/kmc_tools/db_writer_factory.h \
+			  src/kmc_tools/dump_writer.h \
+			  src/kmc_tools/kmc1_db_reader.h \
+			  src/kmc_tools/kmc1_db_writer.h \
+			  src/kmc_tools/kmc2_db_reader.h \
+			  src/kmc_tools/kff_db_reader.h \
+			  src/kmc_tools/kff_db_writer.h \
+			  src/kmc_tools/kff_random_access.h \
+			  src/kmc_tools/kff_kmc2_reader_utils.h \
+			  src/kmc_tools/queues.h \
+			  src/kmc_tools/output_parser.h \
+			  src/kmc_tools/timer.h \
+			  src/kmc_tools/histogram_writer.h \
+			  src/kmc_tools/config.h
+
+KMC_API_SRC = src/kmc_api/mmer.cpp \
+			src/kmc_api/mmer.h \
+			src/kmc_api/kmc_file.cpp \
+			src/kmc_api/kmc_file.h \
+			src/kmc_api/kmer_api.cpp \
+			src/kmc_api/kmer_api.h \
+			src/kmc_api/kmer_defs.h
+
+KFF_SRC = src/kmc_core/kff_writer.cpp \
+	    src/kmc_core/kff_writer.h
+
 kmc_SOURCES = ${RADULS} ${KMC_CORE_SRC} ${KMC_API_SRC} ${KFF_SRC} src/kmc_cli/kmc.cpp
-kmc_dump_SOURCES = ${KMC_API_SRC} src/kmc_dump/nc_utils.cpp src/kmc_dump/kmc_dump.cpp
+kmc_dump_SOURCES = ${KMC_API_SRC} src/kmc_dump/nc_utils.cpp src/kmc_dump/nc_utils.h src/kmc_dump/kmc_dump.cpp
 kmc_tools_SOURCES = ${KMC_TOOLS_SRC} ${KMC_API_SRC} ${KFF_SRC} src/kmc_tools/kmc_tools.cpp
 lib_LIBRARIES = libkmc_core.a
+include_HEADERS = include/kmc_runner.h
 libkmc_core_a_SOURCES = ${RADULS} ${KMC_CORE_SRC} ${KMC_API_SRC} ${KFF_SRC}
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -1542,6 +1680,27 @@ src/kmc_tools/kmc_tools-kmc_tools.obj: src/kmc_tools/kmc_tools.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/kmc_tools/kmc_tools.cpp' object='src/kmc_tools/kmc_tools-kmc_tools.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(kmc_tools_CXXFLAGS) $(CXXFLAGS) -c -o src/kmc_tools/kmc_tools-kmc_tools.obj `if test -f 'src/kmc_tools/kmc_tools.cpp'; then $(CYGPATH_W) 'src/kmc_tools/kmc_tools.cpp'; else $(CYGPATH_W) '$(srcdir)/src/kmc_tools/kmc_tools.cpp'; fi`
+install-includeHEADERS: $(include_HEADERS)
+	@$(NORMAL_INSTALL)
+	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(includedir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(includedir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(includedir)'"; \
+	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(includedir)" || exit $$?; \
+	done
+
+uninstall-includeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(includedir)'; $(am__uninstall_files_from_dir)
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -1775,9 +1934,9 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(LIBRARIES) config.h
+all-am: Makefile $(PROGRAMS) $(LIBRARIES) $(HEADERS) config.h
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libdir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -1904,7 +2063,7 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-includeHEADERS
 
 install-dvi: install-dvi-am
 
@@ -2011,7 +2170,8 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-libLIBRARIES
+uninstall-am: uninstall-binPROGRAMS uninstall-includeHEADERS \
+	uninstall-libLIBRARIES
 
 .MAKE: all install-am install-strip
 
@@ -2025,13 +2185,14 @@ uninstall-am: uninstall-binPROGRAMS uninstall-libLIBRARIES
 	dvi-am html html-am info info-am install install-am \
 	install-binPROGRAMS install-data install-data-am install-dvi \
 	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am \
-	install-libLIBRARIES install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
+	install-html-am install-includeHEADERS install-info \
+	install-info-am install-libLIBRARIES install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-binPROGRAMS uninstall-libLIBRARIES
+	uninstall-am uninstall-binPROGRAMS uninstall-includeHEADERS \
+	uninstall-libLIBRARIES
 
 .PRECIOUS: Makefile
 
