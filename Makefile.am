@@ -1,11 +1,12 @@
+RADULS=src/kmc_core/raduls_impl.h src/kmc_core/kmer.h src/kmc_core/defs.h src/kmc_core/timer.h src/kmc_core/intr_copy.h src/kmc_core/raduls.h src/kmc_core/first_dispatch.h src/kmc_core/meta_oper.h src/kmc_core/queues.h src/kmc_core/mem_disk_file.h src/kmc_core/critical_error_handler.h src/kmc_core/thread_cancellation_exception.h
 if HAVE_AVX2
-RADULS=src/kmc_core/raduls_avx2.cpp
+RADULS+=src/kmc_core/raduls_avx2.cpp
 endif
 if HAVE_AVX
-RADULS=src/kmc_core/raduls_avx.cpp
+RADULS+=src/kmc_core/raduls_avx.cpp
 endif
 if HAVE_SSE41
-RADULS=src/kmc_core/raduls_sse41.cpp
+RADULS+=src/kmc_core/raduls_sse41.cpp
 endif
 # only one of these will every be defined as true, per the configure - allows non-recursive if
 bin_PROGRAMS = kmc kmc_dump kmc_tools

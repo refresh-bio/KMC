@@ -90,6 +90,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@HAVE_AVX2_TRUE@am__append_1 = src/kmc_core/raduls_avx2.cpp
+@HAVE_AVX_TRUE@am__append_2 = src/kmc_core/raduls_avx.cpp
+@HAVE_SSE41_TRUE@am__append_3 = src/kmc_core/raduls_sse41.cpp
 bin_PROGRAMS = kmc$(EXEEXT) kmc_dump$(EXEEXT) kmc_tools$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -146,22 +149,29 @@ am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 = 
 libkmc_core_a_AR = $(AR) $(ARFLAGS)
 libkmc_core_a_LIBADD =
-am__libkmc_core_a_SOURCES_DIST = src/kmc_core/raduls_avx2.cpp \
-	src/kmc_core/raduls_avx.cpp src/kmc_core/raduls_sse41.cpp \
-	src/kmc_core/mem_disk_file.cpp src/kmc_core/rev_byte.cpp \
-	src/kmc_core/bkb_writer.cpp src/kmc_core/bkb_reader.cpp \
-	src/kmc_core/fastq_reader.cpp src/kmc_core/timer.cpp \
-	src/kmc_core/develop.cpp src/kmc_core/kb_completer.cpp \
-	src/kmc_core/kb_storer.cpp src/kmc_core/kmer.cpp \
-	src/kmc_core/splitter.cpp src/kmc_core/kb_collector.cpp \
-	src/kmc_core/kmc_runner.cpp src/kmc_api/mmer.cpp \
-	src/kmc_api/kmc_file.cpp src/kmc_api/kmer_api.cpp \
-	src/kmc_core/kff_writer.cpp
+am__libkmc_core_a_SOURCES_DIST = src/kmc_core/raduls_impl.h \
+	src/kmc_core/kmer.h src/kmc_core/defs.h src/kmc_core/timer.h \
+	src/kmc_core/intr_copy.h src/kmc_core/raduls.h \
+	src/kmc_core/first_dispatch.h src/kmc_core/meta_oper.h \
+	src/kmc_core/queues.h src/kmc_core/mem_disk_file.h \
+	src/kmc_core/critical_error_handler.h \
+	src/kmc_core/thread_cancellation_exception.h \
+	src/kmc_core/raduls_avx2.cpp src/kmc_core/raduls_avx.cpp \
+	src/kmc_core/raduls_sse41.cpp src/kmc_core/mem_disk_file.cpp \
+	src/kmc_core/rev_byte.cpp src/kmc_core/bkb_writer.cpp \
+	src/kmc_core/bkb_reader.cpp src/kmc_core/fastq_reader.cpp \
+	src/kmc_core/timer.cpp src/kmc_core/develop.cpp \
+	src/kmc_core/kb_completer.cpp src/kmc_core/kb_storer.cpp \
+	src/kmc_core/kmer.cpp src/kmc_core/splitter.cpp \
+	src/kmc_core/kb_collector.cpp src/kmc_core/kmc_runner.cpp \
+	src/kmc_api/mmer.cpp src/kmc_api/kmc_file.cpp \
+	src/kmc_api/kmer_api.cpp src/kmc_core/kff_writer.cpp
 am__dirstamp = $(am__leading_dot)dirstamp
-@HAVE_AVX2_FALSE@@HAVE_AVX_FALSE@@HAVE_SSE41_TRUE@am__objects_1 = src/kmc_core/raduls_sse41.$(OBJEXT)
-@HAVE_AVX2_FALSE@@HAVE_AVX_TRUE@am__objects_1 = src/kmc_core/raduls_avx.$(OBJEXT)
 @HAVE_AVX2_TRUE@am__objects_1 = src/kmc_core/raduls_avx2.$(OBJEXT)
-am__objects_2 = src/kmc_core/mem_disk_file.$(OBJEXT) \
+@HAVE_AVX_TRUE@am__objects_2 = src/kmc_core/raduls_avx.$(OBJEXT)
+@HAVE_SSE41_TRUE@am__objects_3 = src/kmc_core/raduls_sse41.$(OBJEXT)
+am__objects_4 = $(am__objects_1) $(am__objects_2) $(am__objects_3)
+am__objects_5 = src/kmc_core/mem_disk_file.$(OBJEXT) \
 	src/kmc_core/rev_byte.$(OBJEXT) \
 	src/kmc_core/bkb_writer.$(OBJEXT) \
 	src/kmc_core/bkb_reader.$(OBJEXT) \
@@ -172,28 +182,37 @@ am__objects_2 = src/kmc_core/mem_disk_file.$(OBJEXT) \
 	src/kmc_core/splitter.$(OBJEXT) \
 	src/kmc_core/kb_collector.$(OBJEXT) \
 	src/kmc_core/kmc_runner.$(OBJEXT)
-am__objects_3 = src/kmc_api/mmer.$(OBJEXT) \
+am__objects_6 = src/kmc_api/mmer.$(OBJEXT) \
 	src/kmc_api/kmc_file.$(OBJEXT) src/kmc_api/kmer_api.$(OBJEXT)
-am__objects_4 = src/kmc_core/kff_writer.$(OBJEXT)
-am_libkmc_core_a_OBJECTS = $(am__objects_1) $(am__objects_2) \
-	$(am__objects_3) $(am__objects_4)
+am__objects_7 = src/kmc_core/kff_writer.$(OBJEXT)
+am_libkmc_core_a_OBJECTS = $(am__objects_4) $(am__objects_5) \
+	$(am__objects_6) $(am__objects_7)
 libkmc_core_a_OBJECTS = $(am_libkmc_core_a_OBJECTS)
-am__kmc_SOURCES_DIST = src/kmc_core/raduls_avx2.cpp \
-	src/kmc_core/raduls_avx.cpp src/kmc_core/raduls_sse41.cpp \
-	src/kmc_core/mem_disk_file.cpp src/kmc_core/rev_byte.cpp \
-	src/kmc_core/bkb_writer.cpp src/kmc_core/bkb_reader.cpp \
-	src/kmc_core/fastq_reader.cpp src/kmc_core/timer.cpp \
-	src/kmc_core/develop.cpp src/kmc_core/kb_completer.cpp \
-	src/kmc_core/kb_storer.cpp src/kmc_core/kmer.cpp \
-	src/kmc_core/splitter.cpp src/kmc_core/kb_collector.cpp \
-	src/kmc_core/kmc_runner.cpp src/kmc_api/mmer.cpp \
-	src/kmc_api/kmc_file.cpp src/kmc_api/kmer_api.cpp \
-	src/kmc_core/kff_writer.cpp src/kmc_cli/kmc.cpp
-@HAVE_AVX2_FALSE@@HAVE_AVX_FALSE@@HAVE_SSE41_TRUE@am__objects_5 = src/kmc_core/kmc-raduls_sse41.$(OBJEXT)
-@HAVE_AVX2_FALSE@@HAVE_AVX_TRUE@am__objects_5 = src/kmc_core/kmc-raduls_avx.$(OBJEXT)
-@HAVE_AVX2_TRUE@am__objects_5 =  \
+am__kmc_SOURCES_DIST = src/kmc_core/raduls_impl.h src/kmc_core/kmer.h \
+	src/kmc_core/defs.h src/kmc_core/timer.h \
+	src/kmc_core/intr_copy.h src/kmc_core/raduls.h \
+	src/kmc_core/first_dispatch.h src/kmc_core/meta_oper.h \
+	src/kmc_core/queues.h src/kmc_core/mem_disk_file.h \
+	src/kmc_core/critical_error_handler.h \
+	src/kmc_core/thread_cancellation_exception.h \
+	src/kmc_core/raduls_avx2.cpp src/kmc_core/raduls_avx.cpp \
+	src/kmc_core/raduls_sse41.cpp src/kmc_core/mem_disk_file.cpp \
+	src/kmc_core/rev_byte.cpp src/kmc_core/bkb_writer.cpp \
+	src/kmc_core/bkb_reader.cpp src/kmc_core/fastq_reader.cpp \
+	src/kmc_core/timer.cpp src/kmc_core/develop.cpp \
+	src/kmc_core/kb_completer.cpp src/kmc_core/kb_storer.cpp \
+	src/kmc_core/kmer.cpp src/kmc_core/splitter.cpp \
+	src/kmc_core/kb_collector.cpp src/kmc_core/kmc_runner.cpp \
+	src/kmc_api/mmer.cpp src/kmc_api/kmc_file.cpp \
+	src/kmc_api/kmer_api.cpp src/kmc_core/kff_writer.cpp \
+	src/kmc_cli/kmc.cpp
+@HAVE_AVX2_TRUE@am__objects_8 =  \
 @HAVE_AVX2_TRUE@	src/kmc_core/kmc-raduls_avx2.$(OBJEXT)
-am__objects_6 = src/kmc_core/kmc-mem_disk_file.$(OBJEXT) \
+@HAVE_AVX_TRUE@am__objects_9 = src/kmc_core/kmc-raduls_avx.$(OBJEXT)
+@HAVE_SSE41_TRUE@am__objects_10 =  \
+@HAVE_SSE41_TRUE@	src/kmc_core/kmc-raduls_sse41.$(OBJEXT)
+am__objects_11 = $(am__objects_8) $(am__objects_9) $(am__objects_10)
+am__objects_12 = src/kmc_core/kmc-mem_disk_file.$(OBJEXT) \
 	src/kmc_core/kmc-rev_byte.$(OBJEXT) \
 	src/kmc_core/kmc-bkb_writer.$(OBJEXT) \
 	src/kmc_core/kmc-bkb_reader.$(OBJEXT) \
@@ -206,27 +225,27 @@ am__objects_6 = src/kmc_core/kmc-mem_disk_file.$(OBJEXT) \
 	src/kmc_core/kmc-splitter.$(OBJEXT) \
 	src/kmc_core/kmc-kb_collector.$(OBJEXT) \
 	src/kmc_core/kmc-kmc_runner.$(OBJEXT)
-am__objects_7 = src/kmc_api/kmc-mmer.$(OBJEXT) \
+am__objects_13 = src/kmc_api/kmc-mmer.$(OBJEXT) \
 	src/kmc_api/kmc-kmc_file.$(OBJEXT) \
 	src/kmc_api/kmc-kmer_api.$(OBJEXT)
-am__objects_8 = src/kmc_core/kmc-kff_writer.$(OBJEXT)
-am_kmc_OBJECTS = $(am__objects_5) $(am__objects_6) $(am__objects_7) \
-	$(am__objects_8) src/kmc_cli/kmc-kmc.$(OBJEXT)
+am__objects_14 = src/kmc_core/kmc-kff_writer.$(OBJEXT)
+am_kmc_OBJECTS = $(am__objects_11) $(am__objects_12) $(am__objects_13) \
+	$(am__objects_14) src/kmc_cli/kmc-kmc.$(OBJEXT)
 kmc_OBJECTS = $(am_kmc_OBJECTS)
 kmc_LDADD = $(LDADD)
 kmc_LINK = $(CXXLD) $(kmc_CXXFLAGS) $(CXXFLAGS) $(kmc_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am__objects_9 = src/kmc_api/kmc_dump-mmer.$(OBJEXT) \
+am__objects_15 = src/kmc_api/kmc_dump-mmer.$(OBJEXT) \
 	src/kmc_api/kmc_dump-kmc_file.$(OBJEXT) \
 	src/kmc_api/kmc_dump-kmer_api.$(OBJEXT)
-am_kmc_dump_OBJECTS = $(am__objects_9) \
+am_kmc_dump_OBJECTS = $(am__objects_15) \
 	src/kmc_dump/kmc_dump-nc_utils.$(OBJEXT) \
 	src/kmc_dump/kmc_dump-kmc_dump.$(OBJEXT)
 kmc_dump_OBJECTS = $(am_kmc_dump_OBJECTS)
 kmc_dump_LDADD = $(LDADD)
 kmc_dump_LINK = $(CXXLD) $(kmc_dump_CXXFLAGS) $(CXXFLAGS) \
 	$(kmc_dump_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_10 = src/kmc_tools/kmc_tools-kmer_file_header.$(OBJEXT) \
+am__objects_16 = src/kmc_tools/kmc_tools-kmer_file_header.$(OBJEXT) \
 	src/kmc_tools/kmc_tools-nc_utils.$(OBJEXT) \
 	src/kmc_tools/kmc_tools-parameters_parser.$(OBJEXT) \
 	src/kmc_tools/kmc_tools-parser.$(OBJEXT) \
@@ -236,12 +255,12 @@ am__objects_10 = src/kmc_tools/kmc_tools-kmer_file_header.$(OBJEXT) \
 	src/kmc_tools/kmc_tools-fastq_writer.$(OBJEXT) \
 	src/kmc_tools/kmc_tools-percent_progress.$(OBJEXT) \
 	src/kmc_tools/kmc_tools-kff_info_reader.$(OBJEXT)
-am__objects_11 = src/kmc_api/kmc_tools-mmer.$(OBJEXT) \
+am__objects_17 = src/kmc_api/kmc_tools-mmer.$(OBJEXT) \
 	src/kmc_api/kmc_tools-kmc_file.$(OBJEXT) \
 	src/kmc_api/kmc_tools-kmer_api.$(OBJEXT)
-am__objects_12 = src/kmc_core/kmc_tools-kff_writer.$(OBJEXT)
-am_kmc_tools_OBJECTS = $(am__objects_10) $(am__objects_11) \
-	$(am__objects_12) src/kmc_tools/kmc_tools-kmc_tools.$(OBJEXT)
+am__objects_18 = src/kmc_core/kmc_tools-kff_writer.$(OBJEXT)
+am_kmc_tools_OBJECTS = $(am__objects_16) $(am__objects_17) \
+	$(am__objects_18) src/kmc_tools/kmc_tools-kmc_tools.$(OBJEXT)
 kmc_tools_OBJECTS = $(am_kmc_tools_OBJECTS)
 kmc_tools_LDADD = $(LDADD)
 kmc_tools_LINK = $(CXXLD) $(kmc_tools_CXXFLAGS) $(CXXFLAGS) \
@@ -339,6 +358,18 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+AM_V_CC = $(am__v_CC_@AM_V@)
+am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
+am__v_CC_0 = @echo "  CC      " $@;
+am__v_CC_1 = 
+CCLD = $(CC)
+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CCLD = $(am__v_CCLD_@AM_V@)
+am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
+am__v_CCLD_0 = @echo "  CCLD    " $@;
+am__v_CCLD_1 = 
 SOURCES = $(libkmc_core_a_SOURCES) $(kmc_SOURCES) $(kmc_dump_SOURCES) \
 	$(kmc_tools_SOURCES)
 DIST_SOURCES = $(am__libkmc_core_a_SOURCES_DIST) \
@@ -509,9 +540,14 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@HAVE_AVX2_TRUE@RADULS = src/kmc_core/raduls_avx2.cpp
-@HAVE_AVX_TRUE@RADULS = src/kmc_core/raduls_avx.cpp
-@HAVE_SSE41_TRUE@RADULS = src/kmc_core/raduls_sse41.cpp
+RADULS = src/kmc_core/raduls_impl.h src/kmc_core/kmer.h \
+	src/kmc_core/defs.h src/kmc_core/timer.h \
+	src/kmc_core/intr_copy.h src/kmc_core/raduls.h \
+	src/kmc_core/first_dispatch.h src/kmc_core/meta_oper.h \
+	src/kmc_core/queues.h src/kmc_core/mem_disk_file.h \
+	src/kmc_core/critical_error_handler.h \
+	src/kmc_core/thread_cancellation_exception.h $(am__append_1) \
+	$(am__append_2) $(am__append_3)
 kmc_CXXFLAGS = $(AM_CXXFLAGS) $(KMC_CXXFLAGS)
 kmc_dump_CXXFLAGS = $(AM_CXXFLAGS) $(KMC_CXXFLAGS)
 kmc_tools_CXXFLAGS = $(AM_CXXFLAGS) $(KMC_CXXFLAGS)
