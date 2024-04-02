@@ -2,6 +2,7 @@
 *.Po
 m4/*
 *.ac
+*~
 Makefile
 kmc
 kmc_tools
@@ -17,3 +18,7 @@ autom4te.cache/*
 AUTHORS
 COPYING
 INSTALL
+*/.deps/*
+config.status
+config.h
+*.dirstamp
