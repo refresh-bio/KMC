@@ -6,8 +6,8 @@ m4_include([m4/ax_compiler_version.m4])
 m4_include([m4/ax_gcc_x86_cpu_supports.m4])
 AC_PREREQ([2.71])
 AC_INIT([kmc], [3.7.5], [gtg240@gmail.com])
-AC_CANONICAL_TARGET
 AC_CONFIG_AUX_DIR([build-aux])
+AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([1.11 subdir-objects])
 AM_SILENT_RULES([yes])
 AC_CONFIG_SRCDIR([src])
