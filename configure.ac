@@ -4,7 +4,7 @@ m4_include([m4/ax_check_zlib.m4])
 m4_include([m4/ax_cxx_compile_stdcxx.m4])
 m4_include([m4/ax_compiler_version.m4])
 m4_include([m4/ax_gcc_x86_cpu_supports.m4])
-AC_PREREQ([2.71])
+AC_PREREQ([2.67])
 AC_INIT([kmc], [3.7.5], [gtg240@gmail.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CANONICAL_TARGET
@@ -13,7 +13,10 @@ AM_SILENT_RULES([yes])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 # Checks for programs.
+OLD_CXXFLAGS=${CXXFLAGS}
+AC_PROG_CXXCPP
 AC_PROG_CXX
+CXXFLAGS="${OLD_CXXFLAGS} -O3"
 AC_PROG_RANLIB
 AC_PROG_LN_S
 AC_PROG_SED
