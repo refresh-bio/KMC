@@ -4,6 +4,7 @@ m4/*
 *.ac
 *~
 Makefile
+Makefile.in
 kmc
 kmc_tools
 kmc_dump

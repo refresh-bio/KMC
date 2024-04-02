@@ -8,7 +8,7 @@ AC_PREREQ([2.67])
 AC_INIT([kmc], [3.7.5], [gtg240@gmail.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([1.11 subdir-objects])
+AM_INIT_AUTOMAKE([1.11 subdir-objects foreign])
 AM_SILENT_RULES([yes])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
