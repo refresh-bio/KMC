@@ -22,3 +22,4 @@ INSTALL
 config.status
 config.h
 *.dirstamp
+kmc-3.7.5/*
