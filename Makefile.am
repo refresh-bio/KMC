@@ -134,5 +134,5 @@ kmc_dump_SOURCES = ${KMC_API_SRC} src/kmc_dump/nc_utils.cpp src/kmc_dump/nc_util
 kmc_tools_SOURCES = ${KMC_TOOLS_SRC} ${KMC_API_SRC} ${KFF_SRC} src/kmc_tools/kmc_tools.cpp
 
 lib_LIBRARIES = libkmc_core.a
-include_HEADERS = include/kmc_runner.h
+include_HEADERS = src/kmc_core/kmc_runner.h
 libkmc_core_a_SOURCES = ${RADULS} ${KMC_CORE_SRC} ${KMC_API_SRC} ${KFF_SRC}
