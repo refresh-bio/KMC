@@ -34,6 +34,9 @@
 /* Define to 1 if you have the `modf' function. */
 #undef HAVE_MODF
 
+/* Define to 1 if NEON SIMD instructions are available on aarch64 */
+#undef HAVE_NEON_INSTRUCTIONS
+
 /* Define if sse4.1 instructions are supported */
 #undef HAVE_SSE4_1_INSTRUCTIONS
 

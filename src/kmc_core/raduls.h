@@ -13,6 +13,7 @@
 
 #include <functional>
 #include "kmer.h"
+#include "../../config.h"
 
 #define MAGIC_NUMBER 8
 
@@ -21,7 +22,10 @@ using SortFunction = function<void(KMER_T*, KMER_T*, uint64, uint32, uint32, CMe
 
 namespace RadulsSort
 {
-#ifndef __aarch64__
+#ifdef HAVE_NEON_INSTRUCTIONS
+	template<typename KMER_T>
+	void RadixSortMSD_NEON(KMER_T* kmers, KMER_T* tmp, uint64 n_recs, uint32 byte, uint32 n_threads, CMemoryPool* pmm_radix_buf);
+#endif
 #ifdef HAVE_SSE2_INSTRUCTIONS
 	template<typename KMER_T>
 	void RadixSortMSD_SSE2(KMER_T* kmers, KMER_T* tmp, uint64 n_recs, uint32 byte, uint32 n_threads, CMemoryPool* pmm_radix_buf);
@@ -37,10 +41,6 @@ namespace RadulsSort
 #ifdef HAVE_AVX2_INSTRUCTIONS
 	template<typename KMER_T>
 	void RadixSortMSD_AVX2(KMER_T* kmers, KMER_T* tmp, uint64 n_recs, uint32 byte, uint32 n_threads, CMemoryPool* pmm_radix_buf);
-#endif
-#else
-	template<typename KMER_T>
-	void RadixSortMSD_NEON(KMER_T* kmers, KMER_T* tmp, uint64 n_recs, uint32 byte, uint32 n_threads, CMemoryPool* pmm_radix_buf);
 #endif
 }
 

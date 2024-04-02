@@ -32,6 +32,7 @@
 #include "s_mapper.h"
 #include "splitter.h"
 #include "small_sort.h"
+#include "../../config.h"
 
 #ifdef DEVELOP_MODE
 #include "develop.h"
@@ -1517,16 +1518,7 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 #endif
 
 	SortFunction<CKmer<SIZE>> sort_func;
-#ifdef __APPLE__
-#ifdef __aarch64__
-	sort_func = RadulsSort::RadixSortMSD_NEON<CKmer<SIZE>>;
-	CSmallSort<SIZE>::Adjust(384);
-#else
-	sort_func = RadulsSort::RadixSortMSD<CKmer<SIZE>, SIZE>;
-	CSmallSort<SIZE>::Adjust(384);
-#endif
-#else	
-#ifdef __aarch64__
+#ifdef HAVE_NEON_INSTRUCTIONS
 	sort_func = RadulsSort::RadixSortMSD_NEON<CKmer<SIZE>>;
 	CSmallSort<SIZE>::Adjust(384);
 #elif HAVE_AVX2_INSTRUCTIONS
@@ -1534,11 +1526,10 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 #elif HAVE_AVX_INSTRUCTIONS
 	sort_func = RadulsSort::RadixSortMSD_AVX<CKmer<SIZE>>;
 #elif HAVE_SSE4_1_INSTRUCTIONS
-        sort_func = RadulsSort::RadixSortMSD_SSE41<CKmer<SIZE>>;
+    sort_func = RadulsSort::RadixSortMSD_SSE41<CKmer<SIZE>>;
 #else
-	//probably never because x64 always supports sse2 as far as I know
-	std::cerr << "Error: At least SSE4.1 must be supported\n";
-#endif
+	sort_func = RadulsSort::RadixSortMSD<CKmer<SIZE>, SIZE>;
+	CSmallSort<SIZE>::Adjust(384);
 #endif
 
 	Queues.kq = std::make_unique<CKmerQueue>(Params.n_bins, Params.n_sorters);

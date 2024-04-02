@@ -60,21 +60,22 @@ have_avx2=false
 have_avx=false
 have_sse41=false
 have_neon=false
-
-if test target_cpu = "aarch64";
+AH_TEMPLATE([HAVE_NEON_INSTRUCTIONS], [Define to 1 if NEON SIMD instructions are available on aarch64])
+if test ${target_cpu} = "aarch64";
 then
 have_neon=true
+AC_DEFINE([HAVE_NEON_INSTRUCTIONS], [1])
 KMC_CXXFLAGS="-march=armv8-a+simd"
 else
 AX_GCC_X86_CPU_SUPPORTS([avx2], 
 			[have_avx2=true
-			 KMC_CXXFLAGS="-mavx2"],
+			 KMC_CXXFLAGS="-m64 -mavx2"],
 			[AX_GCC_X86_CPU_SUPPORTS([avx],
 						 [have_avx=true
-						  KMC_CXXFLAGS="-mavx"],
+						  KMC_CXXFLAGS="-m64 -mavx"],
 						 [AX_GCC_X86_CPU_SUPPORTS([sse4.1],
 									  [have_sse41=true
-									   KMC_CXXFLAGS="-msse4.1"],
+									   KMC_CXXFLAGS="-m64 -msse4.1"],
 									  [AC_MSG_ERROR([*** Requires AVX2, AVX, or SSE4.1 instructions available on x86_64])])])])
 fi
 AM_CONDITIONAL([HAVE_NEON], [$have_neon])
@@ -86,7 +87,7 @@ AC_FUNC_ERROR_AT_LINE
 AC_FUNC_MALLOC
 AC_FUNC_MKTIME
 AC_CHECK_FUNCS([gettimeofday memmove memset modf strchr strdup strtoull])
-KMC_CXXFLAGS="$KMC_CXXFLAGS -fPIC -Wall -fsigned-char -m64"
+KMC_CXXFLAGS="$KMC_CXXFLAGS -fPIC -Wall -fsigned-char"
 KMC_LDFLAGS="$KMC_LDFLAGS -Wl,--whole-archive -lpthread -Wl,--no-whole-archive"
 AC_SUBST([KMC_CXXFLAGS])
 AC_SUBST([KMC_LDFLAGS])

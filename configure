@@ -6761,6 +6761,8 @@ have_neon=false
 if test ${target_cpu} = "aarch64";
 then
 have_neon=true
+printf "%s\n" "#define HAVE_NEON_INSTRUCTIONS 1" >>confdefs.h
+
 KMC_CXXFLAGS="-march=armv8-a+simd"
 else
 ac_ext=c
@@ -6882,7 +6884,7 @@ then :
 printf "%s\n" "#define HAVE_AVX2_INSTRUCTIONS 1" >>confdefs.h
 
           have_avx2=true
-			 KMC_CXXFLAGS="-mavx2"
+			 KMC_CXXFLAGS="-m64 -mavx2"
 else $as_nop
 
 
@@ -6948,7 +6950,7 @@ then :
 printf "%s\n" "#define HAVE_AVX_INSTRUCTIONS 1" >>confdefs.h
 
           have_avx=true
-						  KMC_CXXFLAGS="-mavx"
+						  KMC_CXXFLAGS="-m64 -mavx"
 else $as_nop
 
 
@@ -7014,7 +7016,7 @@ then :
 printf "%s\n" "#define HAVE_SSE4_1_INSTRUCTIONS 1" >>confdefs.h
 
           have_sse41=true
-									   KMC_CXXFLAGS="-msse4.1"
+									   KMC_CXXFLAGS="-m64 -msse4.1"
 else $as_nop
   as_fn_error $? "*** Requires AVX2, AVX, or SSE4.1 instructions available on x86_64" "$LINENO" 5
 
@@ -7444,7 +7446,7 @@ then :
 
 fi
 
-KMC_CXXFLAGS="$KMC_CXXFLAGS -fPIC -Wall -fsigned-char -m64"
+KMC_CXXFLAGS="$KMC_CXXFLAGS -fPIC -Wall -fsigned-char"
 KMC_LDFLAGS="$KMC_LDFLAGS -Wl,--whole-archive -lpthread -Wl,--no-whole-archive"
 
 
