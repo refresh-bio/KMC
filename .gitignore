@@ -1,4 +1,5 @@
 *.o
+*.Po
 m4/*
 *.ac
 Makefile
@@ -9,3 +10,10 @@ libkmc_core.a
 include/*
 lib/*
 bin/*
+stamp-h1
+*.tar.gz
+*.log
+autom4te.cache/*
+AUTHORS
+COPYING
+INSTALL
