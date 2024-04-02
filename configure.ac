@@ -9,7 +9,7 @@ AC_INIT([kmc], [3.7.5], [gtg240@gmail.com])
 AC_CANONICAL_TARGET
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.11 subdir-objects])
-#AM_SILENT_RULES([yes])
+AM_SILENT_RULES([yes])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 # Checks for programs.
