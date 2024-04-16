@@ -221,7 +221,7 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 		header_offset = file_pre.Getc();
 		
 		size = size - 4;	//file size without the size of header_offset (and without 2 markers)
-		assert(file_pre.Size() > header_offset + 8);
+		assert((int64_t)file_pre.Size() > header_offset + 8);
 		file_pre.Seek(file_pre.Size() - (header_offset + 8));
 		result = file_pre.Read(&kmer_length, 1, sizeof(uint32));
 		result = file_pre.Read(&mode, 1, sizeof(uint32));

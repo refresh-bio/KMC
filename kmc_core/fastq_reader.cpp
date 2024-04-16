@@ -145,12 +145,13 @@ void CFastqReader::ProcessBamBinaryPart(uchar* data, uint64 size, uint32 id, uin
 			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 		}
-		if (ret == Z_STREAM_END)
+		if (ret == Z_STREAM_END) {
 			if (inflateEnd(&stream) != Z_OK) {
 				std::ostringstream ostr;
 				ostr << "Some error while reading gzip file (inflateEnd) in (" << __FILE__ << ": " << __LINE__ << ")";
 				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
+		}
 		else
 		{
 			std::ostringstream ostr;

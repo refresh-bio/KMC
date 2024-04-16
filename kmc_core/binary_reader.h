@@ -198,7 +198,7 @@ class CBinaryFilesReader
 		
 		uint64 readed;
 		
-		while (readed = fread(data + size, 1, part_size - size, file))
+		while ( (readed = fread(data + size, 1, part_size - size, file)) )
 		{
 			notify_readed(readed);
 			size += readed;
