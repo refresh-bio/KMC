@@ -1040,12 +1040,12 @@ template <unsigned SIZE> void CKMC<SIZE>::buildSignatureMapping()
 	{
 		Params.verboseLogger->Log("\nInfo: Reading signature to bin mapping from file " + Params.sig_to_bin_mapping + "\n");
 		CSigToBinMap stbm(Params.sig_to_bin_mapping);
-		if (stbm.GetSigLen() != (int32_t)Params.signature_len) {
+		if (stbm.GetSigLen() != (uint32_t)Params.signature_len) {
 			std::ostringstream oss;
 			oss << "Signature mapping file is used, but it is defined for signature len " << std::to_string(stbm.GetSigLen()) << ", while KMC is running for signature len " << Params.signature_len;
 			throw std::runtime_error(oss.str());
 		}
-		if (stbm.GetNBins() != (int32_t)Params.n_bins) {
+		if (stbm.GetNBins() != (uint32_t)Params.n_bins) {
 			std::ostringstream oss;
 			oss << "Signature mapping file is used, but it is defined for " << std::to_string(stbm.GetNBins()) << " bins, while KMC is running for " << Params.n_bins << " bins";
 			throw std::runtime_error(oss.str());
