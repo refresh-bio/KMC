@@ -810,7 +810,7 @@ struct KmerSizeDispatcher
 	{
 		auto min_k = 32 * (SIZE - 1);
 		auto max_k = min_k + 32;
-		if (kmer_len >= min_k && kmer_len < max_k)
+		if (kmer_len > min_k && kmer_len <= max_k)
 			runner.template Run<SIZE>();
 		else
 			KmerSizeDispatcher<SIZE - 1, Runner>::Dispatch(kmer_len, runner);
