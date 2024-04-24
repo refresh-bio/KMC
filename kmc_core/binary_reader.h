@@ -351,12 +351,14 @@ public:
 			else
 			{
 				FILE* f = fopen(f_name.c_str(), "rb");
-				if (!is_file(f_name.c_str()))
-				{
-					std::ostringstream ostr;
-					ostr << "Error: " << f_name << " is not a file";
-					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
-				}
+				//mkokot_TODO: I'm commenting this out because it will cause problems with PIPEs, but
+				//if we stck to build signature mapping the problem persists but it's quieter which is bad
+				//if (!is_file(f_name.c_str()))
+				//{
+				//	std::ostringstream ostr;
+				//	ostr << "Error: " << f_name << " is not a file";
+				//	CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
+				//}
 				if (!f)
 				{
 					std::ostringstream ostr;
