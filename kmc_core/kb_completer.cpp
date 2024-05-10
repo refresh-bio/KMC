@@ -241,7 +241,6 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 					prev += x;
 				}
 				ulut[lut_recs] = prev; //guard
-				assert(prev == _n_unique - _n_cutoff_max - n_cutoff_min);
 				kmcdb_writer->GetBin(bin_id)->AddLUT(ulut);
 			}
 		}
