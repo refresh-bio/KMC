@@ -1025,7 +1025,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKxmers()
 
 						if (!without_output)
 						{
-							if(output_type == OutputType::KMC)
+							if(output_type == OutputType::KMC || output_type == OutputType::KMCDB)
 							{
 								lut[kmer.remove_suffix(2 * kmer_symbols)]++;
 								// Store compacted kmer
@@ -1071,7 +1071,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKxmers()
 
 				if (!without_output)
 				{
-					if (output_type == OutputType::KMC)
+					if (output_type == OutputType::KMC || output_type == OutputType::KMCDB)
 					{
 						lut[kmer.remove_suffix(2 * kmer_symbols)]++;
 						// Store compacted kmer
@@ -1187,7 +1187,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKmers()
 
 					if (!without_output)
 					{
-						if (output_type == OutputType::KMC)
+						if (output_type == OutputType::KMC || output_type == OutputType::KMCDB)
 						{
 							// Store compacted kmer
 							for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)
@@ -1234,7 +1234,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKmers()
 
 			if (!without_output)
 			{
-				if (output_type == OutputType::KMC)
+				if (output_type == OutputType::KMC || output_type == OutputType::KMCDB)
 				{
 					// Store compacted kmer
 					for (int32 j = (int32)kmer_bytes - 1; j >= 0; --j)

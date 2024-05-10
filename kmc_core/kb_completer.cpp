@@ -67,6 +67,11 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 	uchar *lut = nullptr;
 	uint64 lut_size = 0;
 	counter_size = 0;
+
+	//mkokot_TODO: this should be checked at parameter parsing stage, but for simplicity and to implement faster
+	if (output_type == OutputType::KMCDB && need_to_store_sig_to_bin_mapping())
+		throw std::runtime_error("Signature mapping cannot be stored in KMCDB format");
+
 	if (output_type == OutputType::KMC && need_to_store_sig_to_bin_mapping())
 	{
 		sig_map_size = (1 << (signature_len * 2)) + 1;
@@ -102,6 +107,19 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		else if (output_type == OutputType::KFF)
 		{			
 			kff_writer = std::make_unique<CKFFWriter>(file_name + ".kff", both_strands, kmer_len, counter_size, cutoff_min, cutoff_max);
+		}
+		else if (output_type == KMC::OutputFileType::KMCDB)
+		{
+			kmcdb::Config config;
+			kmcdb::ConfigSortedWithLUT representation_config;
+			representation_config.lut_prefix_len = lut_prefix_len;
+			config.kmer_len = kmer_len;
+			config.num_bins = n_bins;
+			config.num_bytes_single_value = { counter_size };
+			kmcdb_writer = std::make_unique<kmcdb::WriterSortedWithLUTRaw<uint64_t>>(
+				config,
+				representation_config,
+				file_name + ".kmcdb");
 		}
 		else
 		{
@@ -151,7 +169,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 
 		if (!without_output)
 		{
-			if(output_type == OutputType::KMC)
+			if (output_type == OutputType::KMC)
 			{ 
 				for (auto& e : data_packs)
 				{
@@ -170,6 +188,13 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 					fwrite(data + e.first, 1, e.second - e.first, out_kmer);
 #endif
 				}
+			}
+			else if (output_type == KMC::OutputFileType::KMCDB)
+			{
+				//mkokot_TODO: in general it may make more sense to call this directly from sorter, it depends in general on what is possible with kmcdb and archive
+				auto bin = kmcdb_writer->GetBin(bin_id);
+				for (auto& e : data_packs)
+					bin->AddSufAndData(data + e.first, data + e.second);
 			}
 			else if (output_type == OutputType::KFF)
 			{
@@ -200,6 +225,20 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 					n_recs += x;
 				}
 				fwrite(lut, lut_recs, sizeof(uint64), out_lut);
+			}
+			else if (output_type == KMC::OutputFileType::KMCDB)
+			{
+				uint64* ulut = (uint64*)lut;
+				uint64 prev = 0;
+				for (uint64 i = 0; i < lut_recs; ++i)
+				{
+					uint64 x = ulut[i];
+					ulut[i] = prev;
+					prev += x;
+				}
+				ulut[lut_recs] = prev; //guard
+				assert(prev == _n_total - _n_cutoff_max - n_cutoff_min);
+				kmcdb_writer->GetBin(bin_id)->AddLUT(ulut);
 			}
 		}
 		//fwrite(&n_rec, 1, sizeof(uint64), out_lut);

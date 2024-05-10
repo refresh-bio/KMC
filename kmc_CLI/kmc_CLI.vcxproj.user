@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>-k17 -p7 test.fq o .</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-okmcdb -sssmin_hash -v -k27 -ci1 small.fq o .</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>-k25 test.fq o .</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-okmcdb -v -k27 -ci1 @fv.txt o .</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

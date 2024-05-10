@@ -14,6 +14,7 @@
 #include "params.h"
 #include "kmer.h"
 #include "radix.h"
+#include "kmcdb.h"
 #include <string>
 #include <algorithm>
 #include <numeric>
@@ -61,6 +62,7 @@ class CKmerBinCompleter
 	bool without_output;
 	bool store_uint(FILE *out, uint64 x, uint32 size);
 	std::unique_ptr<CKFFWriter> kff_writer;
+	std::unique_ptr<kmcdb::WriterSortedWithLUTRaw<uint64_t>> kmcdb_writer;
 	OutputType output_type;
 
 	bool need_to_store_sig_to_bin_mapping() const
@@ -395,7 +397,7 @@ bool CSmallKCompleter::Complete(CSmallKBuf<COUNTER_TYPE> result)
 		return CompleteKFFFormat(result);
 	default:
 		std::ostringstream ostr;
-		ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+		ostr << "Error: not implemented, please contact authors showing this message" << __FILE__ << "\t" << __LINE__;
 		CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 	}
 	assert(false); //Should never be here

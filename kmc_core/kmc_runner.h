@@ -94,7 +94,7 @@ namespace KMC
 	};
 
 	enum class InputFileType { FASTQ, FASTA, MULTILINE_FASTA, BAM, KMC };
-	enum class OutputFileType { KMC, KFF };
+	enum class OutputFileType { KMC, KFF, KMCDB };
 	
 	enum class EstimateHistogramCfg { DONT_ESTIMATE, ESTIMATE_AND_COUNT_KMERS, ONLY_ESTIMATE };
 

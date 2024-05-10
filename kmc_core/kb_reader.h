@@ -148,6 +148,7 @@ template <unsigned SIZE> void CKmerBinReader<SIZE>::ProcessBins()
 		uint32 rec_len         = (kxmer_symbols + 3) / 4;
 
 		uint64 lut_recs = 1ull << (2 * lut_prefix_len);
+		lut_recs += 1;  //for guard added in case of kmcdb storage format
 		if (lut_prefix_len == 0)
 			lut_recs = 0;
 		uint64 lut_size = lut_recs * sizeof(uint64);

@@ -437,7 +437,7 @@ public:
 
 						if (!without_output)
 						{
-							if (output_type == OutputType::KMC)
+							if (output_type == OutputType::KMC || output_type == OutputType::KMCDB)
 							{
 								uint64 prefix = kmer.remove_suffix(suffix_len_bits);
 								if (prefix == last_prefix)
@@ -486,7 +486,7 @@ public:
 
 				if (!without_output)
 				{
-					if (output_type == OutputType::KMC)
+					if (output_type == OutputType::KMC || output_type == OutputType::KMCDB)
 					{
 						uint64 prefix = kmer.remove_suffix(suffix_len_bits);
 						if (prefix == last_prefix)
@@ -519,7 +519,7 @@ public:
 			}
 			if (!without_output)
 			{
-				if(output_type == OutputType::KMC)
+				if(output_type == OutputType::KMC || output_type == OutputType::KMCDB)
 				{
 					lut_updater.UpdateLut(last_prefix, last_prefix_n_recs);
 					lut_updater.UpdateLut(first_prefix, first_prefix_n_recs);

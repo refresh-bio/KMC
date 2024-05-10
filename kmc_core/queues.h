@@ -12,6 +12,7 @@
 #define _QUEUES_H
 
 #include "defs.h"
+#include <random>
 #include <stdio.h>
 #include <tuple>
 #include <queue>
@@ -510,7 +511,7 @@ public:
 		for (uint32 i = no_sort_end; i < bin_sizes.size(); ++i)
 			random_bins.push_back(bin_sizes[i].first);
 
-		random_shuffle(random_bins.begin(), random_bins.end());
+		shuffle(random_bins.begin(), random_bins.end(), std::mt19937{});
 
 		for (uint32 i = no_sort_start; i < no_sort_end; ++i)
 			random_bins.push_back(bin_sizes[i].first);

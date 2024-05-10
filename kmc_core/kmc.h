@@ -555,10 +555,8 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage1()
 	std::ostringstream ostr;
 
 	ostr << "\n********** Used parameters for Stage 1 : **********\n";
-
 	ostr << "No. of input files           : " << Params.input_file_names.size() << "\n";
-	ostr << "Output file name             : " << Params.output_file_name << "\n";
-	ostr << "No. of working directories   : " << 1 << "\n";
+
 	ostr << "Input format                 : ";
 	switch (Params.file_type)
 	{
@@ -578,16 +576,7 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage1()
 		ostr << "KMC\n";
 		break;
 	}
-	ostr << "Output format                : ";
-	switch (Params.output_type)		
-	{
-	case OutputType::KFF:
-		ostr << "KFF\n";
-		break;
-	case OutputType::KMC:
-		ostr << "KMC\n";
-		break;	
-	}
+
 	ostr << "\n";
 	ostr << "k-mer length                 : " << Params.kmer_len << "\n";
 	ostr << "Max. k-mer length            : " << MAX_K << "\n";
@@ -636,6 +625,22 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage2()
 	ostr << "Max. count threshold         : " << Params.cutoff_max << "\n";
 	ostr << "Max. counter value           : " << Params.counter_max << "\n";
 
+	ostr << "Output file name             : " << Params.output_file_name << "\n";
+
+	ostr << "Output format                : ";
+	switch (Params.output_type)
+	{
+	case OutputType::KFF:
+		ostr << "KFF\n";
+		break;
+	case OutputType::KMCDB:
+		ostr << "KMCDB\n";
+		break;
+	case OutputType::KMC:
+		ostr << "KMC\n";
+		break;
+	}
+
 	ostr << "\n******* Stage 2 configuration: *******\n";
 
 	ostr << "No. of threads               : " << Params.n_sorters << "\n";
@@ -682,6 +687,9 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsSmallKOpt()
 	{
 	case OutputType::KFF:
 		ostr << "KFF\n";
+		break;
+	case OutputType::KMCDB:
+		ostr << "KMCDB\n";
 		break;
 	case OutputType::KMC:
 		ostr << "KMC\n";
@@ -1534,7 +1542,7 @@ template <unsigned SIZE> KMC::Stage2Results CKMC<SIZE>::ProcessStage2_impl()
 	// Adjust RAM for 2nd stage
 	// Calculate LUT size
 
-	if (Params.output_type == OutputType::KMC)
+	if (Params.output_type == OutputType::KMC || Params.output_type == OutputType::KMCDB)
 	{
 		uint64_t n_est_unique_kmers = 4 * n_reads;
 

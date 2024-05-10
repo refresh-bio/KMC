@@ -108,8 +108,8 @@ public:
 	CMmer(uint32_t _len);
 	inline void insert(uchar symb);
 	inline uint32_t get() const;
-	inline bool operator==(const CMmer& x);
-	inline bool operator<(const CMmer& x);
+	inline bool operator==(const CMmer& x) const;
+	inline bool operator<(const CMmer& x) const;
 	inline void clear();
 	inline bool operator<=(const CMmer& x);
 	inline void set(const CMmer& x);
@@ -136,13 +136,13 @@ inline uint32_t CMmer::get() const
 }
 
 //--------------------------------------------------------------------------
-inline bool CMmer::operator==(const CMmer& x)
+inline bool CMmer::operator==(const CMmer& x) const
 {
 	return current_val == x.current_val;
 }
 
 //--------------------------------------------------------------------------
-inline bool CMmer::operator<(const CMmer& x)
+inline bool CMmer::operator<(const CMmer& x) const
 {
 	return current_val < x.current_val;
 }

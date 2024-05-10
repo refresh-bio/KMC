@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <iomanip>
+#include <random>
 
 using namespace std;
 
@@ -158,11 +159,13 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		{
 			if (strncmp(argv[i] + 2, "kff", 3) == 0)
 				stage2Params.SetOutputFileType(KMC::OutputFileType::KFF);
+			else if (strncmp(argv[i] + 2, "kmcdb", 5) == 0)
+				stage2Params.SetOutputFileType(KMC::OutputFileType::KMCDB);
 			else if (strncmp(argv[i] + 2, "kmc", 3) == 0)
 				stage2Params.SetOutputFileType(KMC::OutputFileType::KMC);
 			else
 			{
-				std::cerr << "Error: unsupported output type: " << argv[i] << " (use -okff or -okmc)\n";
+				std::cerr << "Error: unsupported output type: " << argv[i] << " (use -okff or -okmc or -okmcdb)\n";
 				exit(1);
 			}
 		}
@@ -310,7 +313,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 				input_file_names.push_back(s);
 
 		in.close();
-		std::random_shuffle(input_file_names.begin(), input_file_names.end());
+		std::shuffle(input_file_names.begin(), input_file_names.end(), std::mt19937{});
 	}
 	stage1Params.SetInputFiles(input_file_names);
 
@@ -328,18 +331,39 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	
 	//Check if output files may be created and if it is possible to create file in specified tmp location
 	if (!stage2Params.GetWithoutOutput())
-	{		
-		string pre_file_name = stage2Params.GetOutputFileName() + ".kmc_pre";
-		string suff_file_name = stage2Params.GetOutputFileName() + ".kmc_suf";
-		if (!CanCreateFile(pre_file_name))
+	{
+		if (stage2Params.GetOutputFileType() == KMC::OutputFileType::KMC)
 		{
-			cerr << "Error: Cannot create file: " << pre_file_name << "\n";
-			return false;
+			string pre_file_name = stage2Params.GetOutputFileName() + ".kmc_pre";
+			string suff_file_name = stage2Params.GetOutputFileName() + ".kmc_suf";
+			if (!CanCreateFile(pre_file_name))
+			{
+				cerr << "Error: Cannot create file: " << pre_file_name << "\n";
+				return false;
+			}
+			if (!CanCreateFile(suff_file_name))
+			{
+				cerr << "Error: Cannot create file: " << suff_file_name << "\n";
+				return false;
+			}
 		}
-		if (!CanCreateFile(suff_file_name))
+		else if (stage2Params.GetOutputFileType() == KMC::OutputFileType::KFF)
 		{
-			cerr << "Error: Cannot create file: " << suff_file_name << "\n";
-			return false;
+			string file_name = stage2Params.GetOutputFileName() + ".kff";
+			if (!CanCreateFile(file_name))
+			{
+				cerr << "Error: Cannot create file: " << file_name << "\n";
+				return false;
+			}
+		}
+		else if (stage2Params.GetOutputFileType() == KMC::OutputFileType::KMCDB)
+		{
+			string file_name = stage2Params.GetOutputFileName() + ".kmcdb";
+			if (!CanCreateFile(file_name))
+			{
+				cerr << "Error: Cannot create file: " << file_name << "\n";
+				return false;
+			}
 		}
 	}
 	if (!CanCreateFileInPath(stage1Params.GetTmpPath()))

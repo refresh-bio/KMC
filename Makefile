@@ -12,6 +12,7 @@ KMC_API_DIR = kmc_api
 KMC_DUMP_DIR = kmc_dump
 KMC_TOOLS_DIR = kmc_tools
 PY_KMC_API_DIR = py_kmc_api
+KMCDB_DIR = ../x/kmcdb
 
 OUT_BIN_DIR = bin
 OUT_INCLUDE_DIR = include
@@ -69,9 +70,9 @@ else
 endif
 
 
-CFLAGS	= -Wall -O3 -fsigned-char $(CPU_FLAGS) $(STATIC_CFLAGS) -std=c++14
-CLINK	= -lm $(STATIC_LFLAGS) -O3 -std=c++14
-PY_KMC_API_CFLAGS = $(PY_FLAGS) -Wall -shared -std=c++14 -O3
+CFLAGS	= -Wall -O3 -fsigned-char $(CPU_FLAGS) $(STATIC_CFLAGS) -std=c++20
+CLINK	= -lm $(STATIC_LFLAGS) -O3 -std=c++20
+PY_KMC_API_CFLAGS = $(PY_FLAGS) -Wall -shared -std=c++20 -O3
 
 KMC_CLI_OBJS = \
 $(KMC_CLI_DIR)/kmc.o
@@ -148,7 +149,7 @@ $(LIB_ZLIB):
 	cd 3rd_party/cloudflare; ./configure; make libz.a
 
 $(KMC_CLI_OBJS) $(KMC_CORE_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS) $(KFF_OBJS) $(KMC_TOOLS_OBJS): %.o: %.cpp
-	$(CC) $(CFLAGS) -I 3rd_party/cloudflare -c $< -o $@
+	$(CC) $(CFLAGS) -I 3rd_party/cloudflare -I $(KMCDB_DIR) -c $< -o $@
 
 $(KMC_MAIN_DIR)/raduls_sse2.o: $(KMC_MAIN_DIR)/raduls_sse2.cpp
 	$(CC) $(CFLAGS) -msse2 -c $< -o $@
@@ -182,7 +183,7 @@ kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS) $(LIB_ZLIB)
 	$(CC) $(CLINK) -I 3rd_party/cloudflare -o $(OUT_BIN_DIR)/$@ $^
 
 $(PY_KMC_API_DIR)/%.o: $(KMC_API_DIR)/%.cpp
-	$(CC) -c -fPIC -Wall -O3 $(CPU_FLAGS) -std=c++14 $^ -o $@
+	$(CC) -c -fPIC -Wall -O3 $(CPU_FLAGS) -std=c++20 $^ -o $@
 
 py_kmc_api: $(PY_KMC_API_OBJS) $(PY_KMC_API_OBJS)
 	-mkdir -p $(OUT_BIN_DIR)
