@@ -70,7 +70,11 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 
 	//mkokot_TODO: this should be checked at parameter parsing stage, but for simplicity and to implement faster
 	if (output_type == OutputType::KMCDB && need_to_store_sig_to_bin_mapping())
-		throw std::runtime_error("Signature mapping cannot be stored in KMCDB format");
+	{
+		//throw std::runtime_error("Signature mapping cannot be stored in KMCDB format");
+		std::cerr << "Signature mapping cannot be stored in KMCDB format\n";
+		exit(1); // z jakiegos powodu moja obsluga wyjatkow zle dziala i nie zatrzymywalo calej aplikacji... masakra...
+	}
 
 	if (output_type == OutputType::KMC && need_to_store_sig_to_bin_mapping())
 	{
@@ -81,7 +85,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 	}
 	
 	counter_size = calc_counter_size(cutoff_max, counter_max);
-	
+
 	if (!without_output)
 	{
 		if(output_type == OutputType::KMC)
@@ -261,7 +265,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 			}
 			++lut_pos;
 		}
-	}		
+	}
 }
 
 //----------------------------------------------------------------------------------
