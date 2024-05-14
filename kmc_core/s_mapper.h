@@ -335,7 +335,7 @@ public:
 		
 	}
 
-	inline int32 get_bin_id(uint32 min_hash)
+	inline int32 get_bin_id(uint64 min_hash)
 	{
 		return min_hash % n_bins; //mkokot_TODO: i n_bins is power of 2 we can do this better
 	}

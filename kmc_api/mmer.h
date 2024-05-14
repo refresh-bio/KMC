@@ -208,7 +208,7 @@ class CMmerMinHash
 	uint32_t str;
 	uint32_t rev;
 	uint32_t mask;
-	uint32_t current_hash;
+	uint64_t current_hash;
 public:
 	explicit CMmerMinHash(uint32_t len) :
 		len(len),
@@ -228,7 +228,7 @@ public:
 		//current_hash = MurMur64Hash{}(MIN(str, rev)) & mask; //mkokot_TODO: should I "& mask" ?
 		current_hash = MurMur64Hash{}(MIN(str, rev)); //mkokot_TODO: should I "& mask" ?
 	}
-	inline uint32_t get() const {
+	inline uint64_t get() const {
 		return current_hash;
 	}
 	inline bool operator==(const CMmerMinHash& x) const {
