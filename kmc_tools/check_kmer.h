@@ -160,7 +160,7 @@ class CKmerCheck
 						min_mmr = cur_mmr;
 				}
 
-				uint32 signature = min_mmr.get();
+				auto signature = min_mmr.get();
 				//mkokot_TODO: this is to be checked if works!!!!
 				uint32 prefix_array = header.bin_id_to_pos[signature % header.no_of_bins];
 

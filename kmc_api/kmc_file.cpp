@@ -41,6 +41,7 @@ bool CKMCFile::OpenForRA(const std::string &file_name)
 
 	sufix_file_buf = new uchar[size];
 	result = file_suf.Read(sufix_file_buf, 1, size);
+
 	if (result != size)
 		return false;
 
@@ -308,10 +309,12 @@ bool CKMCFile::ReadParamsFrom_prefix_file_buf(uint64 &size, open_mode _open_mode
 
 			prefix_file_buf[last_data_index] = total_kmers + 1; //I think + 1 if wrong, but due to the implementation of binary search it does not matter, it was here in kmc 0.3 and I leave it this way just in case...
 
-			result = file_pre.Read(signature_map, 1, signature_map_size * sizeof(uint32));
-			if (result == 0)
-				return false;
-
+			if (signature_selection_scheme == KMC::SignatureSelectionScheme::KMC)
+			{
+				result = file_pre.Read(signature_map, 1, signature_map_size * sizeof(uint32));
+				if (result == 0)
+					return false;
+			}
 			file_pre.Close();
 		}
 		else if (_open_mode == opened_for_listing)
@@ -498,6 +501,7 @@ bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint32 &count)
 	{
 		uint32 signature = kmer.get_signature(signature_len, signature_selection_scheme);
 		uint32 bin_start_pos = signature_map[signature];
+
 		bin_start_pos *= single_LUT_size;				
 		//look into the array with data
 		index_start = *(prefix_file_buf + bin_start_pos + pattern_prefix_value);
@@ -541,7 +545,16 @@ bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint64 &count)
 	if (kmc_version == 0x201)
 	{
 		uint32 signature = kmer.get_signature(signature_len, signature_selection_scheme);
-		uint32 bin_start_pos = signature_map[signature];
+		uint32 bin_start_pos;
+		if (signature_selection_scheme == KMC::SignatureSelectionScheme::KMC)
+			bin_start_pos = signature_map[signature];
+		else
+		{
+			bin_start_pos = bin_id_to_pos[signature % n_bins];
+			//bin_start_pos = signature % n_bins;
+			//std::cerr << (signature % n_bins) << "\t" << bin_id_to_pos[signature % n_bins] << "\n";
+		}
+
 		bin_start_pos *= single_LUT_size;
 		//look into the array with data
 		index_start = *(prefix_file_buf + bin_start_pos + pattern_prefix_value);
