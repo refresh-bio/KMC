@@ -1285,6 +1285,24 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessOnlyEstimateHisto
 template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 {
 	CStopWatch timer_stage1;
+	if (Params.output_type == KMC::OutputFileType::KMCDB && !Params.without_output)
+	{
+		kmcdb::Config config;
+		kmcdb::ConfigSortedWithLUT representation_config;
+		representation_config.lut_prefix_len = Params.lut_prefix_len;
+		config.kmer_len = Params.kmer_len;
+		config.num_bins = Params.n_bins;
+
+		config.num_bytes_single_value = { calc_counter_size(Params.cutoff_max, Params.counter_max) };
+		Queues.kmcdb_writer = std::make_unique<kmcdb::WriterSortedWithLUTRaw<uint64_t>>(
+			config,
+			representation_config,
+			Params.output_file_name + ".kmcdb");
+
+		//mkokot_TODO: probably should be possible to turn off with parameters!!!!
+		Queues.kmcdb_writer->CaptureStdCout(true);
+		Queues.kmcdb_writer->CaptureStdCerr(true);
+	}
 	timer_stage1.startTimer();
 	KMC::Stage1Results results{};
 	if (!initialized)

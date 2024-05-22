@@ -14,7 +14,6 @@
 #include "params.h"
 #include "kmer.h"
 #include "radix.h"
-#include "kmcdb.h"
 #include <string>
 #include <algorithm>
 #include <numeric>
@@ -62,7 +61,7 @@ class CKmerBinCompleter
 	bool without_output;
 	bool store_uint(FILE *out, uint64 x, uint32 size);
 	std::unique_ptr<CKFFWriter> kff_writer;
-	std::unique_ptr<kmcdb::WriterSortedWithLUTRaw<uint64_t>> kmcdb_writer;
+	kmcdb::WriterSortedWithLUTRaw<uint64_t>* kmcdb_writer{};
 	OutputType output_type;
 
 	bool need_to_store_sig_to_bin_mapping() const

@@ -52,7 +52,9 @@ CKmerBinCompleter::CKmerBinCompleter(CKMCParams &Params, CKMCQueues &Queues)
 
 	kmer_t_size    = Params.KMER_T_size;
 
-	output_type = Params.output_type;		
+	output_type = Params.output_type;
+
+	kmcdb_writer = Queues.kmcdb_writer.get();
 }
 
 
@@ -88,7 +90,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 
 	if (!without_output)
 	{
-		if(output_type == OutputType::KMC)
+		if (output_type == OutputType::KMC)
 		{
 			// Open output file
 			out_kmer = fopen(kmer_file_name.c_str(), "wb");
@@ -114,7 +116,9 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		}
 		else if (output_type == KMC::OutputFileType::KMCDB)
 		{
-			kmcdb::Config config;
+			//set in ctor
+			//mkokot_TODO: remove commented
+			/*kmcdb::Config config;
 			kmcdb::ConfigSortedWithLUT representation_config;
 			representation_config.lut_prefix_len = lut_prefix_len;
 			config.kmer_len = kmer_len;
@@ -123,7 +127,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 			kmcdb_writer = std::make_unique<kmcdb::WriterSortedWithLUTRaw<uint64_t>>(
 				config,
 				representation_config,
-				file_name + ".kmcdb");
+				file_name + ".kmcdb");*/
 		}
 		else
 		{

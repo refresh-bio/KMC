@@ -14,12 +14,15 @@
 #include "defs.h"
 #include "kmc_runner.h"
 #include "queues.h"
+#include "kmcdb.h"
 #include "s_mapper.h"
 #include <vector>
 #include <string>
 #include <memory>
+
 #include "libs/ntHash/ntHashWrapper.h"
 #include "tmp_files_owner.h"
+
 
 using InputType = KMC::InputFileType;
 using OutputType = KMC::OutputFileType;
@@ -194,6 +197,9 @@ struct CKMCQueues
 	std::unique_ptr<CntHashEstimator> ntHashEstimator;
 
 	std::unique_ptr<CTmpFilesOwner> tmp_files_owner;
+
+	//if the output format is kmcdb
+	std::unique_ptr<kmcdb::WriterSortedWithLUTRaw<uint64_t>> kmcdb_writer;
 };
 
 #endif
