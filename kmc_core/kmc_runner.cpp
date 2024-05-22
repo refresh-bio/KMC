@@ -186,6 +186,21 @@ namespace KMC
 		this->tmpPath = tmpPath;
 		return *this;
 	}
+	Stage1Params& Stage1Params::SetOutputFileName(const std::string& outputFileName)
+	{
+		this->outputFileName = outputFileName;
+		return *this;
+	}
+	Stage1Params& Stage1Params::SetOutputFileType(OutputFileType outputFileType)
+	{
+		this->outputFileType = outputFileType;
+		return *this;
+	}
+	Stage1Params& Stage1Params::SetWithoutOutput(bool withoutOutput)
+	{
+		this->withoutOutput = withoutOutput;
+		return *this;
+	}
 	Stage1Params& Stage1Params::SetKmerLen(uint32_t kmerLen)
 	{
 		if (kmerLen < MIN_K || kmerLen > MAX_K)
@@ -391,22 +406,25 @@ namespace KMC
 	{
 		this->cutoffMax = cutoffMax;
 		return *this;
-	}	
-	Stage2Params& Stage2Params::SetOutputFileName(const std::string& outputFileName)
-	{
-		this->outputFileName = outputFileName;
-		return *this;
 	}
-	Stage2Params& Stage2Params::SetOutputFileType(OutputFileType outputFileType)
-	{
-		this->outputFileType = outputFileType;
-		return *this;
-	}
-	Stage2Params& Stage2Params::SetWithoutOutput(bool withoutOutput)
-	{
-		this->withoutOutput = withoutOutput;
-		return *this;
-	}	
+	//mkokot_TODO: move to stage1, because we want to create kmcdb writer
+	//Stage2Params& Stage2Params::SetOutputFileName(const std::string& outputFileName)
+	//{
+	//	this->outputFileName = outputFileName;
+	//	return *this;
+	//}
+	//mkokot_TODO: move to stage1, because we want to create kmcdb writer
+	//Stage2Params& Stage2Params::SetOutputFileType(OutputFileType outputFileType)
+	//{
+	//	this->outputFileType = outputFileType;
+	//	return *this;
+	//}
+	//mkokot_TODO: move to stage1, because we want to create kmcdb writer
+	//Stage2Params& Stage2Params::SetWithoutOutput(bool withoutOutput)
+	//{
+	//	this->withoutOutput = withoutOutput;
+	//	return *this;
+	//}
 	Stage2Params& Stage2Params::SetStrictMemoryNSortingThreadsPerSorters(uint32_t strictMemoryNSortingThreadsPerSorters)
 	{
 		if (strictMemoryNSortingThreadsPerSorters < MIN_SMSO || strictMemoryNSortingThreadsPerSorters > MAX_SMSO)

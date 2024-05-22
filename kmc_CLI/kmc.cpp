@@ -158,11 +158,11 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		else if (strncmp(argv[i], "-o", 2) == 0)
 		{
 			if (strncmp(argv[i] + 2, "kff", 3) == 0)
-				stage2Params.SetOutputFileType(KMC::OutputFileType::KFF);
+				stage1Params.SetOutputFileType(KMC::OutputFileType::KFF);
 			else if (strncmp(argv[i] + 2, "kmcdb", 5) == 0)
-				stage2Params.SetOutputFileType(KMC::OutputFileType::KMCDB);
+				stage1Params.SetOutputFileType(KMC::OutputFileType::KMCDB);
 			else if (strncmp(argv[i] + 2, "kmc", 3) == 0)
-				stage2Params.SetOutputFileType(KMC::OutputFileType::KMC);
+				stage1Params.SetOutputFileType(KMC::OutputFileType::KMC);
 			else
 			{
 				std::cerr << "Error: unsupported output type: " << argv[i] << " (use -okff or -okmc or -okmcdb)\n";
@@ -274,7 +274,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 			stage1Params.SetOnlyGenerateSigToBinMapping(&argv[i][strlen("--only-generate-sig-to-bin-mapping")]);
 		}
 		else if (strncmp(argv[i], "-w", 2) == 0)
-			stage2Params.SetWithoutOutput(true);			
+			stage1Params.SetWithoutOutput(true);
 
 		if (strncmp(argv[i], "-smso", 5) == 0)
 			stage2Params.SetStrictMemoryNSortingThreadsPerSorters(atoi(&argv[i][5]));		
@@ -292,7 +292,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	if (stage1Params.GetEstimateHistogramCfg() == KMC::EstimateHistogramCfg::ONLY_ESTIMATE)
 		cliParams.estimatedHistogramFileName = argv[i++];
 	else
-		stage2Params.SetOutputFileName(argv[i++]);
+		stage1Params.SetOutputFileName(argv[i++]);
 	stage1Params.SetTmpPath(argv[i++]);
 
 	std::vector<std::string> input_file_names;	
@@ -330,12 +330,12 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 	}
 	
 	//Check if output files may be created and if it is possible to create file in specified tmp location
-	if (!stage2Params.GetWithoutOutput())
+	if (!stage1Params.GetWithoutOutput())
 	{
-		if (stage2Params.GetOutputFileType() == KMC::OutputFileType::KMC)
+		if (stage1Params.GetOutputFileType() == KMC::OutputFileType::KMC)
 		{
-			string pre_file_name = stage2Params.GetOutputFileName() + ".kmc_pre";
-			string suff_file_name = stage2Params.GetOutputFileName() + ".kmc_suf";
+			string pre_file_name = stage1Params.GetOutputFileName() + ".kmc_pre";
+			string suff_file_name = stage1Params.GetOutputFileName() + ".kmc_suf";
 			if (!CanCreateFile(pre_file_name))
 			{
 				cerr << "Error: Cannot create file: " << pre_file_name << "\n";
@@ -347,18 +347,18 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 				return false;
 			}
 		}
-		else if (stage2Params.GetOutputFileType() == KMC::OutputFileType::KFF)
+		else if (stage1Params.GetOutputFileType() == KMC::OutputFileType::KFF)
 		{
-			string file_name = stage2Params.GetOutputFileName() + ".kff";
+			string file_name = stage1Params.GetOutputFileName() + ".kff";
 			if (!CanCreateFile(file_name))
 			{
 				cerr << "Error: Cannot create file: " << file_name << "\n";
 				return false;
 			}
 		}
-		else if (stage2Params.GetOutputFileType() == KMC::OutputFileType::KMCDB)
+		else if (stage1Params.GetOutputFileType() == KMC::OutputFileType::KMCDB)
 		{
-			string file_name = stage2Params.GetOutputFileName() + ".kmcdb";
+			string file_name = stage1Params.GetOutputFileName() + ".kmcdb";
 			if (!CanCreateFile(file_name))
 			{
 				cerr << "Error: Cannot create file: " << file_name << "\n";

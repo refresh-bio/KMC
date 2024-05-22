@@ -136,6 +136,9 @@ namespace KMC
 		
 		std::vector<std::string> inputFiles;
 		std::string tmpPath = ".";
+		std::string outputFileName;
+		OutputFileType outputFileType = OutputFileType::KMC;
+		bool withoutOutput = false;
 		uint32_t kmerLen = 25;
 		uint32_t nThreads = std::thread::hardware_concurrency();
 		uint32_t maxRamGB = 12;
@@ -164,6 +167,9 @@ namespace KMC
 	public:
 		Stage1Params& SetInputFiles(const std::vector<std::string>& inputFiles);
 		Stage1Params& SetTmpPath(const std::string& tmpPath);
+		Stage1Params& SetOutputFileName(const std::string& outputFileName);
+		Stage1Params& SetOutputFileType(OutputFileType outputFileType);
+		Stage1Params& SetWithoutOutput(bool withoutOutput);
 		Stage1Params& SetKmerLen(uint32_t kmerLen);
 		Stage1Params& SetNThreads(uint32_t nThreads);
 		Stage1Params& SetMaxRamGB(uint32_t maxRamGB);
@@ -192,6 +198,9 @@ namespace KMC
 
 		const std::vector<std::string>& GetInputFiles() const noexcept { return inputFiles; }
 		const std::string& GetTmpPath() const noexcept { return tmpPath; }
+		const std::string& GetOutputFileName() const noexcept { return outputFileName; }
+		OutputFileType GetOutputFileType() const noexcept { return outputFileType; }
+		bool GetWithoutOutput() const noexcept { return withoutOutput; }
 		uint32_t  GetKmerLen() const noexcept { return kmerLen; }
 		uint32_t GetNThreads() const noexcept { return nThreads; }
 		uint32_t GetMaxRamGB() const noexcept { return maxRamGB; }
@@ -229,9 +238,9 @@ namespace KMC
 		uint64_t cutoffMin = 2;
 		uint64_t counterMax = 255;
 		uint64_t cutoffMax = 1000000000;		
-		std::string outputFileName;
-		OutputFileType outputFileType = OutputFileType::KMC;
-		bool withoutOutput = false;
+		//std::string outputFileName; //mkokot_TODO: move to stage1, because we want to create kmcdb writer
+		//OutputFileType outputFileType = OutputFileType::KMC; //mkokot_TODO: move to stage1, because we want to create kmcdb writer
+		//bool withoutOutput = false; //mkokot_TODO: move to stage1, because we want to create kmcdb writer
 		uint32_t strictMemoryNSortingThreadsPerSorters = 0;
 		uint32_t strictMemoryNUncompactors = 0;
 		uint32_t strictMemoryNMergers = 0;
@@ -244,9 +253,9 @@ namespace KMC
 		Stage2Params& SetCutoffMin(uint64_t cutoffMin);
 		Stage2Params& SetCounterMax(uint64_t counterMax);
 		Stage2Params& SetCutoffMax(uint64_t cutoffMax);		
-		Stage2Params& SetOutputFileName(const std::string& outputFileName);
-		Stage2Params& SetOutputFileType(OutputFileType outputFileType);
-		Stage2Params& SetWithoutOutput(bool withoutOutput);		
+		//Stage2Params& SetOutputFileName(const std::string& outputFileName); //mkokot_TODO: move to stage1, because we want to create kmcdb writer
+		//Stage2Params& SetOutputFileType(OutputFileType outputFileType); //mkokot_TODO: move to stage1, because we want to create kmcdb writer
+		//Stage2Params& SetWithoutOutput(bool withoutOutput); //mkokot_TODO: move to stage1, because we want to create kmcdb writer
 		Stage2Params& SetStrictMemoryNSortingThreadsPerSorters(uint32_t strictMemoryNSortingThreadsPerSorters);
 		Stage2Params& SetStrictMemoryNUncompactors(uint32_t strictMemoryNUncompactors);
 		Stage2Params& SetStrictMemoryNMergers(uint32_t strictMemoryNMergers);
@@ -257,9 +266,9 @@ namespace KMC
 		uint64_t GetCutoffMin() const noexcept { return cutoffMin; }
 		uint64_t GetCounterMax() const noexcept { return counterMax; }
 		uint64_t GetCutoffMax() const noexcept { return cutoffMax; }
-		const std::string& GetOutputFileName() const noexcept { return outputFileName; }
-		OutputFileType GetOutputFileType() const noexcept { return outputFileType; }
-		bool GetWithoutOutput() const noexcept { return withoutOutput; }
+		//const std::string& GetOutputFileName() const noexcept { return outputFileName; } //mkokot_TODO: move to stage1, because we want to create kmcdb writer
+		//OutputFileType GetOutputFileType() const noexcept { return outputFileType; } //mkokot_TODO: move to stage1, because we want to create kmcdb writer
+		//bool GetWithoutOutput() const noexcept { return withoutOutput; } //mkokot_TODO: move to stage1, because we want to create kmcdb writer
 		uint32_t GetStrictMemoryNSortingThreadsPerSorters() const noexcept { return strictMemoryNSortingThreadsPerSorters; }
 		uint32_t GetStrictMemoryNUncompactors() const noexcept { return strictMemoryNUncompactors; }
 		uint32_t GetStrictMemoryNMergers() const noexcept { return strictMemoryNMergers; }

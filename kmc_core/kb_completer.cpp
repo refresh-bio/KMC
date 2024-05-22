@@ -116,6 +116,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		}
 		else if (output_type == KMC::OutputFileType::KMCDB)
 		{
+			kmcdb_writer->ChangeLutPrefixLen(lut_prefix_len);
 			//set in ctor
 			//mkokot_TODO: remove commented
 			/*kmcdb::Config config;

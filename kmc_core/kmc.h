@@ -129,6 +129,9 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 {
 	Params.input_file_names = stage1Params.GetInputFiles();
 	Params.working_directory = stage1Params.GetTmpPath();
+	Params.output_type = stage1Params.GetOutputFileType();
+	Params.output_file_name = stage1Params.GetOutputFileName();
+	Params.without_output = stage1Params.GetWithoutOutput();
 	Params.kmer_len = stage1Params.GetKmerLen();
 	Params.file_type = stage1Params.GetInputFileType();
 	Params.n_bins = stage1Params.GetNBins();
@@ -230,9 +233,6 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 // Set params of the second stage of k-mer counter
 template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage2(const KMC::Stage2Params& stage2Params)
 {
-	Params.output_type = stage2Params.GetOutputFileType();
-	Params.output_file_name = stage2Params.GetOutputFileName();
-
 	// Thresholds for counters
 	Params.cutoff_min = stage2Params.GetCutoffMin();
 	Params.cutoff_max = stage2Params.GetCutoffMax();
@@ -263,7 +263,6 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage2(const KMC::Stage2Param
 		Params.warningsLogger->Log(ostr.str());
 	}
 
-	Params.without_output = stage2Params.GetWithoutOutput();
 	Params.use_strict_mem = stage2Params.GetStrictMemoryMode();
 
 	Params.max_mem_size = NORM(((uint64)stage2Params.GetMaxRamGB()) * 1000000000ull, (uint64)MIN_MEM * 1000000000ull, 1024ull * 1000000000ull);
@@ -1289,7 +1288,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 	{
 		kmcdb::Config config;
 		kmcdb::ConfigSortedWithLUT representation_config;
-		representation_config.lut_prefix_len = Params.lut_prefix_len;
+		representation_config.lut_prefix_len = std::numeric_limits<uint64_t>::max(); //unknow yet, will be overriden when determined
 		config.kmer_len = Params.kmer_len;
 		config.num_bins = Params.n_bins;
 
@@ -1300,6 +1299,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 			Params.output_file_name + ".kmcdb");
 
 		//mkokot_TODO: probably should be possible to turn off with parameters!!!!
+		//mkokot_TODO: maybe this should be a part of config... although in this mode we may enable disable this when desired
 		Queues.kmcdb_writer->CaptureStdCout(true);
 		Queues.kmcdb_writer->CaptureStdCerr(true);
 	}
