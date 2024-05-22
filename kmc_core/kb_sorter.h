@@ -1046,7 +1046,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKxmers()
 							else
 							{
 								std::ostringstream ostr;
-								ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+								ostr << "Error: not implemented, please contact authors showing this message" << __FILE__ << "\t" << __LINE__;
 								CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 							}
 						}
@@ -1091,7 +1091,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKxmers()
 					else
 					{
 						std::ostringstream ostr;
-						ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+						ostr << "Error: not implemented, please contact authors showing this message" << __FILE__ << "\t" << __LINE__;
 						CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 					}
 				}
@@ -1208,7 +1208,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKmers()
 						else
 						{
 							std::ostringstream ostr;
-							ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+							ostr << "Error: not implemented, please contact authors showing this message" << __FILE__ << "\t" << __LINE__;
 							CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 						}
 					}
@@ -1254,7 +1254,7 @@ template <unsigned SIZE> void CKmerBinSorter<SIZE>::CompactKmers()
 				else
 				{
 					std::ostringstream ostr;
-					ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+					ostr << "Error: not implemented, please contact authors showing this message" << __FILE__ << "\t" << __LINE__;
 					CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 				}
 			}

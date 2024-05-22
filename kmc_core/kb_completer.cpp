@@ -128,7 +128,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		else
 		{
 			std::ostringstream ostr;
-			ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+			ostr << "Error: not implemented, please contact authors showing this message" << __FILE__ << "\t" << __LINE__;
 			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 	}
@@ -209,7 +209,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 			else
 			{
 				std::ostringstream ostr;
-				ostr << "Error: not implemented, plase contact authors showing this message" << __FILE__ << "\t" << __LINE__;
+				ostr << "Error: not implemented, please contact authors showing this message" << __FILE__ << "\t" << __LINE__;
 				CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 			}
 			

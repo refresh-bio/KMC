@@ -368,7 +368,7 @@ void CFastqReader::ProcessBam()
 		else
 		{
 			std::ostringstream ostr;
-			ostr << "Error: should never be here, plase contact authors, CODE: FastqReader_" << __LINE__;
+			ostr << "Error: should never be here, please contact authors, CODE: FastqReader_" << __LINE__;
 			CCriticalErrorHandler::Inst().HandleCriticalError(ostr.str());
 		}
 	}
