@@ -72,13 +72,13 @@ KMC_CXXFLAGS="-march=armv8-a+simd"
 else
 AX_GCC_X86_CPU_SUPPORTS([avx2], 
 			[have_avx2=true
-			 KMC_CXXFLAGS="-m64 -mavx2"],
+			 KMC_CXXFLAGS="-mavx2"],
 			[AX_GCC_X86_CPU_SUPPORTS([avx],
 						 [have_avx=true
-						  KMC_CXXFLAGS="-m64 -mavx"],
+						  KMC_CXXFLAGS="-mavx"],
 						 [AX_GCC_X86_CPU_SUPPORTS([sse4.1],
 									  [have_sse41=true
-									   KMC_CXXFLAGS="-m64 -msse4.1"],
+									   KMC_CXXFLAGS="-msse4.1"],
 									  [AC_MSG_ERROR([*** Requires AVX2, AVX, or SSE4.1 instructions available on x86_64])])])])
 fi
 AM_CONDITIONAL([HAVE_NEON], [$have_neon])
