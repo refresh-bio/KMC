@@ -137,6 +137,9 @@ namespace KMC
 		std::vector<std::string> inputFiles;
 		std::string tmpPath = ".";
 		std::string outputFileName;
+		uint64_t cutoffMin = 2;
+		uint64_t counterMax = 255;
+		uint64_t cutoffMax = 1000000000;
 		OutputFileType outputFileType = OutputFileType::KMC;
 		bool withoutOutput = false;
 		uint32_t kmerLen = 25;
@@ -168,6 +171,9 @@ namespace KMC
 		Stage1Params& SetInputFiles(const std::vector<std::string>& inputFiles);
 		Stage1Params& SetTmpPath(const std::string& tmpPath);
 		Stage1Params& SetOutputFileName(const std::string& outputFileName);
+		Stage1Params& SetCutoffMin(uint64_t cutoffMin);
+		Stage1Params& SetCounterMax(uint64_t counterMax);
+		Stage1Params& SetCutoffMax(uint64_t cutoffMax);
 		Stage1Params& SetOutputFileType(OutputFileType outputFileType);
 		Stage1Params& SetWithoutOutput(bool withoutOutput);
 		Stage1Params& SetKmerLen(uint32_t kmerLen);
@@ -199,6 +205,9 @@ namespace KMC
 		const std::vector<std::string>& GetInputFiles() const noexcept { return inputFiles; }
 		const std::string& GetTmpPath() const noexcept { return tmpPath; }
 		const std::string& GetOutputFileName() const noexcept { return outputFileName; }
+		uint64_t GetCutoffMin() const noexcept { return cutoffMin; }
+		uint64_t GetCounterMax() const noexcept { return counterMax; }
+		uint64_t GetCutoffMax() const noexcept { return cutoffMax; }
 		OutputFileType GetOutputFileType() const noexcept { return outputFileType; }
 		bool GetWithoutOutput() const noexcept { return withoutOutput; }
 		uint32_t  GetKmerLen() const noexcept { return kmerLen; }
@@ -235,9 +244,9 @@ namespace KMC
 		uint32_t maxRamGB = 12;
 		uint32_t nThreads = std::thread::hardware_concurrency();
 		bool strictMemoryMode = false;
-		uint64_t cutoffMin = 2;
-		uint64_t counterMax = 255;
-		uint64_t cutoffMax = 1000000000;		
+		//uint64_t cutoffMin = 2; //mkokot_TODO: move to stage1 for compatibility with cutoffMax
+		//uint64_t counterMax = 255; //mkokot_TODO: move to stage1, because we want to create kmcdb writer
+		//uint64_t cutoffMax = 1000000000; //mkokot_TODO: move to stage1, because we want to create kmcdb writer
 		//std::string outputFileName; //mkokot_TODO: move to stage1, because we want to create kmcdb writer
 		//OutputFileType outputFileType = OutputFileType::KMC; //mkokot_TODO: move to stage1, because we want to create kmcdb writer
 		//bool withoutOutput = false; //mkokot_TODO: move to stage1, because we want to create kmcdb writer
@@ -250,9 +259,9 @@ namespace KMC
 		Stage2Params& SetMaxRamGB(uint32_t maxRamGB);
 		Stage2Params& SetNThreads(uint32_t nThreads);
 		Stage2Params& SetStrictMemoryMode(bool strictMemoryMode);
-		Stage2Params& SetCutoffMin(uint64_t cutoffMin);
-		Stage2Params& SetCounterMax(uint64_t counterMax);
-		Stage2Params& SetCutoffMax(uint64_t cutoffMax);		
+		//Stage2Params& SetCutoffMin(uint64_t cutoffMin);
+		//Stage2Params& SetCounterMax(uint64_t counterMax);
+		//Stage2Params& SetCutoffMax(uint64_t cutoffMax);
 		//Stage2Params& SetOutputFileName(const std::string& outputFileName); //mkokot_TODO: move to stage1, because we want to create kmcdb writer
 		//Stage2Params& SetOutputFileType(OutputFileType outputFileType); //mkokot_TODO: move to stage1, because we want to create kmcdb writer
 		//Stage2Params& SetWithoutOutput(bool withoutOutput); //mkokot_TODO: move to stage1, because we want to create kmcdb writer
@@ -263,9 +272,9 @@ namespace KMC
 		uint32_t GetMaxRamGB() const noexcept { return maxRamGB; }
 		uint32_t GetNThreads() const noexcept { return nThreads; }
 		bool GetStrictMemoryMode() const noexcept { return strictMemoryMode; }
-		uint64_t GetCutoffMin() const noexcept { return cutoffMin; }
-		uint64_t GetCounterMax() const noexcept { return counterMax; }
-		uint64_t GetCutoffMax() const noexcept { return cutoffMax; }
+		//uint64_t GetCutoffMin() const noexcept { return cutoffMin; }
+		//uint64_t GetCounterMax() const noexcept { return counterMax; }
+		//uint64_t GetCutoffMax() const noexcept { return cutoffMax; }
 		//const std::string& GetOutputFileName() const noexcept { return outputFileName; } //mkokot_TODO: move to stage1, because we want to create kmcdb writer
 		//OutputFileType GetOutputFileType() const noexcept { return outputFileType; } //mkokot_TODO: move to stage1, because we want to create kmcdb writer
 		//bool GetWithoutOutput() const noexcept { return withoutOutput; } //mkokot_TODO: move to stage1, because we want to create kmcdb writer

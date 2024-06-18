@@ -131,6 +131,10 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 	Params.working_directory = stage1Params.GetTmpPath();
 	Params.output_type = stage1Params.GetOutputFileType();
 	Params.output_file_name = stage1Params.GetOutputFileName();
+	// Thresholds for counters
+	Params.cutoff_min = stage1Params.GetCutoffMin();
+	Params.cutoff_max = stage1Params.GetCutoffMax();
+	Params.counter_max = stage1Params.GetCounterMax();
 	Params.without_output = stage1Params.GetWithoutOutput();
 	Params.kmer_len = stage1Params.GetKmerLen();
 	Params.file_type = stage1Params.GetInputFileType();
@@ -233,11 +237,6 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 // Set params of the second stage of k-mer counter
 template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage2(const KMC::Stage2Params& stage2Params)
 {
-	// Thresholds for counters
-	Params.cutoff_min = stage2Params.GetCutoffMin();
-	Params.cutoff_max = stage2Params.GetCutoffMax();
-	Params.counter_max = stage2Params.GetCounterMax();
-	
 	if (Params.kmer_len > 9)
 	{
 		if ((uint64)Params.cutoff_max > ((1ull << 32) - 1))

@@ -143,13 +143,13 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		}
 		// Minimum counter threshold
 		else if (strncmp(argv[i], "-ci", 3) == 0)
-			stage2Params.SetCutoffMin(atoi(&argv[i][3]));
+			stage1Params.SetCutoffMin(atoi(&argv[i][3]));
 		// Maximum counter threshold
 		else if (strncmp(argv[i], "-cx", 3) == 0)
-			stage2Params.SetCutoffMax(atoll(&argv[i][3]));
+			stage1Params.SetCutoffMax(atoll(&argv[i][3]));
 		// Maximal counter value
 		else if (strncmp(argv[i], "-cs", 3) == 0)
-			stage2Params.SetCounterMax(atoll(&argv[i][3]));
+			stage1Params.SetCounterMax(atoll(&argv[i][3]));
 		// Set p1
 		else if (strncmp(argv[i], "-p", 2) == 0)
 			stage1Params.SetSignatureLen(atoi(&argv[i][2]));

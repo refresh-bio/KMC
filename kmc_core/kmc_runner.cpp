@@ -191,6 +191,21 @@ namespace KMC
 		this->outputFileName = outputFileName;
 		return *this;
 	}
+	Stage1Params& Stage1Params::SetCutoffMin(uint64_t cutoffMin)
+	{
+		this->cutoffMin = cutoffMin;
+		return *this;
+	}
+	Stage1Params& Stage1Params::SetCounterMax(uint64_t counterMax)
+	{
+		this->counterMax = counterMax;
+		return *this;
+	}
+	Stage1Params& Stage1Params::SetCutoffMax(uint64_t cutoffMax)
+	{
+		this->cutoffMax = cutoffMax;
+		return *this;
+	}
 	Stage1Params& Stage1Params::SetOutputFileType(OutputFileType outputFileType)
 	{
 		this->outputFileType = outputFileType;
@@ -392,21 +407,21 @@ namespace KMC
 		this->strictMemoryMode = strictMemoryMode;
 		return *this;
 	}
-	Stage2Params& Stage2Params::SetCutoffMin(uint64_t cutoffMin)
-	{
-		this->cutoffMin = cutoffMin;
-		return *this;
-	}
-	Stage2Params& Stage2Params::SetCounterMax(uint64_t counterMax)
-	{
-		this->counterMax = counterMax;
-		return *this;
-	}
-	Stage2Params& Stage2Params::SetCutoffMax(uint64_t cutoffMax)
-	{
-		this->cutoffMax = cutoffMax;
-		return *this;
-	}
+	//Stage2Params& Stage2Params::SetCutoffMin(uint64_t cutoffMin)
+	//{
+	//	this->cutoffMin = cutoffMin;
+	//	return *this;
+	//}
+	//Stage2Params& Stage2Params::SetCounterMax(uint64_t counterMax)
+	//{
+	//	this->counterMax = counterMax;
+	//	return *this;
+	//}
+	//Stage2Params& Stage2Params::SetCutoffMax(uint64_t cutoffMax)
+	//{
+	//	this->cutoffMax = cutoffMax;
+	//	return *this;
+	//}
 	//mkokot_TODO: move to stage1, because we want to create kmcdb writer
 	//Stage2Params& Stage2Params::SetOutputFileName(const std::string& outputFileName)
 	//{
