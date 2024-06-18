@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <iomanip>
 #include <random>
-
 using namespace std;
 
 struct CLIParams
