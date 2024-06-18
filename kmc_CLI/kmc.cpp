@@ -265,8 +265,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 				input_file_names.push_back(s);
 
 		in.close();
-		std::mt19937 gen;
-		std::shuffle(input_file_names.begin(), input_file_names.end(), gen);
+		std::shuffle(input_file_names.begin(), input_file_names.end(), std::mt19937{});
 	}
 	stage1Params.SetInputFiles(input_file_names);
 
