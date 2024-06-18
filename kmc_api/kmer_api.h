@@ -100,7 +100,7 @@ protected:
 
 	// ----------------------------------------------------------------------------------
 	template<typename RandomAccessIterator>
-	inline void to_string_impl(RandomAccessIterator iter)
+	inline void to_string_impl(RandomAccessIterator iter) const
 	{
 		uchar *byte_ptr;
 		uchar c;
@@ -432,7 +432,7 @@ public:
 	// Convert kmer into string (an alphabet ACGT)
 	// RET	: string kmer
 	//-----------------------------------------------------------------------
-	inline std::string to_string()
+	inline std::string to_string() const
 	{
 		std::string string_kmer;		
 		string_kmer.resize(kmer_length);
@@ -443,14 +443,14 @@ public:
 	// Convert kmer into string (an alphabet ACGT). The function assumes enough memory was allocated
 	// OUT	: str - string kmer. 
 	//-----------------------------------------------------------------------
-	inline void to_string(char *str)
+	inline void to_string(char *str) const
 	{
 		to_string_impl(str);
 		str[kmer_length] = '\0';
 	};
 
 
-	inline void to_long(std::vector<uint64>& kmer)
+	inline void to_long(std::vector<uint64>& kmer) const
 	{
 		kmer.resize(no_of_rows);
 		uint32 offset = 62 - ((kmer_length - 1 + byte_alignment) & 31) * 2;
@@ -474,7 +474,7 @@ public:
 	// Convert kmer into string (an alphabet ACGT)
 	// OUT 	: str - string kmer
 	//-----------------------------------------------------------------------
-	inline void to_string(std::string &str)
+	inline void to_string(std::string &str) const
 	{	
 		str.resize(kmer_length);
 		to_string_impl(str.begin());
