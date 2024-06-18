@@ -207,6 +207,69 @@
     <ClInclude Include="..\kmc_api\murmur64_hash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\kmcdb\bin_metadata.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\bin_readers.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\bin_writers.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\capture_ostream.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\capture_sys_hw_cmd.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\hashers.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\kmcdb.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\kmer.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\kmer_to_bin_id.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\metadata.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\metadata_reader.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\mmer.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\readers.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\stream_names.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\utils.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\writers.h">
+      <Filter>kmcdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\archive.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\archive_helper.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\buffered_io.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\unbuffered_io.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\serialization\lib\serialization.h">
+      <Filter>kmcdb\libs\refresh\serialization\lib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
@@ -214,6 +277,27 @@
     </Filter>
     <Filter Include="Source Files">
       <UniqueIdentifier>{9eb7a6f5-be1f-4b84-a2bf-70f3e454f255}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kmcdb">
+      <UniqueIdentifier>{b2278a16-53c2-4c77-bb76-4000524c3d20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kmcdb\libs">
+      <UniqueIdentifier>{2d53fbf4-d527-43f7-9e3d-8a386d4bfea5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kmcdb\libs\refresh">
+      <UniqueIdentifier>{cc5a524a-12d3-40da-b4bf-3040e6606a3c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kmcdb\libs\refresh\archive">
+      <UniqueIdentifier>{1a6c593c-7b69-4394-9dad-2f5a33b1c2aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kmcdb\libs\refresh\serialization">
+      <UniqueIdentifier>{0b5a53f2-e307-48ef-b22d-cb7d5283a979}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kmcdb\libs\refresh\archive\lib">
+      <UniqueIdentifier>{d3533be4-9c4d-436d-b771-ab4fe7864346}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="kmcdb\libs\refresh\serialization\lib">
+      <UniqueIdentifier>{45680cd7-1002-41d4-87bd-7310ef9ac23b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

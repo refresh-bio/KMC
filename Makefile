@@ -12,7 +12,7 @@ KMC_API_DIR = kmc_api
 KMC_DUMP_DIR = kmc_dump
 KMC_TOOLS_DIR = kmc_tools
 PY_KMC_API_DIR = py_kmc_api
-KMCDB_DIR = ../x/kmcdb
+KMCDB_DIR = kmcdb
 
 OUT_BIN_DIR = bin
 OUT_INCLUDE_DIR = include

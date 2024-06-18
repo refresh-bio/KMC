@@ -75,14 +75,14 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\x\kmcdb;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>..\kmcdb;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\x\kmcdb;$(IncludePath)</IncludePath>
+    <IncludePath>..\kmcdb;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -168,6 +168,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\3rd_party\cloudflare\zlib.h" />
+    <ClInclude Include="..\kmcdb\bin_metadata.h" />
+    <ClInclude Include="..\kmcdb\bin_readers.h" />
+    <ClInclude Include="..\kmcdb\bin_writers.h" />
+    <ClInclude Include="..\kmcdb\capture_ostream.h" />
+    <ClInclude Include="..\kmcdb\capture_sys_hw_cmd.h" />
+    <ClInclude Include="..\kmcdb\hashers.h" />
+    <ClInclude Include="..\kmcdb\kmcdb.h" />
+    <ClInclude Include="..\kmcdb\kmer.h" />
+    <ClInclude Include="..\kmcdb\kmer_to_bin_id.h" />
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\archive.h" />
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\archive_helper.h" />
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\buffered_io.h" />
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\unbuffered_io.h" />
+    <ClInclude Include="..\kmcdb\libs\refresh\serialization\lib\serialization.h" />
+    <ClInclude Include="..\kmcdb\metadata.h" />
+    <ClInclude Include="..\kmcdb\metadata_reader.h" />
+    <ClInclude Include="..\kmcdb\mmer.h" />
+    <ClInclude Include="..\kmcdb\readers.h" />
+    <ClInclude Include="..\kmcdb\stream_names.h" />
+    <ClInclude Include="..\kmcdb\utils.h" />
+    <ClInclude Include="..\kmcdb\writers.h" />
     <ClInclude Include="..\kmc_api\mmer.h" />
     <ClInclude Include="..\kmc_api\murmur64_hash.h" />
     <ClInclude Include="bam_utils.h" />
