@@ -610,20 +610,6 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage1()
 
 	ostr << "\n";
 
-	Params.verboseLogger->Log(ostr.str());
-}
-
-//----------------------------------------------------------------------------------
-// Show the settings of the KMC (in verbose mode only)
-template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage2()
-{
-	std::ostringstream ostr;
-
-	ostr << "\n********** Used parameters for Stage 2 : **********\n";
-	ostr << "Min. count threshold         : " << Params.cutoff_min << "\n";
-	ostr << "Max. count threshold         : " << Params.cutoff_max << "\n";
-	ostr << "Max. counter value           : " << Params.counter_max << "\n";
-
 	ostr << "Output file name             : " << Params.output_file_name << "\n";
 
 	ostr << "Output format                : ";
@@ -639,6 +625,20 @@ template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage2()
 		ostr << "KMC\n";
 		break;
 	}
+
+	Params.verboseLogger->Log(ostr.str());
+}
+
+//----------------------------------------------------------------------------------
+// Show the settings of the KMC (in verbose mode only)
+template <unsigned SIZE> void CKMC<SIZE>::ShowSettingsStage2()
+{
+	std::ostringstream ostr;
+
+	ostr << "\n********** Used parameters for Stage 2 : **********\n";
+	ostr << "Min. count threshold         : " << Params.cutoff_min << "\n";
+	ostr << "Max. count threshold         : " << Params.cutoff_max << "\n";
+	ostr << "Max. counter value           : " << Params.counter_max << "\n";
 
 	ostr << "\n******* Stage 2 configuration: *******\n";
 
