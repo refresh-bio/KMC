@@ -357,7 +357,7 @@ bool parse_parameters(int argc, char* argv[], Params& params)
 		}
 		else if (stage1Params.GetOutputFileType() == KMC::OutputFileType::KMCDB)
 		{
-			string file_name = stage1Params.GetOutputFileName() + ".kmcdb";
+			string file_name = stage1Params.GetOutputFileName();
 			if (!CanCreateFile(file_name))
 			{
 				cerr << "Error: Cannot create file: " << file_name << "\n";

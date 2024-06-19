@@ -117,18 +117,6 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 		else if (output_type == KMC::OutputFileType::KMCDB)
 		{
 			kmcdb_writer->ChangeLutPrefixLen(lut_prefix_len);
-			//set in ctor
-			//mkokot_TODO: remove commented
-			/*kmcdb::Config config;
-			kmcdb::ConfigSortedWithLUT representation_config;
-			representation_config.lut_prefix_len = lut_prefix_len;
-			config.kmer_len = kmer_len;
-			config.num_bins = n_bins;
-			config.num_bytes_single_value = { counter_size };
-			kmcdb_writer = std::make_unique<kmcdb::WriterSortedWithLUTRaw<uint64_t>>(
-				config,
-				representation_config,
-				file_name + ".kmcdb");*/
 		}
 		else
 		{

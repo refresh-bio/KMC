@@ -1295,7 +1295,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 		Queues.kmcdb_writer = std::make_unique<kmcdb::WriterSortedWithLUTRaw<uint64_t>>(
 			config,
 			representation_config,
-			Params.output_file_name + ".kmcdb");
+			Params.output_file_name);
 
 		//mkokot_TODO: probably should be possible to turn off with parameters!!!!
 		//mkokot_TODO: maybe this should be a part of config... although in this mode we may enable disable this when desired
