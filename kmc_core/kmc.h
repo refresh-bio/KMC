@@ -1299,8 +1299,9 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 
 		//mkokot_TODO: probably should be possible to turn off with parameters!!!!
 		//mkokot_TODO: maybe this should be a part of config... although in this mode we may enable disable this when desired
-		Queues.kmcdb_writer->CaptureStdCout(true);
-		Queues.kmcdb_writer->CaptureStdCerr(true);
+		//mkokot_TODO: actually this is more complex, because there are issues if more than one thread at once is listening to cerr cout (because how I implemented this, more comments in kmcdb)
+		Queues.kmcdb_writer->CaptureStdCout(false);
+		Queues.kmcdb_writer->CaptureStdCerr(false);
 	}
 	timer_stage1.startTimer();
 	KMC::Stage1Results results{};
