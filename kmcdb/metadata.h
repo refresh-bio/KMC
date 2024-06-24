@@ -292,7 +292,6 @@ namespace kmcdb
 		uint64_t num_bins = 512;
 		uint64_t signature_len = 9; //mkokot_TODO: reconsider if this should be here, the problem is we don't use signatures for small k, but maybe setting zero is such case is just fine...
 		std::vector<uint64_t> num_bytes_single_value;
-		std::vector<uint64_t> sample_names; //mkokot_TODO: add support for sample/column names, probably should be optional, but definetly should be there
 		SignatureSelectionScheme signature_selection_scheme = SignatureSelectionScheme::MinHash;
 		SignatureToBinMapping signature_to_bin_mapping = SignatureToBinMapping::Modulo;
 	};

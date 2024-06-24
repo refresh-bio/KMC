@@ -4,6 +4,19 @@
 
 namespace kmcdb::detail
 {
+	//mkokot_TODO: z tym jest duzy problem jak sie odpala np. wiecej instancji na raz
+	//chodzi o cos takiego ze mamy
+	//oryginalny streambuf z std::cout (przykladowo): A
+	//zastepujemy go pierwszym wywolaniem i wsadzamy B, a pamietamy A
+	//zastepujamy drugim wywoalniem i wsadzamy C, a zapamietujemy B
+	//powierdzmy ze najpierw jest niszczony ten, ktory pamietal A, on ustawie std::coutowi oryginalne A
+	//ale potem poleci destruktor tego co pamietal B
+	//on wpisze znow B, a B juz nie istnieje
+	//problem tak na prawde jest taki, ze std::cout/cerr to sa globalne zmienne
+	//no i na jakims poziomie nalezaloby to kontrolowac
+	//np miec globalne nasluchiwanie dla std::cout i sobie tam rejestrowac i wyrejestrowywac
+	//ale to nieco komplikuje sprawy
+
 	class CaptureOstream : public std::streambuf
 	{
 		std::ostream* src;

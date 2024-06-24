@@ -2,6 +2,7 @@
 #define UTILS_H_
 
 #include "kmer.h"
+#include <array>
 #include "libs/refresh/archive/lib/archive.h"
 #include "libs/refresh/serialization/lib/serialization.h"
 #include <sstream>

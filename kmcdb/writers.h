@@ -126,8 +126,10 @@ namespace kmcdb
 
 				cur_item.open_time = get_cur_time();
 
-				CaptureStdCout(true);
-				CaptureStdCerr(true);
+				//mkokot_TODO: by default false, because there are issues if for example multiple threads creates multiple kmcdbs at once and each is capturing
+				//maybe we can fix this somehow, but for now lets keep it turned off
+				CaptureStdCout(false);
+				CaptureStdCerr(false);
 
 				//if there were some history, rewrite it
 				if (!org_path.empty())

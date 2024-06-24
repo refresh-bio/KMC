@@ -302,6 +302,28 @@ namespace kmcdb
 			return bins[bin_id]->CheckKmer(kmer, values);
 		}
 	};
+
+
+	template<typename VALUE_T>
+	void MakeListeningReader(MetadataReader& metadata_reader, const auto& callback)
+	{
+		switch (detail::get_metadata_from_metadata_reader(metadata_reader).kmers_representation)
+		{
+		case detail::KmersRepresentation::SortedPlain:
+			{
+				ReaderSortedPlainForListing<VALUE_T> reader{ metadata_reader };
+				callback(reader);
+				break;
+			}
+
+		case detail::KmersRepresentation::SortedWithLUT:
+			{
+				ReaderSortedWithLUTForListing<VALUE_T> reader{ metadata_reader };
+				callback(reader);
+				break;
+			}
+		}
+	}
 }
 
 #endif// ! READERS_H_
