@@ -39,6 +39,31 @@ namespace refresh
 		}
 
 		// *******************************************************************************************
+		inline size_t fread(void* buffer, size_t size, size_t count, FILE* stream)
+		{
+			const size_t part_size = 2ull << 30;
+
+			size_t tot_readed = 0;
+			size_t to_read = size * count;
+			char* ptr = static_cast<char*>(buffer);
+
+			while (true)
+			{
+				if (to_read <= part_size)
+				{
+					tot_readed += std::fread(ptr, 1, to_read, stream);
+					break;
+				}
+
+				tot_readed += std::fread(ptr, 1, part_size, stream);
+				to_read -= part_size;
+				ptr += part_size;
+			}
+
+			return tot_readed;
+		}
+
+		// *******************************************************************************************
 		inline int fseek(FILE* stream, long long offset, int origin)
 		{
 #ifdef _WIN32

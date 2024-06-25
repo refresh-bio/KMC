@@ -255,20 +255,44 @@
     <ClInclude Include="..\kmcdb\writers.h">
       <Filter>kmcdb</Filter>
     </ClInclude>
-    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\archive.h">
-      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\archive_helper.h">
-      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\buffered_io.h">
-      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\unbuffered_io.h">
-      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
-    </ClInclude>
     <ClInclude Include="..\kmcdb\libs\refresh\serialization\lib\serialization.h">
       <Filter>kmcdb\libs\refresh\serialization\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\archive_common.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\archive_input.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\archive_output.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\input_common.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\input_file_buffered.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\input_file_unbuffered.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\input_stdin_memory.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\io_utils.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\output_common.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\output_file_buffered.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\output_file_unbuffered.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\kmcdb\libs\refresh\archive\lib\output_stdout_memory.h">
+      <Filter>kmcdb\libs\refresh\archive\lib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -12,7 +12,7 @@ namespace kmcdb
 	class BinWriterSortedPlain
 	{
 		uint64_t bin_id;
-		archive_t* archive;
+		archive_output_t* archive;
 		int stream_id;
 
 		uint64_t kmer_len;
@@ -32,7 +32,7 @@ namespace kmcdb
 		//consider some techiniques to hide this (private and friend is complex because of the fact make_unique creates object...)
 		BinWriterSortedPlain(
 			uint64_t bin_id,
-			archive_t* archive,
+			archive_output_t* archive,
 			uint64_t kmer_len,
 			uint64_t num_values,
 			const std::vector<uint64_t>& num_bytes_single_value,
@@ -114,7 +114,7 @@ namespace kmcdb
 	class BinWriterSortedWithLUTRaw
 	{
 		uint64_t bin_id;
-		archive_t* archive;
+		archive_output_t* archive;
 		int stream_id_suf;
 		int stream_id_LUT;
 
@@ -135,7 +135,7 @@ namespace kmcdb
 		//consider some techniques to hide this (private and friend is complex because of the fact make_unique creates object...)
 		BinWriterSortedWithLUTRaw(
 			uint64_t bin_id,
-			archive_t* archive,
+			archive_output_t* archive,
 			uint64_t kmer_len,
 			uint64_t num_values,
 			uint64_t lut_prefix_len,
@@ -244,7 +244,7 @@ namespace kmcdb
 		//mkokot_TODO:I just started this class, a lot to be done here
 		BinWriterSortedWithLUT(
 			uint64_t bin_id,
-			archive_t* archive,
+			archive_output_t* archive,
 			uint64_t kmer_len,
 			uint64_t num_values,
 			uint64_t lut_prefix_len,

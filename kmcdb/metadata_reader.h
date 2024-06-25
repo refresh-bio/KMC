@@ -12,16 +12,16 @@ namespace kmcdb
 	{
 		//some trick because I don't want to expose archive as a public method for a client code
 		//at least not explicitly, I will assume client code will not use the detail namespace
-		inline archive_t* get_archive_from_metadata_reader(MetadataReader& metadata_reader);
+		inline archive_input_t* get_archive_from_metadata_reader(MetadataReader& metadata_reader);
 		inline Metadata& get_metadata_from_metadata_reader(MetadataReader& metadata_reader);
 	}
 
 	//this class will just read the metadata which may be needed to decide which class to use further, i.e. which template concretization
 	class MetadataReader
 	{
-		friend archive_t* detail::get_archive_from_metadata_reader(MetadataReader& metadata_reader);
+		friend archive_input_t* detail::get_archive_from_metadata_reader(MetadataReader& metadata_reader);
 		friend detail::Metadata& detail::get_metadata_from_metadata_reader(MetadataReader& metadata_reader);
-		archive_t archive;
+		archive_input_t archive;
 		detail::Metadata metadata;
 		int stream_id;
 
@@ -50,11 +50,10 @@ namespace kmcdb
 			return result;
 		}
 	public:
-		MetadataReader(const std::string& path) :
-			archive(true)
+		MetadataReader(const std::string& path, const bool reopen_mode)
 		{
 			//mkokot_TODO: different exception type?
-			if (!archive.open(path))
+			if (!archive.open_file_unbuffered(path, reopen_mode))
 				throw std::runtime_error("Cannot open file " + path);
 
 			stream_id = archive.get_stream_id(stream_names::METADATA);

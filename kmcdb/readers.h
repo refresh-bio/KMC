@@ -14,7 +14,7 @@ namespace kmcdb
 {
 	namespace detail
 	{
-		inline archive_t* get_archive_from_metadata_reader(MetadataReader& metadata_reader)
+		inline archive_input_t* get_archive_from_metadata_reader(MetadataReader& metadata_reader)
 		{
 			return &metadata_reader.archive;
 		}
@@ -25,7 +25,7 @@ namespace kmcdb
 
 		class HistoryReader
 		{
-			archive_t* archive;
+			archive_input_t* archive;
 			int stream_id;
 		public:
 			HistoryReader(MetadataReader& metadata_reader) :
@@ -79,7 +79,7 @@ namespace kmcdb
 		{
 		protected:
 			const Metadata& metadata;
-			archive_t* archive;
+			archive_input_t* archive;
 		public:
 			ReaderBase(MetadataReader& metadata_reader) :
 				metadata(get_metadata_from_metadata_reader(metadata_reader)),

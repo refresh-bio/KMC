@@ -21,7 +21,7 @@ namespace kmcdb
 	{
 		class HistoryWriter
 		{
-			archive_t* archive;
+			archive_output_t* archive;
 			int stream_id;
 			HistoryItem cur_item;
 
@@ -117,7 +117,7 @@ namespace kmcdb
 
 		public:
 			//org_path - optional path to a database from which the current one is being created
-			HistoryWriter(archive_t* archive, const std::string& org_path):
+			HistoryWriter(archive_output_t* archive, const std::string& org_path):
 				archive(archive),
 				stream_id(archive->register_stream(stream_names::HISTORY))
 			{
@@ -134,7 +134,7 @@ namespace kmcdb
 				//if there were some history, rewrite it
 				if (!org_path.empty())
 				{
-					MetadataReader org_metadata_reader(org_path);
+					MetadataReader org_metadata_reader(org_path, false);
 					const auto org_archive = get_archive_from_metadata_reader(org_metadata_reader);
 
 					const auto org_history_stream_id = org_archive->get_stream_id(stream_names::HISTORY);
@@ -208,20 +208,22 @@ namespace kmcdb
 	protected:
 		std::vector<std::unique_ptr<BIN_T>> bins{};
 
-		archive_t archive;
+		archive_output_t archive;
 		detail::Metadata metadata;
 
 	private:
 		detail::HistoryWriter history_writer;
 
-		archive_t* open_archive()
+		archive_output_t* open_archive()
 		{
-			archive_t::params_t archive_params;
-			archive_params.archive_version = 2;
+			archive_output_t::params_t archive_params;
+			archive_params.archive_version = 3;
 			archive_params.parts_metadata_empty = true;
 			archive_params.parts_metadata_fixed_size = true;
-
-			if (!archive.open(path, archive_params))
+			//mkokot_TODO: rozwazyc czy wyeksponowac mozliwosc wyboru:
+			//  -  czy buforowane czy niebuforowane
+			//  -  czy z reopen czy bez
+			if (!archive.open_file_unbuffered(path, false, archive_params))
 				throw std::runtime_error("Cannot open file " + path);
 
 			return &archive;
@@ -239,7 +241,6 @@ namespace kmcdb
 			const std::vector<std::string>& sample_names
 			):
 			path(path),
-			archive(false),
 			history_writer(open_archive(), path_created_from)
 		{
 			detail::IterateValues(VALUE_T{}, [&]<typename T>(auto idx, T& /*val*/)

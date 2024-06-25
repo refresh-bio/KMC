@@ -3,7 +3,9 @@
 
 #include "kmer.h"
 #include <array>
-#include "libs/refresh/archive/lib/archive.h"
+#include <iostream>
+#include "libs/refresh/archive/lib/archive_input.h"
+#include "libs/refresh/archive/lib/archive_output.h"
 #include "libs/refresh/serialization/lib/serialization.h"
 #include <sstream>
 namespace kmcdb
@@ -105,10 +107,9 @@ namespace kmcdb
 		KmerSizeDispatcher<max_no_of_uint64_t_for_kmer>::Dispatch(kmer_length, callback);
 	}
 
-	//mkokot_TODO: consider unbuffered?
 	//mkokot_TODO: move to details namespace
-	//using archive_t = refresh::archive_buffered_io;
-	using archive_t = refresh::archive_unbuffered_io;
+	using archive_output_t = refresh::archive_output;
+	using archive_input_t = refresh::archive_input;
 
 	namespace detail
 	{

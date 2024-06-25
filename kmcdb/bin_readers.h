@@ -61,7 +61,7 @@ namespace kmcdb
 		{
 		protected:
 			uint64_t bin_id;
-			archive_t* archive;
+			archive_input_t* archive;
 
 			uint64_t kmer_len;
 			uint64_t num_values;
@@ -71,7 +71,7 @@ namespace kmcdb
 			BinMetadata bin_metadata{};
 		public:
 			BinReaderBase(uint64_t bin_id,
-				archive_t* archive,
+				archive_input_t* archive,
 				uint64_t kmer_len,
 				uint64_t num_values,
 				const std::vector<uint64_t>& num_bytes_single_value) :
@@ -119,7 +119,7 @@ namespace kmcdb
 			~BinReaderSortedPlainBase() = default;
 
 			BinReaderSortedPlainBase(uint64_t bin_id,
-				archive_t* archive,
+				archive_input_t* archive,
 				uint64_t kmer_len,
 				uint64_t num_values,
 				const std::vector<uint64_t>& num_bytes_single_value) :
@@ -146,7 +146,7 @@ namespace kmcdb
 
 		public:
 			BinReaderSortedWithLUTBase(uint64_t bin_id,
-				archive_t* archive,
+				archive_input_t* archive,
 				uint64_t kmer_len,
 				uint64_t num_values,
 				uint64_t lut_prefix_len,
@@ -201,7 +201,7 @@ namespace kmcdb
 		using detail::BinReaderSortedPlainBase<VALUE_T>::num_bytes_single_value;
 	public:
 		BinReaderSortedPlainForListing(uint64_t bin_id,
-			archive_t* archive,
+			archive_input_t* archive,
 			uint64_t kmer_len,
 			uint64_t num_values,
 			const std::vector<uint64_t>& num_bytes_single_value,
@@ -245,7 +245,7 @@ namespace kmcdb
 		std::unique_ptr<uint8_t[]> flat_data;
 	public:
 		BinReaderSortedPlainForRandomAccess(uint64_t bin_id,
-			archive_t* archive,
+			archive_input_t* archive,
 			uint64_t kmer_len,
 			uint64_t num_values,
 			const std::vector<uint64_t>& num_bytes_single_value) :
@@ -363,7 +363,7 @@ namespace kmcdb
 
 	public:
 		BinReaderSortedWithLUTForListing(uint64_t bin_id,
-			archive_t* archive,
+			archive_input_t* archive,
 			uint64_t kmer_len,
 			uint64_t num_values,
 			uint64_t lut_prefix_len,
@@ -459,7 +459,7 @@ namespace kmcdb
 		using detail::BinReaderSortedWithLUTBase<VALUE_T>::bin_metadata;
 	public:
 		BinReaderSortedWithLUTForRandomAccess(uint64_t bin_id,
-			archive_t* archive,
+			archive_input_t* archive,
 			uint64_t kmer_len,
 			uint64_t num_values,
 			uint64_t lut_prefix_len,
