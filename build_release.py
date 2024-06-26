@@ -29,7 +29,7 @@ def get_ver():
             line = line.strip()
             if "Version:" in line:
                 return line.split("Version:")[-1].strip()
-    print("Error: cannot read R_NOMAD_VERSION")
+    print("Error: cannot read KMC version")
     sys.exit(1)
 
 def get_os():
