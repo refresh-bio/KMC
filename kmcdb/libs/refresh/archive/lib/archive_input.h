@@ -26,7 +26,7 @@ namespace refresh
 		{
 			std::map<std::string, uint64_t> dict;
 
-			size_t dict_size;
+			size_t dict_size{};
 			read(dict_size);
 			std::string par_name;
 			uint64_t par_val;
@@ -60,7 +60,7 @@ namespace refresh
 		bool deserialize()
 		{
 			size_t nb = 0;
-			size_t footer_size;
+			size_t footer_size{};
 			size_t file_size_ = input->file_size();
 
 			input->seek(file_size_ - 8ull);
