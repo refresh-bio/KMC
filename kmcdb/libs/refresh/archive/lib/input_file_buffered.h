@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstring> //memcpy
+
 #include "input_common.h"
 
 namespace refresh

@@ -11,8 +11,9 @@
 
 namespace refresh
 {
-	const uint32_t REFRESH_BUILD_ARCHIVE3 = 3;
+	const uint32_t REFRESH_BUILD_ARCHIVE = 2;
 
+	class archive_output; //forward declaration for friendness
 	class archive_common
 	{
 	public:
@@ -72,6 +73,8 @@ namespace refresh
 
 		struct params_t
 		{
+			friend class archive_output;
+
 			uint64_t archive_version = 1;
 			bool parts_metadata_fixed_size = false;
 			bool parts_metadata_empty = false;
@@ -79,6 +82,21 @@ namespace refresh
 			static const inline std::string str_archive_version = "archive_version";
 			static const inline std::string str_parts_metadata_fixed_size = "parts_metadata_fixed_size";
 			static const inline std::string str_parts_metadata_empty = "parts_metadata_empty";
+
+		protected:
+			// Internal method (only for archive* classes) to check if the parameters are consistent
+			bool verify() const
+			{
+				if (archive_version == 1)
+				{
+					return (parts_metadata_empty == false) && (parts_metadata_fixed_size == false);
+				}
+				else if (archive_version == 2)
+				{
+					return true;
+				}
+				else return false;
+			}
 		} params;
 
 	protected:
@@ -93,6 +111,7 @@ namespace refresh
 		static constexpr uint64_t ec_file_close = 102;
 		static constexpr uint64_t ec_file_write = 103;
 		static constexpr uint64_t ec_file_read = 104;
+		static constexpr uint64_t ec_archive_params = 105;
 		static constexpr uint64_t ec_wrong_part_desc = 201;
 		static constexpr uint64_t ec_unknown_stream = 301;
 		static constexpr uint64_t ec_unknown_stream_part = 302;
@@ -155,6 +174,7 @@ namespace refresh
 			switch (code)
 			{
 			case ec_ok:	return "";
+			case ec_archive_params: return "archive params inconsistent";
 			case ec_file_open: return "cannot open file";
 			case ec_file_close: return "cannot close file";
 			case ec_file_write: return "cannot write";

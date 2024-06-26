@@ -3,6 +3,7 @@
 #include "bin_writers.h"
 #include "capture_ostream.h"
 #include "capture_sys_hw_cmd.h"
+#include <iostream>
 
 //mkokot_TODO: poniewaz generalnie te klasy nie wszystko kontroluja
 //moze warto by bylo dodac taki wariant ktory dziala dla dlugosci k-mera = 0
@@ -217,7 +218,7 @@ namespace kmcdb
 		archive_output_t* open_archive()
 		{
 			archive_output_t::params_t archive_params;
-			archive_params.archive_version = 3;
+			archive_params.archive_version = 2;
 			archive_params.parts_metadata_empty = true;
 			archive_params.parts_metadata_fixed_size = true;
 			//mkokot_TODO: rozwazyc czy wyeksponowac mozliwosc wyboru:

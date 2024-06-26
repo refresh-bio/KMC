@@ -3,7 +3,6 @@
 
 #include "kmer.h"
 #include <array>
-#include <iostream>
 #include "libs/refresh/archive/lib/archive_input.h"
 #include "libs/refresh/archive/lib/archive_output.h"
 #include "libs/refresh/serialization/lib/serialization.h"
@@ -89,8 +88,7 @@ namespace kmcdb
 	{
 		static void Dispatch(uint64_t /*kmer_len*/, const auto& /*callback*/)
 		{
-			std::cerr << "Error: k-mer size dispatcher failed!\n";
-			exit(1);
+			throw std::runtime_error("k-mer size dispatcher failed!");
 		}
 	};
 
@@ -98,10 +96,7 @@ namespace kmcdb
 	void DispatchKmerSize(uint64_t kmer_length, const auto& callback)
 	{
 		if (kmer_length > MAX_KMER_LEN)
-		{
-			std::cerr << "Error: k too large, use larger MAX_KMER_LEN\n";
-			exit(1);
-		}
+			throw std::runtime_error("k too large, use larger MAX_KMER_LEN");
 
 		constexpr auto max_no_of_uint64_t_for_kmer = (MAX_KMER_LEN + 31) / 32;
 		KmerSizeDispatcher<max_no_of_uint64_t_for_kmer>::Dispatch(kmer_length, callback);

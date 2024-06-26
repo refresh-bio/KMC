@@ -393,7 +393,7 @@ namespace refresh
 
 			excerpt_size = 0;
 
-			if (stream_id < 0 || stream_id >= v_streams.size())
+			if (stream_id < 0 || static_cast<size_t>(stream_id) >= v_streams.size())
 				return false;
 
 			for (const auto& part : v_streams[stream_id].parts)
@@ -1087,7 +1087,7 @@ namespace refresh
 			std::lock_guard<std::mutex> lck(mtx);
 
 			for (auto x : stream_ids)
-				if (x < 0 || x >= v_streams.size())
+				if (x < 0 || static_cast<size_t>(x) >= v_streams.size())
 					return false;
 
 			bool r = true;

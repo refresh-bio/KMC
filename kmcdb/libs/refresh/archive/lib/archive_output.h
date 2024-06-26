@@ -244,6 +244,18 @@ namespace refresh
 			return true;
 		}
 
+		// *******************************************************************************************
+		bool archive_params_check(const params_t& _params)
+		{
+			if (!_params.verify())
+			{
+				err_code = ec_archive_params;
+				return false;
+			}
+
+			return true;
+		}
+
 	public:
 		// *******************************************************************************************
 		archive_output() : archive_common()
@@ -252,6 +264,9 @@ namespace refresh
 		// *******************************************************************************************
 		bool open_memory(std::vector<uint8_t>& data, const params_t& _params = params_t())
 		{
+			if (!archive_params_check(_params))
+				return false;
+
 			output = std::make_unique<refresh::io::output_memory>(data);
 			params = _params;
 
@@ -261,6 +276,9 @@ namespace refresh
 		// *******************************************************************************************
 		bool open_stdout_unbuffered(const params_t& _params = params_t())
 		{
+			if (!archive_params_check(_params))
+				return false;
+
 			output = std::make_unique<refresh::io::output_stdout>();
 			params = _params;
 
@@ -270,6 +288,9 @@ namespace refresh
 		// *******************************************************************************************
 		bool open_stdout_buffered(const size_t buffer_size = 1 << 20, const params_t& _params = params_t())
 		{
+			if (!archive_params_check(_params))
+				return false;
+
 			output = std::make_unique<refresh::io::output_stdout_buffered>(buffer_size);
 			params = _params;
 
@@ -279,6 +300,9 @@ namespace refresh
 		// *******************************************************************************************
 		bool open_file_unbuffered(const std::string& file_name, const bool reopen_mode, const params_t& _params = params_t())
 		{
+			if (!archive_params_check(_params))
+				return false;
+
 			if(reopen_mode)
 				output = std::make_unique<refresh::io::output_file_unbuffered_reopen>(file_name);
 			else
@@ -291,6 +315,9 @@ namespace refresh
 		// *******************************************************************************************
 		bool open_file_buffered(const std::string& file_name, const bool reopen_mode, const size_t buffer_size = 32 << 20, const params_t& _params = params_t())
 		{
+			if (!archive_params_check(_params))
+				return false;
+
 			if (reopen_mode)
 				output = std::make_unique<refresh::io::output_file_buffered_reopen>(file_name, buffer_size);
 			else
