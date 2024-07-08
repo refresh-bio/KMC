@@ -303,7 +303,36 @@ namespace kmcdb
 		}
 	};
 
+	void DispatchValueType(MetadataReader& metadata_reader, const auto& callback)
+	{
+		const auto& value_types = detail::get_metadata_from_metadata_reader(metadata_reader).value_types;
+		if (value_types.size() > 1)
+			throw std::runtime_error("Error: DispatchValueType works only for a single value, not for tuples"); //of course this may be extended
 
+		enum class Value_Type : uint64_t { Double, Float, Uint64, Uint32, Uint16, Uint8 };
+		switch (value_types[0])
+		{
+		case detail::Value_Type::Double:
+			callback.template operator()<double>();
+			break;
+
+		case detail::Value_Type::Float:
+			callback.template operator()<float>();
+			break;
+		case detail::Value_Type::Uint64:
+			callback.template operator()<uint64_t>();
+			break;
+		case detail::Value_Type::Uint32:
+			callback.template operator()<uint32_t>();
+			break;
+		case detail::Value_Type::Uint16:
+			callback.template operator()<uint16_t>();
+			break;
+		case detail::Value_Type::Uint8:
+			callback.template operator()<uint8_t>();
+			break;
+		}
+	}
 	template<typename VALUE_T>
 	void MakeListeningReader(MetadataReader& metadata_reader, const auto& callback)
 	{
@@ -323,6 +352,19 @@ namespace kmcdb
 				break;
 			}
 		}
+	}
+
+	template<unsigned MAX_KMER_LEN>
+	void DispatchForListening(MetadataReader& metadata_reader, const auto& callback)
+	{
+		kmcdb::DispatchValueType(metadata_reader, [&]<typename VALUE_T>() {
+			kmcdb::DispatchKmerSize<MAX_KMER_LEN>(metadata_reader.GetConfig().kmer_len, [&](auto SIZE) {
+				kmcdb::MakeListeningReader<VALUE_T>(metadata_reader, [&](auto& reader)
+				{
+					callback.template operator() <VALUE_T>(SIZE, reader);
+				});
+			});
+		});
 	}
 }
 

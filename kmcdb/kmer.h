@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cassert>
 #include <emmintrin.h>
+#include "libs/refresh/conversions/lib/conversions.h"
 
 #ifdef _WIN32
 #define _bswap64(x) _byteswap_uint64(x)
@@ -83,7 +84,7 @@ template<unsigned SIZE> struct CKmer {
 
 	inline void random_init(uint32_t pos, uint64_t value);
 
-	inline void to_string(uint64_t kmer_len, char* out) const;
+	inline void to_string(uint64_t kmer_len, char* out, char term = '\0') const;
 
 	inline std::string to_string(uint64_t kmer_len) const;
 
@@ -455,19 +456,21 @@ template<unsigned SIZE> inline void CKmer<SIZE>::random_init(uint32_t pos, uint6
 }
 
 // *********************************************************************
-template<unsigned SIZE> inline void CKmer<SIZE>::to_string(uint64_t kmer_len, char* out) const
+template<unsigned SIZE> inline void CKmer<SIZE>::to_string(uint64_t kmer_len, char* out, char term) const
 {
-	auto pos = static_cast<uint32_t>(2 * kmer_len - 2);
-	for (uint32_t i = 0; i < kmer_len; ++i, pos -= 2)
-		out[i] = "ACGT"[get_2bits(pos)];
+	//auto pos = static_cast<uint32_t>(2 * kmer_len - 2);
+	//for (uint32_t i = 0; i < kmer_len; ++i, pos -= 2)
+	//	out[i] = "ACGT"[get_2bits(pos)];
+	refresh::kmer_to_pchar((uint64_t*)data, out, kmer_len, false, term);
 }
 
 // *********************************************************************
 template<unsigned SIZE> inline std::string CKmer<SIZE>::to_string(uint64_t kmer_len) const
 {
-	std::string res(kmer_len, ' ');
-	to_string(kmer_len, res.data());
-	return res;
+	//std::string res(kmer_len, ' ');
+	//to_string(kmer_len, res.data());
+	//return res;
+	return refresh::kmer_to_string((uint64_t*)data, kmer_len, false);
 }
 
 // *********************************************************************
@@ -555,7 +558,7 @@ template<> struct CKmer<1> {
 
 	inline void random_init(uint32_t pos, uint64_t value);
 
-	inline void to_string(uint64_t kmer_len, char* out) const;
+	inline void to_string(uint64_t kmer_len, char* out, char term = '\0') const;
 
 	inline std::string to_string(uint64_t kmer_len) const;
 
@@ -811,19 +814,21 @@ inline void CKmer<1>::random_init(uint32_t /*pos*/, uint64_t value)
 }
 
 // *********************************************************************
-inline void CKmer<1>::to_string(uint64_t kmer_len, char* out) const
+inline void CKmer<1>::to_string(uint64_t kmer_len, char* out, char term) const
 {
-	auto pos = static_cast<uint32_t>(2 * kmer_len - 2);
-	for (uint32_t i = 0; i < kmer_len; ++i, pos -= 2)
-		out[i] = "ACGT"[get_2bits(pos)];
+	//auto pos = static_cast<uint32_t>(2 * kmer_len - 2);
+	//for (uint32_t i = 0; i < kmer_len; ++i, pos -= 2)
+	//	out[i] = "ACGT"[get_2bits(pos)];
+	refresh::kmer_to_pchar(data, out, kmer_len, false, term);
 }
 
 // *********************************************************************
 inline std::string CKmer<1>::to_string(uint64_t kmer_len) const
 {
-	std::string res(kmer_len, ' ');
-	to_string(kmer_len, res.data());
-	return res;
+	//std::string res(kmer_len, ' ');
+	//to_string(kmer_len, res.data());
+	//return res;
+	return refresh::kmer_to_string(data, kmer_len, false);
 }
 
 // *********************************************************************
