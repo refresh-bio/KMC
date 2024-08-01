@@ -34,9 +34,13 @@
 
 
 	#include <stdio.h>
-	#include <ext/algorithm>
-	#include <iostream>
-
+    #if defined(__clang__)
+        #include <algorithm>
+    #elif defined(__GNUC__)
+        #include <ext/algorithm>
+        using __gnu_cxx::copy_n;
+    #endif
+    #include <iostream>
 #else
 	#define my_fopen    fopen
 	#define my_fseek    _fseeki64
