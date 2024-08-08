@@ -9,6 +9,7 @@
 #include <cstring>
 #include <type_traits>
 #include <iterator>
+#include <cmath>
 
 #include "dragonbox.h"
 
@@ -344,6 +345,33 @@ namespace refresh
 			*out++ = '0';
 			*out = term;
 			return 1 + 1;
+		}
+		if (std::isnan(val))
+		{
+			*out++ = 'n';
+			*out++ = 'a';
+			*out++ = 'n';
+			*out = term;
+			return 4;
+		}
+		if (std::isinf(val))
+		{
+			if (val < static_cast<Floating>(0)) {
+				*out++ = '-';
+				*out++ = 'i';
+				*out++ = 'n';
+				*out++ = 'f';
+				*out = term;
+				return 5;
+			}
+			else
+			{
+				*out++ = 'i';
+				*out++ = 'n';
+				*out++ = 'f';
+				*out = term;
+				return 4;
+			}
 		}
 
 		size_t prec_bounded;
