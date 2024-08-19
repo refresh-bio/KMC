@@ -27,6 +27,7 @@
 #include <set>
 
 #if defined(_WIN32)
+#define NOMINMAX
 #include <windows.h>
 #include <psapi.h>
 #include <WbemIdl.h>
