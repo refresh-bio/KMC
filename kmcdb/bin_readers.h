@@ -86,7 +86,7 @@ namespace kmcdb
 					throw std::runtime_error("Cannot find " + stream_names::BinMetadata(bin_id) + " stream");
 
 				std::vector<uint8_t> serialized_bin_metadata;
-				size_t tmp;
+				uint64_t tmp;
 				//mkokot_TODO: w takich miejscach gdzie mi archive moze zwrocic false, wypadaloby pobrac tez kod bledu i komunikat bledu i dokleic do komunikatu wyjatku
 				if (!archive->get_part(metadata_stream_id, serialized_bin_metadata, tmp))
 					throw std::runtime_error("Stream" + stream_names::BinMetadata(bin_id) + " is empty");

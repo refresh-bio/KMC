@@ -45,7 +45,7 @@ namespace kmcdb
 			bytes_for_kmer((kmer_len + 3) / 4),
 			num_bytes_single_value(detail::vec_to_array<uint64_t, detail::values_size<VALUE_T>()>(num_bytes_single_value)),
 			single_elem_bytes(bytes_for_kmer + std::accumulate(num_bytes_single_value.begin(), num_bytes_single_value.end(), 0ull) * num_values),
-			serialized_data((std::max)(max_part_size, single_elem_bytes))
+			serialized_data((std::max)(max_part_size, static_cast<size_t>(single_elem_bytes)))
 		{
 
 		}
@@ -257,7 +257,7 @@ namespace kmcdb
 				lut_prefix_len,
 				num_bytes_single_value),
 			LUT((1ull << (2 * lut_prefix_len)) + 1), // + 1 for guard
-			serialized_data((std::max)(max_part_size, impl.single_suf_elem_bytes))
+			serialized_data((std::max)(max_part_size, static_cast<size_t>(impl.single_suf_elem_bytes)))
 		{
 
 		}

@@ -106,7 +106,7 @@ namespace kmcdb
 					return;
 
 				std::vector<uint8_t> serialized;
-				size_t meta;
+				uint64_t meta;
 				if (!archive->get_part(names_sample_stream_id, serialized, meta))
 					throw std::runtime_error("Stream" + stream_names::SAMPLE_NAMES + " is empty");
 
