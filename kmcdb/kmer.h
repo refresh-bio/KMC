@@ -2,7 +2,11 @@
 #define KMER_H_
 #include <cstdint>
 #include <cassert>
+#ifdef __aarch64__
+#include <arm_neon.h>
+#else
 #include <emmintrin.h>
+#endif
 #include "libs/refresh/conversions/lib/conversions.h"
 
 #ifdef _WIN32
@@ -120,7 +124,23 @@ template<unsigned SIZE> struct CKmer {
 
 		const uint64_t mask4 = 0b0000111100001111000011110000111100001111000011110000111100001111ull;
 		const uint64_t mask2 = 0b0011001100110011001100110011001100110011001100110011001100110011ull;
+#ifdef __aarch64__
+		const uint64x2_t v_mask4 = vdupq_n_u64(mask4); //vdupq_n_s64
+		const uint64x2_t v_mask2 = vdupq_n_u64(mask2);
+		const uint64x2_t v_mask_xor = vdupq_n_u64(-1ULL);
 
+		for (uint32_t i = 0; i + 1 < SIZE; i += 2)
+		{
+			//reversed order of uint64_t in NEON regarding to x64
+			uint64x2_t d = vcombine_u64(vcreate_u64(_bswap64(data[i + 1])), vcreate_u64(_bswap64(data[i])));
+			uint64x2_t sf4 = vaddq_u64(vshlq_n_u64(vandq_u64(d, v_mask4), 4), vandq_u64(vshrq_n_u64(d, 4), v_mask4));
+			uint64x2_t sf2 = vaddq_u64(vshlq_n_u64(vandq_u64(sf4, v_mask2), 2), vandq_u64(vshrq_n_u64(sf4, 2), v_mask2));
+
+			sf2 = veorq_u64(sf2, v_mask_xor);
+
+			vst1q_u64((uint64_t*)(res.data + SIZE - 2 - i), sf2);
+		}
+#else
 		const __m128i v_mask4 = _mm_set1_epi64x(mask4);
 		const __m128i v_mask2 = _mm_set1_epi64x(mask2);
 		const __m128i v_mask_xor = _mm_set1_epi64x(-1);
@@ -135,6 +155,7 @@ template<unsigned SIZE> struct CKmer {
 
 			_mm_storeu_si128((__m128i*) (res.data + SIZE - 2 - i), sf2);
 		}
+#endif
 
 		if constexpr (SIZE % 2 == 1)
 		{
@@ -143,12 +164,10 @@ template<unsigned SIZE> struct CKmer {
 
 			res.data[0] = ~_bswap64(sf2);
 		}
-
-		res.SHR(shift);
-
+		if (shift)
+			res.SHR(shift);
 		return res;
 	}
-
 };
 
 template <unsigned SIZE> uint32_t CKmer<SIZE>::KMER_SIZE = SIZE;
