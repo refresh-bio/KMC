@@ -62,7 +62,7 @@ namespace kmcdb
 				throw std::runtime_error("Cannot find " + stream_names::METADATA + " stream in file " + path);
 
 			std::vector<uint8_t> vec;
-			size_t tmp;
+			uint64_t tmp;
 			if (!archive.get_part(stream_id, vec, tmp))
 				throw std::runtime_error("Stream" + stream_names::METADATA + " is empty in file" + path);
 
