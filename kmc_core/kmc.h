@@ -162,18 +162,26 @@ template <unsigned SIZE> void CKMC<SIZE>::SetParamsStage1(const KMC::Stage1Param
 
 	if (Params.signature_len > Params.kmer_len) {
 		//just some choice, not sure how good
-		Params.signature_len = (Params.kmer_len * 3 + 1) / 4;
-		if (Params.signature_len < MIN_SL)
-			Params.signature_len = MIN_SL;
-		if (Params.signature_len > Params.kmer_len)
+		auto new_sig_len = (Params.kmer_len * 3 + 1) / 4;
+		if (new_sig_len < MIN_SL)
+			new_sig_len = MIN_SL;
+
+		//this is quite wierd, but the idea is that if we were unable to reduce sig len below kmer len
+		//we will keep the parameter and adjusting to small k opt will be kind of forced
+		//because it checks if kmer_len < signature_len, and if it is it forces to use small k opt,
+		//and if not possible it fails
+		if (new_sig_len > Params.kmer_len)
 		{
-			std::ostringstream err_msg;
-			err_msg << "its impossible to adjust signature len for this k";
-			throw std::runtime_error(err_msg.str());
+			new_sig_len = Params.signature_len;
 		}
-		std::ostringstream ostr;
-		ostr << "signature len cannot be larger than k-mer len, reducing signature len to " << Params.signature_len;
-		Params.warningsLogger->Log(ostr.str());	
+
+		if (new_sig_len != Params.signature_len)
+		{
+			std::ostringstream ostr;
+			ostr << "signature len cannot be larger than k-mer len, reducing signature len to " << new_sig_len;
+			Params.warningsLogger->Log(ostr.str());
+			Params.signature_len = new_sig_len;
+		}
 	}
 
 	Params.bin_part_size = 1 << 16;
@@ -959,7 +967,7 @@ KMC::Stage2Results CKMC<SIZE>::ProcessSmallKOptimization_Stage2()
 	uint32 best_lut_prefix_len = 0;
 	uint64 best_mem_amount = 1ull << 62;
 
-	if (Params.output_type == OutputType::KMC)
+	if (Params.output_type == OutputType::KMC || Params.output_type == OutputType::KMCDB)
 	{
 		uint32 counter_size = 0;
 
@@ -987,6 +995,29 @@ KMC::Stage2Results CKMC<SIZE>::ProcessSmallKOptimization_Stage2()
 		}
 
 		Params.lut_prefix_len = best_lut_prefix_len;
+
+		if (Params.output_type == KMC::OutputFileType::KMCDB && !Params.without_output)
+		{
+			//mkokot_TODO: I have similar code in this file, maybe extract to some commont function, like init_kmcdb,
+			//but here Im using WriterSortedWithLUT, and in the other place WriterSortedWithLUTRaw, so maybe it is not worth it
+			kmcdb::Config config;
+			kmcdb::ConfigSortedWithLUT representation_config;
+			representation_config.lut_prefix_len = Params.lut_prefix_len;
+			config.kmer_len = Params.kmer_len;
+			config.num_bins = 1; // for small k opt we have only one bin
+
+			config.num_bytes_single_value = { calc_counter_size(Params.cutoff_max, Params.counter_max) };
+			Queues.kmcdb_writer_small_k_opt = std::make_unique<kmcdb::WriterSortedWithLUT<uint64_t>>(
+				config,
+				representation_config,
+				Params.output_file_name);
+
+			//mkokot_TODO: probably should be possible to turn off with parameters!!!!
+			//mkokot_TODO: maybe this should be a part of config... although in this mode we may enable disable this when desired
+			//mkokot_TODO: actually this is more complex, because there are issues if more than one thread at once is listening to cerr cout (because how I implemented this, more comments in kmcdb)
+			Queues.kmcdb_writer_small_k_opt->CaptureStdCout(false);
+			Queues.kmcdb_writer_small_k_opt->CaptureStdCerr(false);
+		}
 	}
 	else if (Params.output_type == OutputType::KFF)
 		Params.lut_prefix_len = 0;
@@ -1283,26 +1314,6 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessOnlyEstimateHisto
 template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 {
 	CStopWatch timer_stage1;
-	if (Params.output_type == KMC::OutputFileType::KMCDB && !Params.without_output)
-	{
-		kmcdb::Config config;
-		kmcdb::ConfigSortedWithLUT representation_config;
-		representation_config.lut_prefix_len = std::numeric_limits<uint64_t>::max(); //unknow yet, will be overriden when determined
-		config.kmer_len = Params.kmer_len;
-		config.num_bins = Params.n_bins;
-
-		config.num_bytes_single_value = { calc_counter_size(Params.cutoff_max, Params.counter_max) };
-		Queues.kmcdb_writer = std::make_unique<kmcdb::WriterSortedWithLUTRaw<uint64_t>>(
-			config,
-			representation_config,
-			Params.output_file_name);
-
-		//mkokot_TODO: probably should be possible to turn off with parameters!!!!
-		//mkokot_TODO: maybe this should be a part of config... although in this mode we may enable disable this when desired
-		//mkokot_TODO: actually this is more complex, because there are issues if more than one thread at once is listening to cerr cout (because how I implemented this, more comments in kmcdb)
-		Queues.kmcdb_writer->CaptureStdCout(false);
-		Queues.kmcdb_writer->CaptureStdCerr(false);
-	}
 	timer_stage1.startTimer();
 	KMC::Stage1Results results{};
 	if (!initialized)
@@ -1325,6 +1336,27 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 
 	if (!AdjustMemoryLimits())
 		throw std::runtime_error("Cannot adjust memory, please contact authors");
+
+	if (Params.output_type == KMC::OutputFileType::KMCDB && !Params.without_output)
+	{
+		kmcdb::Config config;
+		kmcdb::ConfigSortedWithLUT representation_config;
+		representation_config.lut_prefix_len = std::numeric_limits<uint64_t>::max(); //unknow yet, will be overriden when determined
+		config.kmer_len = Params.kmer_len;
+		config.num_bins = Params.n_bins;
+
+		config.num_bytes_single_value = { calc_counter_size(Params.cutoff_max, Params.counter_max) };
+		Queues.kmcdb_writer = std::make_unique<kmcdb::WriterSortedWithLUTRaw<uint64_t>>(
+			config,
+			representation_config,
+			Params.output_file_name);
+
+		//mkokot_TODO: probably should be possible to turn off with parameters!!!!
+		//mkokot_TODO: maybe this should be a part of config... although in this mode we may enable disable this when desired
+		//mkokot_TODO: actually this is more complex, because there are issues if more than one thread at once is listening to cerr cout (because how I implemented this, more comments in kmcdb)
+		Queues.kmcdb_writer->CaptureStdCout(false);
+		Queues.kmcdb_writer->CaptureStdCerr(false);
+	}
 
 	// Create queues
 	Queues.input_files_queue = std::make_unique<CInputFilesQueue>(Params.input_file_names);

@@ -1042,9 +1042,8 @@ void CWEstimateOnlySplitter::GetTotal(uint64& _n_reads)
 
 
 //instantiate some templates
-template bool CSplitter::ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType read_type, CSmallKBuf<uint32>& small_k_buf);
+//mkokot_TODO: I removed istantiations for uint32_t, because it seems I always use uint64_t as COUNTER_TYPE, so maybe I should make this CSmallKBuf<uint64> not a template
 template bool CSplitter::ProcessReadsSmallK(uchar *_part, uint64 _part_size, ReadType read_type, CSmallKBuf<uint64>& small_k_buf);
-template class CWSmallKSplitter<uint32>;
 template class CWSmallKSplitter<uint64>;
 
 template void CWSplitter::operator() <CSignatureMapper> (CSignatureMapper* s_mapper);

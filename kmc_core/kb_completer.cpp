@@ -75,7 +75,7 @@ void CKmerBinCompleter::ProcessBinsFirstStage()
 	{
 		//throw std::runtime_error("Signature mapping cannot be stored in KMCDB format");
 		std::cerr << "Signature mapping cannot be stored in KMCDB format\n";
-		exit(1); // z jakiegos powodu moja obsluga wyjatkow zle dziala i nie zatrzymywalo calej aplikacji... masakra...
+		exit(1); // mkokot_TODO: z jakiegos powodu moja obsluga wyjatkow zle dziala i nie zatrzymywalo calej aplikacji... masakra...
 	}
 
 	if (output_type == OutputType::KMC && need_to_store_sig_to_bin_mapping())

@@ -108,6 +108,7 @@ class CSmallKCompleter
 	uint32 kmer_len;
 	int64 mem_tot_small_k_completer;
 	std::string output_file_name;
+	kmcdb::WriterSortedWithLUT<uint64_t>* kmcdb_writer_small_k_opt{};
 	bool both_strands;	
 	bool without_output;
 	OutputType output_type;
@@ -121,6 +122,9 @@ public:
 
 	template<typename COUNTER_TYPE>
 	bool CompleteKMCFormat(CSmallKBuf<COUNTER_TYPE> results);
+
+	template<typename COUNTER_TYPE>
+	bool CompleteKMCDBFormat(CSmallKBuf<COUNTER_TYPE> results);
 
 	template<typename COUNTER_TYPE>
 	bool CompleteKFFFormat(CSmallKBuf<COUNTER_TYPE> results);
@@ -143,6 +147,7 @@ CSmallKCompleter::CSmallKCompleter(CKMCParams& Params, CKMCQueues& Queues)
 
 	mem_tot_small_k_completer = Params.mem_tot_small_k_completer;
 	output_file_name = Params.output_file_name;
+	kmcdb_writer_small_k_opt = Queues.kmcdb_writer_small_k_opt.get();
 	output_type = Params.output_type;
 }
 
@@ -317,6 +322,38 @@ bool CSmallKCompleter::CompleteKMCFormat(CSmallKBuf<COUNTER_TYPE> result)
 }
 
 template<typename COUNTER_TYPE>
+bool CSmallKCompleter::CompleteKMCDBFormat(CSmallKBuf<COUNTER_TYPE> results)
+{
+	auto bin = kmcdb_writer_small_k_opt->GetBin(0);
+
+	kmcdb::CKmer<1> kmer;
+
+	for (kmer.data = 0; kmer.data < (1ull << 2 * kmer_len); ++kmer.data)
+	{
+		if (results.buf[kmer.data]) //k-mer exists
+		{
+			++n_unique;
+
+			if (results.buf[kmer.data] < cutoff_min)
+				++n_cutoff_min;
+			else if (results.buf[kmer.data] > (uint64)cutoff_max)
+				++n_cutoff_max;
+			else
+			{
+				if (!this->without_output)
+				{
+					if (results.buf[kmer.data] > (uint64)counter_max)
+						results.buf[kmer.data] = (COUNTER_TYPE)counter_max;
+
+					bin->AddKmer(kmer, &results.buf[kmer.data]);
+				}
+			}
+		}
+	}
+
+	return true;
+}
+template<typename COUNTER_TYPE>
 bool CSmallKCompleter::CompleteKFFFormat(CSmallKBuf<COUNTER_TYPE> result)
 {
 	uchar* raw_buffer;
@@ -394,6 +431,8 @@ bool CSmallKCompleter::Complete(CSmallKBuf<COUNTER_TYPE> result)
 		return CompleteKMCFormat(result);
 	case OutputType::KFF:
 		return CompleteKFFFormat(result);
+	case KMC::OutputFileType::KMCDB:
+		return CompleteKMCDBFormat(result);
 	default:
 		std::ostringstream ostr;
 		ostr << "Error: not implemented, please contact authors showing this message" << __FILE__ << "\t" << __LINE__;

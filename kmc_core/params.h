@@ -200,6 +200,7 @@ struct CKMCQueues
 
 	//if the output format is kmcdb
 	std::unique_ptr<kmcdb::WriterSortedWithLUTRaw<uint64_t>> kmcdb_writer;
+	std::unique_ptr<kmcdb::WriterSortedWithLUT<uint64_t>> kmcdb_writer_small_k_opt; //only for small k optimization
 };
 
 #endif

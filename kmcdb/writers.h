@@ -435,7 +435,7 @@ namespace kmcdb
 			const Config& config,
 			const ConfigSortedWithLUT& representation_config,
 			const std::string& path,
-			const std::string& path_created_from,
+			const std::string& path_created_from = "",
 			const std::vector<std::string>& sample_names = {},
 			size_t max_part_size = 1ull << 23) :
 			WriterBase<VALUE_T, BIN_T>(
