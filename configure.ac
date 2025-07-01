@@ -7,6 +7,8 @@ m4_include([m4/ax_gcc_x86_cpu_supports.m4])
 AC_PREREQ([2.67])
 AC_INIT([kmc], [3.7.5], [gtg240@gmail.com])
 AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_MACRO_DIRS([m4])
+ACLOCAL_AMFLAGS="-I m4"
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([1.11 subdir-objects foreign])
 AM_SILENT_RULES([yes])
@@ -14,13 +16,12 @@ AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 # Checks for programs.
 OLD_CXXFLAGS=${CXXFLAGS}
-AC_PROG_CXXCPP
 AC_PROG_CXX
-CXXFLAGS="${OLD_CXXFLAGS} -O3"
-AC_PROG_RANLIB
 AC_PROG_LN_S
 AC_PROG_SED
 AC_PROG_AWK
+LT_INIT
+CXXFLAGS="${OLD_CXXFLAGS} -O3"
 [
 if test "x`${CXX} --version | $SED -n -e 's/.*\Apple \(LLVM\) version.*clang.*/\1/p'`" = "xLLVM" ;
 then
