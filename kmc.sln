@@ -4,18 +4,24 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_core", "kmc_core\kmc_core.vcxproj", "{8C8B90DA-28B7-4D82-81F3-C0E7CE52D59F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E} = {A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_dump", "kmc_dump\kmc_dump.vcxproj", "{8939AD12-23D5-469C-806B-DC3F98F8A514}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_dump_sample", "kmc_dump_sample\kmc_dump_sample.vcxproj", "{17823F37-86DE-4E58-B354-B84DA9EDA6A1}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_tools", "kmc_tools\kmc_tools.vcxproj", "{F3B0CC94-9DD0-4642-891C-EA08BDA50260}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E} = {A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "py_kmc_api", "py_kmc_api\py_kmc_api.vcxproj", "{785C60CA-BFEA-4208-BA3B-3D8E2A79FD9C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kmc_CLI", "kmc_CLI\kmc_CLI.vcxproj", "{043DA599-2052-4FD8-B166-A5E24A9BF8BA}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "3rd_party\cloudflare\build\zlib.vcxproj", "{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "refresh_prebuild", "3rd_party\refresh_prebuild\refresh_prebuild.vcxproj", "{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -175,36 +181,36 @@ Global
 		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.RelWithDebInfo|Win32.Build.0 = Release|Win32
 		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.RelWithDebInfo|x64.ActiveCfg = Release|x64
 		{043DA599-2052-4FD8-B166-A5E24A9BF8BA}.RelWithDebInfo|x64.Build.0 = Release|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.Debug|Mixed Platforms.Build.0 = Debug|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.Debug|Win32.ActiveCfg = Debug|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.Debug|Win32.Build.0 = Debug|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.Debug|x64.ActiveCfg = Debug|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.Debug|x64.Build.0 = Debug|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.MinSizeRel|Mixed Platforms.ActiveCfg = MinSizeRel|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.MinSizeRel|Mixed Platforms.Build.0 = MinSizeRel|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.MinSizeRel|Win32.ActiveCfg = MinSizeRel|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.MinSizeRel|Win32.Build.0 = MinSizeRel|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.MinSizeRel|x64.ActiveCfg = MinSizeRel|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.MinSizeRel|x64.Build.0 = MinSizeRel|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.Release|Mixed Platforms.ActiveCfg = Release|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.Release|Mixed Platforms.Build.0 = Release|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.Release|Win32.ActiveCfg = Release|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.Release|Win32.Build.0 = Release|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.Release|x64.ActiveCfg = Release|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.Release|x64.Build.0 = Release|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.RelWithDebInfo|Mixed Platforms.ActiveCfg = RelWithDebInfo|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.RelWithDebInfo|Mixed Platforms.Build.0 = RelWithDebInfo|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.RelWithDebInfo|Win32.ActiveCfg = RelWithDebInfo|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.RelWithDebInfo|Win32.Build.0 = RelWithDebInfo|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
-		{AE29051E-E1D8-3F22-9CA9-64EDD3E02BA3}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Debug|Mixed Platforms.Build.0 = Debug|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Debug|Win32.Build.0 = Debug|Win32
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Debug|x64.ActiveCfg = Debug|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Debug|x64.Build.0 = Debug|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.MinSizeRel|Mixed Platforms.ActiveCfg = Release|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.MinSizeRel|Mixed Platforms.Build.0 = Release|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.MinSizeRel|Win32.ActiveCfg = Release|Win32
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.MinSizeRel|Win32.Build.0 = Release|Win32
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.MinSizeRel|x64.ActiveCfg = Release|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.MinSizeRel|x64.Build.0 = Release|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Release|Mixed Platforms.ActiveCfg = Release|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Release|Mixed Platforms.Build.0 = Release|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Release|Win32.ActiveCfg = Release|Win32
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Release|Win32.Build.0 = Release|Win32
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Release|x64.ActiveCfg = Release|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.Release|x64.Build.0 = Release|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.RelWithDebInfo|Mixed Platforms.ActiveCfg = Debug|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.RelWithDebInfo|Mixed Platforms.Build.0 = Debug|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.RelWithDebInfo|Win32.ActiveCfg = Debug|Win32
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.RelWithDebInfo|Win32.Build.0 = Debug|Win32
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.RelWithDebInfo|x64.ActiveCfg = Debug|x64
+		{A4C1A9FF-DD26-4680-BF2A-0DE3BCD88F4E}.RelWithDebInfo|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		VisualSVNWorkingCopyRoot = .
 		SolutionGuid = {BC3A0CEE-782E-46DC-A9C0-330A04586DCF}
+		VisualSVNWorkingCopyRoot = .
 	EndGlobalSection
 EndGlobal

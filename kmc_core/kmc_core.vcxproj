@@ -297,11 +297,6 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\3rd_party\cloudflare\build\zlib.vcxproj">
-      <Project>{ae29051e-e1d8-3f22-9ca9-64edd3e02ba3}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

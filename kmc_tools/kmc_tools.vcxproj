@@ -104,7 +104,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies />
+      <AdditionalDependencies>../3rd_party/zlib-ng-compat/build-vs/Debug/zlibstaticd.lib;</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
@@ -145,7 +145,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <Profile>true</Profile>
-      <AdditionalDependencies />
+      <AdditionalDependencies>../3rd_party/zlib-ng-compat/build-vs/Release/zlibstatic.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -210,11 +210,6 @@
     <ClCompile Include="percent_progress.cpp" />
     <ClCompile Include="thread_watch.cpp" />
     <ClCompile Include="tokenizer.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\3rd_party\cloudflare\build\zlib.vcxproj">
-      <Project>{ae29051e-e1d8-3f22-9ca9-64edd3e02ba3}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
