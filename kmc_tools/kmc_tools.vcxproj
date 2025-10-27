@@ -72,12 +72,14 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>../3rd_party/zlib-ng-compat/build-vs/;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>../3rd_party/zlib-ng-compat/build-vs/;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -149,7 +151,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\3rd_party\cloudflare\zlib.h" />
     <ClInclude Include="..\kmc_api\kmc_file.h" />
     <ClInclude Include="..\kmc_api\kmer_api.h" />
     <ClInclude Include="..\kmc_api\mmer.h" />
@@ -179,8 +180,6 @@
     <ClInclude Include="kmer.h" />
     <ClInclude Include="libs\bzlib.h" />
     <ClInclude Include="libs\bzlib_private.h" />
-    <ClInclude Include="libs\zconf.h" />
-    <ClInclude Include="libs\zlib.h" />
     <ClInclude Include="meta_oper.h" />
     <ClInclude Include="nc_utils.h" />
     <ClInclude Include="operations.h" />

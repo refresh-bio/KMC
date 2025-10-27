@@ -81,12 +81,6 @@
     <ClInclude Include="libs\bzlib_private.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="libs\zconf.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="libs\zlib.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="fastq_reader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -139,9 +133,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="kff_kmc2_reader_utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\3rd_party\cloudflare\zlib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

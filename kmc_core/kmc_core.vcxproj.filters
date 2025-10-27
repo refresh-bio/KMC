@@ -203,7 +203,6 @@
     <ClInclude Include="thread_cancellation_exception.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\3rd_party\cloudflare\zlib.h" />
     <ClInclude Include="..\kmc_api\murmur64_hash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
