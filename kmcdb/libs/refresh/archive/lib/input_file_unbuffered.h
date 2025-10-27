@@ -12,7 +12,7 @@ namespace refresh
 		class input_file_unbuffered : public input_common
 		{
 		protected:
-			FILE* f;
+			FILE* f{};
 
 		public:
 			// *******************************************************************************************

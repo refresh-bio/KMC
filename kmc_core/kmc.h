@@ -327,7 +327,7 @@ template <unsigned SIZE> void CKMC<SIZE>::SetThreads1Stage(const KMC::Stage1Para
 			uint64 file_size_threshold = (uint64)(file_sizes.front() * 0.05);
 			int32 n_allowed_files = 0;
 			for (auto& p : file_sizes)
-				if (p > file_size_threshold)
+				if (p >= file_size_threshold)
 					++n_allowed_files;
 			Params.n_readers = MIN(n_allowed_files, MAX(1, cores / 2));
 		}

@@ -13,7 +13,7 @@ namespace refresh
 		class output_file_unbuffered : public output_common
 		{
 		protected:
-			FILE* f;
+			FILE* f{};
 
 		public:
 			// *******************************************************************************************

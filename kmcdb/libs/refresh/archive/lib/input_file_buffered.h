@@ -33,7 +33,7 @@ namespace refresh
 				f_size = std::filesystem::file_size(fp);
 				f_pos = 0;
 
-				if (f_size > buffer_size)
+				if (f_size < buffer_size)
 					buffer_size = f_size;
 
 				f = fopen(file_name.c_str(), "rb");

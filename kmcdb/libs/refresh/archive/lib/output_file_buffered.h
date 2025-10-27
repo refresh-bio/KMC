@@ -13,7 +13,7 @@ namespace refresh
 		class output_file_buffered : public output_common
 		{
 		protected:
-			FILE* f;
+			FILE* f{};
 			std::vector<uint8_t> buffer;
 			const size_t buffer_size;
 
