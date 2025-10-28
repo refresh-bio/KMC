@@ -6,6 +6,8 @@
 #include "output_stdout_memory.h"
 #include "output_file_buffered.h"
 #include "output_file_unbuffered.h"
+#include "output_file_memory_mapped.h"
+#include "output_file_low_level.h"
 
 namespace refresh
 {
@@ -322,6 +324,18 @@ namespace refresh
 				output = std::make_unique<refresh::io::output_file_buffered_reopen>(file_name, buffer_size);
 			else
 				output = std::make_unique<refresh::io::output_file_buffered>(file_name, buffer_size);
+			params = _params;
+
+			return open_check();
+		}
+
+		// *******************************************************************************************
+		bool open_file_low_level(const std::string& file_name, const size_t buffer_size = 32 << 20, const params_t& _params = params_t())
+		{
+			if (!archive_params_check(_params))
+				return false;
+
+			output = std::make_unique<refresh::io::output_file_low_level>(file_name, buffer_size);
 			params = _params;
 
 			return open_check();

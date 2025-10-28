@@ -2,11 +2,13 @@
 
 #include <memory>
 #include <filesystem>
+#include <algorithm>
 
 #include "archive_common.h"
 #include "input_stdin_memory.h"
 #include "input_file_buffered.h"
 #include "input_file_unbuffered.h"
+#include "input_file_memory_mapped.h"
 
 namespace refresh
 {
@@ -365,7 +367,7 @@ namespace refresh
 					return false;
 			}
 
-			sub_part_size = std::min(max_sub_part_size, p.parts[p.cur_id].size - p.sub_part_offset);
+			sub_part_size = std::min<size_t>(max_sub_part_size, p.parts[p.cur_id].size - p.sub_part_offset);
 
 			input->read(data, sub_part_size);
 			p.sub_part_offset += sub_part_size;
@@ -542,6 +544,25 @@ namespace refresh
 				input = std::make_unique<refresh::io::input_file_buffered_reopen>(file_name, buffer_size);
 			else
 				input = std::make_unique<refresh::io::input_file_buffered>(file_name, buffer_size);
+
+			return prepare();
+		}
+
+		// *******************************************************************************************
+		bool open_file_memory_mapped(const std::string& file_name, const bool reopen_mode, const size_t buffer_size = 32 << 20)
+		{
+			std::filesystem::path fp(file_name);
+
+			if (!std::filesystem::exists(fp))
+			{
+				err_code = ec_file_open;
+				return false;
+			}
+			
+			if (reopen_mode)
+				input = std::make_unique<refresh::io::input_file_memory_mapped_reopen>(file_name, buffer_size);
+			else
+				input = std::make_unique<refresh::io::input_file_memory_mapped>(file_name, buffer_size);
 
 			return prepare();
 		}

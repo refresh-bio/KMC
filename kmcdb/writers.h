@@ -224,7 +224,8 @@ namespace kmcdb
 			//mkokot_TODO: rozwazyc czy wyeksponowac mozliwosc wyboru:
 			//  -  czy buforowane czy niebuforowane
 			//  -  czy z reopen czy bez
-			if (!archive.open_file_unbuffered(path, false, archive_params))
+			//if (!archive.open_file_unbuffered(path, false, archive_params))
+			if (!archive.open_file_low_level(path))
 				throw std::runtime_error("Cannot open file " + path);
 
 			return &archive;

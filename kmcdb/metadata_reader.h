@@ -53,7 +53,8 @@ namespace kmcdb
 		MetadataReader(const std::string& path, const bool reopen_mode)
 		{
 			//mkokot_TODO: different exception type?
-			if (!archive.open_file_unbuffered(path, reopen_mode))
+			//if (!archive.open_file_unbuffered(path, reopen_mode))
+			if (!archive.open_file_memory_mapped(path, reopen_mode))
 				throw std::runtime_error("Cannot open file " + path);
 
 			stream_id = archive.get_stream_id(stream_names::METADATA);

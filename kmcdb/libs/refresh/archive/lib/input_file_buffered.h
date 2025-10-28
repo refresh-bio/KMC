@@ -152,7 +152,8 @@ namespace refresh
 			// *******************************************************************************************
 			virtual bool eof() const
 			{
-				return before_buffer_bytes + buffer_pos >= f_pos;
+//				return before_buffer_bytes + buffer_pos >= f_pos;			// !!! Was it a bug ?
+				return before_buffer_bytes + buffer_pos >= f_size;
 			}
 			
 			// *******************************************************************************************
