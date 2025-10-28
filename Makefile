@@ -151,7 +151,7 @@ $(LIB_ZLIB):
 	cd 3rd_party/zlib-ng-compat && cmake -DCMAKE_CXX_COMPILER=$(CXX) -DCMAKE_C_COMPILER=$(CC) -B build-g++/zlib-ng -S . -DZLIB_COMPAT=ON -DWITH_GZFILEOP=ON; cmake --build build-g++/zlib-ng --config Release
 
 $(KMC_CLI_OBJS) $(KMC_CORE_OBJS) $(KMC_DUMP_OBJS) $(KMC_API_OBJS) $(KFF_OBJS) $(KMC_TOOLS_OBJS): %.o: %.cpp
-	$(CXX) $(CFLAGS) -I 3rd_party/cloudflare -I $(KMCDB_DIR) -c $< -o $@
+	$(CXX) $(CFLAGS) -I $(KMCDB_DIR) -c $< -o $@
 
 $(KMC_MAIN_DIR)/raduls_sse2.o: $(KMC_MAIN_DIR)/raduls_sse2.cpp
 	$(CXX) $(CFLAGS) -msse2 -c $< -o $@
@@ -182,7 +182,7 @@ kmc_dump: $(KMC_DUMP_OBJS) $(KMC_API_OBJS)
 
 kmc_tools: $(KMC_TOOLS_OBJS) $(KMC_API_OBJS) $(KFF_OBJS) $(LIB_ZLIB)
 	-mkdir -p $(OUT_BIN_DIR)
-	$(CXX) $(CLINK) -I 3rd_party/cloudflare -o $(OUT_BIN_DIR)/$@ $^
+	$(CXX) $(CLINK) -o $(OUT_BIN_DIR)/$@ $^
 
 $(PY_KMC_API_DIR)/%.o: $(KMC_API_DIR)/%.cpp
 	$(CXX) -c -fPIC -Wall -O3 $(CPU_FLAGS) -std=c++20 $^ -o $@
@@ -204,4 +204,3 @@ clean:
 	-rm -f $(PY_KMC_API_DIR)/*.so
 	-rm -rf $(OUT_BIN_DIR)
 	-rm -rf $(OUT_INCLUDE_DIR)
-	cd 3rd_party/cloudflare; make clean;

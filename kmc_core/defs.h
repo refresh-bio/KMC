@@ -116,7 +116,7 @@ using __gnu_cxx::copy_n;
 
 
 const int32 MAX_STR_LEN = 32768;
-#define ALIGNMENT 0x100
+constexpr int ALIGNMENT = 0x100;
 
 #define BYTE_LOG(x) (((x) < (1 << 8)) ? 1 : ((x) < (1 << 16)) ? 2 : ((x) < (1 << 24)) ? 3 : 4)
 
