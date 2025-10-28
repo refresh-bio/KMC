@@ -212,7 +212,8 @@ namespace kmcdb
 		{
 			assert(vec.size() == Size);
 			std::array<T, Size> res;
-			std::copy_n(vec.begin(), vec.size(), res.begin());
+			if constexpr (Size != 0)
+				std::copy_n(vec.begin(), vec.size(), res.begin());
 			return res;
 		}
 

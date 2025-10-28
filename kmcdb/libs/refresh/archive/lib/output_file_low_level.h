@@ -202,7 +202,7 @@ namespace refresh
 					if (ftruncate(file_handle, TOTAL_SIZE) != 0)
 						perror("ftruncate");
 #else
-				// macOS/Inne Unixy: u¿ywamy ftruncate do ustawienia rozmiaru
+				// macOS/Inne Unixy: uzywamy ftruncate do ustawienia rozmiaru
 				if (ftruncate(file_handle, TOTAL_SIZE) != 0) {
 					perror("ftruncate");
 				}
@@ -258,7 +258,8 @@ namespace refresh
 					int fd_trim = ::open(file_name.c_str(), O_WRONLY);
 					if (fd_trim != INVALID_HANDLE) 
 					{
-						ftruncate(fd_trim, file_size_on_disk);
+						if(ftruncate(fd_trim, file_size_on_disk) != 0)
+							perror("ftruncate");
 						::close(fd_trim);
 					}
 #endif
