@@ -68,11 +68,12 @@ namespace refresh
 			bool map_file_section(const size_t offset, const size_t size)
 			{
 				segment_start = offset / segment_size * segment_size;
-				segment_filled = std::min<size_t>(size, f_size - segment_start);
 
 #ifdef _WIN32
 				if(segment != nullptr)
 					UnmapViewOfFile(segment);
+
+				segment_filled = std::min<size_t>(size, f_size - segment_start);
 
 				// Windows: MapViewOfFile
 				void *addr = MapViewOfFile(
@@ -81,16 +82,24 @@ namespace refresh
 					segment_filled);
 
 				if (addr == NULL)
+				{
+					segment = nullptr;
 					return false;
+				}
 #else
 				if(segment != nullptr)
 					munmap(segment, segment_filled);
 
+				segment_filled = std::min<size_t>(size, f_size - segment_start);
+
 				// POSIX: mmap 
 				void *addr = mmap(NULL, segment_filled, PROT_READ, MAP_SHARED, file_handle, segment_start);
 
-				if (addr == MAP_FAILED)
+				if (addr == NULL)
+				{
+					segment = nullptr;
 					return false;
+				}
 
 				// Optional optimization 
 				madvise(addr, segment_filled, MADV_SEQUENTIAL);
