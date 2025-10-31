@@ -342,6 +342,18 @@ namespace refresh
 		}
 
 		// *******************************************************************************************
+		bool open_file_low_level_threaded(const std::string& file_name, const size_t buffer_size = 32 << 20, const size_t queue_size = 8, const params_t& _params = params_t())
+		{
+			if (!archive_params_check(_params))
+				return false;
+
+			output = std::make_unique<refresh::io::output_file_low_level_threaded>(file_name, buffer_size, queue_size);
+			params = _params;
+
+			return open_check();
+		}
+
+		// *******************************************************************************************
 		bool close()
 		{
 			std::lock_guard<std::mutex> lck(mtx);

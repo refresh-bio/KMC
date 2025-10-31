@@ -67,6 +67,9 @@ namespace refresh
 			// *******************************************************************************************
 			bool map_file_section(const size_t offset, const size_t size)
 			{
+				if(segment_size == 0)
+					return false;
+
 				segment_start = offset / segment_size * segment_size;
 
 #ifdef _WIN32
@@ -173,7 +176,13 @@ namespace refresh
 			// *******************************************************************************************
 			virtual ~input_file_memory_mapped()
 			{
-				close();
+				try
+				{
+					close();
+				}
+				catch (...)
+				{
+				}
 			}
 
 			// *******************************************************************************************

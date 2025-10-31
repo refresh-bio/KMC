@@ -4,8 +4,15 @@
 #include "io_utils.h"
 
 #include <string>
+#include <cstring>
 #include <future>
 #include <vector>
+#include <list>
+#include <stack>
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -38,6 +45,7 @@ namespace refresh
 			std::string file_name;
 			FileHandleType file_handle = INVALID_HANDLE;
 			size_t file_size_on_disk{};
+			size_t prealocated_size{};
 			uint8_t* buffer;
 			size_t buffer_offset{};
 			const size_t ALIGNMENT = 4096;
@@ -133,15 +141,15 @@ namespace refresh
 
 #else 
 				// Linux, macOS
-/*				ssize_t bytesWritten = ::write(file_handle, ptr, n_bytes);
-				
-				if (bytesWritten == -1 || (size_t)bytesWritten != n_bytes)
+#ifdef __linux__
+/*				if (file_size_on_disk + n_bytes > prealocated_size)
 				{
-					perror("write");
-					return false;
+					prealocated_size = file_size_on_disk + n_bytes + 16 * buffer_size;
+					if (fallocate(file_handle, 0, 0, prealocated_size) != 0)
+						if (ftruncate(file_handle, prealocated_size) != 0) 
+							perror("ftruncate");
 				}*/
 
-#ifdef __linux__
 				if (posix_fallocate(file_handle, 0, file_size_on_disk + n_bytes) != 0)
 					if (ftruncate(file_handle, file_size_on_disk + n_bytes) != 0) 
 						perror("ftruncate");
@@ -193,16 +201,16 @@ namespace refresh
 				// Windows
 				LONG high_size = (LONG)(TOTAL_SIZE >> 32);
 				DWORD low_size = (DWORD)TOTAL_SIZE;
-				if (SetFilePointer(file_handle, low_size, &high_size, FILE_BEGIN) != INVALID_SET_FILE_POINTER || GetLastError() == NO_ERROR) 
+				if (SetFilePointer(file_handle, low_size, &high_size, FILE_BEGIN) != INVALID_SET_FILE_POINTER && GetLastError() == NO_ERROR) 
 					SetEndOfFile(file_handle);
 #else
 #ifdef __linux__
 				// Linux, macOS
-				if (posix_fallocate(file_handle, 0, TOTAL_SIZE) != 0) 
+				if (posix_fallocate(file_handle, 0, TOTAL_SIZE) != 0)
 					if (ftruncate(file_handle, TOTAL_SIZE) != 0)
 						perror("ftruncate");
 #else
-				// macOS/Inne Unixy: uzywamy ftruncate do ustawienia rozmiaru
+				// macOS/Inne Unixy: używamy ftruncate do ustawienia rozmiaru
 				if (ftruncate(file_handle, TOTAL_SIZE) != 0) {
 					perror("ftruncate");
 				}
@@ -293,7 +301,7 @@ namespace refresh
 				uint8_t* local_ptr = const_cast<uint8_t*>(ptr);
 				size_t bytes_to_write = 0;
 
-				if (buffer_offset == 0 && size_t(local_ptr) % ALIGNMENT == 0)
+				if (buffer_offset == 0 && uintptr_t(local_ptr) % ALIGNMENT == 0)
 				{
 					size_t full_blocks = n_bytes / ALIGNMENT;
 
@@ -344,6 +352,436 @@ namespace refresh
 				return n_bytes;
 			}
 		};
+
+		// *******************************************************************************************
+		// 
+		// *******************************************************************************************
+		class output_file_low_level_threaded : public output_common
+		{
+			class simple_queue
+			{
+			private:
+				size_t capacity;
+				std::list<std::pair<uint8_t*, size_t>> data;
+
+				std::mutex mtx;
+				std::condition_variable cv_not_empty;
+				std::condition_variable cv_not_full;
+				bool stopped{ false };
+
+			public:
+				simple_queue(size_t capacity) : capacity(capacity)
+				{
+				}
+
+				bool push(std::pair<uint8_t*, size_t> item)
+				{
+					std::unique_lock<std::mutex> lck(mtx);
+					cv_not_full.wait(lck, [this]() { return data.size() < capacity; });
+
+					data.push_back(item);
+
+					cv_not_empty.notify_one();
+
+					return true;
+				}
+
+				bool pop(std::pair<uint8_t*, size_t>& item)
+				{
+					std::unique_lock<std::mutex> lck(mtx);
+					cv_not_empty.wait(lck, [this]() { return !data.empty() || stopped; });
+
+					if(data.empty() && stopped)
+					{
+						item = std::make_pair<uint8_t*, size_t>(nullptr, 0);
+						return false;
+					}
+
+					item = data.front();
+					data.pop_front();
+
+					cv_not_full.notify_one();
+					
+					return true;
+				}
+
+				void stop()
+				{
+					std::unique_lock<std::mutex> lck(mtx);
+					stopped = true;
+					cv_not_empty.notify_all();
+				}
+			};
+
+		protected:
+			std::string file_name;
+			FileHandleType file_handle = INVALID_HANDLE;
+			size_t file_size_on_disk{};
+			size_t prealocated_size{};
+
+			uint8_t* buffer;
+			size_t buffer_offset{};
+			const size_t ALIGNMENT = 4096;
+			size_t buffer_size;
+			size_t queue_capacity;
+
+			simple_queue write_queue;
+			std::stack<uint8_t*> free_buffers;
+			std::mutex free_buffers_mtx;
+
+			std::thread write_thread;
+			std::atomic<bool> writing_ok{ true };
+
+			// *******************************************************************************************
+			uint8_t *allocate_buffer()
+			{
+				uint8_t* ptr;
+
+#ifdef _WIN32
+				// Windows
+				ptr = static_cast<uint8_t*>(_aligned_malloc(buffer_size, ALIGNMENT));
+				if (ptr == nullptr)
+					throw std::bad_alloc();
+#else
+				// Linux, macOS
+				if (posix_memalign((void**)&ptr, ALIGNMENT, buffer_size) != 0)
+					throw std::bad_alloc();
+#endif
+
+				return ptr;
+			}
+
+			// *******************************************************************************************
+			void free_buffer(uint8_t *ptr)
+			{
+				if (ptr == nullptr)
+					return;
+
+#ifdef _WIN32
+				_aligned_free(ptr);
+#else
+				free(ptr);
+#endif
+			}
+
+			// *******************************************************************************************
+			bool open()
+			{
+#ifdef _WIN32
+				// Windows
+				file_handle = CreateFileA(
+					file_name.c_str(),
+					GENERIC_WRITE,
+					0, // No sharing
+					NULL,
+					CREATE_ALWAYS,
+					FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING, // No buffering
+					NULL
+				);
+
+				if (file_handle == INVALID_HANDLE)
+					return false;
+#else 
+				// Linux, macOS
+#ifdef __APPLE__
+				// macOS - F_NOCACHE must be set after open
+				file_handle = ::open(file_name.c_str(), O_WRONLY | O_CREAT, 0644);
+				/*				if (file_handle != INVALID_HANDLE) {
+									if (fcntl(file_handle, F_NOCACHE, 1) == -1) {
+				//						Warning: Impossible to set F_NOCACHE
+									}
+								}*/
+#else 
+				// Linux - O_DIRECT
+//				file_handle = ::open(file_name.c_str(), O_WRONLY | O_CREAT | O_DIRECT, 0644);
+				file_handle = ::open(file_name.c_str(), O_WRONLY | O_CREAT, 0644);
+#endif
+				if (file_handle == INVALID_HANDLE) {
+					perror("open");
+					return false;
+				}
+#endif
+
+				buffer_offset = 0;
+
+				return true;
+			}
+
+			// *******************************************************************************************
+			bool write_block_to_file(const uint8_t* ptr, const size_t n_bytes)
+			{
+#ifdef _WIN32
+				// Windows
+				DWORD bytes_written;
+				BOOL success = WriteFile(
+					file_handle,
+					ptr,
+					(DWORD)n_bytes,
+					&bytes_written,
+					NULL
+				);
+
+				if (!success || bytes_written != n_bytes)
+					return false;
+
+#else 
+				// Linux, macOS
+#ifdef __linux__
+/*				if (file_size_on_disk + n_bytes > prealocated_size)
+				{
+					prealocated_size = file_size_on_disk + n_bytes + 16 * buffer_size;
+					if (fallocate(file_handle, 0, 0, prealocated_size) != 0)
+						if (ftruncate(file_handle, prealocated_size) != 0)
+							perror("ftruncate");
+				}*/
+
+				if (posix_fallocate(file_handle, 0, file_size_on_disk + n_bytes) != 0)
+					if (ftruncate(file_handle, file_size_on_disk + n_bytes) != 0)
+						perror("ftruncate");
+#else
+				if (ftruncate(file_handle, file_size_on_disk + n_bytes) != 0)
+					perror("ftruncate");
+#endif			
+
+				ssize_t bytes_written = pwrite(file_handle, ptr, n_bytes, file_size_on_disk);
+
+				if (bytes_written == -1 || (size_t)bytes_written != n_bytes)
+				{
+					perror("pwrite");
+					return false;
+				}
+#endif
+
+				//				file_size_on_disk += bytes_written;
+
+				return true;
+			}
+
+			// *******************************************************************************************
+			void put_buffer_to_queue()
+			{
+				if (writing_ok.load() == false)
+				{
+					buffer_offset = 0;
+					return;
+				}
+
+				free_buffers_mtx.lock();
+				uint8_t* ptr;
+				if (free_buffers.empty())
+					ptr = allocate_buffer();
+				else
+				{
+					ptr = free_buffers.top();
+					free_buffers.pop();
+				}
+
+				free_buffers_mtx.unlock();
+
+				std::swap(buffer, ptr);
+				write_queue.push(std::make_pair(ptr, buffer_offset));
+				buffer_offset = 0;
+			}
+
+			// *******************************************************************************************
+			size_t align_size(size_t size)
+			{
+				if (size % ALIGNMENT == 0)
+					return size;
+				else
+					return ((size / ALIGNMENT) + 1) * ALIGNMENT;
+			}
+
+		public:
+			// *******************************************************************************************
+			output_file_low_level_threaded(const std::string& file_name, size_t buffer_size, size_t queue_capacity) :
+				output_common(),
+				file_name(file_name),
+				buffer_size(buffer_size),
+				queue_capacity(queue_capacity),
+				write_queue(queue_capacity)
+
+			{
+				if (buffer_size % ALIGNMENT != 0)
+					this->buffer_size = align_size(buffer_size);
+
+				buffer = allocate_buffer();
+
+//				for(size_t i = 0; i < queue_capacity + 2; ++i)
+//					free_buffers.push(allocate_buffer());
+
+				open();
+				active = file_handle != INVALID_HANDLE;
+
+				if(active == false)
+					return;
+
+				write_thread = std::thread([this]() {
+					std::pair<uint8_t*, size_t> block;
+
+					bool last_block_not_aligned = false;
+
+					while (write_queue.pop(block))
+					{
+						if(last_block_not_aligned)
+						{
+							// Previous block was not aligned, so the file is broken
+							writing_ok = false;
+							continue;
+						}
+
+						size_t aligned_size = align_size(block.second);
+						last_block_not_aligned = (aligned_size != block.second);
+
+						if (!write_block_to_file(block.first, aligned_size))
+							writing_ok = false;
+
+						file_size_on_disk += block.second;
+
+						free_buffers_mtx.lock();
+						free_buffers.push(block.first);
+						free_buffers_mtx.unlock();
+					}
+				});
+			}
+
+			// *******************************************************************************************
+			~output_file_low_level_threaded()
+			{
+				try
+				{
+					(void) close();
+				}
+				catch (...) {}
+
+				free_buffer(buffer);
+
+				while (!free_buffers.empty())
+				{
+					uint8_t *ptr = free_buffers.top();
+					free_buffers.pop();
+					free_buffer(ptr);
+				}
+			}
+
+			// *******************************************************************************************
+			virtual bool close()
+			{
+				if (!active)
+					return false;
+
+				bool need_to_flush = (buffer_offset != 0);
+
+				if (need_to_flush)
+					put_buffer_to_queue();
+
+				write_queue.stop();
+				write_thread.join();
+
+#ifdef _WIN32
+				CloseHandle(file_handle);
+#else
+				::close(file_handle);
+#endif
+
+				// Truncate file to actual size
+				if (writing_ok.load() && need_to_flush)
+				{
+#ifdef _WIN32
+					// Windows
+					HANDLE hFile_trim = CreateFileA(
+						file_name.c_str(),
+						GENERIC_WRITE,
+						0,
+						NULL,
+						OPEN_EXISTING,
+						FILE_ATTRIBUTE_NORMAL, // Buffered mode
+						NULL
+					);
+
+					if (hFile_trim != INVALID_HANDLE_VALUE) {
+						LONG high_size = (LONG)(file_size_on_disk >> 32);
+						DWORD low_size = (DWORD)file_size_on_disk;
+
+						if (SetFilePointer(hFile_trim, low_size, &high_size, FILE_BEGIN) != INVALID_SET_FILE_POINTER || GetLastError() == NO_ERROR)
+							SetEndOfFile(hFile_trim);
+						CloseHandle(hFile_trim);
+					}
+#else 
+					// Linux, macOS
+					int fd_trim = ::open(file_name.c_str(), O_WRONLY);
+					if (fd_trim != INVALID_HANDLE)
+					{
+						if (ftruncate(fd_trim, file_size_on_disk) != 0)
+							perror("ftruncate");
+						::close(fd_trim);
+					}
+#endif
+				}
+
+				active = false;
+
+				return writing_ok.load();			// To tell if writing was successful
+			}
+
+			// *******************************************************************************************
+			virtual bool put(const uint8_t c)
+			{
+				if (writing_ok.load() == false)
+				{
+					write_queue.stop();
+					return false;
+				}
+
+				buffer[buffer_offset++] = c;
+
+				if (buffer_offset == buffer_size)
+					put_buffer_to_queue();
+
+				return writing_ok.load();
+			}
+
+			// *******************************************************************************************
+			virtual size_t write(const uint8_t* ptr, const size_t n_bytes)
+			{
+				uint8_t* local_ptr = const_cast<uint8_t*>(ptr);
+				size_t bytes_to_write = n_bytes;
+
+				while (bytes_to_write != 0 && writing_ok.load())
+				{
+					size_t space_in_buffer = buffer_size - buffer_offset;
+					size_t to_copy = (bytes_to_write < space_in_buffer) ? bytes_to_write : space_in_buffer;
+					std::memcpy(buffer + buffer_offset, local_ptr, to_copy);
+					buffer_offset += to_copy;
+					local_ptr += to_copy;
+					bytes_to_write -= to_copy;
+
+					if (buffer_offset == buffer_size)
+						put_buffer_to_queue();
+				}
+
+				if(!writing_ok.load())
+					write_queue.stop();
+
+				return writing_ok ? n_bytes : 0;
+			}
+
+			// *******************************************************************************************
+			virtual size_t write_uint(const uint64_t val, const size_t n_bytes)
+			{
+				uint64_t x = val;
+
+				for (size_t i = 0; i < n_bytes; ++i)
+				{
+					if (!put((uint8_t)(x & 0xffull)))
+						return 0;
+					x >>= 8;
+				}
+
+				return n_bytes;
+			}
+		};
+
 
 		// *******************************************************************************************
 		// 

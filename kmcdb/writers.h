@@ -225,7 +225,8 @@ namespace kmcdb
 			//  -  czy buforowane czy niebuforowane
 			//  -  czy z reopen czy bez
 			//if (!archive.open_file_unbuffered(path, false, archive_params))
-			if (!archive.open_file_low_level(path))
+			//if (!archive.open_file_low_level(path))
+			if (!archive.open_file_low_level_threaded(path))
 				throw std::runtime_error("Cannot open file " + path);
 
 			return &archive;
