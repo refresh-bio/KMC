@@ -176,6 +176,12 @@ namespace kmcdb
 		{
 			std::vector<uint8_t> data{};
 			size_t read_pos{};
+			void free_mem()
+			{
+				read_pos = 0;
+				data.clear();
+				data.shrink_to_fit();
+			}
 		};
 		current_pack_t current_pack{};
 
@@ -222,7 +228,10 @@ namespace kmcdb
 				int sub_part_id;
 				uint64_t meta;
 				if (!archive->get_sub_part(stream_id, max_single_read_size, part_id, sub_part_id, current_pack.data, meta))
+				{
+					current_pack.free_mem();
 					return false;
+				}
 				current_pack.read_pos = 0;
 			}
 			const uint8_t* ptr = current_pack.data.data() + current_pack.read_pos;
@@ -295,17 +304,40 @@ namespace kmcdb
 			{
 				data.resize(new_size);
 			}
+			void free_mem()
+			{
+				read_pos = 0;
+				data.clear();
+				data.shrink_to_fit();
+			}
 		};
 		current_pack_lut_t current_pack_lut{};
 		struct current_pack_suf_t
 		{
 			std::vector<uint8_t> data{};
 			size_t read_pos{};
+			void free_mem()
+			{
+				read_pos = 0;
+				data.clear();
+				data.shrink_to_fit();
+			}
 		};
 		current_pack_suf_t current_pack_suf{};
 
 		size_t max_single_read_size_suf;
 		size_t max_single_read_size_lut;
+
+		//Initialisation allocates memory (lut vector)
+		//It was initially inside ctor.
+		//but the problem is that if we have a lot of samples as separate kmcdb and bins
+		//each one allocates this memory
+		//Example use case was, liver dataset, first 1M (reads or lines I don't remember)
+		//But each sample used 10 times, so in total 160 samples
+		//And we were merging it in mkmc
+		//as a result there were num_bins * num_samples * 1MiB = ~82GiB RAM
+		//We were also not releasing the memory after last succesfull NextKmer
+		bool is_initialised = false;
 
 		//such that each part contains full records
 		//mkokot_TODO: this is code repetition -> fix it!
@@ -320,6 +352,7 @@ namespace kmcdb
 			return val / single_elem_bytes * single_elem_bytes;
 		}
 
+		using detail::BinReaderSortedWithLUTBase<VALUE_T>::bin_id;
 		using detail::BinReaderSortedWithLUTBase<VALUE_T>::archive;
 
 		using detail::BinReaderSortedWithLUTBase<VALUE_T>::stream_id_suf;
@@ -362,35 +395,8 @@ namespace kmcdb
 			return true;
 		}
 
-	public:
-		BinReaderSortedWithLUTForListing(uint64_t bin_id,
-			archive_input_t* archive,
-			uint64_t kmer_len,
-			uint64_t num_values,
-			uint64_t lut_prefix_len,
-			const std::vector<uint64_t>& num_bytes_single_value,
-			size_t max_single_read_size) :
-			detail::BinReaderSortedWithLUTBase<VALUE_T>(
-				bin_id,
-				archive,
-				kmer_len,
-				num_values,
-				lut_prefix_len,
-				num_bytes_single_value),
-			max_single_read_size_suf(adjust_max_part_size(max_single_read_size, single_suf_elem_bytes)),
-			max_single_read_size_lut(adjust_max_part_size(max_single_read_size, 2 * sizeof(uint64_t))) //we need at least two uint64_t, if subpart returns less it will not work (although could be possibly implemented calling subpart many times)
-		{
-			//read first lut part
-			if (!read_lut_pack())
-				throw std::runtime_error("Cannot read LUT from stream " +
-					stream_names::BinMetadata(bin_id));
-
-			//LUT begins with zero
-			++current_pack_lut.read_pos;
-		}
-
 		template<unsigned SIZE>
-		bool NextKmer(CKmer<SIZE>& kmer, VALUE_T* values)
+		bool next_kmer_impl(CKmer<SIZE>& kmer, VALUE_T* values)
 		{
 			if (already_readed_kmers == bin_metadata.total_kmers)
 				return false;
@@ -429,14 +435,53 @@ namespace kmcdb
 
 			kmer.set_prefix(current_prefix, static_cast<uint32_t>((kmer_len - lut_prefix_len) * 2));
 			detail::LoadValues(values, num_values, current_pack_suf.data, current_pack_suf.read_pos, this->num_bytes_single_value);
-			
+
 			++already_readed_kmers;
 			return true;
 		}
-
-		const BinMetadata& GetBinMetadata() const
+	public:
+		BinReaderSortedWithLUTForListing(uint64_t bin_id,
+			archive_input_t* archive,
+			uint64_t kmer_len,
+			uint64_t num_values,
+			uint64_t lut_prefix_len,
+			const std::vector<uint64_t>& num_bytes_single_value,
+			size_t max_single_read_size) :
+			detail::BinReaderSortedWithLUTBase<VALUE_T>(
+				bin_id,
+				archive,
+				kmer_len,
+				num_values,
+				lut_prefix_len,
+				num_bytes_single_value),
+			max_single_read_size_suf(adjust_max_part_size(max_single_read_size, single_suf_elem_bytes)),
+			max_single_read_size_lut(adjust_max_part_size(max_single_read_size, 2 * sizeof(uint64_t))) //we need at least two uint64_t, if subpart returns less it will not work (although could be possibly implemented calling subpart many times)
 		{
-			return bin_metadata;
+
+		}
+
+		template<unsigned SIZE>
+		bool NextKmer(CKmer<SIZE>& kmer, VALUE_T* values)
+		{
+			if (!is_initialised)
+			{
+				//read first lut part
+				if (!read_lut_pack())
+					throw std::runtime_error("Cannot read LUT from stream " +
+						stream_names::BinMetadata(bin_id));
+
+				//LUT begins with zero
+				++current_pack_lut.read_pos;
+				is_initialised = true;
+			}
+
+			if (next_kmer_impl(kmer, values))
+				return true;
+
+			//free memory if there is no more data
+			current_pack_lut.free_mem();
+			current_pack_suf.free_mem();
+			return false;
 		}
 	};
 
