@@ -897,6 +897,15 @@ public:
 			stack[i] = i;
 	}
 
+	//Forgets about every allocation
+	//After this pool may be reused like a new one, but this avoids reallocations
+	void forget() {
+		unique_lock<mutex> lck(mtx);
+		n_parts_free = n_parts_total;
+		for(uint32 i = 0; i < n_parts_total; ++i)
+			stack[i] = i;
+	}
+
 	void release(void) {
 		if(raw_buffer)
 			delete[] raw_buffer;

@@ -1252,6 +1252,7 @@ template <unsigned SIZE> KMC::Stage1Results CKMC<SIZE>::ProcessStage1_impl()
 
 	buildSignatureMapping();
 
+	Queues.pmm_binary_file_reader->forget(); // seems there is a bug and not all parts get free during signature map building
 	// ***** Stage 1 *****
 
 	if (Params.file_type != InputType::BAM)
