@@ -112,7 +112,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 			for (; part_pos < part_size;)
 			{
 				c = part[part_pos++];
-				if (c < 32)					// newliners
+				if (c == '\n' || c == '\r')					// newliners
 					break;
 			}
 			if (part_pos >= part_size)
@@ -128,7 +128,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 			for (; part_pos < part_size && pos < mem_part_pmm_reads;)
 			{
 				c = part[part_pos++];
-				if (c < 32)					// newliners
+				if (c == '\n' || c == '\r')					// newliners
 					break;
 				seq[pos++] = codes[c];
 			}
@@ -152,7 +152,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 			for (; part_pos < part_size && pos < mem_part_pmm_reads;)
 			{
 				c = part[part_pos++];
-				if (c < 32)					// newliners
+				if (c == '\n' || c == '\r')					// newliners
 					break;
 				seq[pos++] = codes[c];
 			}
@@ -177,7 +177,8 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 		if (part_pos >= part_size)
 			return true;
 
-		if (part[part_pos++] >= 32)
+		uchar tmp = part[part_pos++];
+		if (tmp != '\n' && tmp != '\r')
 			part_pos--;
 		else if (part_pos >= part_size)
 			return true;
@@ -198,7 +199,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 			for (; part_pos < part_size;)
 			{
 				c = part[part_pos++];
-				if (c < 32)					// newliners
+				if (c == '\n' || c == '\r')					// newliners
 					break;
 			}
 			if (part_pos >= part_size)
@@ -214,7 +215,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 			for (; part_pos < part_size && pos < mem_part_pmm_reads;)
 			{
 				c = part[part_pos++];
-				if (c < 32)					// newliners
+				if (c == '\n' || c == '\r')					// newliners
 					break;
 				seq[pos++] = codes[c];
 			}
@@ -236,7 +237,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 			for (; part_pos < part_size && pos < mem_part_pmm_reads;)
 			{
 				c = part[part_pos++];
-				if (c < 32)					// newliners
+				if (c == '\n' || c == '\r')					// newliners
 					break;
 				seq[pos++] = codes[c];
 			}
@@ -253,7 +254,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 		}
 
 		c = part[part_pos++];
-		if (c >= 32)
+		if (c != '\n' && c != '\r')
 			part_pos--;
 		else if (part_pos >= part_size)
 			return false;
@@ -267,7 +268,7 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 		for (; part_pos < part_size;)
 		{
 			c = part[part_pos++];
-			if (c < 32)					// newliners
+			if (c == '\n' || c == '\r')					// newliners
 				break;
 		}
 		if (part_pos >= part_size)
@@ -292,8 +293,9 @@ bool CSplitter::GetSeq(char *seq, uint32 &seq_size, ReadType read_type)
 		if (part_pos >= part_size)
 			return true;
 
-		//may be additional EOL character 
-		if (part[part_pos++] >= 32)
+		//may be additional EOL character
+		uchar tmp = part[part_pos++];
+		if (tmp != '\n' && tmp != '\r')
 			part_pos--;
 		else if (part_pos >= part_size)
 			return true;
