@@ -232,7 +232,7 @@ public:
 		return current_hash;
 	}
 	inline bool operator==(const CMmerMinHash& x) const {
-		return current_hash < x.current_hash;
+		return current_hash == x.current_hash;
 	}
 	inline bool operator<(const CMmerMinHash& x) const {
 		return current_hash < x.current_hash;
