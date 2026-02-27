@@ -882,7 +882,7 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 		}
 	}
 
-	std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, false);
+	std::unique_ptr<CWBinaryFilesReader> w_bin_file_reader = std::make_unique<CWBinaryFilesReader>(Params, Queues, true);
 	CExceptionAwareThread bin_file_reader_thread(std::ref(*w_bin_file_reader.get()));
 
 	for (auto& t : fastqs_threads)
