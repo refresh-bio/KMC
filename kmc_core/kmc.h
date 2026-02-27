@@ -921,10 +921,29 @@ KMC::Stage1Results CKMC<SIZE>::ProcessSmallKOptimization_Stage1()
 
 	return results;
 }
+
+template<typename FUN_T>
+class AtScopeEnd
+{
+	FUN_T fun;
+public:
+	AtScopeEnd(FUN_T fun):fun(fun){}
+	~AtScopeEnd() {fun();}
+};
+
 //----------------------------------------------------------------------------------
 template <unsigned SIZE>
 KMC::Stage2Results CKMC<SIZE>::ProcessSmallKOptimization_Stage2()
 {
+	//just wrap and go to 100 immadiatelly at this method end
+	//we could not show this, but for example in MKMC we assume there will be 200% notfied by progress observer
+	CPercentProgress percent_progress("Stage 2: ", true, Params.percentProgressObserver);
+	percent_progress.SetMaxVal(100);
+	percent_progress.NotifyProgress(0);
+	AtScopeEnd update_progress_at_scope_end([&percent_progress]{
+		percent_progress.NotifyProgress(100);
+	});
+
 	KMC::Stage2Results results;
 
 	CStopWatch timer_stage2;
