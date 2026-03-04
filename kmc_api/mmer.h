@@ -12,7 +12,12 @@
 #define _MMER_H
 #include <cinttypes>
 
-#include "murmur64_hash.h"
+//mkokot_TODO: replace this murmur with something that xors such that hash(AAAA) is not 0
+//but also keep the same code here and in kmcbd (for compatibility)
+//best use the same source file defining minhash
+//2026-03-04: so I switched to fixed murmur (as included below), but still we have two separate mmer classes which is terrible
+#include "../kmcdb/libs/refresh/hash_tables/lib/hash_functions.h"
+
 #ifndef MIN
 #define MIN(x,y)	((x) < (y) ? (x) : (y))
 #endif
@@ -225,8 +230,7 @@ public:
 		rev >>= 2;
 		rev += (3 - (uint64_t)symb) << (len * 2 - 2);
 
-		//current_hash = MurMur64Hash{}(MIN(str, rev)) & mask; //mkokot_TODO: should I "& mask" ?
-		current_hash = MurMur64Hash{}(MIN(str, rev)); //mkokot_TODO: should I "& mask" ?
+		current_hash = refresh::hash::MurMurSeeded<uint64_t>{}(MIN(str, rev));
 	}
 	inline uint64_t get() const {
 		return current_hash;

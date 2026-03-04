@@ -2,7 +2,8 @@
 #define KMER_TO_BIN_ID_H_
 
 #include "mmer.h"
-#include "hashers.h"
+#include <cstdint>
+#include "libs/refresh/hash_tables/lib/hash_functions.h"
 
 namespace kmcdb
 {
@@ -42,8 +43,9 @@ namespace kmcdb
 		{
 			switch (signature_selection_scheme)
 			{
+				//mkokot_TODO: I think kmcdb should be source of truth regarding what is mmer, and how we hash (which murmur we use, or if murmur at all)
 			case SignatureSelectionScheme::MinHash:
-				return detail::get_signature<SIZE, MmerMinHash<MurMur64Hash>>(kmer,
+				return detail::get_signature<SIZE, MmerMinHash<refresh::hash::MurMur<uint64_t>>>(kmer,
 					kmer_len, signature_len);
 			}
 			throw std::runtime_error("signature_selection_scheme not covered by switch statement");
