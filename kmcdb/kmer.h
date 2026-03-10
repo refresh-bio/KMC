@@ -8,6 +8,7 @@
 #include <emmintrin.h>
 #endif
 #include "libs/refresh/conversions/lib/conversions.h"
+#include "libs/refresh/hash_tables/lib/hash_functions.h"
 
 #ifdef _WIN32
 #define _bswap64(x) _byteswap_uint64(x)
@@ -166,6 +167,14 @@ template<unsigned SIZE> struct CKmer {
 		}
 		if (shift)
 			res.SHR(shift);
+		return res;
+	}
+
+	uint64_t seeded_murmur64() const
+	{
+		uint64_t res = refresh::hash::MurMurSeeded<uint64_t>{}(data[0]);
+		for (uint32_t i = 1 ; i < SIZE ; ++i)
+			res ^= refresh::hash::MurMurSeeded<uint64_t>{}(data[i]);
 		return res;
 	}
 };
@@ -613,6 +622,11 @@ template<> struct CKmer<1> {
 		res.data = shr_2p((~_bswap64(sf2)), shift);
 
 		return res;
+	}
+
+	uint64_t seeded_murmur64() const
+	{
+		return refresh::hash::MurMurSeeded<uint64_t>{}(data);
 	}
 };
 
