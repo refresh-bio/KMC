@@ -84,6 +84,9 @@
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>..\kmcdb;../3rd_party/zlib-ng-compat/build-vs/;$(IncludePath)</IncludePath>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnabled>false</VcpkgEnabled>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
